@@ -219,3 +219,54 @@ Test-NetConnection sg-sgp13.tryaltare.ai -Port 25048
 ```bash
 rm -f /root/taskflow.tar.gz /root/node-v22.22.0-linux-x64.tar.gz /root/*.log
 ```
+
+---
+
+## 9. GitHub Actions 自动部署（CI/CD）
+
+仓库：<https://github.com/yuhuizhaocom/fullstack>，推送到 `main` 即触发构建与发布。
+
+### 流水线结构
+
+```
+push main ──> build（ubuntu-latest）
+                npm ci → prisma generate → tsc --noEmit → next build（NEXT_BUILD_CPUS=2）
+                → 打包源码 tar → artifact
+            ──> deploy
+                sshpass 上传 tar 到 /root → 解压到 /opt/taskflow
+                → scripts/server-deploy.sh：npm ci → migrate deploy → build → 重启 → 健康检查
+                → 从 runner 再做一次外网 /api/health 检查
+```
+
+- 配置文件：`.github/workflows/deploy.yml`
+- 服务器端更新逻辑：[scripts/server-deploy.sh](./scripts/server-deploy.sh)
+- 同一时间只跑一个部署（`concurrency: deploy-production`），避免并发覆盖
+
+### 首次配置：仓库密钥
+
+在 GitHub 仓库 `Settings → Secrets and variables → Actions → New repository secret` 添加 4 个密钥（只用于 deploy job，不会出现在日志里）：
+
+| 名称 | 值 |
+| --- | --- |
+| `SSH_HOST` | `sg-sgp13.tryaltare.ai` |
+| `SSH_PORT` | `25044` |
+| `SSH_USER` | `root` |
+| `SSH_PASSWORD` | 服务器 root 密码 |
+
+未配置时，`deploy` job 会打印提示并跳过，`build` job 仍然照常校验构建。
+
+### 服务器前置条件
+
+- `/opt/taskflow` 已按本文档完成过一次部署（Node 22、PostgreSQL 25048、`.env` 存在）
+- `.env` 不在 tar 中，升级不会覆盖数据库连接串
+- 部署期间应用会在构建完成后重启一次（约 3–5 秒不可用）
+
+### 手动触发与失败排查
+
+- 手动触发：Actions → 构建与部署 → Run workflow
+- 构建失败看 `build` job 日志；部署失败看 `deploy` job 与服务器 `/opt/taskflow/app.log`
+- 若 `server-deploy.sh` 健康检查失败，脚本会 `exit 1`，GitHub 上显示红叉，服务器保持**新代码但未通过自检**的状态，需人工回滚或修复后重跑
+
+### 已验证
+
+2026-11-23 首次跑通：`构建与检查` 与 `部署到服务器` 全绿，服务器进程重启、`BUILD_ID` 更新为流水线构建时间，外网 `/api/health` 返回 200。踩坑一处已修：源码 `tar` 归档不能放在被归档目录内，否则报 `file changed as we read it`，现改为写入 `/tmp`。
