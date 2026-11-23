@@ -122,3 +122,5 @@ npm run db:studio   # Prisma Studio
 ## 生产部署
 
 服务器部署、端口约定、重置后快速重建、运维与踩坑记录见 [DEPLOY.md](./DEPLOY.md)。
+
+推送到 `main` 后由 GitHub Actions 自动构建并发布到服务器（见 [.github/workflows/deploy.yml](./.github/workflows/deploy.yml)）。

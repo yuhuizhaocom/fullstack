@@ -25,6 +25,7 @@ import { formatDateTime, formatToday } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { taskStatusMeta, type TaskItem } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
+import { APP_VERSION } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
 
@@ -252,6 +253,12 @@ export default async function DashboardPage() {
             <CardDescription>应用运行与数据库连通性</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2.5 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">版本</span>
+              <span className="font-mono text-xs tabular-nums">
+                {APP_VERSION}
+              </span>
+            </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Web 服务</span>
               <Badge variant="success" className="gap-1.5">

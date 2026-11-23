@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { APP_VERSION } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ export async function GET() {
     return NextResponse.json({
       status: "ok",
       database: "connected",
+      version: APP_VERSION,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -18,6 +20,7 @@ export async function GET() {
       {
         status: "error",
         database: "disconnected",
+        version: APP_VERSION,
         timestamp: new Date().toISOString(),
       },
       { status: 503 }

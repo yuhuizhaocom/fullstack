@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ListTodo } from "lucide-react";
 
 import { isNavActive, navItems } from "@/components/layout/nav-items";
+import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 
 function Brand() {
@@ -76,7 +77,9 @@ export function AppSidebar() {
             PostgreSQL · Tailwind · shadcn/ui
           </p>
         </div>
-        <p className="mt-3 text-[11px] text-muted-foreground">TaskFlow v0.1.0</p>
+        <p className="mt-3 text-[11px] text-muted-foreground">
+          TaskFlow · 版本 {APP_VERSION}
+        </p>
       </div>
     </aside>
   );
@@ -91,7 +94,9 @@ export function SidebarSheetContent({ onNavigate }: { onNavigate?: () => void })
       <div className="mt-4 flex-1">
         <SidebarNav onNavigate={onNavigate} />
       </div>
-      <p className="text-[11px] text-muted-foreground">TaskFlow v0.1.0</p>
+      <p className="text-[11px] text-muted-foreground">
+        TaskFlow · 版本 {APP_VERSION}
+      </p>
     </div>
   );
 }
