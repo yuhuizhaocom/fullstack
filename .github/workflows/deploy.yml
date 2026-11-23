@@ -43,13 +43,14 @@ jobs:
           NEXT_BUILD_CPUS: "2"
 
       - name: 打包源码
-        run: tar --exclude=node_modules --exclude=.next --exclude=.git --exclude=.env -czf taskflow-src.tar.gz .
+        # 归档文件必须放在被归档目录之外，否则 tar 会报 "file changed as we read it"
+        run: tar --exclude=node_modules --exclude=.next --exclude=.git --exclude=.env -czf /tmp/taskflow-src.tar.gz .
 
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
           name: taskflow-src
-          path: taskflow-src.tar.gz
+          path: /tmp/taskflow-src.tar.gz
           retention-days: 7
 
   deploy:
