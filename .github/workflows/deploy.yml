@@ -1,0 +1,106 @@
+name: 构建与部署
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 同一时间只允许一个部署，避免并发覆盖
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  APP_DIR: /opt/taskflow
+  APP_PORT: "25045"
+
+jobs:
+  build:
+    name: 构建与检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci --no-audit --no-fund
+
+      - name: 生成 Prisma Client
+        run: npx prisma generate
+
+      - name: 类型检查
+        run: npx tsc --noEmit
+
+      - name: 生产构建
+        run: npm run build
+        env:
+          NEXT_BUILD_CPUS: "2"
+
+      - name: 打包源码
+        run: tar --exclude=node_modules --exclude=.next --exclude=.git --exclude=.env -czf taskflow-src.tar.gz .
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: taskflow-src
+          path: taskflow-src.tar.gz
+          retention-days: 7
+
+  deploy:
+    name: 部署到服务器
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      # 未配置仓库密钥时跳过部署，只验证构建
+      HAS_SSH: ${{ secrets.SSH_HOST != '' }}
+    steps:
+      - name: 检查部署密钥
+        if: env.HAS_SSH != 'true'
+        run: |
+          echo "::notice title=跳过部署::未配置仓库密钥 SSH_HOST / SSH_PORT / SSH_USER / SSH_PASSWORD，本次仅完成构建。请在 Settings → Secrets and variables → Actions 中添加后再推送。"
+
+      - name: 下载构建产物
+        if: env.HAS_SSH == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: taskflow-src
+
+      - name: 上传代码并执行远程部署
+        if: env.HAS_SSH == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq sshpass
+          export SSHPASS="$SSH_PASSWORD"
+          OPT="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20"
+          sshpass -e scp $OPT -P "$SSH_PORT" taskflow-src.tar.gz "$SSH_USER@$SSH_HOST:/root/taskflow-src.tar.gz"
+          sshpass -e ssh $OPT -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            "set -e; mkdir -p $APP_DIR; tar -xzf /root/taskflow-src.tar.gz -C $APP_DIR; rm -f /root/taskflow-src.tar.gz; cd $APP_DIR; bash scripts/server-deploy.sh"
+
+      - name: 外网健康检查
+        if: env.HAS_SSH == 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://$SSH_HOST:$APP_PORT/api/health" || true)
+            if [ "$code" = "200" ]; then
+              echo "外网健康检查通过：$(curl -s "http://$SSH_HOST:$APP_PORT/api/health")"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "外网健康检查失败（HTTP ${code:-无响应}）"
+          exit 1
