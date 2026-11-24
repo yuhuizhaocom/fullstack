@@ -72,3 +72,14 @@ model Task {
   @@index([ownerId])
   @@map("tasks")
 }
+
+model ClipEntry {
+  id        String   @id @default(cuid())
+  channel   String   @db.VarChar(16)
+  content   String   @db.Text
+  clientId  String   @db.VarChar(64)
+  createdAt DateTime @default(now())
+
+  @@index([channel, createdAt])
+  @@map("clip_entries")
+}

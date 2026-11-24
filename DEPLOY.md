@@ -383,3 +383,23 @@ cloudflared tunnel --no-autoupdate --url http://127.0.0.1:25045
 2026-11-24：命名隧道启动成功，日志显示 `Registered tunnel connection ... location=sin20 protocol=quic`；控制台下发的 ingress 为 `www.722.qzz.io → http://localhost:25045`。
 
 外网验收：`https://www.722.qzz.io/api/health` 返回 200；浏览器实测 `isSecureContext=true`，`navigator.clipboard` 读写均可用；CI 的外网健康检查已切到该域名（失败时回退直连 25045）。
+
+---
+
+## 12. 临时剪贴板（公开频道）
+
+| 项目 | 说明 |
+| --- | --- |
+| 入口 | https://www.722.qzz.io/clip （登录页与仪表盘均有入口，无需登录） |
+| 频道码 | 6 位小写字母/数字，随机生成或手动输入 |
+| 接口 | `GET/POST /api/clip/{channel}/messages`，`GET /api/clip/{channel}/stream`（SSE） |
+| 存储 | `clip_entries` 表，按 `(channel, createdAt)` 索引，24 小时 TTL |
+| 限制 | 单条 ≤ 64KB；每 IP 每频道 30 条/分钟（进程内滑动窗口） |
+| 清理 | 写入时惰性删除该频道 24 小时前的记录 |
+
+要点：
+
+- SSE 通过 Route Handler 返回 `text/event-stream`，已加 `X-Accel-Buffering: no` 与 25 秒心跳，Cloudflare 隧道可正常透传
+- 频道广播是**单进程内存 Map**，当前单实例部署够用；未来多副本需要 Redis Pub/Sub
+- 只有 HTTPS（安全上下文）才能用 `navigator.clipboard`；HTTP 直连时页面仍可用，但只能手动粘贴/点击复制
+- 匿名公开频道适合临时文本，不适合密码、密钥；如需私密使用应加频道口令或登录限制

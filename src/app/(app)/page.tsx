@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Circle,
+  ClipboardList,
   Clock,
   Inbox,
   ListTodo,
@@ -14,6 +15,7 @@ import { DatabaseNotice } from "@/components/database-notice";
 import { TaskStatusBadge } from "@/components/task-badges";
 import { CreateTaskButton } from "@/components/tasks/create-task-button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -317,6 +319,24 @@ export default async function DashboardPage() {
                 {tech}
               </Badge>
             ))}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">临时剪贴板</CardTitle>
+            <CardDescription>跨设备互传文本，无需登录</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              创建或加入一个 6 位频道，把链接发到其他设备，粘贴即同步；内容 24 小时后自动清理。
+            </p>
+            <Button asChild size="sm" variant="outline" className="w-fit">
+              <Link href="/clip">
+                <ClipboardList className="size-4" />
+                打开剪贴板
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
