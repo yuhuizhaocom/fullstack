@@ -280,6 +280,39 @@ function getMinimapCache(): HTMLCanvasElement {
   return canvas;
 }
 
+function drawBossBar(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  boss: { name: string; hp: number; maxHp: number }
+): void {
+  const barWidth = Math.min(280, width * 0.5);
+  const x = (width - barWidth) / 2;
+  const y = 104;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(8,22,13,0.72)";
+  ctx.fillRect(x - 10, y - 22, barWidth + 20, 36);
+
+  ctx.font = "bold 11px ui-monospace, Menlo, monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "#f0abfc";
+  ctx.fillText(
+    `${boss.name}  ${Math.ceil(boss.hp)} / ${boss.maxHp}`,
+    width / 2,
+    y - 7
+  );
+
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(x, y, barWidth, 8);
+  ctx.fillStyle = "#e879f9";
+  ctx.fillRect(x, y, barWidth * Math.max(0, boss.hp / boss.maxHp), 8);
+  ctx.strokeStyle = "rgba(232,121,249,0.45)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, barWidth - 1, 7);
+  ctx.restore();
+}
+
 function drawMinimap(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -904,6 +937,25 @@ function drawSkillEffect(
     ctx.beginPath();
     ctx.arc(x, y - 12, 8 + progress * 26, 0, Math.PI * 2);
     ctx.fill();
+  } else if (skillId === "levelup") {
+    ctx.strokeStyle = "#fde68a";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 14 + progress * 46, 7 + progress * 23, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#fef3c7";
+    for (let i = 0; i < 8; i += 1) {
+      const angle = (i / 8) * Math.PI * 2 + progress * 1.5;
+      ctx.beginPath();
+      ctx.arc(
+        x + Math.cos(angle) * (12 + progress * 26),
+        y - progress * 40 + Math.sin(angle) * 4,
+        2,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
   } else if (skillId === "boss_aoe") {
     ctx.strokeStyle = "#f87171";
     ctx.lineWidth = 4;
@@ -994,6 +1046,7 @@ export function drawWorld(
     meMoving: boolean;
     meSwingAt: number;
     meHurtAt: number;
+    shake: boolean;
     snapshot: RenderSnapshot | null;
     swings: Record<string, number>;
     flashes: Record<string, number>;
@@ -1018,8 +1071,12 @@ export function drawWorld(
   const isoMaxX = WORLD_W * TILE;
   const isoMinY = 0;
   const isoMaxY = ((WORLD_W + WORLD_H) * TILE) / 2;
-  const camX = Math.max(isoMinX, Math.min(isoMaxX - width, meIsoX - width / 2));
-  const camY = Math.max(isoMinY, Math.min(isoMaxY - height, meIsoY - height / 2));
+  const shakeX = input.shake ? (Math.random() - 0.5) * 8 : 0;
+  const shakeY = input.shake ? (Math.random() - 0.5) * 8 : 0;
+  const camX =
+    Math.max(isoMinX, Math.min(isoMaxX - width, meIsoX - width / 2)) + shakeX;
+  const camY =
+    Math.max(isoMinY, Math.min(isoMaxY - height, meIsoY - height / 2)) + shakeY;
 
   ctx.fillStyle = "#08160d";
   ctx.fillRect(0, 0, width, height);
@@ -1249,6 +1306,21 @@ export function drawWorld(
     ctx.fillStyle = particle.color;
     ctx.fillText(particle.text, screen.x, screen.y);
     ctx.globalAlpha = 1;
+  }
+
+  const nearbyBoss = snapshot?.monsters
+    .filter(
+      (monster) =>
+        monster.boss &&
+        Math.hypot(monster.x - input.meX, monster.y - input.meY) < 460
+    )
+    .sort(
+      (a, b) =>
+        Math.hypot(a.x - input.meX, a.y - input.meY) -
+        Math.hypot(b.x - input.meX, b.y - input.meY)
+    )[0];
+  if (nearbyBoss) {
+    drawBossBar(ctx, width, nearbyBoss);
   }
 
   drawMinimap(

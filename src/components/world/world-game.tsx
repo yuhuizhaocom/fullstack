@@ -146,6 +146,7 @@ export function WorldGame() {
   const meMovingRef = useRef(0);
   const spawnRef = useRef({ x: 0, y: 0 });
   const recallReadyRef = useRef(0);
+  const shakeUntilRef = useRef(0);
   const sizeRef = useRef({ width: 720, height: VIEW_HEIGHT });
   const soundRef = useRef(true);
   const fullscreen = nativeFullscreen || pseudoFullscreen;
@@ -214,6 +215,14 @@ export function WorldGame() {
     if (result.levels > 0) {
       sfx("levelup");
       toast.success(`升级到 Lv.${next.level}！`);
+      effectSeqRef.current += 1;
+      effectsRef.current.push({
+        id: effectSeqRef.current,
+        x: meRef.current.x,
+        y: meRef.current.y,
+        skillId: "levelup",
+        at: performance.now(),
+      });
       const stats = effectiveStats(next);
       post({
         type: "sync",
@@ -324,7 +333,10 @@ export function WorldGame() {
           if (event.from === myId) sfx("attack");
           break;
         case "hurt":
-          if (event.to === myId) sfx("hurt");
+          if (event.to === myId) {
+            sfx("hurt");
+            shakeUntilRef.current = performance.now() + 180;
+          }
           break;
         case "kill": {
           const distance = Math.hypot(
@@ -386,6 +398,16 @@ export function WorldGame() {
         case "reward":
           if (event.to === myId) {
             applyReward(event.exp ?? 0, event.gold ?? 0);
+          }
+          break;
+        case "join":
+          if (event.text) {
+            toast(`👋 ${event.text} 加入了世界`, { duration: 1600 });
+          }
+          break;
+        case "leave":
+          if (event.text) {
+            toast(`${event.text} 离开了世界`, { duration: 1600 });
           }
           break;
       }
@@ -692,6 +714,7 @@ export function WorldGame() {
           meMoving: now - meMovingRef.current < 200,
           meSwingAt: swingsRef.current[myIdRef.current] ?? 0,
           meHurtAt: flashesRef.current[myIdRef.current] ?? 0,
+          shake: now < shakeUntilRef.current,
           snapshot: visual,
           swings: swingsRef.current,
           flashes: flashesRef.current,
