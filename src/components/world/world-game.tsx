@@ -38,6 +38,9 @@ import type { WorldSnapshot } from "@/lib/world/state";
 import { cn } from "@/lib/utils";
 
 const CLIENT_KEY = "tf_world_client";
+const DAILY_KEY = "tf_world_daily";
+const DAILY_GOAL = 10;
+const DAILY_REWARD = 200;
 const SPEED = 210;
 const VIEW_HEIGHT = 420;
 const MOVE_KEYS = new Set([
@@ -90,6 +93,33 @@ function potionStock(save: GameSave): Record<string, number> {
   return stock;
 }
 
+type DailyProgress = { date: string; kills: number; claimed: boolean };
+
+function todayKey(): string {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
+}
+
+function loadDaily(): DailyProgress {
+  try {
+    const raw = localStorage.getItem(DAILY_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as DailyProgress;
+      if (parsed.date === todayKey()) return parsed;
+    }
+  } catch {
+    // 忽略损坏数据
+  }
+  return { date: todayKey(), kills: 0, claimed: false };
+}
+
+function saveDaily(progress: DailyProgress): void {
+  try {
+    localStorage.setItem(DAILY_KEY, JSON.stringify(progress));
+  } catch {
+    // 隐私模式忽略
+  }
+}
+
 export function WorldGame() {
   const [save, setSave] = useState<GameSave | null>(null);
   const [phase, setPhase] = useState<"loading" | "create" | "lobby" | "playing">(
@@ -107,6 +137,12 @@ export function WorldGame() {
   const [skillCd, setSkillCd] = useState(false);
   const [recallReadyAt, setRecallReadyAt] = useState(0);
   const [potionOpen, setPotionOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [daily, setDaily] = useState<DailyProgress>({
+    date: "",
+    kills: 0,
+    claimed: false,
+  });
   const [nativeFullscreen, setNativeFullscreen] = useState(false);
   const [pseudoFullscreen, setPseudoFullscreen] = useState(false);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
@@ -147,6 +183,7 @@ export function WorldGame() {
   const spawnRef = useRef({ x: 0, y: 0 });
   const recallReadyRef = useRef(0);
   const shakeUntilRef = useRef(0);
+  const dailyRef = useRef<DailyProgress>({ date: "", kills: 0, claimed: false });
   const sizeRef = useRef({ width: 720, height: VIEW_HEIGHT });
   const soundRef = useRef(true);
   const fullscreen = nativeFullscreen || pseudoFullscreen;
@@ -159,6 +196,9 @@ export function WorldGame() {
     setCreateName(stored?.name ?? "");
     setCreateClass(stored?.classId ?? "warrior");
     setIsTouch(window.matchMedia("(pointer: coarse)").matches);
+    const progress = loadDaily();
+    dailyRef.current = progress;
+    setDaily(progress);
   }, []);
 
   // 全屏状态同步
@@ -242,6 +282,34 @@ export function WorldGame() {
         restoreHp: true,
       });
     }
+  }
+
+  function recordKill() {
+    let progress = dailyRef.current;
+    if (progress.date !== todayKey()) {
+      progress = { date: todayKey(), kills: 0, claimed: false };
+    }
+    const next: DailyProgress = { ...progress, kills: progress.kills + 1 };
+
+    if (next.kills >= DAILY_GOAL && !next.claimed) {
+      next.claimed = true;
+      const current = saveRef.current;
+      if (current) {
+        const updated: GameSave = {
+          ...current,
+          gold: current.gold + DAILY_REWARD,
+        };
+        saveRef.current = updated;
+        setSave(updated);
+        persistSave(updated);
+      }
+      toast.success(`🎯 每日目标完成！获得 ${DAILY_REWARD} 金币`);
+      sfx("levelup");
+    }
+
+    dailyRef.current = next;
+    setDaily(next);
+    saveDaily(next);
   }
 
   function handleSnapshot(snapshot: WorldSnapshot) {
@@ -398,6 +466,7 @@ export function WorldGame() {
         case "reward":
           if (event.to === myId) {
             applyReward(event.exp ?? 0, event.gold ?? 0);
+            recordKill();
           }
           break;
         case "join":
@@ -1078,6 +1147,7 @@ export function WorldGame() {
   }
 
   const skills = save ? CLASS_SKILLS[save.classId] : [];
+  const profileStats = save ? effectiveStats(save) : null;
   const potionItems = save
     ? Object.entries(save.inventory)
         .filter(([id, count]) => count > 0 && ITEMS[id]?.kind === "consumable")
@@ -1123,7 +1193,12 @@ export function WorldGame() {
         {/* 顶部 HUD 浮层 */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-slate-950/90 via-slate-950/60 to-transparent px-2 pb-10 pt-[max(0.5rem,env(safe-area-inset-top))]">
           <div className="pointer-events-auto flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              className="flex min-w-0 items-center gap-2 text-left"
+              onClick={() => setProfileOpen(true)}
+              title="查看角色属性"
+            >
               <span className="text-xl">{save ? CLASSES[save.classId].icon : "🧙"}</span>
               <div className="min-w-0">
                 <p className="truncate text-[11px] font-bold">
@@ -1142,7 +1217,7 @@ export function WorldGame() {
                   在线 {online} 人 · 击杀 {self?.kills ?? 0}
                 </p>
               </div>
-            </div>
+            </button>
             <div className="flex items-center gap-1">
               <span className="flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] font-bold text-amber-300">
                 <Coins className="size-3" />
@@ -1327,6 +1402,10 @@ export function WorldGame() {
           <div className="pointer-events-auto mt-1 flex items-center gap-1 overflow-x-auto text-[10px] text-slate-400">
             <Users className="size-3.5 shrink-0" />
             <span className="shrink-0">在线 {online} 人</span>
+            <span className="shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-amber-300">
+              🎯 每日击杀 {Math.min(daily.kills, DAILY_GOAL)}/{DAILY_GOAL}
+              {daily.claimed ? " ✓" : ""}
+            </span>
             {party.map((player) => (
               <span
                 key={player.id}
@@ -1348,6 +1427,110 @@ export function WorldGame() {
             )}
           </div>
         </div>
+
+        {profileOpen && save && profileStats && (
+          <div
+            className="absolute inset-0 z-40 flex items-center justify-center bg-black/65 p-4"
+            onClick={() => setProfileOpen(false)}
+          >
+            <div
+              className="w-full max-w-sm rounded-xl border-2 border-slate-600 bg-slate-950 p-4 text-slate-100 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-bold">
+                  {save.name}
+                  <span className="ml-1.5 text-amber-300">Lv.{save.level}</span>
+                </p>
+                <button
+                  type="button"
+                  className={btn}
+                  onClick={() => setProfileOpen(false)}
+                >
+                  关闭
+                </button>
+              </div>
+              <p className="mt-0.5 text-[10px] text-slate-500">
+                {CLASSES[save.classId].name} · 击杀 {self?.kills ?? 0} · 金币{" "}
+                {save.gold}
+              </p>
+
+              <div className="mt-3 grid grid-cols-2 gap-1.5 text-[11px]">
+                {[
+                  { label: "攻击", value: Math.round(profileStats.atk) },
+                  { label: "防御", value: Math.round(profileStats.def) },
+                  { label: "速度", value: Math.round(profileStats.spd) },
+                  { label: "暴击", value: `${Math.round(profileStats.crit)}%` },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex items-center justify-between rounded bg-slate-900 px-2 py-1"
+                  >
+                    <span className="text-slate-500">{row.label}</span>
+                    <span className="font-bold">{row.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-3 space-y-1 text-[11px]">
+                {[
+                  { label: "武器", id: save.equipment.weapon },
+                  { label: "护甲", id: save.equipment.armor },
+                  { label: "饰品", id: save.equipment.accessory },
+                ].map((slot) => {
+                  const item = slot.id ? ITEMS[slot.id] : null;
+                  return (
+                    <div
+                      key={slot.label}
+                      className="flex items-center gap-2 rounded bg-slate-900/70 px-2 py-1"
+                    >
+                      <span className="w-8 shrink-0 text-slate-500">
+                        {slot.label}
+                      </span>
+                      <span>{item?.icon ?? "—"}</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {item?.name ?? "未装备"}
+                      </span>
+                      <span className="shrink-0 text-[10px] text-slate-500">
+                        {item
+                          ? [
+                              item.atk ? `攻+${item.atk}` : "",
+                              item.def ? `防+${item.def}` : "",
+                              item.spd ? `速+${item.spd}` : "",
+                              item.crit ? `暴+${item.crit}%` : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")
+                          : ""}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-3">
+                <div className="flex items-center justify-between text-[10px] text-slate-500">
+                  <span>经验</span>
+                  <span>
+                    {save.level >= MAX_LEVEL
+                      ? "已满级"
+                      : `${save.exp} / ${expToNext(save.level)}`}
+                  </span>
+                </div>
+                <div className="mt-1 h-1.5 overflow-hidden rounded bg-slate-800">
+                  <div
+                    className="h-full rounded bg-violet-400"
+                    style={{ width: `${expPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              <p className="mt-3 text-[10px] leading-relaxed text-slate-500">
+                退出世界后可在「单人副本 → 角色」更换装备；世界内可直接使用药水与回城。
+              </p>
+            </div>
+          </div>
+        )}
 
         {self?.dead && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 text-sm font-bold text-red-300">
