@@ -3,11 +3,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import { publish } from "@/lib/clip/bus";
 import {
   CLIP_HISTORY_LIMIT,
+  CLIP_IMAGE_URL_PATTERN,
+  CLIP_KIND_IMAGE,
+  CLIP_KIND_TEXT,
   CLIP_MAX_LENGTH,
   CLIP_RATE_LIMIT,
   clipCutoff,
   isValidChannel,
   normalizeChannel,
+  type ClipKind,
 } from "@/lib/clip/constants";
 import { allowRequest } from "@/lib/clip/rate-limit";
 import { prisma } from "@/lib/prisma";
@@ -42,6 +46,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
       channel,
       entries: entries.reverse().map((entry) => ({
         ...entry,
+        kind: (entry.kind === CLIP_KIND_IMAGE ? CLIP_KIND_IMAGE : CLIP_KIND_TEXT) as ClipKind,
         createdAt: entry.createdAt.toISOString(),
       })),
     });
@@ -83,9 +88,15 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "缺少客户端标识" }, { status: 400 });
   }
 
+  const kind: ClipKind =
+    body?.kind === CLIP_KIND_IMAGE ? CLIP_KIND_IMAGE : CLIP_KIND_TEXT;
+  if (kind === CLIP_KIND_IMAGE && !CLIP_IMAGE_URL_PATTERN.test(content)) {
+    return NextResponse.json({ error: "图片地址无效" }, { status: 400 });
+  }
+
   try {
     const entry = await prisma.clipEntry.create({
-      data: { channel, content, clientId },
+      data: { channel, content, clientId, kind },
     });
 
     // 惰性清理过期记录，避免频道长期堆积
@@ -98,6 +109,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       channel: entry.channel,
       content: entry.content,
       clientId: entry.clientId,
+      kind: (entry.kind === CLIP_KIND_IMAGE ? CLIP_KIND_IMAGE : CLIP_KIND_TEXT) as ClipKind,
       createdAt: entry.createdAt.toISOString(),
     };
     publish(channel, payload);

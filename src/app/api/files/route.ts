@@ -61,7 +61,7 @@ export async function GET() {
   try {
     const [files] = await Promise.all([
       prisma.sharedFile.findMany({
-        where: { expiresAt: { gt: new Date() } },
+        where: { scope: "share", expiresAt: { gt: new Date() } },
         orderBy: { createdAt: "desc" },
         take: FILE_LIST_LIMIT,
       }),
@@ -119,6 +119,8 @@ export async function PUT(request: NextRequest) {
   const mimeType = (
     request.headers.get("x-file-type") || "application/octet-stream"
   ).slice(0, 120);
+  // clip：剪贴板图片，不进入附件列表；其余一律按公开分享处理
+  const scope = request.headers.get("x-file-scope") === "clip" ? "clip" : "share";
 
   const key = `${randomUUID()}.bin`;
   const tempKey = `${key}.part`;
@@ -166,7 +168,14 @@ export async function PUT(request: NextRequest) {
   try {
     await finalizeUpload(tempKey, key);
     const record = await prisma.sharedFile.create({
-      data: { name, size: total, mimeType, storageKey: key, expiresAt: fileExpiry() },
+      data: {
+        name,
+        size: total,
+        mimeType,
+        storageKey: key,
+        scope,
+        expiresAt: fileExpiry(),
+      },
     });
     return NextResponse.json({ file: serialize(record) }, { status: 201 });
   } catch (error) {

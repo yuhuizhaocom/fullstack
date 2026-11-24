@@ -4,6 +4,12 @@ export const CLIP_MAX_LENGTH = 64 * 1024;
 export const CLIP_HISTORY_LIMIT = 50;
 export const CLIP_TTL_HOURS = 24;
 export const CLIP_RATE_LIMIT = 30;
+/** 剪贴板图片复用附件存储，消息里只保存下载地址 */
+export const CLIP_IMAGE_URL_PATTERN = /^\/api\/files\/[A-Za-z0-9]+$/;
+export const CLIP_KIND_TEXT = "TEXT";
+export const CLIP_KIND_IMAGE = "IMAGE";
+
+export type ClipKind = "TEXT" | "IMAGE";
 
 export function normalizeChannel(code: string): string {
   return code.trim().toLowerCase();
@@ -31,5 +37,6 @@ export type ClipPayload = {
   channel: string;
   content: string;
   clientId: string;
+  kind: ClipKind;
   createdAt: string;
 };

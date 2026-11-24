@@ -95,9 +95,12 @@ model SharedFile {
   size       Int
   mimeType   String?  @db.VarChar(120)
   storageKey String   @unique @db.VarChar(80)
+  /** share：附件分享；clip：剪贴板图片（不出现在附件列表） */
+  scope      String   @default("share") @db.VarChar(16)
   createdAt  DateTime @default(now())
   expiresAt  DateTime
 
+  @@index([scope, createdAt])
   @@index([expiresAt])
   @@index([createdAt])
   @@map("shared_files")
@@ -108,6 +111,8 @@ model ClipEntry {
   channel   String   @db.VarChar(16)
   content   String   @db.Text
   clientId  String   @db.VarChar(64)
+  /** TEXT：文本内容；IMAGE：content 为 /api/files/{id} 图片地址 */
+  kind      String   @default("TEXT") @db.VarChar(10)
   createdAt DateTime @default(now())
 
   @@index([channel, createdAt])
