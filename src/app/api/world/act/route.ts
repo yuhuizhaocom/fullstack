@@ -7,7 +7,9 @@ import {
   leaveWorld,
   movePlayer,
   recallPlayer,
+  restorePlayer,
   touchPlayer,
+  usePotion,
 } from "@/lib/world/state";
 
 export const runtime = "nodejs";
@@ -45,6 +47,11 @@ export async function POST(request: NextRequest) {
     case "recall":
       recallPlayer(clientId);
       break;
+    case "potion":
+      if (typeof body?.itemId === "string") {
+        usePotion(clientId, body.itemId);
+      }
+      break;
     case "sync": {
       const player = body?.player;
       if (player && typeof player === "object") {
@@ -60,7 +67,14 @@ export async function POST(request: NextRequest) {
           crit: Number(player.crit) || 0,
           weapon: typeof player.weapon === "string" ? player.weapon : null,
           armor: typeof player.armor === "string" ? player.armor : null,
+          potions:
+            player.potions && typeof player.potions === "object"
+              ? player.potions
+              : undefined,
         });
+        if (body?.restoreHp === true) {
+          restorePlayer(clientId);
+        }
       }
       break;
     }

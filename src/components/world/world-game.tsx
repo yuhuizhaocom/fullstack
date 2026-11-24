@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { CLASSES, CLASS_SKILLS, SKILLS } from "@/lib/game/data";
+import { CLASSES, CLASS_SKILLS, ITEMS, SKILLS } from "@/lib/game/data";
 import {
   createSave,
   effectiveStats,
@@ -23,6 +23,7 @@ import {
   loadSave,
   MAX_LEVEL,
   persistSave,
+  removeItem,
 } from "@/lib/game/engine";
 import type { ClassId, GameSave } from "@/lib/game/types";
 import { initAudio, playSfx, startBgm, stopBgm } from "@/lib/world/audio";
@@ -80,6 +81,15 @@ function getClientId(): string {
   return id;
 }
 
+/** 只同步消耗品库存到服务器，装备等由本地存档管理 */
+function potionStock(save: GameSave): Record<string, number> {
+  const stock: Record<string, number> = {};
+  for (const [id, count] of Object.entries(save.inventory)) {
+    if (count > 0 && ITEMS[id]?.kind === "consumable") stock[id] = count;
+  }
+  return stock;
+}
+
 export function WorldGame() {
   const [save, setSave] = useState<GameSave | null>(null);
   const [phase, setPhase] = useState<"loading" | "create" | "lobby" | "playing">(
@@ -96,6 +106,7 @@ export function WorldGame() {
   const [isTouch, setIsTouch] = useState(false);
   const [skillCd, setSkillCd] = useState(false);
   const [recallReadyAt, setRecallReadyAt] = useState(0);
+  const [potionOpen, setPotionOpen] = useState(false);
   const [nativeFullscreen, setNativeFullscreen] = useState(false);
   const [pseudoFullscreen, setPseudoFullscreen] = useState(false);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
@@ -217,7 +228,9 @@ export function WorldGame() {
           crit: stats.crit,
           weapon: next.equipment.weapon,
           armor: next.equipment.armor,
+          potions: potionStock(next),
         },
+        restoreHp: true,
       });
     }
   }
@@ -433,6 +446,7 @@ export function WorldGame() {
           crit: stats.crit,
           weapon: current.equipment.weapon,
           armor: current.equipment.armor,
+          potions: potionStock(current),
         }),
       });
       if (!response.ok) return;
@@ -479,6 +493,7 @@ export function WorldGame() {
           crit: stats.crit,
           weapon: current.equipment.weapon,
           armor: current.equipment.armor,
+          potions: potionStock(current),
         }),
       });
       if (!response.ok) throw new Error("join failed");
@@ -856,6 +871,30 @@ export function WorldGame() {
     toast.success("已回城");
   }
 
+  function drinkPotion(itemId: string) {
+    const current = saveRef.current;
+    const item = ITEMS[itemId];
+    const selfNow = selfRef.current;
+    if (!current || !item || !selfNow) return;
+    if ((current.inventory[itemId] ?? 0) <= 0) return;
+    if (item.hp && !item.mp && selfNow.hp >= selfNow.maxHp) {
+      toast.error("生命已满");
+      return;
+    }
+    if (item.mp && !item.hp && selfNow.mp >= selfNow.maxMp) {
+      toast.error("魔法已满");
+      return;
+    }
+    const next: GameSave = {
+      ...current,
+      inventory: removeItem(current.inventory, itemId),
+    };
+    saveRef.current = next;
+    setSave(next);
+    persistSave(next);
+    post({ type: "potion", itemId });
+  }
+
   function toggleBgm() {
     if (bgmOn) {
       stopBgm();
@@ -995,6 +1034,11 @@ export function WorldGame() {
   }
 
   const skills = save ? CLASS_SKILLS[save.classId] : [];
+  const potionItems = save
+    ? Object.entries(save.inventory)
+        .filter(([id, count]) => count > 0 && ITEMS[id]?.kind === "consumable")
+        .map(([id, count]) => ({ id, count, item: ITEMS[id] }))
+    : [];
   const hpPercent = self ? Math.max(0, (self.hp / self.maxHp) * 100) : 100;
   const mpPercent = self ? Math.max(0, (self.mp / self.maxMp) * 100) : 100;
   const expNeed = save ? expToNext(save.level) : 1;
@@ -1195,10 +1239,47 @@ export function WorldGame() {
             >
               🏠 回城
             </button>
+            <button
+              type="button"
+              className={cn(
+                btn,
+                "bg-slate-900/80",
+                potionOpen && "border-amber-500 bg-amber-500/20 text-amber-300"
+              )}
+              disabled={potionItems.length === 0}
+              onClick={() => setPotionOpen((open) => !open)}
+              title="使用背包药水"
+            >
+              🎒 药水
+              {potionItems.length > 0 && (
+                <span className="ml-1 text-[10px] font-normal text-slate-400">
+                  {potionItems.reduce((sum, entry) => sum + entry.count, 0)}
+                </span>
+              )}
+            </button>
             <span className="ml-auto hidden text-[10px] text-slate-500 sm:inline">
               J 攻击 · 1-4 技能 · R 回城
             </span>
           </div>
+
+          {potionOpen && potionItems.length > 0 && (
+            <div className="pointer-events-auto mt-1 flex flex-wrap items-center gap-1">
+              {potionItems.map(({ id, count, item }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={cn(btn, "bg-slate-900/85")}
+                  onClick={() => drinkPotion(id)}
+                  title={item.desc}
+                >
+                  {item.icon} {item.name}
+                  <span className="ml-1 text-[10px] font-normal text-slate-400">
+                    ×{count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="pointer-events-auto mt-1 flex items-center gap-1 overflow-x-auto text-[10px] text-slate-400">
             <Users className="size-3.5 shrink-0" />
             <span className="shrink-0">在线 {online} 人</span>

@@ -1,4 +1,4 @@
-import { CLASS_SKILLS, SKILLS } from "@/lib/game/data";
+import { CLASS_SKILLS, ITEMS, SKILLS } from "@/lib/game/data";
 import type { ClassId } from "@/lib/game/types";
 
 import {
@@ -40,6 +40,8 @@ export type WorldPlayer = {
   invulnerableUntil: number;
   lastSafeRegen: number;
   lastRecall: number;
+  lastPotion: number;
+  potions: Record<string, number>;
   weapon: string | null;
   armor: string | null;
 };
@@ -291,6 +293,7 @@ export type JoinInput = {
   crit: number;
   weapon?: string | null;
   armor?: string | null;
+  potions?: Record<string, number>;
 };
 
 function clampNumber(value: number, min: number, max: number): number {
@@ -313,6 +316,18 @@ export function joinWorld(input: JoinInput) {
   const weapon =
     typeof input.weapon === "string" ? input.weapon.slice(0, 40) : null;
   const armor = typeof input.armor === "string" ? input.armor.slice(0, 40) : null;
+
+  const potions: Record<string, number> = {};
+  if (input.potions && typeof input.potions === "object") {
+    for (const [id, count] of Object.entries(input.potions)) {
+      const item = ITEMS[id];
+      if (!item || item.kind !== "consumable") continue;
+      const amount = Math.floor(Number(count));
+      if (Number.isFinite(amount) && amount > 0 && amount <= 99) {
+        potions[id] = amount;
+      }
+    }
+  }
 
   let player = world.players.get(input.clientId);
   if (!player) {
@@ -344,6 +359,8 @@ export function joinWorld(input: JoinInput) {
       invulnerableUntil: 0,
       lastSafeRegen: 0,
       lastRecall: 0,
+      lastPotion: 0,
+      potions,
       weapon,
       armor,
     };
@@ -361,6 +378,7 @@ export function joinWorld(input: JoinInput) {
       crit,
       weapon,
       armor,
+      potions,
       lastSeen: now,
     });
     player.hp = Math.min(player.hp, player.maxHp);
@@ -405,6 +423,45 @@ export function recallPlayer(clientId: string): void {
   player.lastMoveAt = now;
   player.lastSeen = now;
   player.invulnerableUntil = Math.max(player.invulnerableUntil, now + 1500);
+}
+
+/** 世界内使用背包药水：服务器按物品定义回血/回蓝 */
+export function usePotion(clientId: string, itemId: string): void {
+  const player = world.players.get(clientId);
+  if (!player || player.deadUntil) return;
+  const item = ITEMS[itemId];
+  if (!item || item.kind !== "consumable") return;
+  const count = player.potions[itemId] ?? 0;
+  if (count <= 0) return;
+  const now = Date.now();
+  if (now - player.lastPotion < 800) return;
+  player.lastPotion = now;
+  player.potions[itemId] = count - 1;
+
+  const hpBefore = player.hp;
+  const mpBefore = player.mp;
+  player.hp = Math.min(player.maxHp, player.hp + (item.hp ?? 0));
+  player.mp = Math.min(player.maxMp, player.mp + (item.mp ?? 0));
+  const healed = Math.round(player.hp - hpBefore);
+  const restored = Math.round(player.mp - mpBefore);
+  if (healed > 0 || restored > 0) {
+    pushEvent({
+      kind: "heal",
+      to: player.id,
+      x: player.x,
+      y: player.y,
+      value: healed > 0 ? healed : restored,
+      text: item.name,
+    });
+  }
+}
+
+/** 升级等场景下把生命与魔法回满 */
+export function restorePlayer(clientId: string): void {
+  const player = world.players.get(clientId);
+  if (!player || player.deadUntil) return;
+  player.hp = player.maxHp;
+  player.mp = player.maxMp;
 }
 
 export function movePlayer(clientId: string, x: number, y: number): void {
