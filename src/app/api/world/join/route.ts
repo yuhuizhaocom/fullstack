@@ -29,6 +29,8 @@ export async function POST(request: NextRequest) {
     atk: Number(body?.atk) || 10,
     def: Number(body?.def) || 0,
     crit: Number(body?.crit) || 0,
+    weapon: typeof body?.weapon === "string" ? body.weapon : null,
+    armor: typeof body?.armor === "string" ? body.armor : null,
   });
 
   return NextResponse.json({

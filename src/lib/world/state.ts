@@ -37,6 +37,8 @@ export type WorldPlayer = {
   buffUntil: number;
   guardUntil: number;
   lastMpRegen: number;
+  weapon: string | null;
+  armor: string | null;
 };
 
 export type WorldMonster = {
@@ -80,6 +82,7 @@ export type WorldEvent = {
     | "reward"
     | "heal"
     | "skill"
+    | "swing"
     | "join"
     | "leave"
     | "death";
@@ -89,6 +92,9 @@ export type WorldEvent = {
   crit?: boolean;
   text?: string;
   to?: string;
+  from?: string;
+  monsterId?: string;
+  skillId?: string;
   exp?: number;
   gold?: number;
 };
@@ -111,10 +117,13 @@ export type WorldSnapshot = {
     dir: 1 | -1;
     dead: boolean;
     kills: number;
+    weapon: string | null;
+    armor: string | null;
   }[];
   monsters: {
     id: string;
     name: string;
+    kind: string;
     icon: string;
     boss: boolean;
     x: number;
@@ -267,6 +276,8 @@ export type JoinInput = {
   atk: number;
   def: number;
   crit: number;
+  weapon?: string | null;
+  armor?: string | null;
 };
 
 function clampNumber(value: number, min: number, max: number): number {
@@ -286,6 +297,9 @@ export function joinWorld(input: JoinInput) {
   const atk = Math.round(clampNumber(input.atk, 1, 800));
   const def = Math.round(clampNumber(input.def, 0, 500));
   const crit = Math.round(clampNumber(input.crit, 0, 60));
+  const weapon =
+    typeof input.weapon === "string" ? input.weapon.slice(0, 40) : null;
+  const armor = typeof input.armor === "string" ? input.armor.slice(0, 40) : null;
 
   let player = world.players.get(input.clientId);
   if (!player) {
@@ -314,6 +328,8 @@ export function joinWorld(input: JoinInput) {
       buffUntil: 0,
       guardUntil: 0,
       lastMpRegen: now,
+      weapon,
+      armor,
     };
     world.players.set(player.id, player);
     pushEvent({ kind: "join", x: player.x, y: player.y, text: player.name });
@@ -327,6 +343,8 @@ export function joinWorld(input: JoinInput) {
       atk,
       def,
       crit,
+      weapon,
+      armor,
       lastSeen: now,
     });
     player.hp = Math.min(player.hp, player.maxHp);
@@ -420,6 +438,8 @@ function damageMonster(
     y: monster.y - 20,
     value: damage,
     crit,
+    monsterId: monster.id,
+    from: player.id,
   });
 
   if (monster.hp > 0) return;
@@ -470,6 +490,7 @@ export function attack(clientId: string): void {
   if (now - player.lastAttack < 420) return;
   player.lastAttack = now;
   player.lastSeen = now;
+  pushEvent({ kind: "swing", from: player.id, x: player.x, y: player.y });
 
   const range = 96;
   const target = aliveMonsters()
@@ -528,7 +549,14 @@ export function castSkill(clientId: string, skillId: string): void {
         damageMonster(monster, player, hit.damage, hit.crit, now);
       }
     }
-    pushEvent({ kind: "skill", x: player.x, y: player.y, text: skill.name });
+    pushEvent({
+      kind: "skill",
+      from: player.id,
+      skillId: skill.id,
+      x: player.x,
+      y: player.y,
+      text: skill.name,
+    });
     return;
   }
 
@@ -541,13 +569,27 @@ export function castSkill(clientId: string, skillId: string): void {
 
   if (skill.kind === "buff") {
     player.buffUntil = now + (skill.buffTurns ?? 3) * 3000;
-    pushEvent({ kind: "skill", x: player.x, y: player.y, text: skill.name });
+    pushEvent({
+      kind: "skill",
+      from: player.id,
+      skillId: skill.id,
+      x: player.x,
+      y: player.y,
+      text: skill.name,
+    });
     return;
   }
 
   if (skill.kind === "guard") {
     player.guardUntil = now + (skill.buffTurns ?? 3) * 3000;
-    pushEvent({ kind: "skill", x: player.x, y: player.y, text: skill.name });
+    pushEvent({
+      kind: "skill",
+      from: player.id,
+      skillId: skill.id,
+      x: player.x,
+      y: player.y,
+      text: skill.name,
+    });
   }
 }
 
@@ -688,10 +730,13 @@ function makeSnapshot(now: number): WorldSnapshot {
       dir: player.dir,
       dead: player.deadUntil > now,
       kills: player.kills,
+      weapon: player.weapon,
+      armor: player.armor,
     })),
     monsters: aliveMonsters().map((monster) => ({
       id: monster.id,
       name: monster.name,
+      kind: monster.kind,
       icon: monster.icon,
       boss: monster.boss,
       x: Math.round(monster.x),

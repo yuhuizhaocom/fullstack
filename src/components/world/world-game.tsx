@@ -28,6 +28,7 @@ import {
   drawWorld,
   type RenderParticle,
   type RenderSnapshot,
+  type SkillEffect,
 } from "@/lib/world/render";
 import { isBlockedAt, TILE, WORLD_H, WORLD_W } from "@/lib/world/terrain";
 import type { WorldSnapshot } from "@/lib/world/state";
@@ -119,6 +120,13 @@ export function WorldGame() {
   const lastAttackRef = useRef(0);
   const lastSkillRef = useRef(0);
   const lastPosRef = useRef({ x: 0, y: 0, at: 0 });
+  const swingsRef = useRef<Record<string, number>>({});
+  const flashesRef = useRef<Record<string, number>>({});
+  const movingRef = useRef<Record<string, number>>({});
+  const effectsRef = useRef<SkillEffect[]>([]);
+  const effectSeqRef = useRef(0);
+  const prevPositionsRef = useRef<Record<string, { x: number; y: number }>>({});
+  const meMovingRef = useRef(0);
   const sizeRef = useRef({ width: 720, height: VIEW_HEIGHT });
   const soundRef = useRef(true);
   const fullscreen = nativeFullscreen || pseudoFullscreen;
@@ -199,6 +207,8 @@ export function WorldGame() {
           atk: stats.atk,
           def: stats.def,
           crit: stats.crit,
+          weapon: next.equipment.weapon,
+          armor: next.equipment.armor,
         },
       });
     }
@@ -206,13 +216,33 @@ export function WorldGame() {
 
   function handleSnapshot(snapshot: WorldSnapshot) {
     snapshotRef.current = snapshot;
-    const now = Date.now();
+    const now = performance.now();
     const myId = myIdRef.current;
 
     for (const event of snapshot.events) {
       if (event.seq <= lastSeqRef.current) continue;
       lastSeqRef.current = event.seq;
-      if (event.to && event.to !== myId) continue;
+      // 奖励只处理自己的，其余视觉事件对所有人可见
+      if (event.kind === "reward" && event.to !== myId) continue;
+
+      if (event.from) swingsRef.current[event.from] = now;
+      if (event.kind === "damage" && event.monsterId) {
+        flashesRef.current[event.monsterId] = now;
+      }
+      if (event.kind === "hurt" && event.to) {
+        flashesRef.current[event.to] = now;
+      }
+      if (event.kind === "skill") {
+        effectSeqRef.current += 1;
+        effectsRef.current.push({
+          id: effectSeqRef.current,
+          x: event.x,
+          y: event.y,
+          skillId: event.skillId ?? "",
+          at: now,
+        });
+        if (effectsRef.current.length > 24) effectsRef.current.shift();
+      }
 
       if (
         event.value &&
@@ -265,8 +295,6 @@ export function WorldGame() {
             applyReward(event.exp ?? 0, event.gold ?? 0);
           }
           break;
-        default:
-          break;
       }
     }
 
@@ -291,6 +319,18 @@ export function WorldGame() {
       }
       setOnline(snapshot.online);
       setParty(snapshot.players.filter((player) => player.id !== myId));
+
+      const prev = prevPositionsRef.current;
+      for (const player of snapshot.players) {
+        const last = prev[player.id];
+        if (
+          last &&
+          (Math.abs(last.x - player.x) > 2 || Math.abs(last.y - player.y) > 2)
+        ) {
+          movingRef.current[player.id] = now;
+        }
+        prev[player.id] = { x: player.x, y: player.y };
+      }
     }
   }
 
@@ -334,6 +374,8 @@ export function WorldGame() {
           atk: stats.atk,
           def: stats.def,
           crit: stats.crit,
+          weapon: current.equipment.weapon,
+          armor: current.equipment.armor,
         }),
       });
       if (!response.ok) throw new Error("join failed");
@@ -413,6 +455,7 @@ export function WorldGame() {
         me.x = Math.max(TILE, Math.min(WORLD_W * TILE - TILE, me.x));
         me.y = Math.max(TILE, Math.min(WORLD_H * TILE - TILE, me.y));
         if (ix !== 0) me.dir = ix > 0 ? 1 : -1;
+        meMovingRef.current = now;
       }
 
       if (now - lastSendRef.current > 90) {
@@ -439,6 +482,23 @@ export function WorldGame() {
           if (particles[i].life <= 0) particles.splice(i, 1);
         }
 
+        // 清理过期的动作与特效状态
+        const swings = swingsRef.current;
+        const flashes = flashesRef.current;
+        const movingAnim = movingRef.current;
+        for (const key of Object.keys(swings)) {
+          if (now - swings[key] > 600) delete swings[key];
+        }
+        for (const key of Object.keys(flashes)) {
+          if (now - flashes[key] > 600) delete flashes[key];
+        }
+        for (const key of Object.keys(movingAnim)) {
+          if (now - movingAnim[key] > 600) delete movingAnim[key];
+        }
+        effectsRef.current = effectsRef.current.filter(
+          (effect) => now - effect.at < 800
+        );
+
         drawWorld(canvas, {
           width,
           height,
@@ -450,7 +510,14 @@ export function WorldGame() {
           meMaxHp: selfNow?.maxHp ?? 100,
           meDir: me.dir,
           meDead: selfNow?.dead ?? false,
+          meMoving: now - meMovingRef.current < 200,
+          meSwingAt: swingsRef.current[myIdRef.current] ?? 0,
+          meHurtAt: flashesRef.current[myIdRef.current] ?? 0,
           snapshot: snapshotRef.current as RenderSnapshot | null,
+          swings: swingsRef.current,
+          flashes: flashesRef.current,
+          moving: movingRef.current,
+          effects: effectsRef.current,
           particles,
           time: now,
         });
@@ -491,6 +558,7 @@ export function WorldGame() {
     const now = performance.now();
     if (now - lastAttackRef.current < 420) return;
     lastAttackRef.current = now;
+    swingsRef.current[myIdRef.current] = now;
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate(8);
     }
@@ -516,6 +584,7 @@ export function WorldGame() {
     const now = performance.now();
     if (now - lastSkillRef.current < 900) return;
     lastSkillRef.current = now;
+    swingsRef.current[myIdRef.current] = now;
     setSkillCd(true);
     window.setTimeout(() => setSkillCd(false), 900);
     sfx("skill");

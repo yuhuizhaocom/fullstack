@@ -54,6 +54,8 @@ export async function POST(request: NextRequest) {
           atk: Number(player.atk) || 10,
           def: Number(player.def) || 0,
           crit: Number(player.crit) || 0,
+          weapon: typeof player.weapon === "string" ? player.weapon : null,
+          armor: typeof player.armor === "string" ? player.armor : null,
         });
       }
       break;
