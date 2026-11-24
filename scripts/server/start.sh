@@ -62,3 +62,19 @@ nohup npm run start -- -H 0.0.0.0 -p "$APP_PORT" >>"$BASE/app.log" 2>&1 &
 echo $! >"$BASE/app.pid"
 log "应用已启动（pid $(cat "$BASE/app.pid")），监听 0.0.0.0:$APP_PORT"
 log "日志：$BASE/app.log"
+
+# ---------------- Cloudflare Tunnel（可选） ----------------
+CF_TOKEN_FILE="${CF_TOKEN_FILE:-/root/.cloudflared/token}"
+CF_PID_FILE="$BASE/cloudflared.pid"
+CF_LOG="$BASE/cloudflared.log"
+
+if [ -s "$CF_TOKEN_FILE" ] && command -v cloudflared >/dev/null 2>&1; then
+  if [ -f "$CF_PID_FILE" ] && kill -0 "$(cat "$CF_PID_FILE")" 2>/dev/null; then
+    log "Cloudflare Tunnel 已在运行（pid $(cat "$CF_PID_FILE")）"
+  else
+    nohup cloudflared tunnel --no-autoupdate run --token "$(cat "$CF_TOKEN_FILE")" \
+      >>"$CF_LOG" 2>&1 &
+    echo $! >"$CF_PID_FILE"
+    log "Cloudflare Tunnel 已启动（pid $(cat "$CF_PID_FILE")）"
+  fi
+fi

@@ -309,3 +309,69 @@ cat /root/.taskflow-admin-password
 - 会话为数据库记录 + HttpOnly Cookie（7 天有效），退出时删除会话并清 Cookie
 - 业务写操作在 Server Action 内二次校验归属，直接调用接口也无法越权
 - 本站当前是 HTTP 部署，Cookie 未加 `Secure`；启用 HTTPS 后建议补上
+
+---
+
+## 11. Cloudflare Tunnel（HTTPS 入口）
+
+服务器所在平台只放通 25044/25045/25048，80/443 从公网不可达，因此 HTTPS 走 Cloudflare Tunnel：`cloudflared` 主动出站连到 Cloudflare 边缘，无需开放任何入站端口。
+
+```
+浏览器 ──https:443──> Cloudflare 边缘 ──隧道──> cloudflared ──http:25045──> next start
+```
+
+### 一次性配置（Cloudflare 控制台）
+
+1. 域名 NS 托管到 Cloudflare（Free 计划即可）
+2. Zero Trust → Networks → Tunnels → Create a tunnel → Cloudflared，记下 **token**
+3. 该隧道 → Public Hostname → Add：
+   - Subdomain：如 `task`；Domain：你的域名
+   - Service：`HTTP` + `localhost:25045`
+4. 不要给该子域名手动添加 A 记录指向服务器 IP，Cloudflare 会自动创建 CNAME
+
+### 服务器侧文件
+
+| 路径 | 说明 |
+| --- | --- |
+| `/usr/local/bin/cloudflared` | 二进制（`cloudflared --version` 验证） |
+| `/root/.cloudflared/token` | 隧道 token，权限 600，**不入仓库** |
+| `/opt/taskflow/cloudflared.log` | 隧道日志 |
+| `/opt/taskflow/cloudflared.pid` | 进程号 |
+
+`bin/start.sh` 检测到 token 文件存在时会自动拉起隧道，`bin/stop.sh` 会一并停止；容器重启后执行一次 `start.sh` 即可恢复应用 + 隧道。
+
+手动操作等价命令：
+
+```bash
+# 启动
+nohup cloudflared tunnel --no-autoupdate run --token "$(cat /root/.cloudflared/token)" \
+  >>/opt/taskflow/cloudflared.log 2>&1 &
+echo $! >/opt/taskflow/cloudflared.pid
+
+# 查看连接状态
+grep "Registered tunnel connection" /opt/taskflow/cloudflared.log | tail -3
+
+# 换 token：控制台轮换后覆盖文件，再重启隧道
+bash /opt/taskflow/bin/stop.sh && bash /opt/taskflow/bin/start.sh
+```
+
+### 临时验证用 Quick Tunnel
+
+无需域名，适合验证 HTTPS 与 Clipboard API：
+
+```bash
+cloudflared tunnel --no-autoupdate --url http://127.0.0.1:25045
+```
+
+输出 `https://xxx.trycloudflare.com`，进程退出即失效，不要用于正式入口。
+
+### 注意事项
+
+- 同一端口不能同时提供 HTTP 和 HTTPS；隧道与 `http://<IP>:25045` 可以并存（前者走 Cloudflare，后者直连）
+- 启用 HTTPS 后如需强制安全 Cookie，可把 `createSession` 里的 `secure` 设为 `true`；但会导致 HTTP 直连无法登录，需先确认只走域名
+- Cloudflare 免费版单请求 100MB 上限，SSE / WebSocket 可用
+- token 等同于入口凭证，泄露后应在控制台重新生成并更新服务器文件
+
+### 已验证
+
+2026-11-24：命名隧道启动成功，日志显示 `Registered tunnel connection ... location=sin20 protocol=quic`；Quick Tunnel 阶段实测 `isSecureContext=true`，`navigator.clipboard` 读写均可用。

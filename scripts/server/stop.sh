@@ -53,3 +53,11 @@ if port_in_use; then
   exit 1
 fi
 echo "应用已停止，端口 ${APP_PORT} 已释放"
+
+# 同时停止 Cloudflare Tunnel（若由 start.sh 启动）
+CF_PID_FILE="$BASE/cloudflared.pid"
+if [ -f "$CF_PID_FILE" ] && kill -0 "$(cat "$CF_PID_FILE")" 2>/dev/null; then
+  kill "$(cat "$CF_PID_FILE")" 2>/dev/null || true
+  echo "已停止 Cloudflare Tunnel（pid $(cat "$CF_PID_FILE")）"
+fi
+rm -f "$CF_PID_FILE"
