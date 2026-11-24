@@ -25,7 +25,7 @@ export type ClientMessage =
   | ({ t: "join"; clientId: string; lastEventSeq?: number } & PlayerSyncPayload)
   | { t: "move"; x: number; y: number }
   | { t: "attack" }
-  | { t: "skill"; skillId: string; dirX?: number; dirY?: number; rid?: number }
+  | { t: "skill"; skillId: string; dirX?: number; dirY?: number; targetId?: string; rid?: number }
   | { t: "ping" }
   | { t: "recall" }
   | { t: "potion"; itemId: string }

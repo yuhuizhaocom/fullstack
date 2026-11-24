@@ -3,6 +3,13 @@ import type { ClassId } from "@/lib/game/types";
 
 import { QUEST_LIST, QUESTS, questGoal, type QuestStatus, type QuestView } from "./quests";
 import {
+  ELITE_AFFIX_LABEL,
+  ELITE_AFFIXES,
+  ELITE_CHANCE,
+  ELITE_SCALE,
+  type EliteAffix,
+} from "./elite";
+import {
   clampToWorld,
   isBlockedAt,
   isRoomId,
@@ -64,6 +71,9 @@ export type WorldMonster = {
   icon: string;
   room: RoomId;
   boss: boolean;
+  level: number;
+  elite: boolean;
+  affix: EliteAffix | null;
   hp: number;
   maxHp: number;
   atk: number;
@@ -85,12 +95,19 @@ export type WorldMonster = {
   damage: Map<string, number>;
 };
 
+export type DropKind = "heal" | "gold" | "item";
+
 export type WorldDrop = {
   id: string;
   room: RoomId;
+  kind: DropKind;
   x: number;
   y: number;
   heal: number;
+  gold?: number;
+  itemId?: string;
+  name?: string;
+  icon?: string;
   expiresAt: number;
 };
 
@@ -111,7 +128,8 @@ export type WorldEvent = {
     | "leave"
     | "death"
     | "room"
-    | "quest";
+    | "quest"
+    | "pickup";
   x: number;
   y: number;
   value?: number;
@@ -122,6 +140,7 @@ export type WorldEvent = {
   monsterId?: string;
   skillId?: string;
   boss?: boolean;
+  elite?: boolean;
   byName?: string;
   exp?: number;
   gold?: number;
@@ -185,12 +204,25 @@ export type WorldSnapshot = {
     kind: string;
     icon: string;
     boss: boolean;
+    level: number;
+    elite: boolean;
+    affix: EliteAffix | null;
     x: number;
     y: number;
     hp: number;
     maxHp: number;
   }[];
-  drops: { id: string; x: number; y: number; heal: number }[];
+  drops: {
+    id: string;
+    kind: DropKind;
+    x: number;
+    y: number;
+    heal: number;
+    gold?: number;
+    itemId?: string;
+    name?: string;
+    icon?: string;
+  }[];
   npcs: NpcView[];
   portals: PortalView[];
   events: WorldEvent[];
@@ -208,41 +240,111 @@ type MonsterDef = {
   gold: number;
   speed: number;
   aggro: number;
+  level: number;
   boss?: boolean;
   loot?: string[];
 };
 
 const MONSTER_DEFS: Record<string, MonsterDef> = {
-  slime: { kind: "slime", name: "史莱姆", icon: "🟢", hp: 70, atk: 8, def: 2, exp: 12, gold: 6, speed: 30, aggro: 170 },
-  wolf: { kind: "wolf", name: "野狼", icon: "🐺", hp: 120, atk: 12, def: 4, exp: 22, gold: 11, speed: 58, aggro: 230 },
-  goblin: { kind: "goblin", name: "哥布林", icon: "👺", hp: 180, atk: 18, def: 7, exp: 34, gold: 16, speed: 50, aggro: 220 },
-  skeleton: { kind: "skeleton", name: "骷髅战士", icon: "💀", hp: 260, atk: 26, def: 11, exp: 56, gold: 26, speed: 46, aggro: 240 },
-  fire: { kind: "fire", name: "火焰元素", icon: "🔥", hp: 340, atk: 36, def: 14, exp: 82, gold: 38, speed: 62, aggro: 250 },
-  demon: { kind: "demon", name: "炎魔", icon: "😈", hp: 460, atk: 46, def: 18, exp: 120, gold: 60, speed: 70, aggro: 270 },
-  bat: { kind: "bat", name: "吸血蝠", icon: "🦇", hp: 150, atk: 20, def: 5, exp: 40, gold: 22, speed: 92, aggro: 240 },
-  spider: { kind: "spider", name: "毒蛛", icon: "🕷️", hp: 200, atk: 24, def: 8, exp: 48, gold: 26, speed: 60, aggro: 230 },
-  golem: { kind: "golem", name: "石魔", icon: "🗿", hp: 320, atk: 30, def: 16, exp: 72, gold: 40, speed: 32, aggro: 210 },
-  ghost: { kind: "ghost", name: "幽魂", icon: "👻", hp: 220, atk: 32, def: 8, exp: 60, gold: 34, speed: 55, aggro: 250 },
-  gargoyle: { kind: "gargoyle", name: "石像鬼", icon: "🗿", hp: 300, atk: 34, def: 20, exp: 80, gold: 46, speed: 40, aggro: 220 },
-  lavabeast: { kind: "lavabeast", name: "熔岩兽", icon: "🌋", hp: 420, atk: 44, def: 22, exp: 110, gold: 60, speed: 45, aggro: 230 },
+  slime: { kind: "slime", name: "史莱姆", icon: "🟢", hp: 70, atk: 8, def: 2, exp: 12, gold: 6, speed: 30, aggro: 170, level: 1 },
+  wolf: { kind: "wolf", name: "野狼", icon: "🐺", hp: 120, atk: 12, def: 4, exp: 22, gold: 11, speed: 58, aggro: 230, level: 2 },
+  goblin: { kind: "goblin", name: "哥布林", icon: "👺", hp: 180, atk: 18, def: 7, exp: 34, gold: 16, speed: 50, aggro: 220, level: 3 },
+  skeleton: { kind: "skeleton", name: "骷髅战士", icon: "💀", hp: 260, atk: 26, def: 11, exp: 56, gold: 26, speed: 46, aggro: 240, level: 4 },
+  fire: { kind: "fire", name: "火焰元素", icon: "🔥", hp: 340, atk: 36, def: 14, exp: 82, gold: 38, speed: 62, aggro: 250, level: 6 },
+  demon: { kind: "demon", name: "炎魔", icon: "😈", hp: 460, atk: 46, def: 18, exp: 120, gold: 60, speed: 70, aggro: 270, level: 8 },
+  bat: { kind: "bat", name: "吸血蝠", icon: "🦇", hp: 150, atk: 20, def: 5, exp: 40, gold: 22, speed: 92, aggro: 240, level: 5 },
+  spider: { kind: "spider", name: "毒蛛", icon: "🕷️", hp: 200, atk: 24, def: 8, exp: 48, gold: 26, speed: 60, aggro: 230, level: 5 },
+  golem: { kind: "golem", name: "石魔", icon: "🗿", hp: 320, atk: 30, def: 16, exp: 72, gold: 40, speed: 32, aggro: 210, level: 7 },
+  ghost: { kind: "ghost", name: "幽魂", icon: "👻", hp: 220, atk: 32, def: 8, exp: 60, gold: 34, speed: 55, aggro: 250, level: 8 },
+  gargoyle: { kind: "gargoyle", name: "石像鬼", icon: "🗿", hp: 300, atk: 34, def: 20, exp: 80, gold: 46, speed: 40, aggro: 220, level: 9 },
+  lavabeast: { kind: "lavabeast", name: "熔岩兽", icon: "🌋", hp: 420, atk: 44, def: 22, exp: 110, gold: 60, speed: 45, aggro: 230, level: 11 },
 
   wolfking: {
     kind: "wolfking", name: "森林巨狼王", icon: "👑", hp: 2800, atk: 34, def: 16, exp: 800, gold: 500,
-    speed: 58, aggro: 380, boss: true, loot: ["doran_blade", "mercury_treads"],
+    speed: 58, aggro: 380, level: 8, boss: true, loot: ["doran_blade", "mercury_treads"],
   },
   cavegolem: {
     kind: "cavegolem", name: "洞穴魔像", icon: "👹", hp: 4200, atk: 44, def: 24, exp: 1400, gold: 900,
-    speed: 40, aggro: 380, boss: true, loot: ["randuin", "sorc_shoes"],
+    speed: 40, aggro: 380, level: 12, boss: true, loot: ["randuin", "sorc_shoes"],
   },
   guardian: {
     kind: "guardian", name: "遗迹守卫", icon: "🛡️", hp: 6500, atk: 56, def: 30, exp: 2600, gold: 1800,
-    speed: 50, aggro: 400, boss: true, loot: ["guardian_angel", "ludens"],
+    speed: 50, aggro: 400, level: 15, boss: true, loot: ["guardian_angel", "ludens"],
   },
   dragon: {
     kind: "dragon", name: "炎龙", icon: "🐉", hp: 12000, atk: 72, def: 38, exp: 6000, gold: 4000,
-    speed: 60, aggro: 440, boss: true, loot: ["deathcap", "infinity_edge", "warmog"],
+    speed: 60, aggro: 440, level: 20, boss: true, loot: ["deathcap", "infinity_edge", "warmog"],
   },
 };
+
+/** 按怪物等级划分的地面装备掉落池 */
+const LOOT_TIERS: { maxLevel: number; items: string[] }[] = [
+  {
+    maxLevel: 4,
+    items: [
+      "slime_gel",
+      "wolf_pelt",
+      "potion_small_hp",
+      "potion_small_mp",
+      "cloth_robe",
+      "power_ring",
+      "wooden_sword",
+      "oak_staff",
+      "short_bow",
+      "holy_mace",
+    ],
+  },
+  {
+    maxLevel: 9,
+    items: [
+      "bat_wing",
+      "magic_core",
+      "potion_small_hp",
+      "potion_mid_hp",
+      "potion_mid_mp",
+      "leather_armor",
+      "guard_amulet",
+      "iron_sword",
+      "hunter_bow",
+      "crystal_staff",
+      "blessed_mace",
+    ],
+  },
+  {
+    maxLevel: 14,
+    items: [
+      "magic_core",
+      "potion_mid_hp",
+      "chain_mail",
+      "mercury_treads",
+      "sorc_shoes",
+      "berserker_greaves",
+      "phantom_dancer",
+      "randuin",
+      "thornmail",
+      "ludens",
+    ],
+  },
+  {
+    maxLevel: 99,
+    items: [
+      "dragon_scale",
+      "potion_big_hp",
+      "plate_armor",
+      "dragon_armor",
+      "guardian_angel",
+      "warmog",
+      "deathcap",
+      "infinity_edge",
+      "bloodthirster",
+    ],
+  },
+];
+
+function lootPool(level: number): string[] {
+  const tier = LOOT_TIERS.find((entry) => level <= entry.maxLevel) ?? LOOT_TIERS[LOOT_TIERS.length - 1];
+  return tier.items;
+}
 
 type World = {
   players: Map<string, WorldPlayer>;
@@ -267,27 +369,64 @@ function createMonster(
   boss = false
 ): WorldMonster {
   world.monsterSeq += 1;
+  const isBoss = !!def.boss || boss;
+  const elite = !isBoss && Math.random() < ELITE_CHANCE;
+  const affix: EliteAffix | null = elite
+    ? ELITE_AFFIXES[Math.floor(Math.random() * ELITE_AFFIXES.length)]
+    : null;
+
+  let hp = def.hp;
+  let atk = def.atk;
+  let defValue = def.def;
+  let speed = def.speed;
+  let exp = def.exp;
+  let gold = def.gold;
+  let name = def.name;
+
+  if (elite && affix) {
+    hp = Math.round(hp * ELITE_SCALE.hp);
+    atk = Math.round(atk * ELITE_SCALE.atk);
+    defValue = Math.round(defValue * ELITE_SCALE.def);
+    speed = Math.round(speed * ELITE_SCALE.speed);
+    exp = Math.round(exp * ELITE_SCALE.exp);
+    gold = Math.round(gold * ELITE_SCALE.gold);
+    if (affix === "frenzy") {
+      atk = Math.round(atk * 1.35);
+      speed = Math.round(speed * 1.12);
+    } else if (affix === "tough") {
+      hp = Math.round(hp * 1.45);
+      defValue = Math.round(defValue * 1.4);
+    } else {
+      speed = Math.round(speed * 1.45);
+      atk = Math.round(atk * 1.1);
+    }
+    name = `${ELITE_AFFIX_LABEL[affix]}的${def.name}`;
+  }
+
   return {
-    id: `${boss ? "b" : "m"}${world.monsterSeq}`,
+    id: `${isBoss ? "b" : "m"}${world.monsterSeq}`,
     kind: def.kind,
-    name: def.name,
+    name,
     icon: def.icon,
     room,
-    boss: !!def.boss || boss,
-    hp: def.hp,
-    maxHp: def.hp,
-    atk: def.atk,
-    def: def.def,
-    exp: def.exp,
-    gold: def.gold,
-    speed: def.speed,
+    boss: isBoss,
+    level: def.level,
+    elite,
+    affix,
+    hp,
+    maxHp: hp,
+    atk,
+    def: defValue,
+    exp,
+    gold,
+    speed,
     aggro: def.aggro,
     x: point.x,
     y: point.y,
     homeX: point.x,
     homeY: point.y,
     respawnAt: 0,
-    respawnDelay: def.boss ? 180_000 : 18_000,
+    respawnDelay: isBoss ? 180_000 : elite ? 24_000 : 18_000,
     loot: def.loot,
     slowUntil: 0,
     lastAttack: 0,
@@ -735,6 +874,7 @@ function damageMonster(
     y: monster.y,
     text: monster.name,
     boss: monster.boss,
+    elite: monster.elite,
     byName: player.name,
   });
   pushEvent({
@@ -764,18 +904,56 @@ function damageMonster(
     });
   }
   monster.damage.clear();
+  spawnDrops(monster, now);
+}
 
+function randomLoot(level: number): string {
+  const pool = lootPool(level);
+  return pool[Math.floor(Math.random() * pool.length)] ?? "slime_gel";
+}
+
+function addDrop(
+  monster: WorldMonster,
+  now: number,
+  drop: { kind: DropKind; heal?: number; gold?: number; itemId?: string }
+): void {
+  world.dropSeq += 1;
+  const def = drop.itemId ? ITEMS[drop.itemId] : undefined;
+  const created: WorldDrop = {
+    id: `d${world.dropSeq}`,
+    room: monster.room,
+    kind: drop.kind,
+    x: monster.x,
+    y: monster.y,
+    heal: drop.heal ?? 0,
+    gold: drop.gold,
+    itemId: drop.itemId,
+    name: def?.name,
+    icon: def?.icon,
+    expiresAt: now + 45_000,
+  };
+  world.drops.set(created.id, created);
+}
+
+/** 击杀后的地面掉落：治疗、金币、装备分别由拾取逻辑结算 */
+function spawnDrops(monster: WorldMonster, now: number): void {
+  if (monster.boss) {
+    addDrop(monster, now, { kind: "heal", heal: 300 });
+    return;
+  }
   if (Math.random() < 0.18) {
-    world.dropSeq += 1;
-    const drop: WorldDrop = {
-      id: `d${world.dropSeq}`,
-      room: monster.room,
-      x: monster.x,
-      y: monster.y,
-      heal: monster.boss ? 300 : 60,
-      expiresAt: now + 30_000,
-    };
-    world.drops.set(drop.id, drop);
+    addDrop(monster, now, { kind: "heal", heal: monster.elite ? 120 : 60 });
+  }
+  if (Math.random() < (monster.elite ? 1 : 0.32)) {
+    const gold = Math.max(
+      1,
+      Math.round(monster.gold * (monster.elite ? 1.2 : 0.7) * (0.7 + Math.random() * 0.6))
+    );
+    addDrop(monster, now, { kind: "gold", gold });
+  }
+  const itemRolls = monster.elite ? (Math.random() < 0.3 ? 2 : 1) : Math.random() < 0.08 ? 1 : 0;
+  for (let i = 0; i < itemRolls; i += 1) {
+    addDrop(monster, now, { kind: "item", itemId: randomLoot(monster.level) });
   }
 }
 
@@ -830,7 +1008,8 @@ export function castSkill(
   clientId: string,
   skillId: string,
   dirX?: number,
-  dirY?: number
+  dirY?: number,
+  targetId?: string
 ): SkillResult {
   const player = world.players.get(clientId);
   if (!player) return { ok: false, message: "未加入世界" };
@@ -858,6 +1037,11 @@ export function castSkill(
 
   const buff = player.buffUntil > now ? 1.3 : 1;
   const roomMonsters = aliveMonstersInRoom(player.room);
+  // 客户端锁定的目标优先；离开范围或已死亡时回退到最近目标
+  const locked =
+    typeof targetId === "string"
+      ? roomMonsters.find((monster) => monster.id === targetId) ?? null
+      : null;
 
   const announce = (extra?: Partial<WorldEvent>) => {
     pushEvent({
@@ -902,6 +1086,13 @@ export function castSkill(
   if (skill.kind === "dash") {
     let dx = Number(dirX);
     let dy = Number(dirY);
+    if (
+      (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) &&
+      locked
+    ) {
+      dx = locked.x - player.x;
+      dy = locked.y - player.y;
+    }
     if (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) {
       dx = player.dir;
       dy = -player.dir;
@@ -973,7 +1164,11 @@ export function castSkill(
     return { ok: true };
   }
 
-  const target = candidates[0];
+  const target =
+    locked &&
+    Math.hypot(locked.x - player.x, locked.y - player.y) <= range
+      ? locked
+      : candidates[0];
   let multiplier = skill.multiplier ?? 1;
   if (skill.kind === "execute") {
     const missing = 1 - target.hp / target.maxHp;
@@ -1260,15 +1455,45 @@ function step(now: number): void {
     for (const player of world.players.values()) {
       if (player.deadUntil || player.room !== drop.room) continue;
       if (Math.hypot(player.x - drop.x, player.y - drop.y) > 64) continue;
-      player.hp = Math.min(player.maxHp, player.hp + drop.heal);
-      pushEvent({
-        kind: "heal",
-        to: player.id,
-        room: drop.room,
-        x: player.x,
-        y: player.y,
-        value: drop.heal,
-      });
+
+      if (drop.kind === "heal") {
+        if (player.hp >= player.maxHp) continue;
+        player.hp = Math.min(player.maxHp, player.hp + drop.heal);
+        pushEvent({
+          kind: "heal",
+          to: player.id,
+          room: drop.room,
+          x: player.x,
+          y: player.y,
+          value: drop.heal,
+        });
+      } else if (drop.kind === "gold") {
+        const gold = drop.gold ?? 0;
+        if (gold <= 0) continue;
+        pushEvent({
+          kind: "pickup",
+          to: player.id,
+          room: drop.room,
+          x: drop.x,
+          y: drop.y,
+          gold,
+          text: `+${gold} 金币`,
+        });
+      } else if (drop.itemId) {
+        pushEvent({
+          kind: "pickup",
+          to: player.id,
+          room: drop.room,
+          x: drop.x,
+          y: drop.y,
+          items: [drop.itemId],
+          text: drop.name,
+        });
+      } else {
+        world.drops.delete(drop.id);
+        break;
+      }
+
       world.drops.delete(drop.id);
       break;
     }
@@ -1385,6 +1610,9 @@ function makeSnapshot(now: number, player: WorldPlayer | null): WorldSnapshot {
       kind: monster.kind,
       icon: monster.icon,
       boss: monster.boss,
+      level: monster.level,
+      elite: monster.elite,
+      affix: monster.affix,
       x: Math.round(monster.x),
       y: Math.round(monster.y),
       hp: Math.round(monster.hp),
@@ -1392,9 +1620,14 @@ function makeSnapshot(now: number, player: WorldPlayer | null): WorldSnapshot {
     })),
     drops: drops.map((drop) => ({
       id: drop.id,
+      kind: drop.kind,
       x: Math.round(drop.x),
       y: Math.round(drop.y),
       heal: drop.heal,
+      gold: drop.gold,
+      itemId: drop.itemId,
+      name: drop.name,
+      icon: drop.icon,
     })),
     npcs,
     portals,

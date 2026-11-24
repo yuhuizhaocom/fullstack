@@ -49,12 +49,25 @@ export type RenderSnapshot = {
     kind: string;
     icon: string;
     boss: boolean;
+    level?: number;
+    elite?: boolean;
+    affix?: string | null;
     x: number;
     y: number;
     hp: number;
     maxHp: number;
   }[];
-  drops: { id: string; x: number; y: number; heal: number }[];
+  drops: {
+    id: string;
+    kind?: string;
+    x: number;
+    y: number;
+    heal: number;
+    gold?: number;
+    itemId?: string;
+    name?: string;
+    icon?: string;
+  }[];
   npcs?: {
     id: string;
     name: string;
@@ -522,12 +535,12 @@ function drawMinimap(
   }
 
   for (const monster of snapshot?.monsters ?? []) {
-    ctx.fillStyle = monster.boss ? "#e879f9" : "#f87171";
+    ctx.fillStyle = monster.boss ? "#e879f9" : monster.elite ? "#fbbf24" : "#f87171";
     ctx.beginPath();
     ctx.arc(
       x + (monster.x / TILE) * sx,
       y + (monster.y / TILE) * sy,
-      monster.boss ? 3 : 1.8,
+      monster.boss ? 3 : monster.elite ? 2.4 : 1.8,
       0,
       Math.PI * 2
     );
@@ -1106,6 +1119,8 @@ function drawMonster(
     kind: string;
     name: string;
     boss: boolean;
+    level?: number;
+    elite?: boolean;
     hp: number;
     maxHp: number;
   },
@@ -1113,17 +1128,40 @@ function drawMonster(
   time: number,
   showHealth: boolean
 ): void {
-  const scale = monster.boss ? 1.45 : 1;
+  const scale = monster.boss ? 1.45 : monster.elite ? 1.18 : 1;
 
   ctx.fillStyle = "rgba(0,0,0,0.3)";
   ctx.beginPath();
   ctx.ellipse(x, y + 2, 15 * scale, 7 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = monster.boss ? "rgba(232,121,249,0.2)" : "rgba(248,113,113,0.14)";
+  ctx.fillStyle = monster.boss
+    ? "rgba(232,121,249,0.2)"
+    : monster.elite
+      ? "rgba(250,204,21,0.2)"
+      : "rgba(248,113,113,0.14)";
   ctx.beginPath();
   ctx.ellipse(x, y + 1, 19 * scale, 9.5 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  if (monster.elite) {
+    // 精英光环 + 环绕光点
+    const pulse = 0.5 + Math.sin(time / 260 + x) * 0.3;
+    ctx.strokeStyle = `rgba(250,204,21,${0.25 + pulse * 0.35})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(x, y + 1, (20 + pulse * 5) * scale, (10 + pulse * 2.5) * scale, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(253,230,138,0.9)";
+    for (let i = 0; i < 3; i += 1) {
+      const angle = time / 900 + i * 2.09;
+      const rx = Math.cos(angle) * 22 * scale;
+      const ry = Math.sin(angle) * 10 * scale;
+      ctx.beginPath();
+      ctx.arc(x + rx, y - 10 + ry, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 
   ctx.save();
   ctx.translate(x, y);
@@ -1138,14 +1176,18 @@ function drawMonster(
   ctx.font = "10px ui-monospace, Menlo, monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = monster.boss ? "#f0abfc" : "#fca5a5";
-  ctx.fillText(monster.name, x, y - (monster.boss ? 58 : 42));
+  ctx.fillStyle = monster.boss ? "#f0abfc" : monster.elite ? "#fde68a" : "#fca5a5";
+  ctx.fillText(
+    monster.level ? `Lv.${monster.level} ${monster.name}` : monster.name,
+    x,
+    y - (monster.boss ? 58 : monster.elite ? 50 : 42)
+  );
 
-  const barWidth = monster.boss ? 56 : 34;
-  const barY = y - (monster.boss ? 53 : 37);
+  const barWidth = monster.boss ? 56 : monster.elite ? 46 : 34;
+  const barY = y - (monster.boss ? 53 : monster.elite ? 45 : 37);
   ctx.fillStyle = "rgba(0,0,0,0.7)";
   ctx.fillRect(x - barWidth / 2, barY, barWidth, 3);
-  ctx.fillStyle = monster.boss ? "#e879f9" : "#ef4444";
+  ctx.fillStyle = monster.boss ? "#e879f9" : monster.elite ? "#fbbf24" : "#ef4444";
   ctx.fillRect(x - barWidth / 2, barY, barWidth * Math.max(0, monster.hp / monster.maxHp), 3);
 }
 
@@ -1310,6 +1352,7 @@ export function drawWorld(
     meSwingAt: number;
     meHurtAt: number;
     shake: boolean;
+    targetId?: string | null;
     snapshot: RenderSnapshot | null;
     swings: Record<string, number>;
     flashes: Record<string, number>;
@@ -1410,6 +1453,13 @@ export function drawWorld(
     for (const drop of snapshot.drops) {
       const screen = toScreen(drop.x, drop.y, camX, camY);
       if (screen.x < -40 || screen.y < -40 || screen.x > width + 40 || screen.y > height + 40) continue;
+      const icon = drop.kind === "gold" ? "💰" : drop.kind === "item" ? (drop.icon ?? "🎁") : "🧪";
+      const glow =
+        drop.kind === "gold"
+          ? "rgba(250,204,21,0.26)"
+          : drop.kind === "item"
+            ? "rgba(96,165,250,0.26)"
+            : "rgba(250,204,21,0.18)";
       entities.push({
         depth: drop.x + drop.y,
         draw: () => {
@@ -1418,14 +1468,19 @@ export function drawWorld(
           ctx.beginPath();
           ctx.ellipse(screen.x, screen.y + 2, 10, 4.5, 0, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = "rgba(250,204,21,0.18)";
+          ctx.fillStyle = glow;
           ctx.beginPath();
           ctx.ellipse(screen.x, screen.y + 1, 13, 6, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.font = "18px serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "alphabetic";
-          ctx.fillText("🧪", screen.x, screen.y + bob);
+          ctx.fillText(icon, screen.x, screen.y + bob);
+          if (drop.kind === "gold" && drop.gold) {
+            ctx.font = "9px ui-monospace, Menlo, monospace";
+            ctx.fillStyle = "#fde68a";
+            ctx.fillText(`${drop.gold}`, screen.x, screen.y + 15 + bob);
+          }
         },
       });
     }
@@ -1435,9 +1490,10 @@ export function drawWorld(
       if (screen.x < -60 || screen.y < -60 || screen.x > width + 60 || screen.y > height + 60) continue;
       const flashAt = input.flashes[monster.id];
       const distanceToMe = Math.hypot(monster.x - input.meX, monster.y - input.meY);
+      const selected = input.targetId === monster.id;
       entities.push({
         depth: monster.x + monster.y,
-        draw: () =>
+        draw: () => {
           drawMonster(
             ctx,
             screen.x,
@@ -1445,8 +1501,29 @@ export function drawWorld(
             monster,
             !!flashAt && input.time - flashAt < 140,
             input.time,
-            monster.boss || monster.hp < monster.maxHp || distanceToMe < 260
-          ),
+            monster.boss ||
+              monster.elite ||
+              monster.hp < monster.maxHp ||
+              distanceToMe < 260
+          );
+          if (selected) {
+            const pulse = 0.55 + Math.sin(input.time / 180) * 0.25;
+            ctx.strokeStyle = `rgba(250,204,21,${pulse})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(screen.x, screen.y + 1, 24, 12, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = "#fde68a";
+            const arrowY =
+              screen.y - (monster.boss ? 72 : monster.elite ? 62 : 54) + Math.sin(input.time / 200) * 2;
+            ctx.beginPath();
+            ctx.moveTo(screen.x, arrowY + 8);
+            ctx.lineTo(screen.x - 5, arrowY);
+            ctx.lineTo(screen.x + 5, arrowY);
+            ctx.closePath();
+            ctx.fill();
+          }
+        },
       });
     }
 

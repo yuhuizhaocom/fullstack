@@ -112,6 +112,8 @@ type Self = {
 
 type PanelKind = "character" | "bag" | "skills" | "shop";
 
+type MonsterView = WorldSnapshot["monsters"][number];
+
 type ActResponse = Omit<AckMessage, "t" | "rid">;
 
 function getClientId(): string {
@@ -194,6 +196,8 @@ export function WorldGame() {
   const [pseudoFullscreen, setPseudoFullscreen] = useState(false);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
   const [nowTick, setNowTick] = useState(() => Date.now());
+  const [targetView, setTargetView] = useState<MonsterView | null>(null);
+  const [streak, setStreak] = useState(0);
 
   const [createName, setCreateName] = useState("");
   const [createClass, setCreateClass] = useState<ClassId>("warrior");
@@ -248,6 +252,10 @@ export function WorldGame() {
   const nearNpcRef = useRef<NpcView | null>(null);
   const nearPortalRef = useRef<PortalView | null>(null);
   const uiOpenRef = useRef(false);
+  const targetIdRef = useRef<string | null>(null);
+  const streakRef = useRef(0);
+  const lastKillAtRef = useRef(0);
+  const streakUntilRef = useRef(0);
 
   const fullscreen = nativeFullscreen || pseudoFullscreen;
 
@@ -313,6 +321,24 @@ export function WorldGame() {
 
   function sfx(kind: Parameters<typeof playSfx>[0]) {
     if (soundRef.current) playSfx(kind);
+  }
+
+  /** 拾取装备时的蓝色光点 */
+  function lootBurst(x: number, y: number) {
+    for (let i = 0; i < 5; i += 1) {
+      const angle = (i / 5) * Math.PI * 2;
+      particlesRef.current.push({
+        x,
+        y: y - 8,
+        text: "✦",
+        color: "#93c5fd",
+        size: 13,
+        vx: Math.cos(angle) * 1.4,
+        vy: Math.sin(angle) * 0.9 - 0.6,
+        life: 800,
+        maxLife: 800,
+      });
+    }
   }
 
   /** 直接通过双工连接发送，不等待回执（移动/心跳等可丢弃操作） */
@@ -524,6 +550,8 @@ export function WorldGame() {
       setNearPortal(null);
       nearNpcRef.current = null;
       nearPortalRef.current = null;
+      setLockedTarget(null);
+      setTargetView(null);
       setPotionOpen(false);
     }
 
@@ -626,6 +654,8 @@ export function WorldGame() {
             toast.success(
               `🏆 ${event.text} 被 ${event.byName ?? "冒险者"} 击败！`
             );
+          } else if (event.elite) {
+            toast(`⚔️ 精英 ${event.text} 被击败`, { duration: 1600 });
           }
           for (let i = 0; i < 6; i += 1) {
             const angle = (i / 6) * Math.PI * 2;
@@ -678,6 +708,40 @@ export function WorldGame() {
             const loot = event.items?.map((id) => ({ itemId: id, count: 1 }));
             applyReward(event.exp ?? 0, event.gold ?? 0, loot);
             recordKill();
+            if ((event.gold ?? 0) > 0) {
+              const nowMs = Date.now();
+              const nextStreak =
+                nowMs - lastKillAtRef.current < 4000 ? streakRef.current + 1 : 1;
+              streakRef.current = nextStreak;
+              lastKillAtRef.current = nowMs;
+              streakUntilRef.current = nowMs + 4000;
+              setStreak(nextStreak);
+            }
+          }
+          break;
+        case "pickup":
+          if (event.to === myId) {
+            if (event.gold) {
+              applyReward(0, event.gold);
+              particlesRef.current.push({
+                x: event.x,
+                y: event.y - 12,
+                text: `+${event.gold} 金币`,
+                color: "#fde68a",
+                size: 13,
+                life: 1000,
+                maxLife: 1000,
+              });
+            }
+            if (event.items?.length) {
+              applyReward(
+                0,
+                0,
+                event.items.map((id) => ({ itemId: id, count: 1 }))
+              );
+              lootBurst(event.x, event.y);
+            }
+            sfx("pickup");
           }
           break;
         case "quest":
@@ -746,6 +810,26 @@ export function WorldGame() {
         nearPortalRef.current = portal;
         setNearPortal(portal);
       }
+
+      // 目标锁定：当前目标失效时自动选择最近的怪物
+      let target =
+        snapshot.monsters.find((monster) => monster.id === targetIdRef.current) ?? null;
+      if (!target) {
+        target =
+          snapshot.monsters
+            .filter(
+              (monster) => Math.hypot(monster.x - pos.x, monster.y - pos.y) <= 360
+            )
+            .sort(
+              (a, b) =>
+                Math.hypot(a.x - pos.x, a.y - pos.y) -
+                Math.hypot(b.x - pos.x, b.y - pos.y)
+            )[0] ?? null;
+        if ((target?.id ?? null) !== targetIdRef.current) {
+          setLockedTarget(target?.id ?? null);
+        }
+      }
+      setTargetView(target);
 
       const prev = prevPositionsRef.current;
       for (const player of snapshot.players) {
@@ -1086,6 +1170,7 @@ export function WorldGame() {
           meSwingAt: swingsRef.current[myIdRef.current] ?? 0,
           meHurtAt: flashesRef.current[myIdRef.current] ?? 0,
           shake: now < shakeUntilRef.current,
+          targetId: targetIdRef.current,
           snapshot: visual,
           swings: swingsRef.current,
           flashes: flashesRef.current,
@@ -1153,11 +1238,20 @@ export function WorldGame() {
     sfx("skill");
 
     const input = inputRef.current;
+    const lockedId = targetIdRef.current;
+    const locked = lockedId
+      ? snapshotRef.current?.monsters.find((monster) => monster.id === lockedId) ?? null
+      : null;
+    if (locked) {
+      const screenDx = locked.x - locked.y - (meRef.current.x - meRef.current.y);
+      if (Math.abs(screenDx) > 1) meRef.current.dir = screenDx > 0 ? 1 : -1;
+    }
     const result = await postAction({
       t: "skill",
       skillId,
       dirX: input.x,
       dirY: input.y,
+      targetId: lockedId ?? undefined,
     });
     if (!result) return;
     if (result.ok === false) {
@@ -1230,6 +1324,32 @@ export function WorldGame() {
     if (npc) openNpc(npc);
   }
 
+  function setLockedTarget(id: string | null) {
+    targetIdRef.current = id;
+  }
+
+  /** 在附近怪物间循环切换锁定目标 */
+  function cycleTarget() {
+    const monsters = snapshotRef.current?.monsters ?? [];
+    const pos = meRef.current;
+    const nearby = monsters
+      .filter((monster) => Math.hypot(monster.x - pos.x, monster.y - pos.y) <= 640)
+      .sort(
+        (a, b) =>
+          Math.hypot(a.x - pos.x, a.y - pos.y) -
+          Math.hypot(b.x - pos.x, b.y - pos.y)
+      );
+    if (nearby.length === 0) {
+      setLockedTarget(null);
+      setTargetView(null);
+      return;
+    }
+    const index = nearby.findIndex((monster) => monster.id === targetIdRef.current);
+    const next = nearby[(index + 1) % nearby.length];
+    setLockedTarget(next.id);
+    setTargetView(next);
+  }
+
   // 键盘操作
   useEffect(() => {
     if (phase !== "playing") return;
@@ -1248,6 +1368,11 @@ export function WorldGame() {
         return;
       }
       if (event.repeat) return;
+      if (key === "tab") {
+        event.preventDefault();
+        cycleTarget();
+        return;
+      }
       if (key === "b") {
         event.preventDefault();
         doRecall();
@@ -1316,6 +1441,11 @@ export function WorldGame() {
     setSelf(null);
     setParty([]);
     setQuests([]);
+    setLockedTarget(null);
+    setTargetView(null);
+    setStreak(0);
+    streakRef.current = 0;
+    lastKillAtRef.current = 0;
     setPanel(null);
     setNpcDialog(null);
     setQuestOpen(false);
@@ -1754,6 +1884,63 @@ export function WorldGame() {
               style={{ width: `${expPercent}%` }}
             />
           </div>
+
+          {targetView && (
+            <div className="pointer-events-auto mt-1.5 flex items-center gap-2 rounded border border-amber-500/30 bg-slate-950/75 px-2 py-1">
+              <span className="text-base">{targetView.icon}</span>
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1 text-[10px] font-bold">
+                  <span
+                    className={
+                      targetView.boss
+                        ? "text-fuchsia-300"
+                        : targetView.elite
+                          ? "text-amber-300"
+                          : "text-slate-200"
+                    }
+                  >
+                    Lv.{targetView.level} {targetView.name}
+                  </span>
+                  {targetView.elite && (
+                    <span className="rounded bg-amber-500/20 px-1 text-[9px] text-amber-300">
+                      精英
+                    </span>
+                  )}
+                  {targetView.boss && (
+                    <span className="rounded bg-fuchsia-500/20 px-1 text-[9px] text-fuchsia-300">
+                      BOSS
+                    </span>
+                  )}
+                  <span className="ml-auto text-[9px] font-normal text-slate-500">
+                    {Math.round(
+                      Math.hypot(
+                        targetView.x - meRef.current.x,
+                        targetView.y - meRef.current.y
+                      )
+                    )}
+                    px
+                  </span>
+                </p>
+                <div className="mt-0.5 h-1 overflow-hidden rounded bg-slate-800">
+                  <div
+                    className={
+                      targetView.elite
+                        ? "h-full rounded bg-amber-400"
+                        : targetView.boss
+                          ? "h-full rounded bg-fuchsia-400"
+                          : "h-full rounded bg-red-500"
+                    }
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.max(0, (targetView.hp / targetView.maxHp) * 100)
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 弱网提示 */}
@@ -1899,6 +2086,14 @@ export function WorldGame() {
             </button>
             <button
               type="button"
+              className={cn(btn, "bg-slate-900/85")}
+              onClick={cycleTarget}
+              title="切换锁定目标（Tab）"
+            >
+              🎯 目标
+            </button>
+            <button
+              type="button"
               className={cn(
                 btn,
                 "bg-slate-900/85",
@@ -1936,7 +2131,7 @@ export function WorldGame() {
               )}
             </button>
             <span className="ml-auto hidden text-[10px] text-slate-500 sm:inline">
-              自动攻击 · QWER 技能 · F 交互 · B 回城
+              自动攻击 · QWER 技能 · Tab 目标 · F 交互 · B 回城
             </span>
           </div>
 
@@ -1966,6 +2161,11 @@ export function WorldGame() {
               🎯 每日击杀 {Math.min(daily.kills, DAILY_GOAL)}/{DAILY_GOAL}
               {daily.claimed ? " ✓" : ""}
             </span>
+            {streak >= 2 && nowTick < streakUntilRef.current && (
+              <span className="shrink-0 rounded border border-orange-500/40 bg-orange-500/10 px-1.5 py-0.5 font-bold text-orange-300">
+                🔥 连杀 x{streak}
+              </span>
+            )}
             {party.map((player) => (
               <span
                 key={player.id}

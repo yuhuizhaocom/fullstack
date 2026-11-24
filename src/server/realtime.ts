@@ -181,7 +181,8 @@ function handleMessage(ws: WebSocket, session: Session, data: RawData): void {
         session.clientId,
         message.skillId,
         Number(message.dirX),
-        Number(message.dirY)
+        Number(message.dirY),
+        typeof message.targetId === "string" ? message.targetId : undefined
       );
       reply(ws, message.rid, result);
       break;
