@@ -43,10 +43,16 @@ export default function LoginPage() {
             立即注册
           </Link>
         </p>
-        <div className="border-t pt-3 text-center">
+        <div className="space-y-1 border-t pt-3 text-center">
+          <Link
+            href="/chat"
+            className="block text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+          >
+            无需登录，进入公共聊天室 →
+          </Link>
           <Link
             href="/clip"
-            className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+            className="block text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
           >
             无需登录，使用临时剪贴板 →
           </Link>

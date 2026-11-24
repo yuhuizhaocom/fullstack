@@ -9,6 +9,7 @@ import {
   Clock,
   Inbox,
   ListTodo,
+  MessageSquare,
 } from "lucide-react";
 
 import { DatabaseNotice } from "@/components/database-notice";
@@ -335,6 +336,24 @@ export default async function DashboardPage() {
               <Link href="/clip">
                 <ClipboardList className="size-4" />
                 打开剪贴板
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">公共聊天室</CardTitle>
+            <CardDescription>登录后以账号名发言，也支持游客</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              所有人在同一个大厅实时聊天；未登录时填个昵称就能参与，消息保留 7 天。
+            </p>
+            <Button asChild size="sm" variant="outline" className="w-fit">
+              <Link href="/chat">
+                <MessageSquare className="size-4" />
+                进入聊天室
               </Link>
             </Button>
           </CardContent>

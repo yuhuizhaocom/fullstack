@@ -406,3 +406,25 @@ cloudflared tunnel --no-autoupdate --url http://127.0.0.1:25045
 - **自动写入**：收到他人内容时尝试写入剪贴板，失败降级为手动复制
 - **历史顺序**：接口返回最近 50 条（升序），前端展示为倒序（最新在最上方）
 - 匿名公开频道适合临时文本，不适合密码、密钥；如需私密使用应加频道口令或登录限制
+
+---
+
+## 13. 公共聊天室（登录 / 游客）
+
+| 项目 | 说明 |
+| --- | --- |
+| 入口 | https://www.722.qzz.io/chat （登录页、仪表盘均有入口；登录与未登录都可使用） |
+| 身份 | 已登录：自动使用账号名，`isGuest=false` 且记录 `userId`；未登录：昵称存 localStorage，服务端统一加「游客·」前缀，防冒充真实账号 |
+| 接口 | `GET/POST /api/chat/messages`，`GET /api/chat/stream`（SSE） |
+| 存储 | `chat_messages` 表，`createdAt` 索引，7 天 TTL |
+| 限制 | 单条 ≤ 2000 字；游客每 IP 20 条/分钟、登录用户 60 条/分钟（进程内滑动窗口） |
+| 清理 | 每次写入时惰性删除 7 天前的消息；前端最多保留最近 200 条 |
+
+要点：
+
+- 复用剪贴板的 SSE 方案：25 秒心跳 + `X-Accel-Buffering: no`，Cloudflare 隧道可透传
+- 广播同样是**单进程内存 Set**，多副本部署需改 Redis Pub/Sub
+- 服务端对匿名昵称做控制字符清洗与长度截断，登录用户忽略前端传入的名字，避免伪造
+- 消息内容按纯文本渲染（`whitespace-pre-wrap`），不解析 HTML，避免 XSS
+- 游客限流按 `cf-connecting-ip` 记录，直连场景回退 `x-forwarded-for`
+

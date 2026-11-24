@@ -8,6 +8,7 @@
 - **账号状态**：超级管理员可禁用/启用账号，禁用后立即下线且无法登录，数据保留
 - **三级角色**：超级管理员（管理用户与全部任务）、管理员（管理全部任务）、普通用户（仅自己创建的任务）
 - **临时剪贴板**：无需登录，6 位频道码即可在设备间实时互传文本（SSE 推送）；支持自动读取本机剪贴板并发送、自动写入收到的内容，历史按时间倒序保留 24 小时
+- **公共聊天室**：登录用户以账号名发言，未登录填昵称即可参与，同一大厅 SSE 实时收发；消息保留 7 天
 - **仪表盘**：任务总数、各状态数量、完成率、最近 5 条任务、服务与数据库连通状态
 - **任务管理**：列表（表格 / 移动端卡片双形态）、关键词搜索（标题 / 描述 / 负责人）、按状态与优先级筛选、分页
 - **CRUD**：新建、编辑、切换状态、删除，全部走 Server Actions + Zod 校验
@@ -71,13 +72,15 @@ src/
 │  │  ├─ tasks/                任务列表：searchParams 驱动搜索/筛选/分页
 │  │  └─ users/                用户管理（仅超级管理员）
 │  ├─ (auth)/
-│  │  ├─ login/                登录页（含临时剪贴板入口）
+│  │  ├─ login/                登录页（含聊天室、临时剪贴板入口）
 │  │  └─ register/             注册页
 │  ├─ (public)/
+│  │  ├─ chat/                 公共聊天室（登录 / 游客双身份）
 │  │  ├─ clip/                 临时剪贴板：加入频道
 │  │  └─ clip/[code]/          频道页（SSE 实时同步）
 │  └─ api/
 │     ├─ health/route.ts       健康检查（SELECT 1 + 版本号）
+│     ├─ chat/                 聊天历史读写 + SSE 流
 │     └─ clip/[code]/          消息读写 + SSE 流
 ├─ actions/
 │  ├─ auth.ts                  注册 / 登录 / 退出 / 修改密码
@@ -85,6 +88,7 @@ src/
 │  └─ tasks.ts                 任务 CRUD（含权限校验）
 ├─ components/
 │  ├─ auth/                    登录注册表单、修改密码弹窗
+│  ├─ chat/                    聊天室组件（消息流、身份切换）
 │  ├─ clip/                    加入频道表单、频道房间
 │  ├─ layout/                  侧边栏、移动端头部、用户卡片、导航配置
 │  ├─ tasks/                   对话框表单、表格、卡片列表、筛选器、行操作
@@ -92,6 +96,7 @@ src/
 │  └─ ui/                      shadcn/ui 基础组件
 └─ lib/
    ├─ auth/                    密码哈希、数据库会话、角色与数据权限
+   ├─ chat/                    聊天室常量、内存广播
    ├─ clip/                    频道常量、内存广播、限流
    ├─ prisma.ts                PrismaClient 单例（开发环境避免连接泄漏）
    ├─ task-meta.ts             状态/优先级文案与样式映射
@@ -99,7 +104,7 @@ src/
    └─ format.ts / utils.ts     日期格式化、cn()
 
 prisma/
-├─ schema.prisma               User / Session / Task / ClipEntry 模型与索引
+├─ schema.prisma               User / Session / Task / ChatMessage / ClipEntry 模型与索引
 ├─ migrations/                 SQL 迁移
 └─ seed.mjs                    10 条示例任务（upsert，可重复执行）
 
