@@ -5,7 +5,8 @@
   "description": "Next.js + TypeScript + Tailwind + shadcn/ui + PostgreSQL + Prisma 全栈任务管理系统",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "predev": "node scripts/gen-version.mjs",
+    "build": "node scripts/gen-version.mjs && prisma generate && next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
