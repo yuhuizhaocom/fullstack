@@ -86,8 +86,33 @@ jobs:
           export SSHPASS="$SSH_PASSWORD"
           OPT="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20"
           sshpass -e scp $OPT -P "$SSH_PORT" taskflow-src.tar.gz "$SSH_USER@$SSH_HOST:/root/taskflow-src.tar.gz"
-          sshpass -e ssh $OPT -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
-            "set -e; mkdir -p $APP_DIR; tar -xzf /root/taskflow-src.tar.gz -C $APP_DIR; rm -f /root/taskflow-src.tar.gz; cd $APP_DIR; bash scripts/server-deploy.sh"
+          sshpass -e ssh $OPT -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          APP_DIR=/opt/taskflow
+          STAGE="$APP_DIR/.deploy-stage"
+
+          mkdir -p "$APP_DIR"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+          tar -xzf /root/taskflow-src.tar.gz -C "$STAGE"
+
+          # 先在暂存目录校验，确认无误后再替换，避免半个版本覆盖线上
+          test -f "$STAGE/package.json"
+          test -d "$STAGE/src/app"
+
+          # 只替换压缩包中存在的条目，因此 .env / bin / node_modules / .next 不受影响；
+          # 同时会删除仓库中已移除的旧文件（例如迁移路由分组后残留的 src/app/tasks）
+          shopt -s dotglob nullglob
+          for entry in "$STAGE"/*; do
+            name=$(basename "$entry")
+            rm -rf "$APP_DIR/$name"
+            mv "$entry" "$APP_DIR/$name"
+          done
+
+          rm -rf "$STAGE" /root/taskflow-src.tar.gz
+          cd "$APP_DIR"
+          bash scripts/server-deploy.sh
+          REMOTE
 
       - name: 外网健康检查
         if: env.HAS_SSH == 'true'
