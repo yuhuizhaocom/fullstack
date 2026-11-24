@@ -288,13 +288,18 @@ export function WorldGame() {
 
       switch (event.kind) {
         case "damage":
-          sfx("attack");
+          // 只播放自己造成的攻击音效，避免多人混战噪音
+          if (event.from === myId) sfx("attack");
           break;
         case "hurt":
-          sfx("hurt");
+          if (event.to === myId) sfx("hurt");
           break;
-        case "kill":
-          sfx("kill");
+        case "kill": {
+          const distance = Math.hypot(
+            event.x - meRef.current.x,
+            event.y - meRef.current.y
+          );
+          if (distance < 340) sfx("kill");
           for (let i = 0; i < 6; i += 1) {
             const angle = (i / 6) * Math.PI * 2;
             particlesRef.current.push({
@@ -310,11 +315,20 @@ export function WorldGame() {
             });
           }
           break;
+        }
         case "skill":
-          sfx("skill");
+          if (
+            event.from === myId ||
+            Math.hypot(
+              event.x - meRef.current.x,
+              event.y - meRef.current.y
+            ) < 280
+          ) {
+            sfx("skill");
+          }
           break;
         case "heal":
-          sfx("heal");
+          if (event.to === myId) sfx("heal");
           break;
         case "death":
           if (event.to === myId) {
@@ -370,7 +384,11 @@ export function WorldGame() {
     sseRef.current?.close();
     const source = new EventSource(`/api/world/stream?clientId=${clientId}`);
     sseRef.current = source;
-    source.onopen = () => setStatus("online");
+    source.onopen = () => {
+      setStatus("online");
+      // 断线重连后服务器可能已移除该玩家，重新加入以恢复可见与操作
+      void rejoinWorld();
+    };
     source.onerror = () => setStatus("offline");
     source.onmessage = (event) => {
       try {
@@ -379,6 +397,46 @@ export function WorldGame() {
         // 忽略非 JSON 帧
       }
     };
+  }
+
+  async function rejoinWorld() {
+    const current = saveRef.current;
+    const clientId = myIdRef.current;
+    if (!current || !clientId) return;
+    const stats = effectiveStats(current);
+    try {
+      const response = await fetch("/api/world/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId,
+          name: current.name,
+          classId: current.classId,
+          level: current.level,
+          maxHp: stats.maxHp,
+          maxMp: stats.maxMp,
+          atk: stats.atk,
+          def: stats.def,
+          crit: stats.crit,
+          weapon: current.equipment.weapon,
+          armor: current.equipment.armor,
+        }),
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      const me = meRef.current;
+      // 被服务器移除后重建会回到出生点，差距过大时同步本地位置
+      if (
+        data?.player &&
+        Math.hypot(data.player.x - me.x, data.player.y - me.y) > 220
+      ) {
+        me.x = data.player.x;
+        me.y = data.player.y;
+        lastPosRef.current = { x: 0, y: 0, at: 0 };
+      }
+    } catch {
+      // 网络异常时等待下一次自动重连
+    }
   }
 
   async function enterWorld() {
@@ -486,7 +544,9 @@ export function WorldGame() {
         if (!isBlockedAt(me.x, ny, 9)) me.y = ny;
         me.x = Math.max(TILE, Math.min(WORLD_W * TILE - TILE, me.x));
         me.y = Math.max(TILE, Math.min(WORLD_H * TILE - TILE, me.y));
-        if (ix !== 0) me.dir = ix > 0 ? 1 : -1;
+        // 朝向按屏幕水平位移判断，与服务端攻击方向保持一致
+        const screenDx = ix - iy;
+        if (Math.abs(screenDx) > 0.01) me.dir = screenDx > 0 ? 1 : -1;
         meMovingRef.current = now;
       }
 

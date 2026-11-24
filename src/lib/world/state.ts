@@ -37,6 +37,7 @@ export type WorldPlayer = {
   buffUntil: number;
   guardUntil: number;
   lastMpRegen: number;
+  invulnerableUntil: number;
   weapon: string | null;
   armor: string | null;
 };
@@ -338,6 +339,7 @@ export function joinWorld(input: JoinInput) {
       buffUntil: 0,
       guardUntil: 0,
       lastMpRegen: now,
+      invulnerableUntil: 0,
       weapon,
       armor,
     };
@@ -403,11 +405,13 @@ export function movePlayer(clientId: string, x: number, y: number): void {
   }
   const clamped = clampToWorld(nextX, nextY);
   if (isBlockedAt(clamped.x, clamped.y, 9)) return;
-  if (Math.abs(clamped.x - player.x) > 1) {
-    player.dir = clamped.x > player.x ? 1 : -1;
-  }
+  const beforeScreenX = player.x - player.y;
   player.x = clamped.x;
   player.y = clamped.y;
+  const afterScreenX = player.x - player.y;
+  if (Math.abs(afterScreenX - beforeScreenX) > 1) {
+    player.dir = afterScreenX > beforeScreenX ? 1 : -1;
+  }
   player.lastMoveAt = now;
   player.lastSeen = now;
 }
@@ -503,17 +507,22 @@ export function attack(clientId: string): void {
   pushEvent({ kind: "swing", from: player.id, x: player.x, y: player.y });
 
   const range = 96;
-  const target = aliveMonsters()
-    .filter(
-      (monster) =>
-        Math.hypot(monster.x - player.x, monster.y - player.y) <=
-        range + (monster.boss ? 20 : 0)
-    )
-    .sort(
-      (a, b) =>
-        Math.hypot(a.x - player.x, a.y - player.y) -
-        Math.hypot(b.x - player.x, b.y - player.y)
-    )[0];
+  const inRange = aliveMonsters().filter(
+    (monster) =>
+      Math.hypot(monster.x - player.x, monster.y - player.y) <=
+      range + (monster.boss ? 20 : 0)
+  );
+  // 优先攻击面朝方向（屏幕左右）的怪物，没有目标时回退到最近
+  const facing = player.dir >= 0 ? 1 : -1;
+  const inFront = inRange.filter(
+    (monster) =>
+      (monster.x - player.x - (monster.y - player.y)) * facing >= -24
+  );
+  const target = (inFront.length > 0 ? inFront : inRange).sort(
+    (a, b) =>
+      Math.hypot(a.x - player.x, a.y - player.y) -
+      Math.hypot(b.x - player.x, b.y - player.y)
+  )[0];
 
   if (!target) return;
 
@@ -618,6 +627,7 @@ function step(now: number): void {
       player.mp = player.maxMp;
       player.x = SPAWN_X;
       player.y = SPAWN_Y;
+      player.invulnerableUntil = now + 2000;
     }
     if (!player.deadUntil && now - player.lastMpRegen > 2000) {
       player.lastMpRegen = now;
@@ -668,7 +678,7 @@ function step(now: number): void {
       const ny = monster.y + (dy / length) * speed;
       if (!isBlockedAt(nx, monster.y, 8)) monster.x = nx;
       if (!isBlockedAt(monster.x, ny, 8)) monster.y = ny;
-    } else if (now - monster.lastAttack > 1100) {
+    } else if (now - monster.lastAttack > 1100 && now >= nearest.invulnerableUntil) {
       monster.lastAttack = now;
       const hit = rollDamage(monster.atk, nearest.def, 5);
       let damage = hit.damage;
@@ -676,6 +686,7 @@ function step(now: number): void {
         damage = Math.max(1, Math.round(damage * 0.55));
       }
       nearest.hp = Math.max(0, nearest.hp - damage);
+      nearest.invulnerableUntil = now + 500;
       pushEvent({
         kind: "hurt",
         to: nearest.id,

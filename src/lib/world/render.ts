@@ -818,7 +818,8 @@ function drawMonster(
     maxHp: number;
   },
   flash: boolean,
-  time: number
+  time: number,
+  showHealth: boolean
 ): void {
   const scale = monster.boss ? 1.45 : 1;
 
@@ -841,6 +842,8 @@ function drawMonster(
   drawMonsterBody(ctx, monster.kind, time);
   ctx.filter = "none";
   ctx.restore();
+
+  if (!showHealth) return;
 
   ctx.font = "10px ui-monospace, Menlo, monospace";
   ctx.textAlign = "center";
@@ -1090,6 +1093,10 @@ export function drawWorld(
         continue;
       }
       const flashAt = input.flashes[monster.id];
+      const distanceToMe = Math.hypot(
+        monster.x - input.meX,
+        monster.y - input.meY
+      );
       entities.push({
         depth: monster.x + monster.y,
         draw: () =>
@@ -1099,7 +1106,8 @@ export function drawWorld(
             screen.y,
             monster,
             !!flashAt && input.time - flashAt < 140,
-            input.time
+            input.time,
+            monster.boss || monster.hp < monster.maxHp || distanceToMe < 260
           ),
       });
     }
