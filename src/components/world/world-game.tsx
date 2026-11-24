@@ -2,7 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Coins, LogOut, Music2, Users, Volume2, VolumeX } from "lucide-react";
+import {
+  Coins,
+  LogOut,
+  Maximize2,
+  Minimize2,
+  Music2,
+  Users,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { CLASSES, CLASS_SKILLS, SKILLS } from "@/lib/game/data";
@@ -83,12 +92,17 @@ export function WorldGame() {
   const [soundOn, setSoundOn] = useState(true);
   const [isTouch, setIsTouch] = useState(false);
   const [skillCd, setSkillCd] = useState(false);
+  const [nativeFullscreen, setNativeFullscreen] = useState(false);
+  const [pseudoFullscreen, setPseudoFullscreen] = useState(false);
+  const [knob, setKnob] = useState({ x: 0, y: 0 });
 
   const [createName, setCreateName] = useState("");
   const [createClass, setCreateClass] = useState<ClassId>("warrior");
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const gameRef = useRef<HTMLDivElement>(null);
+  const moveVecRef = useRef({ x: 0, y: 0 });
   const snapshotRef = useRef<WorldSnapshot | null>(null);
   const meRef = useRef({ x: 0, y: 0, dir: 1 as 1 | -1 });
   const keysRef = useRef(new Set<string>());
@@ -107,6 +121,7 @@ export function WorldGame() {
   const lastPosRef = useRef({ x: 0, y: 0, at: 0 });
   const sizeRef = useRef({ width: 720, height: VIEW_HEIGHT });
   const soundRef = useRef(true);
+  const fullscreen = nativeFullscreen || pseudoFullscreen;
 
   useEffect(() => {
     const stored = loadSave();
@@ -116,6 +131,13 @@ export function WorldGame() {
     setCreateName(stored?.name ?? "");
     setCreateClass(stored?.classId ?? "warrior");
     setIsTouch(window.matchMedia("(pointer: coarse)").matches);
+  }, []);
+
+  // 全屏状态同步
+  useEffect(() => {
+    const onChange = () => setNativeFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
   // 卸载时离开世界
@@ -373,6 +395,12 @@ export function WorldGame() {
         ix += 1;
         iy -= 1;
       }
+      // 虚拟摇杆：屏幕向量 → 等距世界向量
+      const joy = moveVecRef.current;
+      if (joy.x !== 0 || joy.y !== 0) {
+        ix = joy.x + joy.y;
+        iy = -joy.x + joy.y;
+      }
 
       const me = meRef.current;
       const selfNow = selfRef.current;
@@ -444,7 +472,7 @@ export function WorldGame() {
 
     const apply = () => {
       const width = Math.max(320, wrap.clientWidth);
-      const height = isTouch ? 320 : VIEW_HEIGHT;
+      const height = Math.max(240, wrap.clientHeight);
       sizeRef.current = { width, height };
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       canvas.width = Math.round(width * dpr);
@@ -457,12 +485,15 @@ export function WorldGame() {
     const observer = new ResizeObserver(apply);
     observer.observe(wrap);
     return () => observer.disconnect();
-  }, [phase, isTouch]);
+  }, [phase, fullscreen, isTouch]);
 
   function doAttack() {
     const now = performance.now();
     if (now - lastAttackRef.current < 420) return;
     lastAttackRef.current = now;
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(8);
+    }
     sfx("attack");
     post({ type: "attack" });
   }
@@ -538,6 +569,52 @@ export function WorldGame() {
     setStatus("idle");
     setSelf(null);
     setParty([]);
+    setPseudoFullscreen(false);
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => undefined);
+    }
+  }
+
+  async function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => undefined);
+      setPseudoFullscreen(false);
+      return;
+    }
+    if (pseudoFullscreen) {
+      setPseudoFullscreen(false);
+      return;
+    }
+    const element = gameRef.current;
+    if (!element) return;
+    try {
+      await element.requestFullscreen();
+    } catch {
+      // iOS 等不支持元素全屏时用固定定位兜底
+      setPseudoFullscreen(true);
+    }
+  }
+
+  function updateJoystick(event: React.PointerEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const max = rect.width / 2 - 16;
+    let dx = event.clientX - (rect.left + rect.width / 2);
+    let dy = event.clientY - (rect.top + rect.height / 2);
+    const length = Math.hypot(dx, dy);
+    if (length > max && length > 0) {
+      dx = (dx / length) * max;
+      dy = (dy / length) * max;
+    }
+    const nx = max > 0 ? dx / max : 0;
+    const ny = max > 0 ? dy / max : 0;
+    moveVecRef.current =
+      Math.hypot(nx, ny) < 0.18 ? { x: 0, y: 0 } : { x: nx, y: ny };
+    setKnob({ x: dx, y: dy });
+  }
+
+  function endJoystick() {
+    moveVecRef.current = { x: 0, y: 0 };
+    setKnob({ x: 0, y: 0 });
   }
 
   function toggleBgm() {
@@ -554,14 +631,6 @@ export function WorldGame() {
     const next = !soundOn;
     setSoundOn(next);
     soundRef.current = next;
-  }
-
-  function press(key: string) {
-    keysRef.current.add(key);
-  }
-
-  function release(key: string) {
-    keysRef.current.delete(key);
   }
 
   if (phase === "loading") {
@@ -673,10 +742,10 @@ export function WorldGame() {
         )}
 
         <ul className="space-y-1 text-[11px] leading-relaxed text-slate-400">
-          <li>· 移动：WASD / 方向键；攻击：J 或空格；技能：数字键 1-4</li>
-          <li>· 移动端提供虚拟方向键与攻击按钮</li>
+          <li>· 移动：WASD / 方向键，移动端使用左下角虚拟摇杆</li>
+          <li>· 攻击：J / 空格或右下角按钮；技能：数字键 1-4 或底部技能栏</li>
+          <li>· 右上角可开启全屏，HUD 与操作区都叠加在画面上</li>
           <li>· 击杀经验与金币会写回角色存档，并实时显示伤害与音效</li>
-          <li>· 背景音乐与音效可在进入后开关</li>
         </ul>
 
         <button type="button" className={btnPrimary} onClick={() => void enterWorld()}>
@@ -691,181 +760,196 @@ export function WorldGame() {
   const mpPercent = self ? Math.max(0, (self.mp / self.maxMp) * 100) : 100;
 
   return (
-    <div className="overflow-hidden rounded-xl border-2 border-slate-700 bg-slate-950 text-slate-100 shadow-[6px_6px_0_rgba(0,0,0,0.3)]">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{save ? CLASSES[save.classId].icon : "🧙"}</span>
-          <div>
-            <p className="text-[11px] font-bold">
-              {save?.name ?? "冒险者"}
-              <span className="ml-1.5 text-amber-300">Lv.{self?.level ?? save?.level ?? 1}</span>
-            </p>
-            <p className="text-[10px] text-slate-500">
-              在线 {online} 人 · 击杀 {self?.kills ?? 0}
-            </p>
+    <div
+      ref={gameRef}
+      className={cn(
+        "relative overflow-hidden border-2 border-slate-700 bg-slate-950 text-slate-100",
+        fullscreen
+          ? "fixed inset-0 z-50 h-[100dvh] w-screen rounded-none border-0"
+          : "rounded-xl shadow-[6px_6px_0_rgba(0,0,0,0.3)]"
+      )}
+    >
+      <div
+        ref={wrapRef}
+        className="relative w-full touch-none select-none bg-black"
+        style={{ height: fullscreen ? "100dvh" : isTouch ? 420 : 480 }}
+      >
+        <canvas ref={canvasRef} className="block h-full w-full" />
+
+        {/* 顶部 HUD 浮层 */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-slate-950/90 via-slate-950/60 to-transparent px-2 pb-10 pt-[max(0.5rem,env(safe-area-inset-top))]">
+          <div className="pointer-events-auto flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="text-xl">{save ? CLASSES[save.classId].icon : "🧙"}</span>
+              <div className="min-w-0">
+                <p className="truncate text-[11px] font-bold">
+                  {save?.name ?? "冒险者"}
+                  <span className="ml-1.5 text-amber-300">
+                    Lv.{self?.level ?? save?.level ?? 1}
+                  </span>
+                </p>
+                <p className="flex items-center gap-1 text-[10px] text-slate-400">
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      status === "online" ? "bg-emerald-400" : "bg-amber-400"
+                    )}
+                  />
+                  在线 {online} 人 · 击杀 {self?.kills ?? 0}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] font-bold text-amber-300">
+                <Coins className="size-3" />
+                {save?.gold ?? 0}
+              </span>
+              <button type="button" className={btn} title="背景音乐" onClick={toggleBgm}>
+                <Music2 className={cn("size-3.5", bgmOn ? "text-emerald-400" : "text-slate-500")} />
+              </button>
+              <button type="button" className={btn} title="音效" onClick={toggleSound}>
+                {soundOn ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5 text-slate-500" />}
+              </button>
+              <button
+                type="button"
+                className={btn}
+                title={fullscreen ? "退出全屏" : "全屏"}
+                onClick={() => void toggleFullscreen()}
+              >
+                {fullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
+              </button>
+              <button type="button" className={btn} title="离开世界" onClick={leaveWorld}>
+                <LogOut className="size-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-1.5 grid grid-cols-2 gap-2">
+            <div>
+              <div className="flex items-center justify-between text-[10px] text-slate-300">
+                <span>HP</span>
+                <span>
+                  {self?.hp ?? 0} / {self?.maxHp ?? 0}
+                </span>
+              </div>
+              <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-slate-800/80">
+                <div
+                  className="h-full rounded bg-gradient-to-r from-red-500 to-rose-400"
+                  style={{ width: `${hpPercent}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-[10px] text-slate-300">
+                <span>MP</span>
+                <span>
+                  {self?.mp ?? 0} / {self?.maxMp ?? 0}
+                </span>
+              </div>
+              <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-slate-800/80">
+                <div
+                  className="h-full rounded bg-gradient-to-r from-sky-500 to-cyan-400"
+                  style={{ width: `${mpPercent}%` }}
+                />
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] font-bold text-amber-300">
-            <Coins className="size-3" />
-            {save?.gold ?? 0}
-          </span>
-          <button type="button" className={btn} title="背景音乐" onClick={toggleBgm}>
-            <Music2 className={cn("size-3.5", bgmOn ? "text-emerald-400" : "text-slate-500")} />
-          </button>
-          <button type="button" className={btn} title="音效" onClick={toggleSound}>
-            {soundOn ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5 text-slate-500" />}
-          </button>
-          <button type="button" className={btn} title="离开世界" onClick={leaveWorld}>
-            <LogOut className="size-3.5" />
-          </button>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-2 px-3 py-2">
-        <div>
-          <div className="flex items-center justify-between text-[10px] text-slate-400">
-            <span>HP</span>
-            <span>
-              {self?.hp ?? 0} / {self?.maxHp ?? 0}
+        {/* 移动端虚拟摇杆，叠加在画面上 */}
+        {isTouch && (
+          <div
+            data-testid="joystick"
+            className="absolute bottom-24 left-4 z-20 size-24 touch-none rounded-full border-2 border-white/20 bg-slate-950/40 backdrop-blur-sm"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.currentTarget.setPointerCapture(event.pointerId);
+              updateJoystick(event);
+            }}
+            onPointerMove={(event) => {
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                updateJoystick(event);
+              }
+            }}
+            onPointerUp={endJoystick}
+            onPointerCancel={endJoystick}
+          >
+            <span className="pointer-events-none absolute left-1/2 top-1/2 size-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10" />
+            <span
+              className="pointer-events-none absolute left-1/2 top-1/2 size-10 rounded-full border-2 border-amber-300/70 bg-amber-300/30"
+              style={{
+                transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))`,
+              }}
+            />
+          </div>
+        )}
+
+        {/* 移动端攻击按钮 */}
+        {isTouch && (
+          <button
+            type="button"
+            data-testid="attack"
+            className="absolute bottom-24 right-4 z-20 flex size-16 touch-none items-center justify-center rounded-full border-2 border-amber-400/70 bg-amber-500/20 text-2xl backdrop-blur-sm transition-transform active:scale-95"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              doAttack();
+            }}
+          >
+            ⚔️
+          </button>
+        )}
+
+        {/* 底部技能栏与队伍，叠加在画面底部 */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-slate-950/90 via-slate-950/55 to-transparent px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-10">
+          <div className="pointer-events-auto flex flex-wrap items-center gap-1">
+            {skills.map((id, index) => {
+              const skill = SKILLS[id];
+              const locked = (self?.level ?? save?.level ?? 1) < skill.level;
+              const noMp = (self?.mp ?? 0) < skill.mp;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={cn(btn, "bg-slate-900/80")}
+                  disabled={locked || noMp || skillCd}
+                  onClick={() => doSkill(index)}
+                  title={skill.desc}
+                >
+                  <span className="mr-0.5">{skill.icon}</span>
+                  {skill.name}
+                  <span className="ml-1 text-[10px] font-normal text-slate-400">
+                    {locked ? `Lv.${skill.level}` : `${skill.mp}MP`}
+                  </span>
+                </button>
+              );
+            })}
+            <span className="ml-auto hidden text-[10px] text-slate-500 sm:inline">
+              J 攻击 · 1-4 技能
             </span>
           </div>
-          <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-slate-800">
-            <div className="h-full rounded bg-gradient-to-r from-red-500 to-rose-400" style={{ width: `${hpPercent}%` }} />
+          <div className="pointer-events-auto mt-1 flex items-center gap-1 overflow-x-auto text-[10px] text-slate-400">
+            <Users className="size-3.5 shrink-0" />
+            <span className="shrink-0">在线 {online} 人</span>
+            {party.map((player) => (
+              <span
+                key={player.id}
+                className="shrink-0 rounded border border-slate-700 bg-slate-900/80 px-1.5 py-0.5"
+              >
+                {CLASSES[player.classId].icon} {player.name} Lv.{player.level} ·{" "}
+                {Math.round(player.hp)}/{player.maxHp}
+              </span>
+            ))}
+            {party.length === 0 && (
+              <span className="shrink-0 text-slate-600">暂无其他玩家，邀请好友一起打怪</span>
+            )}
           </div>
         </div>
-        <div>
-          <div className="flex items-center justify-between text-[10px] text-slate-400">
-            <span>MP</span>
-            <span>
-              {self?.mp ?? 0} / {self?.maxMp ?? 0}
-            </span>
-          </div>
-          <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-slate-800">
-            <div className="h-full rounded bg-gradient-to-r from-sky-500 to-cyan-400" style={{ width: `${mpPercent}%` }} />
-          </div>
-        </div>
-      </div>
 
-      <div ref={wrapRef} className="relative bg-black">
-        <canvas ref={canvasRef} className="block w-full" />
-        <div className="absolute left-2 top-2 rounded border border-slate-700 bg-slate-950/80 px-2 py-0.5 text-[10px] text-slate-300">
-          {status === "online" ? "已连接" : status === "connecting" ? "连接中" : "重连中"}
-        </div>
         {self?.dead && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm font-bold text-red-300">
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 text-sm font-bold text-red-300">
             你被击败了，3 秒后复活…
           </div>
         )}
-      </div>
-
-      {isTouch && (
-        <div className="flex items-end justify-between gap-2 border-t border-slate-800 px-3 py-2">
-          <div className="grid grid-cols-3 gap-1">
-            <span />
-            <button
-              type="button"
-              className={btn}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                press("w");
-              }}
-              onPointerUp={() => release("w")}
-              onPointerLeave={() => release("w")}
-              onPointerCancel={() => release("w")}
-            >
-              ↑
-            </button>
-            <span />
-            <button
-              type="button"
-              className={btn}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                press("a");
-              }}
-              onPointerUp={() => release("a")}
-              onPointerLeave={() => release("a")}
-              onPointerCancel={() => release("a")}
-            >
-              ←
-            </button>
-            <button
-              type="button"
-              className={btn}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                press("s");
-              }}
-              onPointerUp={() => release("s")}
-              onPointerLeave={() => release("s")}
-              onPointerCancel={() => release("s")}
-            >
-              ↓
-            </button>
-            <button
-              type="button"
-              className={btn}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                press("d");
-              }}
-              onPointerUp={() => release("d")}
-              onPointerLeave={() => release("d")}
-              onPointerCancel={() => release("d")}
-            >
-              →
-            </button>
-          </div>
-          <button type="button" className={cn(btnPrimary, "size-14 rounded-full text-lg")} onPointerDown={(event) => {
-            event.preventDefault();
-            doAttack();
-          }}>
-            ⚔️
-          </button>
-        </div>
-      )}
-
-      <div className="space-y-2 border-t border-slate-800 px-3 py-2">
-        <div className="flex flex-wrap gap-1.5">
-          {skills.map((id, index) => {
-            const skill = SKILLS[id];
-            const locked = (self?.level ?? save?.level ?? 1) < skill.level;
-            const noMp = (self?.mp ?? 0) < skill.mp;
-            return (
-              <button
-                key={id}
-                type="button"
-                className={btn}
-                disabled={locked || noMp || skillCd}
-                onClick={() => doSkill(index)}
-                title={skill.desc}
-              >
-                <span className="mr-0.5">{skill.icon}</span>
-                {skill.name}
-                <span className="ml-1 text-[10px] font-normal text-slate-400">
-                  {locked ? `Lv.${skill.level}` : `${skill.mp}MP`}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="flex items-center gap-2 overflow-x-auto text-[10px] text-slate-400">
-          <Users className="size-3.5 shrink-0" />
-          <span className="shrink-0">在线 {online} 人</span>
-          {party.map((player) => (
-            <span
-              key={player.id}
-              className="shrink-0 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5"
-            >
-              {CLASSES[player.classId].icon} {player.name} Lv.{player.level} ·{" "}
-              {Math.round(player.hp)}/{player.maxHp}
-            </span>
-          ))}
-          {party.length === 0 && (
-            <span className="shrink-0 text-slate-600">暂无其他玩家，邀请好友一起打怪</span>
-          )}
-        </div>
       </div>
     </div>
   );
