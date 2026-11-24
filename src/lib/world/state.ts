@@ -577,14 +577,10 @@ function damageMonster(
   }
 }
 
-export function attack(clientId: string): void {
-  const player = world.players.get(clientId);
-  if (!player || player.deadUntil > Date.now()) return;
-  const now = Date.now();
+/** 自动/手动共用的普通攻击：有目标才挥砍，并自动转向目标 */
+function performAttack(player: WorldPlayer, now: number): void {
+  if (player.deadUntil > now) return;
   if (now - player.lastAttack < 420) return;
-  player.lastAttack = now;
-  player.lastSeen = now;
-  pushEvent({ kind: "swing", from: player.id, x: player.x, y: player.y });
 
   const range = 96;
   const inRange = aliveMonsters().filter(
@@ -592,6 +588,9 @@ export function attack(clientId: string): void {
       Math.hypot(monster.x - player.x, monster.y - player.y) <=
       range + (monster.boss ? 20 : 0)
   );
+  if (inRange.length === 0) return;
+
+  player.lastAttack = now;
   // 优先攻击面朝方向（屏幕左右）的怪物，没有目标时回退到最近
   const facing = player.dir >= 0 ? 1 : -1;
   const inFront = inRange.filter(
@@ -606,9 +605,23 @@ export function attack(clientId: string): void {
 
   if (!target) return;
 
+  // 面向目标，让挥砍动作帧与伤害方向一致
+  const screenDx = target.x - target.y - (player.x - player.y);
+  if (Math.abs(screenDx) > 1) player.dir = screenDx > 0 ? 1 : -1;
+
+  pushEvent({ kind: "swing", from: player.id, x: player.x, y: player.y });
+
   const buff = player.buffUntil > now ? 1.3 : 1;
   const hit = rollDamage(player.atk * buff, target.def, player.crit);
   damageMonster(target, player, hit.damage, hit.crit, now);
+}
+
+export function attack(clientId: string): void {
+  const player = world.players.get(clientId);
+  if (!player) return;
+  const now = Date.now();
+  player.lastSeen = now;
+  performAttack(player, now);
 }
 
 export function castSkill(clientId: string, skillId: string): void {
@@ -729,6 +742,10 @@ function step(now: number): void {
         player.hp + Math.max(1, Math.round(player.maxHp * 0.03))
       );
     }
+    // 自动攻击：范围内有怪物就自动挥砍，玩家只需移动与释放技能
+    if (!player.deadUntil && now - player.lastSeen < 5000) {
+      performAttack(player, now);
+    }
   }
 
   for (const monster of world.monsters.values()) {
@@ -840,7 +857,7 @@ function step(now: number): void {
     }
     for (const player of world.players.values()) {
       if (player.deadUntil) continue;
-      if (Math.hypot(player.x - drop.x, player.y - drop.y) > 40) continue;
+      if (Math.hypot(player.x - drop.x, player.y - drop.y) > 64) continue;
       player.hp = Math.min(player.maxHp, player.hp + drop.heal);
       pushEvent({
         kind: "heal",

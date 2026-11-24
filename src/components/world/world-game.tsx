@@ -167,7 +167,6 @@ export function WorldGame() {
   const lastSendRef = useRef(0);
   const lastFrameRef = useRef(0);
   const lastHudRef = useRef(0);
-  const lastAttackRef = useRef(0);
   const lastSkillRef = useRef(0);
   const lastPosRef = useRef({ x: 0, y: 0, at: 0 });
   const swingsRef = useRef<Record<string, number>>({});
@@ -825,18 +824,6 @@ export function WorldGame() {
     return () => observer.disconnect();
   }, [phase, fullscreen, isTouch]);
 
-  function doAttack() {
-    const now = performance.now();
-    if (now - lastAttackRef.current < 420) return;
-    lastAttackRef.current = now;
-    swingsRef.current[myIdRef.current] = now;
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate(8);
-    }
-    sfx("attack");
-    post({ type: "attack" });
-  }
-
   function doSkill(index: number) {
     const current = saveRef.current;
     const selfNow = selfRef.current;
@@ -873,11 +860,6 @@ export function WorldGame() {
         return;
       }
       if (event.repeat) return;
-      if (key === "j" || key === " ") {
-        event.preventDefault();
-        doAttack();
-        return;
-      }
       if (key === "r") {
         event.preventDefault();
         doRecall();
@@ -1134,7 +1116,7 @@ export function WorldGame() {
 
         <ul className="space-y-1 text-[11px] leading-relaxed text-slate-400">
           <li>· 移动：WASD / 方向键，移动端使用左下角虚拟摇杆</li>
-          <li>· 攻击：J / 空格或右下角按钮；技能：数字键 1-4 或底部技能栏</li>
+          <li>· 攻击：靠近怪物自动挥砍；技能：数字键 1-4 或底部技能栏</li>
           <li>· 右上角可开启全屏，HUD 与操作区都叠加在画面上</li>
           <li>· 击杀经验与金币会写回角色存档，并实时显示伤害与音效</li>
         </ul>
@@ -1310,21 +1292,6 @@ export function WorldGame() {
           </div>
         )}
 
-        {/* 移动端攻击按钮 */}
-        {isTouch && (
-          <button
-            type="button"
-            data-testid="attack"
-            className="absolute bottom-24 right-4 z-20 flex size-16 touch-none items-center justify-center rounded-full border-2 border-amber-400/70 bg-amber-500/20 text-2xl backdrop-blur-sm transition-transform active:scale-95"
-            onPointerDown={(event) => {
-              event.preventDefault();
-              doAttack();
-            }}
-          >
-            ⚔️
-          </button>
-        )}
-
         {/* 底部技能栏与队伍，叠加在画面底部 */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-slate-950/90 via-slate-950/55 to-transparent px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-10">
           <div className="pointer-events-auto flex flex-wrap items-center gap-1">
@@ -1377,7 +1344,7 @@ export function WorldGame() {
               )}
             </button>
             <span className="ml-auto hidden text-[10px] text-slate-500 sm:inline">
-              J 攻击 · 1-4 技能 · R 回城
+              自动攻击 · 1-4 技能 · R 回城
             </span>
           </div>
 
