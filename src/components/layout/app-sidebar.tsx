@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ListTodo } from "lucide-react";
+import { ListTodo, LogOut } from "lucide-react";
 
-import { isNavActive, navItems } from "@/components/layout/nav-items";
-import { APP_VERSION } from "@/lib/version";
+import { logoutAction } from "@/actions/auth";
+import { isNavActive, navItemsFor } from "@/components/layout/nav-items";
+import { Button } from "@/components/ui/button";
+import { roleBadgeClass, roleLabels } from "@/lib/auth/roles";
+import type { SessionUser } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
+import { APP_VERSION } from "@/lib/version";
 
 function Brand() {
   return (
@@ -26,12 +30,18 @@ function Brand() {
   );
 }
 
-function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarNav({
+  role,
+  onNavigate,
+}: {
+  role: SessionUser["role"];
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
 
   return (
     <nav className="space-y-1">
-      {navItems.map((item) => {
+      {navItemsFor(role).map((item) => {
         const active = isNavActive(pathname, item.href);
         const Icon = item.icon;
         return (
@@ -56,7 +66,46 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AppSidebar() {
+function UserCard({ user }: { user: SessionUser }) {
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+          {user.name.slice(0, 1).toUpperCase()}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-medium">{user.name}</p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {user.email}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className={cn(
+            "rounded-full border px-2 py-0.5 text-[11px]",
+            roleBadgeClass[user.role]
+          )}
+        >
+          {roleLabels[user.role]}
+        </span>
+        <form action={logoutAction}>
+          <Button
+            type="submit"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="size-3.5" />
+            退出
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function AppSidebar({ user }: { user: SessionUser }) {
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r bg-background lg:flex">
       <div className="flex h-16 items-center px-5">
@@ -66,9 +115,10 @@ export function AppSidebar() {
         <p className="px-3 pb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
           导航
         </p>
-        <SidebarNav />
+        <SidebarNav role={user.role} />
       </div>
-      <div className="border-t p-4">
+      <div className="space-y-3 border-t p-4">
+        <UserCard user={user} />
         <div className="rounded-lg border bg-muted/40 p-3">
           <p className="text-xs font-medium">技术栈</p>
           <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
@@ -77,7 +127,7 @@ export function AppSidebar() {
             PostgreSQL · Tailwind · shadcn/ui
           </p>
         </div>
-        <p className="mt-3 text-[11px] text-muted-foreground">
+        <p className="text-[11px] text-muted-foreground">
           TaskFlow · 版本 {APP_VERSION}
         </p>
       </div>
@@ -85,18 +135,27 @@ export function AppSidebar() {
   );
 }
 
-export function SidebarSheetContent({ onNavigate }: { onNavigate?: () => void }) {
+export function SidebarSheetContent({
+  user,
+  onNavigate,
+}: {
+  user: SessionUser;
+  onNavigate?: () => void;
+}) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-12 items-center pr-8">
         <Brand />
       </div>
       <div className="mt-4 flex-1">
-        <SidebarNav onNavigate={onNavigate} />
+        <SidebarNav role={user.role} onNavigate={onNavigate} />
       </div>
-      <p className="text-[11px] text-muted-foreground">
-        TaskFlow · 版本 {APP_VERSION}
-      </p>
+      <div className="space-y-3 border-t pt-3">
+        <UserCard user={user} />
+        <p className="text-[11px] text-muted-foreground">
+          TaskFlow · 版本 {APP_VERSION}
+        </p>
+      </div>
     </div>
   );
 }

@@ -14,6 +14,8 @@ export type TaskItem = {
   dueDate: Date | string | null;
   createdAt: Date | string;
   updatedAt: Date | string;
+  ownerId?: string | null;
+  owner?: { name: string } | null;
 };
 
 export const taskStatusOptions: { value: TaskStatusValue; label: string }[] = [

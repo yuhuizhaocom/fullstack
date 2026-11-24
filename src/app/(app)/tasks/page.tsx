@@ -10,6 +10,9 @@ import { TaskEmptyState } from "@/components/tasks/task-empty-state";
 import { TaskFilters } from "@/components/tasks/task-filters";
 import { TaskTable } from "@/components/tasks/task-table";
 import { Button } from "@/components/ui/button";
+import { taskScope } from "@/lib/auth/permissions";
+import { isManager } from "@/lib/auth/roles";
+import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import {
   TASK_PRIORITIES,
@@ -40,6 +43,7 @@ export default async function TasksPage({
   searchParams: Promise<TaskSearchParams>;
 }) {
   const params = await searchParams;
+  const user = await requireUser();
 
   const q = typeof params.q === "string" ? params.q.trim().slice(0, 100) : "";
   const status = TASK_STATUSES.includes(params.status as TaskStatusValue)
@@ -62,7 +66,8 @@ export default async function TasksPage({
   let dbError = false;
 
   try {
-    const where: Prisma.TaskWhereInput = {};
+    // 数据权限：普通用户仅能看到自己创建的任务
+    const where: Prisma.TaskWhereInput = { ...taskScope(user) };
 
     if (q) {
       where.OR = [
@@ -83,6 +88,7 @@ export default async function TasksPage({
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
+      include: { owner: { select: { name: true } } },
     });
   } catch (error) {
     dbError = true;
@@ -131,8 +137,8 @@ export default async function TasksPage({
         <TaskEmptyState filtered={hasFilters} />
       ) : (
         <>
-          <TaskTable tasks={tasks} />
-          <TaskCardList tasks={tasks} />
+          <TaskTable tasks={tasks} showOwner={isManager(user.role)} />
+          <TaskCardList tasks={tasks} showOwner={isManager(user.role)} />
 
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-1">

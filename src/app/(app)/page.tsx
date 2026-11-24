@@ -22,6 +22,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDateTime, formatToday } from "@/lib/format";
+import { taskScope } from "@/lib/auth/permissions";
+import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { taskStatusMeta, type TaskItem } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
@@ -50,14 +52,21 @@ export default async function DashboardPage() {
   let recent: TaskItem[] = [];
   let dbConnected = true;
 
+  const user = await requireUser();
+  const scope = taskScope(user);
+
   try {
     const [totalCount, todoCount, inProgressCount, doneCount, recentTasks] =
       await Promise.all([
-        prisma.task.count(),
-        prisma.task.count({ where: { status: "TODO" } }),
-        prisma.task.count({ where: { status: "IN_PROGRESS" } }),
-        prisma.task.count({ where: { status: "DONE" } }),
-        prisma.task.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
+        prisma.task.count({ where: scope }),
+        prisma.task.count({ where: { ...scope, status: "TODO" } }),
+        prisma.task.count({ where: { ...scope, status: "IN_PROGRESS" } }),
+        prisma.task.count({ where: { ...scope, status: "DONE" } }),
+        prisma.task.findMany({
+          where: scope,
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        }),
       ]);
 
     total = totalCount;

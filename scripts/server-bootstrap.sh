@@ -236,6 +236,9 @@ if [[ "$SKIP_SEED" != "1" ]]; then
   fi
 fi
 
+info "确保超级管理员账号存在"
+node scripts/ensure-admin.mjs || warn "超级管理员初始化失败，可稍后执行 node scripts/ensure-admin.mjs 重试"
+
 # 容器 cgroup pids 限额较低时，next build 会按 CPU 数拉起大量 worker（32 核 → 31 个），
 # 线程数超限后 fork 失败并报 `spawn ... EAGAIN`；限制 worker 数量即可规避。
 if [[ -z "$BUILD_CPUS" ]]; then

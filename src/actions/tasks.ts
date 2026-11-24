@@ -4,6 +4,8 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { canManageTask } from "@/lib/auth/permissions";
+import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { TASK_STATUSES, type TaskStatusValue } from "@/lib/task-meta";
 import { taskInputSchema, type TaskFormValues } from "@/lib/validations/task";
@@ -44,6 +46,32 @@ function toErrorMessage(error: unknown) {
   return "操作失败，请稍后重试";
 }
 
+/**
+ * 写操作统一校验：登录 + 数据权限（创建者或管理员以上）。
+ * 返回任务记录用于后续更新，返回字符串表示错误信息。
+ */
+async function authorizeTaskAction(
+  id: string
+): Promise<{ ok: true; ownerId: string | null } | { ok: false; error: string }> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "登录状态已失效，请重新登录" };
+  }
+
+  const task = await prisma.task.findUnique({
+    where: { id },
+    select: { ownerId: true },
+  });
+  if (!task) {
+    return { ok: false, error: "目标任务不存在或已被删除" };
+  }
+  if (!canManageTask(user, task)) {
+    return { ok: false, error: "你没有权限操作该任务" };
+  }
+
+  return { ok: true, ownerId: task.ownerId };
+}
+
 export async function createTask(values: TaskFormValues): Promise<TaskActionResult> {
   const parsed = taskInputSchema.safeParse(values);
   if (!parsed.success) {
@@ -51,7 +79,14 @@ export async function createTask(values: TaskFormValues): Promise<TaskActionResu
   }
 
   try {
-    await prisma.task.create({ data: toTaskData(parsed.data) });
+    const user = await getCurrentUser();
+    if (!user) {
+      return { ok: false, error: "登录状态已失效，请重新登录" };
+    }
+
+    await prisma.task.create({
+      data: { ...toTaskData(parsed.data), ownerId: user.id },
+    });
     revalidateTaskPages();
     return { ok: true };
   } catch (error) {
@@ -74,6 +109,11 @@ export async function updateTask(
   }
 
   try {
+    const auth = await authorizeTaskAction(parsedId.data);
+    if (!auth.ok) {
+      return { ok: false, error: auth.error };
+    }
+
     await prisma.task.update({
       where: { id: parsedId.data },
       data: toTaskData(parsed.data),
@@ -96,6 +136,11 @@ export async function updateTaskStatus(
   }
 
   try {
+    const auth = await authorizeTaskAction(parsedId.data);
+    if (!auth.ok) {
+      return { ok: false, error: auth.error };
+    }
+
     await prisma.task.update({
       where: { id: parsedId.data },
       data: { status: parsedStatus.data },
@@ -114,6 +159,11 @@ export async function deleteTask(id: string): Promise<TaskActionResult> {
   }
 
   try {
+    const auth = await authorizeTaskAction(parsedId.data);
+    if (!auth.ok) {
+      return { ok: false, error: auth.error };
+    }
+
     await prisma.task.delete({ where: { id: parsedId.data } });
     revalidateTaskPages();
     return { ok: true };

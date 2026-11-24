@@ -7,7 +7,13 @@ import { formatDate, isTaskOverdue } from "@/lib/format";
 import type { TaskItem } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
 
-export function TaskCardList({ tasks }: { tasks: TaskItem[] }) {
+export function TaskCardList({
+  tasks,
+  showOwner = false,
+}: {
+  tasks: TaskItem[];
+  showOwner?: boolean;
+}) {
   return (
     <div className="space-y-3 md:hidden">
       {tasks.map((task) => {
@@ -37,6 +43,11 @@ export function TaskCardList({ tasks }: { tasks: TaskItem[] }) {
                   <User2 className="size-3.5" />
                   {task.assignee || "未指派"}
                 </span>
+                {showOwner && (
+                  <span className="inline-flex items-center gap-1">
+                    创建人：{task.owner?.name || "—"}
+                  </span>
+                )}
                 <span
                   className={cn(
                     "inline-flex items-center gap-1",

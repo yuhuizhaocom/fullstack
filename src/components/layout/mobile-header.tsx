@@ -12,8 +12,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import type { SessionUser } from "@/lib/auth/session";
 
-export function MobileHeader() {
+export function MobileHeader({ user }: { user: SessionUser }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -33,7 +34,10 @@ export function MobileHeader() {
           <SheetHeader className="sr-only">
             <SheetTitle>导航菜单</SheetTitle>
           </SheetHeader>
-          <SidebarSheetContent onNavigate={() => setOpen(false)} />
+          <SidebarSheetContent
+            user={user}
+            onNavigate={() => setOpen(false)}
+          />
         </SheetContent>
       </Sheet>
       <span className="flex items-center gap-2 text-sm font-semibold">

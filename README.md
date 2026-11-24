@@ -4,11 +4,13 @@
 
 ## 功能特性
 
+- **账号体系**：注册、登录、退出；密码使用 scrypt 加盐哈希，会话存数据库 + HttpOnly Cookie
+- **三级角色**：超级管理员（管理用户与全部任务）、管理员（管理全部任务）、普通用户（仅自己创建的任务）
 - **仪表盘**：任务总数、各状态数量、完成率、最近 5 条任务、服务与数据库连通状态
 - **任务管理**：列表（表格 / 移动端卡片双形态）、关键词搜索（标题 / 描述 / 负责人）、按状态与优先级筛选、分页
 - **CRUD**：新建、编辑、切换状态、删除，全部走 Server Actions + Zod 校验
 - **响应式**：`lg` 以上侧边栏 + 表格，移动端抽屉导航 + 卡片列表
-- **健康检查**：`GET /api/health` 实际执行 `SELECT 1`，成功 200 / 失败 503
+- **健康检查**：`GET /api/health` 实际执行 `SELECT 1`，成功 200 / 失败 503，并返回构建版本号
 
 ## 技术栈
 
@@ -60,31 +62,43 @@ npm run db:deploy && npm run db:seed && npm run dev
 ```
 src/
 ├─ app/
-│  ├─ layout.tsx               根布局（字体、Toaster、AppShell）
-│  ├─ page.tsx                 仪表盘（Server Component 直接查询 Prisma）
-│  ├─ tasks/
-│  │  ├─ page.tsx              任务列表：searchParams 驱动搜索/筛选/分页
-│  │  └─ loading.tsx           加载骨架
-│  └─ api/health/route.ts      健康检查（SELECT 1）
-├─ actions/tasks.ts            Server Actions：create / update / updateStatus / delete
+│  ├─ layout.tsx               根布局（字体、Toaster）
+│  ├─ (app)/
+│  │  ├─ layout.tsx            登录校验 + AppShell
+│  │  ├─ page.tsx              仪表盘（按角色过滤统计）
+│  │  ├─ tasks/                任务列表：searchParams 驱动搜索/筛选/分页
+│  │  └─ users/                用户管理（仅超级管理员）
+│  ├─ (auth)/
+│  │  ├─ login/                登录页
+│  │  └─ register/             注册页
+│  └─ api/health/route.ts      健康检查（SELECT 1 + 版本号）
+├─ actions/
+│  ├─ auth.ts                  注册 / 登录 / 退出 Server Actions
+│  ├─ users.ts                 修改角色（超级管理员）
+│  └─ tasks.ts                 任务 CRUD（含权限校验）
 ├─ components/
-│  ├─ layout/                  侧边栏、移动端头部、导航配置
+│  ├─ auth/                    登录注册表单
+│  ├─ layout/                  侧边栏、移动端头部、用户卡片、导航配置
 │  ├─ tasks/                   对话框表单、表格、卡片列表、筛选器、行操作
+│  ├─ users/                   角色选择器
 │  └─ ui/                      shadcn/ui 基础组件
 └─ lib/
+   ├─ auth/                    密码哈希、数据库会话、角色与数据权限
    ├─ prisma.ts                PrismaClient 单例（开发环境避免连接泄漏）
    ├─ task-meta.ts             状态/优先级文案与样式映射
    ├─ validations/task.ts      Zod schema
    └─ format.ts / utils.ts     日期格式化、cn()
 
 prisma/
-├─ schema.prisma               Task 模型 + 三个索引
+├─ schema.prisma               User / Session / Task 模型与索引
 ├─ migrations/                 SQL 迁移
 └─ seed.mjs                    10 条示例任务（upsert，可重复执行）
 
 scripts/
 ├─ install.sh                  本地/WSL 一键安装
 ├─ server-bootstrap.sh         服务器端一键重建（生产部署）
+├─ server-deploy.sh            服务器端更新（CI 调用）
+├─ ensure-admin.mjs            确保存在超级管理员
 └─ server/                     生产环境启停脚本（start.sh / stop.sh）
 ```
 
@@ -96,7 +110,21 @@ scripts/
 
 ## 数据模型
 
-`Task`（表名 `tasks`）：`id`(cuid) / `title` / `description?` / `assignee?` / `status`(TODO|IN_PROGRESS|DONE) / `priority`(LOW|MEDIUM|HIGH) / `dueDate?` / `createdAt` / `updatedAt`，并对 `status`、`priority`、`createdAt` 建索引。
+`Task`（表名 `tasks`）：`id`(cuid) / `title` / `description?` / `assignee?` / `status`(TODO|IN_PROGRESS|DONE) / `priority`(LOW|MEDIUM|HIGH) / `dueDate?` / `ownerId?` / `createdAt` / `updatedAt`，并对 `status`、`priority`、`createdAt`、`ownerId` 建索引。
+
+`User`（`users`）：`id` / `email`(唯一) / `name` / `passwordHash` / `role`(SUPER_ADMIN|ADMIN|USER)；`Session`（`sessions`）：`token`(唯一) / `userId` / `expiresAt`，随用户删除级联。
+
+## 账号与权限
+
+| 角色 | 任务可见范围 | 任务操作 | 用户管理 |
+| --- | --- | --- | --- |
+| `SUPER_ADMIN` 超级管理员 | 全部 | 增删改查全部 | 可调整他人角色 |
+| `ADMIN` 管理员 | 全部 | 增删改查全部 | 不可见 |
+| `USER` 普通用户 | 仅自己创建的 | 仅自己的任务 | 不可见 |
+
+- 本地首次运行：**第一个注册的账号自动成为超级管理员**，之后注册均为普通用户
+- 服务器部署：`scripts/ensure-admin.mjs` 会自动创建 `admin@taskflow.local`，初始密码写入 `/root/.taskflow-admin-password`（600）
+- 权限在服务端双重校验：读取时按角色过滤查询条件，写入时再校验任务归属，前端隐藏按钮不作为安全边界
 
 ## 环境变量
 

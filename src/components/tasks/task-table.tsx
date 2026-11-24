@@ -15,7 +15,13 @@ import { formatDate, isTaskOverdue } from "@/lib/format";
 import type { TaskItem } from "@/lib/task-meta";
 import { cn } from "@/lib/utils";
 
-export function TaskTable({ tasks }: { tasks: TaskItem[] }) {
+export function TaskTable({
+  tasks,
+  showOwner = false,
+}: {
+  tasks: TaskItem[];
+  showOwner?: boolean;
+}) {
   return (
     <Card className="hidden overflow-hidden md:block">
       <Table>
@@ -23,6 +29,7 @@ export function TaskTable({ tasks }: { tasks: TaskItem[] }) {
           <TableRow className="bg-muted/40 hover:bg-muted/40">
             <TableHead className="min-w-[220px]">任务</TableHead>
             <TableHead className="w-[110px]">负责人</TableHead>
+            {showOwner && <TableHead className="w-[110px]">创建人</TableHead>}
             <TableHead className="w-[100px]">状态</TableHead>
             <TableHead className="w-[88px]">优先级</TableHead>
             <TableHead className="w-[130px]">截止日期</TableHead>
@@ -50,6 +57,13 @@ export function TaskTable({ tasks }: { tasks: TaskItem[] }) {
                     {task.assignee || "未指派"}
                   </span>
                 </TableCell>
+                {showOwner && (
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">
+                      {task.owner?.name || "—"}
+                    </span>
+                  </TableCell>
+                )}
                 <TableCell>
                   <TaskStatusBadge status={task.status} />
                 </TableCell>

@@ -22,6 +22,9 @@ fi
 echo "[deploy] 应用数据库迁移（prisma migrate deploy）"
 npx prisma migrate deploy
 
+echo "[deploy] 确保超级管理员账号存在"
+node scripts/ensure-admin.mjs
+
 echo "[deploy] 生产构建（worker=${NEXT_BUILD_CPUS}）"
 npm run build
 

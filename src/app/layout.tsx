@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 
-import { AppShell } from "@/components/layout/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
@@ -28,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className="min-h-screen bg-background font-sans">
-        <AppShell>{children}</AppShell>
+        {children}
         <Toaster position="top-center" richColors closeButton />
       </body>
     </html>
