@@ -157,6 +157,19 @@ export function ChatRoom({
         return;
       }
 
+      // SSE 断线时也能立即看到自己发出的消息，重连后按 id 去重
+      const data = (await response.json().catch(() => null)) as {
+        message?: ChatPayload;
+      } | null;
+      const sent = data?.message;
+      if (sent) {
+        setMessages((prev) =>
+          prev.some((item) => item.id === sent.id)
+            ? prev
+            : [...prev, sent].slice(-200)
+        );
+      }
+
       setText("");
       nearBottomRef.current = true;
     } catch {
