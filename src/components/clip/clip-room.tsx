@@ -21,10 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  CLIP_MAX_LENGTH,
-  type ClipPayload,
-} from "@/lib/clip/constants";
+import { CLIP_MAX_LENGTH, type ClipPayload } from "@/lib/clip/constants";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +29,8 @@ type Status = "connecting" | "online" | "offline";
 
 const CLIENT_KEY = "tf_clip_client";
 const AUTO_COPY_KEY = "tf_clip_autocopy";
+const AUTO_READ_KEY = "tf_clip_autoread";
+const POLL_INTERVAL = 2500;
 
 export function ClipRoom({ channel }: { channel: string }) {
   const [entries, setEntries] = useState<ClipPayload[]>([]);
@@ -39,14 +38,17 @@ export function ClipRoom({ channel }: { channel: string }) {
   const [status, setStatus] = useState<Status>("connecting");
   const [sending, setSending] = useState(false);
   const [autoCopy, setAutoCopy] = useState(true);
+  const [autoRead, setAutoRead] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const clientIdRef = useRef("");
   const autoCopyRef = useRef(true);
+  const lastSentRef = useRef("");
+  const lastRemoteRef = useRef("");
+  const readFailuresRef = useRef(0);
   const warnedRef = useRef(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
 
-  // 初始化匿名客户端标识与自动写入偏好
+  // 初始化匿名客户端标识与本地偏好
   useEffect(() => {
     let id = localStorage.getItem(CLIENT_KEY);
     if (!id) {
@@ -62,9 +64,12 @@ export function ClipRoom({ channel }: { channel: string }) {
       setAutoCopy(false);
       autoCopyRef.current = false;
     }
+    if (localStorage.getItem(AUTO_READ_KEY) === "on") {
+      setAutoRead(true);
+    }
   }, []);
 
-  // 读取历史
+  // 读取历史（倒序：最新在前）
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -74,7 +79,10 @@ export function ClipRoom({ channel }: { channel: string }) {
         });
         if (!response.ok) throw new Error("history failed");
         const data = await response.json();
-        if (!cancelled) setEntries(Array.isArray(data.entries) ? data.entries : []);
+        const list: ClipPayload[] = Array.isArray(data.entries)
+          ? data.entries
+          : [];
+        if (!cancelled) setEntries([...list].reverse());
       } catch {
         if (!cancelled) toast.error("读取历史失败，请刷新重试");
       } finally {
@@ -97,7 +105,7 @@ export function ClipRoom({ channel }: { channel: string }) {
       try {
         const entry = JSON.parse(event.data) as ClipPayload;
         setEntries((prev) =>
-          prev.some((item) => item.id === entry.id) ? prev : [...prev, entry]
+          prev.some((item) => item.id === entry.id) ? prev : [entry, ...prev]
         );
 
         if (
@@ -106,33 +114,72 @@ export function ClipRoom({ channel }: { channel: string }) {
           document.hasFocus() &&
           typeof navigator.clipboard?.writeText === "function"
         ) {
-          navigator.clipboard.writeText(entry.content).catch(() => {
-            if (!warnedRef.current) {
-              warnedRef.current = true;
-              toast.error("自动写入剪贴板失败，请手动点击复制");
-            }
-          });
+          navigator.clipboard
+            .writeText(entry.content)
+            .then(() => {
+              lastRemoteRef.current = entry.content;
+            })
+            .catch(() => {
+              if (!warnedRef.current) {
+                warnedRef.current = true;
+                toast.error("自动写入剪贴板失败，请手动点击复制");
+              }
+            });
         }
       } catch {
-        // 忽略非 JSON 的心跳帧
+        // 忽略心跳等非 JSON 帧
       }
     };
 
     return () => source.close();
   }, [channel]);
 
+  // 自动读取剪贴板并发送（需 HTTPS + 权限 + 页面在前台）
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [entries.length]);
+    if (!autoRead) return;
 
-  async function send() {
-    const content = text.trim();
-    if (!content) {
-      toast.error("请先粘贴或输入内容");
-      return;
-    }
+    let stopped = false;
 
-    setSending(true);
+    const tick = async () => {
+      if (stopped) return;
+      if (!document.hasFocus() || document.visibilityState !== "visible") return;
+      if (typeof navigator.clipboard?.readText !== "function") return;
+
+      try {
+        const value = (await navigator.clipboard.readText()).slice(
+          0,
+          CLIP_MAX_LENGTH
+        );
+        readFailuresRef.current = 0;
+
+        if (!value.trim()) return;
+        if (value === lastSentRef.current) return;
+        if (value === lastRemoteRef.current) return;
+
+        lastSentRef.current = value;
+        await postContent(value);
+      } catch {
+        readFailuresRef.current += 1;
+        if (readFailuresRef.current >= 3) {
+          setAutoRead(false);
+          localStorage.setItem(AUTO_READ_KEY, "off");
+          toast.error("自动读取剪贴板被浏览器拒绝，已关闭；可手动粘贴或允许权限后重开");
+        }
+      }
+    };
+
+    void tick();
+    const timer = setInterval(tick, POLL_INTERVAL);
+
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+    // postContent 是稳定的（仅依赖 channel）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRead, channel]);
+
+  async function postContent(content: string): Promise<boolean> {
     try {
       const response = await fetch(`/api/clip/${channel}/messages`, {
         method: "POST",
@@ -143,12 +190,28 @@ export function ClipRoom({ channel }: { channel: string }) {
       if (!response.ok) {
         const data = await response.json().catch(() => null);
         toast.error(data?.error ?? "发送失败，请稍后重试");
-        return;
+        return false;
       }
-
-      setText("");
+      return true;
     } catch {
       toast.error("网络异常，发送失败");
+      return false;
+    }
+  }
+
+  async function send() {
+    const content = text.trim();
+    if (!content) {
+      toast.error("请先粘贴或输入内容");
+      return;
+    }
+
+    setSending(true);
+    try {
+      if (await postContent(content)) {
+        lastSentRef.current = content;
+        setText("");
+      }
     } finally {
       setSending(false);
     }
@@ -191,12 +254,39 @@ export function ClipRoom({ channel }: { channel: string }) {
     localStorage.setItem(AUTO_COPY_KEY, next ? "on" : "off");
   }
 
+  async function toggleAutoRead() {
+    if (autoRead) {
+      setAutoRead(false);
+      localStorage.setItem(AUTO_READ_KEY, "off");
+      return;
+    }
+
+    if (!navigator.clipboard?.readText) {
+      toast.error("当前浏览器不支持自动读取剪贴板");
+      return;
+    }
+
+    // 触发一次读取，未授权时浏览器会弹出权限请求
+    try {
+      const value = await navigator.clipboard.readText();
+      setAutoRead(true);
+      localStorage.setItem(AUTO_READ_KEY, "on");
+      readFailuresRef.current = 0;
+      if (value.trim() && value !== lastSentRef.current) {
+        lastSentRef.current = value.slice(0, CLIP_MAX_LENGTH);
+        await postContent(value.slice(0, CLIP_MAX_LENGTH));
+      }
+    } catch {
+      toast.error("无法读取剪贴板，请允许权限后重试");
+    }
+  }
+
   return (
     <div className="space-y-4">
       <Card className="shadow-sm">
         <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-3">
           <div className="min-w-0">
-            <CardTitle className="font-mono text-lg tracking-[0.2em] uppercase">
+            <CardTitle className="font-mono text-lg uppercase tracking-[0.2em]">
               {channel}
             </CardTitle>
             <CardDescription className="mt-1">
@@ -240,7 +330,9 @@ export function ClipRoom({ channel }: { channel: string }) {
         <CardContent className="space-y-3 p-4">
           <Textarea
             value={text}
-            onChange={(event) => setText(event.target.value.slice(0, CLIP_MAX_LENGTH))}
+            onChange={(event) =>
+              setText(event.target.value.slice(0, CLIP_MAX_LENGTH))
+            }
             onKeyDown={(event) => {
               if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
                 event.preventDefault();
@@ -259,7 +351,15 @@ export function ClipRoom({ channel }: { channel: string }) {
                 onClick={readClipboard}
               >
                 <ClipboardPaste className="size-3.5" />
-                读取剪贴板
+                粘贴剪贴板
+              </Button>
+              <Button
+                type="button"
+                variant={autoRead ? "secondary" : "outline"}
+                size="sm"
+                onClick={toggleAutoRead}
+              >
+                自动读取：{autoRead ? "开" : "关"}
               </Button>
               <Button
                 type="button"
@@ -282,6 +382,11 @@ export function ClipRoom({ channel }: { channel: string }) {
               发送
             </Button>
           </div>
+          {autoRead && (
+            <p className="text-[11px] text-muted-foreground">
+              自动读取每 2.5 秒检查一次剪贴板，仅在当前标签页处于前台时生效；首次使用需允许剪贴板权限。
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -289,7 +394,7 @@ export function ClipRoom({ channel }: { channel: string }) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base">历史记录</CardTitle>
           <CardDescription>
-            最近 50 条，24 小时后自动清理；点击右侧图标可复制
+            按时间倒序，最近 50 条，24 小时后自动清理；点击右侧图标可复制
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -337,7 +442,6 @@ export function ClipRoom({ channel }: { channel: string }) {
                   </div>
                 );
               })}
-              <div ref={bottomRef} />
             </div>
           )}
         </CardContent>

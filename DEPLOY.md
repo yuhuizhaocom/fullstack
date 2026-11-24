@@ -402,4 +402,7 @@ cloudflared tunnel --no-autoupdate --url http://127.0.0.1:25045
 - SSE 通过 Route Handler 返回 `text/event-stream`，已加 `X-Accel-Buffering: no` 与 25 秒心跳，Cloudflare 隧道可正常透传
 - 频道广播是**单进程内存 Map**，当前单实例部署够用；未来多副本需要 Redis Pub/Sub
 - 只有 HTTPS（安全上下文）才能用 `navigator.clipboard`；HTTP 直连时页面仍可用，但只能手动粘贴/点击复制
+- **自动读取**：浏览器没有“剪贴板变化”事件，因此开启后每 2.5 秒轮询一次 `readText()`，仅在标签页可见且聚焦时生效；首次需要允许剪贴板权限。Chromium 桌面端可用，Safari/Firefox 可能因权限策略失效（页面会提示并自动关闭）
+- **自动写入**：收到他人内容时尝试写入剪贴板，失败降级为手动复制
+- **历史顺序**：接口返回最近 50 条（升序），前端展示为倒序（最新在最上方）
 - 匿名公开频道适合临时文本，不适合密码、密钥；如需私密使用应加频道口令或登录限制
