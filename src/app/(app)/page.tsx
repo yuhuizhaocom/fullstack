@@ -10,6 +10,7 @@ import {
   Inbox,
   ListTodo,
   MessageSquare,
+  Gamepad2,
   Paperclip,
 } from "lucide-react";
 
@@ -373,6 +374,24 @@ export default async function DashboardPage() {
               <Link href="/files">
                 <Paperclip className="size-4" />
                 分享附件
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">像素冒险</CardTitle>
+            <CardDescription>无需登录的回合制 RPG</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              选择职业，探索四个副本，挑战 BOSS、培养宠物；存档自动保存在本机浏览器。
+            </p>
+            <Button asChild size="sm" variant="outline" className="w-fit">
+              <Link href="/game">
+                <Gamepad2 className="size-4" />
+                开始冒险
               </Link>
             </Button>
           </CardContent>

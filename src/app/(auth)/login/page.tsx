@@ -57,6 +57,12 @@ export default function LoginPage() {
             无需登录，分享附件（≤100MB / 24 小时） →
           </Link>
           <Link
+            href="/game"
+            className="block text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+          >
+            无需登录，玩像素冒险 RPG →
+          </Link>
+          <Link
             href="/clip"
             className="block text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
           >
