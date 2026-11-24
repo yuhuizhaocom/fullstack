@@ -31,6 +31,10 @@ export async function POST(request: NextRequest) {
     crit: Number(body?.crit) || 0,
     weapon: typeof body?.weapon === "string" ? body.weapon : null,
     armor: typeof body?.armor === "string" ? body.armor : null,
+    potions:
+      body?.potions && typeof body.potions === "object"
+        ? body.potions
+        : undefined,
   });
 
   return NextResponse.json({
