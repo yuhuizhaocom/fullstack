@@ -1205,10 +1205,17 @@ export function WorldGame() {
             {party.map((player) => (
               <span
                 key={player.id}
-                className="shrink-0 rounded border border-slate-700 bg-slate-900/80 px-1.5 py-0.5"
+                className="flex shrink-0 items-center gap-1 rounded border border-slate-700 bg-slate-900/80 px-1.5 py-0.5"
               >
-                {CLASSES[player.classId].icon} {player.name} Lv.{player.level} ·{" "}
-                {Math.round(player.hp)}/{player.maxHp}
+                {CLASSES[player.classId].icon} {player.name} Lv.{player.level}
+                <span className="h-1 w-10 overflow-hidden rounded bg-slate-700">
+                  <span
+                    className="block h-full rounded bg-red-500"
+                    style={{
+                      width: `${Math.max(0, (player.hp / player.maxHp) * 100)}%`,
+                    }}
+                  />
+                </span>
               </span>
             ))}
             {party.length === 0 && (
