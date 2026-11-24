@@ -414,6 +414,7 @@ export function WorldGame() {
           meId: myIdRef.current,
           meX: me.x,
           meY: me.y,
+          meName: selfNow?.name ?? saveRef.current?.name ?? "我",
           meHp: selfNow?.hp ?? 100,
           meMaxHp: selfNow?.maxHp ?? 100,
           meDir: me.dir,
@@ -848,7 +849,7 @@ export function WorldGame() {
         </div>
         <div className="flex items-center gap-2 overflow-x-auto text-[10px] text-slate-400">
           <Users className="size-3.5 shrink-0" />
-          <span className="shrink-0">队伍 {party.length + 1} 人</span>
+          <span className="shrink-0">在线 {online} 人</span>
           {party.map((player) => (
             <span
               key={player.id}

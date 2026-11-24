@@ -101,6 +101,7 @@ export function drawWorld(
     meId: string;
     meX: number;
     meY: number;
+    meName: string;
     meHp: number;
     meMaxHp: number;
     meDir: number;
@@ -240,7 +241,7 @@ export function drawWorld(
 
   drawPlayer(ctx, input.meX - cameraX, input.meY - cameraY, {
     color: CLASS_COLOR[snapshot?.players.find((p) => p.id === input.meId)?.classId ?? "warrior"] ?? "#fbbf24",
-    name: "我",
+    name: input.meName,
     hp: input.meHp,
     maxHp: input.meMaxHp,
     dir: input.meDir,
