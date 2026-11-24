@@ -170,38 +170,38 @@ function drawPlayerSprite(
 
   ctx.fillStyle = "rgba(0,0,0,0.3)";
   ctx.beginPath();
-  ctx.ellipse(x, y + 1, 12, 5.5, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + 1, 14, 6.5, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = "#334155";
-  ctx.fillRect(x - 6, y - 9, 4.5, 9);
-  ctx.fillRect(x + 1.5, y - 9, 4.5, 9);
+  ctx.fillRect(x - 7, y - 11, 5.5, 11);
+  ctx.fillRect(x + 1.5, y - 11, 5.5, 11);
 
   ctx.fillStyle = input.color;
-  ctx.fillRect(x - 8, y - 25, 16, 17);
+  ctx.fillRect(x - 9, y - 30, 18, 20);
 
   ctx.fillStyle = "#f0c39b";
-  ctx.fillRect(x - 6, y - 35, 12, 11);
+  ctx.fillRect(x - 7, y - 43, 14, 13);
 
   ctx.fillStyle = "#1f2937";
-  ctx.fillRect(x + (input.dir >= 0 ? 2 : -4.5), y - 31, 2.5, 2.5);
+  ctx.fillRect(x + (input.dir >= 0 ? 3 : -5), y - 38, 2.5, 2.5);
 
   if (input.me) {
     ctx.strokeStyle = "#fde68a";
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(x - 10, y - 37, 20, 38);
+    ctx.strokeRect(x - 11, y - 45, 22, 46);
   }
 
   ctx.font = "10px ui-monospace, Menlo, monospace";
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = input.me ? "#fde68a" : "#e2e8f0";
-  ctx.fillText(input.name, x, y - 44);
+  ctx.fillText(input.name, x, y - 52);
 
   ctx.fillStyle = "rgba(0,0,0,0.7)";
-  ctx.fillRect(x - 13, y - 41, 26, 3);
+  ctx.fillRect(x - 14, y - 49, 28, 3);
   ctx.fillStyle = "#ef4444";
-  ctx.fillRect(x - 13, y - 41, 26 * Math.max(0, input.hp / input.maxHp), 3);
+  ctx.fillRect(x - 14, y - 49, 28 * Math.max(0, input.hp / input.maxHp), 3);
 
   ctx.restore();
 }
@@ -217,6 +217,12 @@ function drawMonster(
   ctx.fillStyle = "rgba(0,0,0,0.3)";
   ctx.beginPath();
   ctx.ellipse(x, y + 2, 13 * scale, 6 * scale, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 底座光晕，让怪物在等距地面上更立体
+  ctx.fillStyle = monster.boss ? "rgba(232,121,249,0.22)" : "rgba(248,113,113,0.18)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + 1, 17 * scale, 8.5 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.font = `${monster.boss ? 44 : 30}px serif`;
@@ -362,7 +368,11 @@ export function drawWorld(
           const bob = Math.sin(input.time / 300 + drop.x) * 3;
           ctx.fillStyle = "rgba(0,0,0,0.25)";
           ctx.beginPath();
-          ctx.ellipse(screen.x, screen.y + 2, 9, 4, 0, 0, Math.PI * 2);
+          ctx.ellipse(screen.x, screen.y + 2, 10, 4.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "rgba(250,204,21,0.18)";
+          ctx.beginPath();
+          ctx.ellipse(screen.x, screen.y + 1, 13, 6, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.font = "18px serif";
           ctx.textAlign = "center";
