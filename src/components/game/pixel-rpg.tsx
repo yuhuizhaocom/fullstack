@@ -630,7 +630,7 @@ export function PixelRpg() {
         </div>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto pb-0.5">
+      <div className="flex flex-wrap gap-1">
         {TABS.map((entry) => (
           <button
             key={entry.key}
