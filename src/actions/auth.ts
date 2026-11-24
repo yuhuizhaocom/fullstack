@@ -5,10 +5,11 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
-import { createSession, destroySession } from "@/lib/auth/session";
+import { createSession, destroySession, getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 export type AuthFormState = { error: string } | null;
+export type PasswordFormState = { ok: true } | { error: string } | null;
 
 const emailSchema = z
   .string()
@@ -86,6 +87,9 @@ export async function loginAction(
     if (!user || !verifyPassword(password, user.passwordHash)) {
       return { error: "邮箱或密码不正确" };
     }
+    if (user.disabled) {
+      return { error: "账号已被禁用，请联系管理员" };
+    }
 
     await createSession(user.id);
   } catch (error) {
@@ -101,4 +105,64 @@ export async function logoutAction(): Promise<void> {
   await destroySession();
   revalidatePath("/", "layout");
   redirect("/login");
+}
+
+const passwordChangeSchema = z
+  .object({
+    currentPassword: z.string().min(1, "请输入当前密码").max(72, "密码不能超过 72 位"),
+    newPassword: z
+      .string()
+      .min(8, "新密码至少 8 位")
+      .max(72, "新密码不能超过 72 位"),
+    confirmPassword: z.string().min(1, "请再次输入新密码").max(72),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "两次输入的新密码不一致",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    message: "新密码不能与当前密码相同",
+    path: ["newPassword"],
+  });
+
+export async function changePasswordAction(
+  _prev: PasswordFormState,
+  formData: FormData
+): Promise<PasswordFormState> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: "登录状态已失效，请重新登录" };
+  }
+
+  const parsed = passwordChangeSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { error: firstError(parsed.error) };
+  }
+
+  try {
+    const record = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { passwordHash: true },
+    });
+    if (
+      !record ||
+      !verifyPassword(parsed.data.currentPassword, record.passwordHash)
+    ) {
+      return { error: "当前密码不正确" };
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: hashPassword(parsed.data.newPassword) },
+    });
+
+    // 让其他设备上的会话失效，并为当前设备重新签发会话
+    await prisma.session.deleteMany({ where: { userId: user.id } });
+    await createSession(user.id);
+
+    return { ok: true };
+  } catch (error) {
+    console.error("[auth] 修改密码失败:", error);
+    return { error: "修改失败，请稍后重试" };
+  }
 }

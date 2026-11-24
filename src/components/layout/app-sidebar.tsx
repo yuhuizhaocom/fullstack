@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ListTodo, LogOut } from "lucide-react";
+import { KeyRound, ListTodo, LogOut } from "lucide-react";
 
 import { logoutAction } from "@/actions/auth";
+import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
 import { isNavActive, navItemsFor } from "@/components/layout/nav-items";
 import { Button } from "@/components/ui/button";
 import { roleBadgeClass, roleLabels } from "@/lib/auth/roles";
@@ -67,6 +69,8 @@ function SidebarNav({
 }
 
 function UserCard({ user }: { user: SessionUser }) {
+  const [passwordOpen, setPasswordOpen] = useState(false);
+
   return (
     <div className="space-y-2.5">
       <div className="flex items-center gap-2.5">
@@ -89,18 +93,37 @@ function UserCard({ user }: { user: SessionUser }) {
         >
           {roleLabels[user.role]}
         </span>
-        <form action={logoutAction}>
+        <div className="flex items-center gap-0.5">
           <Button
-            type="submit"
+            type="button"
             variant="ghost"
-            size="sm"
-            className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+            size="icon"
+            className="size-7 text-muted-foreground hover:text-foreground"
+            title="修改密码"
+            aria-label="修改密码"
+            onClick={() => setPasswordOpen(true)}
           >
-            <LogOut className="size-3.5" />
-            退出
+            <KeyRound className="size-3.5" />
           </Button>
-        </form>
+          <form action={logoutAction}>
+            <Button
+              type="submit"
+              variant="ghost"
+              size="icon"
+              className="size-7 text-muted-foreground hover:text-foreground"
+              title="退出登录"
+              aria-label="退出登录"
+            >
+              <LogOut className="size-3.5" />
+            </Button>
+          </form>
+        </div>
       </div>
+
+      <ChangePasswordDialog
+        open={passwordOpen}
+        onOpenChange={setPasswordOpen}
+      />
     </div>
   );
 }

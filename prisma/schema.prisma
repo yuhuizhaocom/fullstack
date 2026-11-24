@@ -31,11 +31,13 @@ model User {
   name         String    @db.VarChar(50)
   passwordHash String    @db.VarChar(200)
   role         UserRole  @default(USER)
+  disabled     Boolean   @default(false)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   tasks        Task[]    @relation("TaskOwner")
   sessions     Session[]
 
+  @@index([disabled])
   @@map("users")
 }
 

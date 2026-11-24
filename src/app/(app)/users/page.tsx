@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { DatabaseNotice } from "@/components/database-notice";
 import { UserRoleSelect } from "@/components/users/user-role-select";
+import { UserStatusToggle } from "@/components/users/user-status-toggle";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { roleBadgeClass, roleLabels } from "@/lib/auth/roles";
 import { requireRole } from "@/lib/auth/session";
@@ -20,6 +21,7 @@ type UserRow = {
   name: string;
   email: string;
   role: "SUPER_ADMIN" | "ADMIN" | "USER";
+  disabled: boolean;
   createdAt: Date;
   _count: { tasks: number };
 };
@@ -38,6 +40,7 @@ export default async function UsersPage() {
         name: true,
         email: true,
         role: true,
+        disabled: true,
         createdAt: true,
         _count: { select: { tasks: true } },
       },
@@ -52,7 +55,7 @@ export default async function UsersPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">用户管理</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          仅超级管理员可见；调整角色后立即生效，无需对方重新登录
+          仅超级管理员可见；可调整角色、禁用账号，变更立即生效
         </p>
       </div>
 
@@ -95,7 +98,12 @@ export default async function UsersPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 sm:shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                      {user.disabled && (
+                        <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] text-rose-700">
+                          已禁用
+                        </span>
+                      )}
                       <span
                         className={cn(
                           "hidden rounded-full border px-2 py-0.5 text-[11px] sm:inline-flex",
@@ -108,6 +116,11 @@ export default async function UsersPage() {
                         userId={user.id}
                         role={user.role}
                         disabled={isSelf}
+                      />
+                      <UserStatusToggle
+                        userId={user.id}
+                        disabled={user.disabled}
+                        name={user.name}
                       />
                     </div>
                   </div>

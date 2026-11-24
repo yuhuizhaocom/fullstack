@@ -55,6 +55,12 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   });
   if (!session) return null;
 
+  // 账号被禁用后，已登录的会话立即失效
+  if (session.user.disabled) {
+    await prisma.session.deleteMany({ where: { userId: session.user.id } });
+    return null;
+  }
+
   if (session.expiresAt.getTime() <= Date.now()) {
     await prisma.session.delete({ where: { id: session.id } }).catch(() => undefined);
     return null;

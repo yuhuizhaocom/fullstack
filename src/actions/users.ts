@@ -53,3 +53,44 @@ export async function updateUserRole(
     return { ok: false, error: "修改失败，请稍后重试" };
   }
 }
+
+export async function setUserDisabled(
+  userId: string,
+  disabled: boolean
+): Promise<UserActionResult> {
+  const actor = await requireRole(["SUPER_ADMIN"]);
+
+  const parsedId = idSchema.safeParse(userId);
+  if (!parsedId.success || typeof disabled !== "boolean") {
+    return { ok: false, error: "参数不合法" };
+  }
+  if (parsedId.data === actor.id) {
+    return { ok: false, error: "不能禁用自己的账号" };
+  }
+
+  try {
+    const target = await prisma.user.findUnique({ where: { id: parsedId.data } });
+    if (!target) {
+      return { ok: false, error: "用户不存在" };
+    }
+    if (target.role === "SUPER_ADMIN" && disabled) {
+      return { ok: false, error: "超级管理员账号不能禁用，请先调整角色" };
+    }
+
+    await prisma.user.update({
+      where: { id: target.id },
+      data: { disabled },
+    });
+
+    // 禁用后立刻下线该用户的所有会话
+    if (disabled) {
+      await prisma.session.deleteMany({ where: { userId: target.id } });
+    }
+
+    revalidatePath("/users");
+    return { ok: true };
+  } catch (error) {
+    console.error("[users] 修改账号状态失败:", error);
+    return { ok: false, error: "修改失败，请稍后重试" };
+  }
+}
