@@ -1,4 +1,4 @@
-import { terrainAt, TILE, WORLD_H, WORLD_W } from "./terrain";
+import { SPAWN_X, SPAWN_Y, terrainAt, TILE, WORLD_H, WORLD_W } from "./terrain";
 
 export type RenderParticle = {
   x: number;
@@ -7,6 +7,9 @@ export type RenderParticle = {
   color: string;
   life: number;
   maxLife: number;
+  size?: number;
+  vx?: number;
+  vy?: number;
 };
 
 export type SkillEffect = {
@@ -194,6 +197,156 @@ function drawRock(ctx: CanvasRenderingContext2D, x: number, y: number): void {
   ctx.beginPath();
   ctx.ellipse(x - 6, y - 17, 4, 3, 0, 0, Math.PI * 2);
   ctx.fill();
+}
+
+function drawCampfire(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  time: number
+): void {
+  const glow = ctx.createRadialGradient(x, y - 12, 2, x, y - 12, 44);
+  glow.addColorStop(0, "rgba(251,146,60,0.3)");
+  glow.addColorStop(1, "rgba(251,146,60,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(x - 44, y - 56, 88, 88);
+
+  ctx.fillStyle = "#57534e";
+  for (let i = 0; i < 6; i += 1) {
+    const angle = (i / 6) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.ellipse(
+      x + Math.cos(angle) * 14,
+      y + Math.sin(angle) * 7,
+      4,
+      3,
+      0,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  }
+
+  ctx.strokeStyle = "#78350f";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x - 8, y - 2);
+  ctx.lineTo(x + 8, y - 10);
+  ctx.moveTo(x + 8, y - 2);
+  ctx.lineTo(x - 8, y - 10);
+  ctx.stroke();
+
+  const flicker = Math.sin(time / 120) * 2;
+  ctx.fillStyle = "rgba(249,115,22,0.9)";
+  ctx.beginPath();
+  ctx.ellipse(x, y - 14, 7, 12 + flicker, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(251,191,36,0.95)";
+  ctx.beginPath();
+  ctx.ellipse(x, y - 16, 4, 7 + flicker * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(254,240,138,0.9)";
+  ctx.beginPath();
+  ctx.ellipse(x, y - 18, 1.8, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+const MINIMAP_SIZE = 88;
+let minimapCache: HTMLCanvasElement | null = null;
+
+function getMinimapCache(): HTMLCanvasElement {
+  if (minimapCache) return minimapCache;
+  const canvas = document.createElement("canvas");
+  canvas.width = MINIMAP_SIZE;
+  canvas.height = MINIMAP_SIZE;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.fillStyle = "rgba(8,22,13,0.9)";
+    ctx.fillRect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE);
+    const sx = MINIMAP_SIZE / WORLD_W;
+    const sy = MINIMAP_SIZE / WORLD_H;
+    for (let ty = 0; ty < WORLD_H; ty += 1) {
+      for (let tx = 0; tx < WORLD_W; tx += 1) {
+        const terrain = terrainAt(tx, ty);
+        if (terrain === "tree") ctx.fillStyle = "rgba(34,90,50,0.9)";
+        else if (terrain === "rock") ctx.fillStyle = "rgba(100,116,139,0.85)";
+        else if (terrain === "water") ctx.fillStyle = "rgba(30,90,140,0.9)";
+        else continue;
+        ctx.fillRect(tx * sx, ty * sy, Math.ceil(sx), Math.ceil(sy));
+      }
+    }
+  }
+  minimapCache = canvas;
+  return canvas;
+}
+
+function drawMinimap(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  meId: string,
+  meX: number,
+  meY: number,
+  snapshot: RenderSnapshot | null,
+  time: number
+): void {
+  const size = MINIMAP_SIZE;
+  const x = width - size - 8;
+  const y = 92;
+  const sx = size / WORLD_W;
+  const sy = size / WORLD_H;
+
+  ctx.save();
+  ctx.globalAlpha = 0.92;
+  ctx.drawImage(getMinimapCache(), x, y);
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = "rgba(148,163,184,0.5)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1);
+
+  ctx.strokeStyle = "rgba(134,239,172,0.55)";
+  ctx.beginPath();
+  ctx.arc(
+    x + (SPAWN_X / TILE) * sx,
+    y + (SPAWN_Y / TILE) * sy,
+    (220 / TILE) * sx,
+    0,
+    Math.PI * 2
+  );
+  ctx.stroke();
+
+  for (const monster of snapshot?.monsters ?? []) {
+    ctx.fillStyle = monster.boss ? "#e879f9" : "#f87171";
+    ctx.beginPath();
+    ctx.arc(
+      x + (monster.x / TILE) * sx,
+      y + (monster.y / TILE) * sy,
+      monster.boss ? 3 : 1.8,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  }
+
+  for (const player of snapshot?.players ?? []) {
+    if (player.id === meId) continue;
+    ctx.fillStyle = "#60a5fa";
+    ctx.beginPath();
+    ctx.arc(x + (player.x / TILE) * sx, y + (player.y / TILE) * sy, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const selfX = x + (meX / TILE) * sx;
+  const selfY = y + (meY / TILE) * sy;
+  ctx.fillStyle = "#fde68a";
+  ctx.beginPath();
+  ctx.arc(selfX, selfY, 2.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(253,230,138,0.7)";
+  ctx.beginPath();
+  ctx.arc(selfX, selfY, 4 + Math.sin(time / 300) * 1.2, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 function drawWeapon(ctx: CanvasRenderingContext2D, style: WeaponStyle): void {
@@ -991,6 +1144,20 @@ export function drawWorld(
 
   const meSnapshot = snapshot?.players.find((player) => player.id === input.meId);
   const meScreen = toScreen(input.meX, input.meY, camX, camY);
+
+  const fireScreen = toScreen(SPAWN_X, SPAWN_Y, camX, camY);
+  if (
+    fireScreen.x > -60 &&
+    fireScreen.x < width + 60 &&
+    fireScreen.y > -60 &&
+    fireScreen.y < height + 60
+  ) {
+    entities.push({
+      depth: SPAWN_X + SPAWN_Y,
+      draw: () => drawCampfire(ctx, fireScreen.x, fireScreen.y, input.time),
+    });
+  }
+
   entities.push({
     depth: input.meX + input.meY,
     draw: () =>
@@ -1029,11 +1196,17 @@ export function drawWorld(
   for (const particle of input.particles) {
     const screen = toScreen(particle.x, particle.y, camX, camY);
     ctx.globalAlpha = Math.max(0, particle.life / particle.maxLife);
-    ctx.font = "bold 13px ui-monospace, Menlo, monospace";
+    const fontSize = particle.size ?? 13;
+    ctx.font = `bold ${fontSize}px ui-monospace, Menlo, monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.strokeText(particle.text, screen.x, screen.y);
     ctx.fillStyle = particle.color;
     ctx.fillText(particle.text, screen.x, screen.y);
     ctx.globalAlpha = 1;
   }
+
+  drawMinimap(ctx, width, input.meId, input.meX, input.meY, snapshot, input.time);
 }

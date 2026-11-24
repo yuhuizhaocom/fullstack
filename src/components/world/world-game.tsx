@@ -18,8 +18,10 @@ import { CLASSES, CLASS_SKILLS, SKILLS } from "@/lib/game/data";
 import {
   createSave,
   effectiveStats,
+  expToNext,
   gainExp,
   loadSave,
+  MAX_LEVEL,
   persistSave,
 } from "@/lib/game/engine";
 import type { ClassId, GameSave } from "@/lib/game/types";
@@ -126,6 +128,9 @@ export function WorldGame() {
   const effectsRef = useRef<SkillEffect[]>([]);
   const effectSeqRef = useRef(0);
   const prevPositionsRef = useRef<Record<string, { x: number; y: number }>>({});
+  const targetPosRef = useRef<Record<string, { x: number; y: number }>>({});
+  const prevTargetPosRef = useRef<Record<string, { x: number; y: number }>>({});
+  const snapAtRef = useRef(0);
   const meMovingRef = useRef(0);
   const sizeRef = useRef({ width: 720, height: VIEW_HEIGHT });
   const soundRef = useRef(true);
@@ -219,6 +224,18 @@ export function WorldGame() {
     const now = performance.now();
     const myId = myIdRef.current;
 
+    // 记录上一帧坐标，用于渲染插值（10Hz 快照平滑到 60fps）
+    const nextTargets: Record<string, { x: number; y: number }> = {};
+    for (const player of snapshot.players) {
+      nextTargets[player.id] = { x: player.x, y: player.y };
+    }
+    for (const monster of snapshot.monsters) {
+      nextTargets[monster.id] = { x: monster.x, y: monster.y };
+    }
+    prevTargetPosRef.current = targetPosRef.current;
+    targetPosRef.current = nextTargets;
+    snapAtRef.current = now;
+
     for (const event of snapshot.events) {
       if (event.seq <= lastSeqRef.current) continue;
       lastSeqRef.current = event.seq;
@@ -262,6 +279,7 @@ export function WorldGame() {
                 : event.crit
                   ? "#facc15"
                   : "#fda4af",
+          size: event.kind === "damage" && event.crit ? 18 : 13,
           life: 900,
           maxLife: 900,
         });
@@ -277,6 +295,20 @@ export function WorldGame() {
           break;
         case "kill":
           sfx("kill");
+          for (let i = 0; i < 6; i += 1) {
+            const angle = (i / 6) * Math.PI * 2;
+            particlesRef.current.push({
+              x: event.x,
+              y: event.y,
+              text: "✦",
+              color: "#fde68a",
+              size: 14,
+              vx: Math.cos(angle) * 1.5,
+              vy: Math.sin(angle) * 0.9 - 0.5,
+              life: 650,
+              maxLife: 650,
+            });
+          }
           break;
         case "skill":
           sfx("skill");
@@ -478,7 +510,8 @@ export function WorldGame() {
         const particles = particlesRef.current;
         for (let i = particles.length - 1; i >= 0; i -= 1) {
           particles[i].life -= 16;
-          particles[i].y -= 0.6;
+          particles[i].x += particles[i].vx ?? 0;
+          particles[i].y += particles[i].vy ?? -0.6;
           if (particles[i].life <= 0) particles.splice(i, 1);
         }
 
@@ -499,6 +532,40 @@ export function WorldGame() {
           (effect) => now - effect.at < 800
         );
 
+        // 10Hz 快照插值到 60fps，减少远程玩家与怪物跳帧
+        const rawSnapshot = snapshotRef.current;
+        let visual: RenderSnapshot | null = null;
+        if (rawSnapshot) {
+          const alpha = Math.min(
+            1,
+            Math.max(0, (now - snapAtRef.current) / 100)
+          );
+          const previous = prevTargetPosRef.current;
+          visual = {
+            players: rawSnapshot.players.map((player) => {
+              const old = previous[player.id];
+              return old
+                ? {
+                    ...player,
+                    x: old.x + (player.x - old.x) * alpha,
+                    y: old.y + (player.y - old.y) * alpha,
+                  }
+                : player;
+            }),
+            monsters: rawSnapshot.monsters.map((monster) => {
+              const old = previous[monster.id];
+              return old
+                ? {
+                    ...monster,
+                    x: old.x + (monster.x - old.x) * alpha,
+                    y: old.y + (monster.y - old.y) * alpha,
+                  }
+                : monster;
+            }),
+            drops: rawSnapshot.drops,
+          };
+        }
+
         drawWorld(canvas, {
           width,
           height,
@@ -513,7 +580,7 @@ export function WorldGame() {
           meMoving: now - meMovingRef.current < 200,
           meSwingAt: swingsRef.current[myIdRef.current] ?? 0,
           meHurtAt: flashesRef.current[myIdRef.current] ?? 0,
-          snapshot: snapshotRef.current as RenderSnapshot | null,
+          snapshot: visual,
           swings: swingsRef.current,
           flashes: flashesRef.current,
           moving: movingRef.current,
@@ -827,6 +894,12 @@ export function WorldGame() {
   const skills = save ? CLASS_SKILLS[save.classId] : [];
   const hpPercent = self ? Math.max(0, (self.hp / self.maxHp) * 100) : 100;
   const mpPercent = self ? Math.max(0, (self.mp / self.maxMp) * 100) : 100;
+  const expNeed = save ? expToNext(save.level) : 1;
+  const expPercent = save
+    ? save.level >= MAX_LEVEL
+      ? 100
+      : Math.min(100, (save.exp / expNeed) * 100)
+    : 0;
 
   return (
     <div
@@ -844,6 +917,17 @@ export function WorldGame() {
         style={{ height: fullscreen ? "100dvh" : isTouch ? 420 : 480 }}
       >
         <canvas ref={canvasRef} className="block h-full w-full" />
+
+        {/* 低血量红色边缘警示 */}
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-0 z-[5] transition-opacity duration-500",
+            self && self.hp > 0 && self.hp / self.maxHp < 0.3
+              ? "opacity-100"
+              : "opacity-0"
+          )}
+          style={{ boxShadow: "inset 0 0 60px 18px rgba(239,68,68,0.45)" }}
+        />
 
         {/* 顶部 HUD 浮层 */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-slate-950/90 via-slate-950/60 to-transparent px-2 pb-10 pt-[max(0.5rem,env(safe-area-inset-top))]">
@@ -922,6 +1006,13 @@ export function WorldGame() {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="mt-1.5 h-1 overflow-hidden rounded bg-slate-800/70">
+            <div
+              className="h-full rounded bg-violet-400"
+              style={{ width: `${expPercent}%` }}
+            />
           </div>
         </div>
 
