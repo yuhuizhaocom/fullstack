@@ -72,7 +72,8 @@ if [ -s "$CF_TOKEN_FILE" ] && command -v cloudflared >/dev/null 2>&1; then
   if [ -f "$CF_PID_FILE" ] && kill -0 "$(cat "$CF_PID_FILE")" 2>/dev/null; then
     log "Cloudflare Tunnel 已在运行（pid $(cat "$CF_PID_FILE")）"
   else
-    nohup cloudflared tunnel --no-autoupdate run --token "$(cat "$CF_TOKEN_FILE")" \
+    # 用环境变量传 token，避免出现在 ps 的命令行里
+    TUNNEL_TOKEN="$(cat "$CF_TOKEN_FILE")" nohup cloudflared tunnel --no-autoupdate run \
       >>"$CF_LOG" 2>&1 &
     echo $! >"$CF_PID_FILE"
     log "Cloudflare Tunnel 已启动（pid $(cat "$CF_PID_FILE")）"

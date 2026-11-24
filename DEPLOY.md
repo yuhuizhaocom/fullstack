@@ -23,7 +23,8 @@
 对外访问：
 
 - 应用：http://sg-sgp13.tryaltare.ai:25045
-- 健康检查：http://sg-sgp13.tryaltare.ai:25045/api/health
+- **HTTPS 正式入口：https://www.722.qzz.io**（Cloudflare Tunnel，见第 11 节）
+- 健康检查：https://www.722.qzz.io/api/health
 - 数据库：`sg-sgp13.tryaltare.ai:25048`（scram-sha-256，仅 `taskflow` 可连）
 
 ### 架构
@@ -331,6 +332,8 @@ cat /root/.taskflow-admin-password
 
 ### 服务器侧文件
 
+当前隧道公开域名：`www.722.qzz.io` → `http://localhost:25045`（ingress 由控制台下发给 cloudflared）。
+
 | 路径 | 说明 |
 | --- | --- |
 | `/usr/local/bin/cloudflared` | 二进制（`cloudflared --version` 验证） |
@@ -338,18 +341,21 @@ cat /root/.taskflow-admin-password
 | `/opt/taskflow/cloudflared.log` | 隧道日志 |
 | `/opt/taskflow/cloudflared.pid` | 进程号 |
 
-`bin/start.sh` 检测到 token 文件存在时会自动拉起隧道，`bin/stop.sh` 会一并停止；容器重启后执行一次 `start.sh` 即可恢复应用 + 隧道。
+`bin/start.sh` 检测到 token 文件存在时会以 `TUNNEL_TOKEN` 环境变量方式拉起隧道（避免 token 出现在 `ps` 命令行），`bin/stop.sh` 会一并停止；容器重启后执行一次 `start.sh` 即可恢复应用 + 隧道。
 
 手动操作等价命令：
 
 ```bash
 # 启动
-nohup cloudflared tunnel --no-autoupdate run --token "$(cat /root/.cloudflared/token)" \
-  >>/opt/taskflow/cloudflared.log 2>&1 &
+TUNNEL_TOKEN="$(cat /root/.cloudflared/token)" \
+  nohup cloudflared tunnel --no-autoupdate run >>/opt/taskflow/cloudflared.log 2>&1 &
 echo $! >/opt/taskflow/cloudflared.pid
 
 # 查看连接状态
 grep "Registered tunnel connection" /opt/taskflow/cloudflared.log | tail -3
+
+# 查看下发的路由配置
+grep "Updated to new configuration" /opt/taskflow/cloudflared.log | tail -1
 
 # 换 token：控制台轮换后覆盖文件，再重启隧道
 bash /opt/taskflow/bin/stop.sh && bash /opt/taskflow/bin/start.sh
@@ -374,4 +380,6 @@ cloudflared tunnel --no-autoupdate --url http://127.0.0.1:25045
 
 ### 已验证
 
-2026-11-24：命名隧道启动成功，日志显示 `Registered tunnel connection ... location=sin20 protocol=quic`；Quick Tunnel 阶段实测 `isSecureContext=true`，`navigator.clipboard` 读写均可用。
+2026-11-24：命名隧道启动成功，日志显示 `Registered tunnel connection ... location=sin20 protocol=quic`；控制台下发的 ingress 为 `www.722.qzz.io → http://localhost:25045`。
+
+外网验收：`https://www.722.qzz.io/api/health` 返回 200；浏览器实测 `isSecureContext=true`，`navigator.clipboard` 读写均可用；CI 的外网健康检查已切到该域名（失败时回退直连 25045）。

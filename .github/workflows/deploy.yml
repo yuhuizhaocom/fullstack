@@ -13,6 +13,7 @@ concurrency:
 env:
   APP_DIR: /opt/taskflow
   APP_PORT: "25045"
+  PUBLIC_URL: https://www.722.qzz.io
 
 jobs:
   build:
@@ -123,13 +124,23 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           set -euo pipefail
+          # 优先检查 Cloudflare Tunnel 的 HTTPS 入口，失败时回退到直连端口
           for i in $(seq 1 10); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "http://$SSH_HOST:$APP_PORT/api/health" || true)
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$PUBLIC_URL/api/health" || true)
             if [ "$code" = "200" ]; then
-              echo "外网健康检查通过：$(curl -s "http://$SSH_HOST:$APP_PORT/api/health")"
+              echo "HTTPS 入口健康检查通过：$(curl -s "$PUBLIC_URL/api/health")"
               exit 0
             fi
             sleep 3
           done
-          echo "外网健康检查失败（HTTP ${code:-无响应}）"
+          echo "HTTPS 入口未通过（HTTP ${code:-无响应}），回退检查直连端口"
+          for i in $(seq 1 5); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://$SSH_HOST:$APP_PORT/api/health" || true)
+            if [ "$code" = "200" ]; then
+              echo "直连端口正常，但 HTTPS 入口异常，请检查 cloudflared"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "健康检查失败（HTTP ${code:-无响应}）"
           exit 1
