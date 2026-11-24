@@ -38,6 +38,8 @@ export type WorldPlayer = {
   guardUntil: number;
   lastMpRegen: number;
   invulnerableUntil: number;
+  lastSafeRegen: number;
+  lastRecall: number;
   weapon: string | null;
   armor: string | null;
 };
@@ -340,6 +342,8 @@ export function joinWorld(input: JoinInput) {
       guardUntil: 0,
       lastMpRegen: now,
       invulnerableUntil: 0,
+      lastSafeRegen: 0,
+      lastRecall: 0,
       weapon,
       armor,
     };
@@ -387,6 +391,20 @@ export function leaveWorld(clientId: string): void {
 export function touchPlayer(clientId: string): void {
   const player = world.players.get(clientId);
   if (player) player.lastSeen = Date.now();
+}
+
+/** 回城：传送到出生点并给短暂保护，20 秒冷却 */
+export function recallPlayer(clientId: string): void {
+  const player = world.players.get(clientId);
+  if (!player || player.deadUntil) return;
+  const now = Date.now();
+  if (now - player.lastRecall < 20_000) return;
+  player.lastRecall = now;
+  player.x = SPAWN_X;
+  player.y = SPAWN_Y;
+  player.lastMoveAt = now;
+  player.lastSeen = now;
+  player.invulnerableUntil = Math.max(player.invulnerableUntil, now + 1500);
 }
 
 export function movePlayer(clientId: string, x: number, y: number): void {
@@ -634,6 +652,19 @@ function step(now: number): void {
       player.mp = Math.min(
         player.maxMp,
         player.mp + Math.max(1, Math.round(player.maxMp * 0.02))
+      );
+    }
+    // 安全区内缓慢回血，提供残血恢复手段
+    if (
+      !player.deadUntil &&
+      player.hp < player.maxHp &&
+      now - player.lastSafeRegen > 1000 &&
+      Math.hypot(player.x - SPAWN_X, player.y - SPAWN_Y) < 220
+    ) {
+      player.lastSafeRegen = now;
+      player.hp = Math.min(
+        player.maxHp,
+        player.hp + Math.max(1, Math.round(player.maxHp * 0.03))
       );
     }
   }

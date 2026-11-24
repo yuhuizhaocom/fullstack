@@ -6,6 +6,7 @@ import {
   joinWorld,
   leaveWorld,
   movePlayer,
+  recallPlayer,
   touchPlayer,
 } from "@/lib/world/state";
 
@@ -40,6 +41,9 @@ export async function POST(request: NextRequest) {
       break;
     case "ping":
       touchPlayer(clientId);
+      break;
+    case "recall":
+      recallPlayer(clientId);
       break;
     case "sync": {
       const player = body?.player;

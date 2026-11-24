@@ -95,6 +95,7 @@ export function WorldGame() {
   const [soundOn, setSoundOn] = useState(true);
   const [isTouch, setIsTouch] = useState(false);
   const [skillCd, setSkillCd] = useState(false);
+  const [recallReadyAt, setRecallReadyAt] = useState(0);
   const [nativeFullscreen, setNativeFullscreen] = useState(false);
   const [pseudoFullscreen, setPseudoFullscreen] = useState(false);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
@@ -132,6 +133,8 @@ export function WorldGame() {
   const prevTargetPosRef = useRef<Record<string, { x: number; y: number }>>({});
   const snapAtRef = useRef(0);
   const meMovingRef = useRef(0);
+  const spawnRef = useRef({ x: 0, y: 0 });
+  const recallReadyRef = useRef(0);
   const sizeRef = useRef({ width: 720, height: VIEW_HEIGHT });
   const soundRef = useRef(true);
   const fullscreen = nativeFullscreen || pseudoFullscreen;
@@ -333,7 +336,17 @@ export function WorldGame() {
         case "death":
           if (event.to === myId) {
             sfx("death");
-            toast.error("你被击败了，3 秒后复活");
+            const current = saveRef.current;
+            if (current && current.gold > 0) {
+              const lost = Math.max(1, Math.floor(current.gold * 0.05));
+              const next: GameSave = { ...current, gold: current.gold - lost };
+              saveRef.current = next;
+              setSave(next);
+              persistSave(next);
+              toast.error(`你被击败了，损失 ${lost} 金币，3 秒后复活`);
+            } else {
+              toast.error("你被击败了，3 秒后复活");
+            }
           }
           break;
         case "reward":
@@ -473,6 +486,9 @@ export function WorldGame() {
 
       myIdRef.current = clientId;
       lastSeqRef.current = data.eventSeq;
+      if (data.info?.spawn) {
+        spawnRef.current = data.info.spawn;
+      }
       meRef.current = { x: data.player.x, y: data.player.y, dir: 1 };
       lastPosRef.current = { x: 0, y: 0, at: 0 };
       particlesRef.current = [];
@@ -734,6 +750,11 @@ export function WorldGame() {
         doAttack();
         return;
       }
+      if (key === "r") {
+        event.preventDefault();
+        doRecall();
+        return;
+      }
       const index = SKILL_KEYS.indexOf(key);
       if (index >= 0) {
         event.preventDefault();
@@ -811,6 +832,28 @@ export function WorldGame() {
   function endJoystick() {
     moveVecRef.current = { x: 0, y: 0 };
     setKnob({ x: 0, y: 0 });
+  }
+
+  function doRecall() {
+    const now = Date.now();
+    if (now < recallReadyRef.current) {
+      toast.error("回城冷却中");
+      return;
+    }
+    post({ type: "recall" });
+    meRef.current = {
+      x: spawnRef.current.x,
+      y: spawnRef.current.y,
+      dir: meRef.current.dir,
+    };
+    lastPosRef.current = { x: 0, y: 0, at: 0 };
+    recallReadyRef.current = now + 20_000;
+    setRecallReadyAt(now + 20_000);
+    window.setTimeout(() => {
+      recallReadyRef.current = 0;
+      setRecallReadyAt(0);
+    }, 20_000);
+    toast.success("已回城");
   }
 
   function toggleBgm() {
@@ -1143,8 +1186,17 @@ export function WorldGame() {
                 </button>
               );
             })}
+            <button
+              type="button"
+              className={cn(btn, "bg-slate-900/80")}
+              disabled={recallReadyAt > Date.now()}
+              onClick={doRecall}
+              title="回城（R），20 秒冷却"
+            >
+              🏠 回城
+            </button>
             <span className="ml-auto hidden text-[10px] text-slate-500 sm:inline">
-              J 攻击 · 1-4 技能
+              J 攻击 · 1-4 技能 · R 回城
             </span>
           </div>
           <div className="pointer-events-auto mt-1 flex items-center gap-1 overflow-x-auto text-[10px] text-slate-400">
