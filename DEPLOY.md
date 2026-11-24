@@ -482,7 +482,7 @@ cloudflared tunnel --no-autoupdate --url http://127.0.0.1:25045
 | --- | --- |
 | 入口 | https://www.722.qzz.io/world （从 `/game` 页顶部进入；共享同一份角色存档） |
 | 架构 | 服务端内存世界单例（`globalThis`），50ms 逻辑 tick，10Hz SSE 快照广播；客户端每 90ms 上报位置 |
-| 地图 | 64×48 瓦片（32px），客户端与服务端用同一确定性函数生成地形，无需传输地图 |
+| 地图 | 64×48 瓦片，2.5D 等距渲染（菱形地砖 + 树/石/角色高度与阴影，按深度排序遮挡）；客户端与服务端用同一确定性函数生成地形，无需传输地图 |
 | 怪物 | 28 只普通怪（按区域分级）+ 2 只 BOSS；普通 15s、BOSS 60s 重生；服务器统一 AI 与伤害 |
 | 组队 | 同世界自动同屏协作；最后一击拿全额经验金币，其他造成 ≥5% 伤害的玩家获 30% 经验 |
 | 接口 | `POST /api/world/join`、`POST /api/world/act`（move/attack/skill/sync/leave）、`GET /api/world/stream`（SSE） |

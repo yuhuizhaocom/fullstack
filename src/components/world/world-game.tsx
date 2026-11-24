@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 const CLIENT_KEY = "tf_world_client";
 const SPEED = 210;
-const VIEW_HEIGHT = 380;
+const VIEW_HEIGHT = 420;
 const MOVE_KEYS = new Set([
   "w",
   "a",
@@ -354,24 +354,37 @@ export function WorldGame() {
       lastFrameRef.current = now;
 
       const keys = keysRef.current;
-      let dx = 0;
-      let dy = 0;
-      if (keys.has("w") || keys.has("arrowup")) dy -= 1;
-      if (keys.has("s") || keys.has("arrowdown")) dy += 1;
-      if (keys.has("a") || keys.has("arrowleft")) dx -= 1;
-      if (keys.has("d") || keys.has("arrowright")) dx += 1;
+      // 屏幕方向映射到等距世界坐标：W 往屏幕上方走
+      let ix = 0;
+      let iy = 0;
+      if (keys.has("w") || keys.has("arrowup")) {
+        ix -= 1;
+        iy -= 1;
+      }
+      if (keys.has("s") || keys.has("arrowdown")) {
+        ix += 1;
+        iy += 1;
+      }
+      if (keys.has("a") || keys.has("arrowleft")) {
+        ix -= 1;
+        iy += 1;
+      }
+      if (keys.has("d") || keys.has("arrowright")) {
+        ix += 1;
+        iy -= 1;
+      }
 
       const me = meRef.current;
       const selfNow = selfRef.current;
-      if ((dx !== 0 || dy !== 0) && !selfNow?.dead) {
-        const length = Math.hypot(dx, dy) || 1;
-        const nx = me.x + (dx / length) * SPEED * dt;
-        const ny = me.y + (dy / length) * SPEED * dt;
+      if ((ix !== 0 || iy !== 0) && !selfNow?.dead) {
+        const length = Math.hypot(ix, iy) || 1;
+        const nx = me.x + (ix / length) * SPEED * dt;
+        const ny = me.y + (iy / length) * SPEED * dt;
         if (!isBlockedAt(nx, me.y, 9)) me.x = nx;
         if (!isBlockedAt(me.x, ny, 9)) me.y = ny;
         me.x = Math.max(TILE, Math.min(WORLD_W * TILE - TILE, me.x));
         me.y = Math.max(TILE, Math.min(WORLD_H * TILE - TILE, me.y));
-        if (dx !== 0) me.dir = dx > 0 ? 1 : -1;
+        if (ix !== 0) me.dir = ix > 0 ? 1 : -1;
       }
 
       if (now - lastSendRef.current > 90) {
@@ -390,14 +403,6 @@ export function WorldGame() {
       const canvas = canvasRef.current;
       if (canvas) {
         const { width, height } = sizeRef.current;
-        const cameraX = Math.max(
-          0,
-          Math.min(WORLD_W * TILE - width, me.x - width / 2)
-        );
-        const cameraY = Math.max(
-          0,
-          Math.min(WORLD_H * TILE - height, me.y - height / 2)
-        );
 
         const particles = particlesRef.current;
         for (let i = particles.length - 1; i >= 0; i -= 1) {
@@ -409,8 +414,6 @@ export function WorldGame() {
         drawWorld(canvas, {
           width,
           height,
-          cameraX,
-          cameraY,
           meId: myIdRef.current,
           meX: me.x,
           meY: me.y,
@@ -441,7 +444,7 @@ export function WorldGame() {
 
     const apply = () => {
       const width = Math.max(320, wrap.clientWidth);
-      const height = isTouch ? 300 : VIEW_HEIGHT;
+      const height = isTouch ? 320 : VIEW_HEIGHT;
       sizeRef.current = { width, height };
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       canvas.width = Math.round(width * dpr);
