@@ -219,11 +219,21 @@ function createWorld(): World {
     dropSeq: 0,
   };
 
-  for (let i = 0; i < 28; i += 1) {
-    const point = randomOpenPoint();
-    const tx = Math.floor(point.x / TILE);
-    const region = tx < 20 ? 0 : tx < 40 ? 2 : 4;
-    const index = region + (Math.random() < 0.5 ? 0 : 1);
+  for (let i = 0; i < 24; i += 1) {
+    let point = randomOpenPoint();
+    let guard = 0;
+    // 出生点附近 300px 内不生成怪物
+    while (
+      Math.hypot(point.x - SPAWN_X, point.y - SPAWN_Y) < 300 &&
+      guard < 25
+    ) {
+      point = randomOpenPoint();
+      guard += 1;
+    }
+    // 离出生点越远，怪物越强
+    const distance = Math.hypot(point.x - SPAWN_X, point.y - SPAWN_Y);
+    const tier = distance < 520 ? 0 : distance < 960 ? 2 : 4;
+    const index = tier + (Math.random() < 0.5 ? 0 : 1);
     const monster = createMonster(MONSTER_DEFS[index], point);
     world.monsterSeq += 1;
     monster.id = `m${world.monsterSeq}`;
@@ -641,6 +651,13 @@ function step(now: number): void {
       }
     }
     if (!nearest || nearestDistance > monster.aggro) continue;
+
+    // 村庄安全区：玩家在出生点附近时怪物不主动攻击
+    if (
+      Math.hypot(nearest.x - SPAWN_X, nearest.y - SPAWN_Y) < 220
+    ) {
+      continue;
+    }
 
     if (nearestDistance > 44) {
       const speed = monster.speed * dt;
