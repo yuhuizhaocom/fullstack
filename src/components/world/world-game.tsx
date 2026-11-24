@@ -276,6 +276,22 @@ export function WorldGame() {
         });
         if (effectsRef.current.length > 24) effectsRef.current.shift();
       }
+      if (event.kind === "boss-aoe") {
+        effectSeqRef.current += 1;
+        effectsRef.current.push({
+          id: effectSeqRef.current,
+          x: event.x,
+          y: event.y,
+          skillId: "boss_aoe",
+          at: now,
+        });
+        if (effectsRef.current.length > 24) effectsRef.current.shift();
+        if (
+          Math.hypot(event.x - meRef.current.x, event.y - meRef.current.y) < 420
+        ) {
+          sfx("skill");
+        }
+      }
 
       if (
         event.value &&
@@ -316,6 +332,11 @@ export function WorldGame() {
             event.y - meRef.current.y
           );
           if (distance < 340) sfx("kill");
+          if (event.boss) {
+            toast.success(
+              `🏆 ${event.text} 被 ${event.byName ?? "冒险者"} 击败！`
+            );
+          }
           for (let i = 0; i < 6; i += 1) {
             const angle = (i / 6) * Math.PI * 2;
             particlesRef.current.push({

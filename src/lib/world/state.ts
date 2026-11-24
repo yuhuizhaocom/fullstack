@@ -66,6 +66,7 @@ export type WorldMonster = {
   homeY: number;
   respawnAt: number;
   lastAttack: number;
+  lastAoe: number;
   damage: Map<string, number>;
 };
 
@@ -88,6 +89,7 @@ export type WorldEvent = {
     | "heal"
     | "skill"
     | "swing"
+    | "boss-aoe"
     | "join"
     | "leave"
     | "death";
@@ -100,6 +102,8 @@ export type WorldEvent = {
   from?: string;
   monsterId?: string;
   skillId?: string;
+  boss?: boolean;
+  byName?: string;
   exp?: number;
   gold?: number;
 };
@@ -205,6 +209,7 @@ function createMonster(def: MonsterDef, point: { x: number; y: number }): WorldM
     homeY: point.y,
     respawnAt: 0,
     lastAttack: 0,
+    lastAoe: 0,
     damage: new Map(),
   };
 }
@@ -535,7 +540,7 @@ function damageMonster(
 
   monster.respawnAt = now + (monster.boss ? 60_000 : 15_000);
   player.kills += 1;
-  pushEvent({ kind: "kill", x: monster.x, y: monster.y, text: monster.name });
+  pushEvent({ kind: "kill", x: monster.x, y: monster.y, text: monster.name, boss: monster.boss, byName: player.name });
   pushEvent({
     kind: "reward",
     to: player.id,
@@ -785,6 +790,45 @@ function step(now: number): void {
       if (nearest.hp <= 0) {
         nearest.deadUntil = now + 3000;
         pushEvent({ kind: "death", to: nearest.id, x: nearest.x, y: nearest.y });
+      }
+    }
+
+    // BOSS 范围技能：6 秒一次，对 120px 内的所有玩家造成 140% 伤害
+    if (monster.boss && now - monster.lastAoe > 6000) {
+      const inRange = [...world.players.values()].filter(
+        (player) =>
+          !player.deadUntil &&
+          Math.hypot(player.x - monster.x, player.y - monster.y) <= 120
+      );
+      if (inRange.length > 0) {
+        monster.lastAoe = now;
+        pushEvent({
+          kind: "boss-aoe",
+          x: monster.x,
+          y: monster.y,
+          text: monster.name,
+        });
+        for (const target of inRange) {
+          if (now < target.invulnerableUntil) continue;
+          const hit = rollDamage(monster.atk, target.def, 5, 1.4);
+          let damage = hit.damage;
+          if (target.guardUntil > now) {
+            damage = Math.max(1, Math.round(damage * 0.55));
+          }
+          target.hp = Math.max(0, target.hp - damage);
+          target.invulnerableUntil = now + 500;
+          pushEvent({
+            kind: "hurt",
+            to: target.id,
+            x: target.x,
+            y: target.y - 20,
+            value: damage,
+          });
+          if (target.hp <= 0) {
+            target.deadUntil = now + 3000;
+            pushEvent({ kind: "death", to: target.id, x: target.x, y: target.y });
+          }
+        }
       }
     }
   }

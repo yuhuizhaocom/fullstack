@@ -283,6 +283,7 @@ function getMinimapCache(): HTMLCanvasElement {
 function drawMinimap(
   ctx: CanvasRenderingContext2D,
   width: number,
+  height: number,
   meId: string,
   meX: number,
   meY: number,
@@ -345,6 +346,13 @@ function drawMinimap(
   ctx.beginPath();
   ctx.arc(selfX, selfY, 4 + Math.sin(time / 300) * 1.2, 0, Math.PI * 2);
   ctx.stroke();
+
+  // 当前视野范围
+  const viewW = Math.min(size, (width / TILE) * sx * 1.4);
+  const viewH = Math.min(size, ((height * 2) / TILE) * sy * 1.2);
+  ctx.strokeStyle = "rgba(226,232,240,0.32)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(selfX - viewW / 2, selfY - viewH / 2, viewW, viewH);
 
   ctx.restore();
 }
@@ -896,6 +904,33 @@ function drawSkillEffect(
     ctx.beginPath();
     ctx.arc(x, y - 12, 8 + progress * 26, 0, Math.PI * 2);
     ctx.fill();
+  } else if (skillId === "boss_aoe") {
+    ctx.strokeStyle = "#f87171";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(
+      x,
+      y,
+      16 + progress * 108,
+      8 + progress * 54,
+      0,
+      0,
+      Math.PI * 2
+    );
+    ctx.stroke();
+    ctx.globalAlpha = alpha * 0.22;
+    ctx.fillStyle = "#ef4444";
+    ctx.beginPath();
+    ctx.ellipse(
+      x,
+      y,
+      16 + progress * 108,
+      8 + progress * 54,
+      0,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
   } else if (skillId === "earth_split") {
     ctx.strokeStyle = "#d97706";
     ctx.lineWidth = 4;
@@ -1216,5 +1251,14 @@ export function drawWorld(
     ctx.globalAlpha = 1;
   }
 
-  drawMinimap(ctx, width, input.meId, input.meX, input.meY, snapshot, input.time);
+  drawMinimap(
+    ctx,
+    width,
+    height,
+    input.meId,
+    input.meX,
+    input.meY,
+    snapshot,
+    input.time
+  );
 }
