@@ -67,7 +67,10 @@ npm run db:deploy && npm run db:seed && npm run dev
 ## 目录结构
 
 ```
+server.ts                        自定义 Node 服务：Next 页面 + 同端口 /ws 实时服务
 src/
+├─ server/
+│  └─ realtime.ts                WebSocket 会话、msgpack 协议与 10Hz 增量广播
 ├─ app/
 │  ├─ layout.tsx               根布局（字体、Toaster）
 │  ├─ (app)/
@@ -83,14 +86,13 @@ src/
 │  │  ├─ clip/                 临时剪贴板：加入频道
 │  │  ├─ clip/[code]/          频道页（SSE 实时同步）
 │  │  ├─ files/                附件分享（上传 / 下载链接）
-│  │  ├─ game/                 像素 RPG（本地存档单机游戏）
-│  │  └─ world/                开放世界（实时多人）
+│  │  ├─ game/                 旧版入口（重定向到 /world）
+│  │  └─ world/                开放世界（实时多人 + 实时副本）
 │  └─ api/
 │     ├─ health/route.ts       健康检查（SELECT 1 + 版本号）
 │     ├─ chat/                 聊天历史读写 + SSE 流
 │     ├─ files/                附件流式上传、列表与下载
 │     ├─ game/save/            云存档读写（登录用户）
-│     ├─ world/                加入世界、实时动作、SSE 快照流
 │     └─ clip/[code]/          消息读写 + SSE 流
 ├─ actions/
 │  ├─ auth.ts                  注册 / 登录 / 退出 / 修改密码

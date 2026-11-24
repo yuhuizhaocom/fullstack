@@ -11,11 +11,19 @@ import {
   Users,
   Volume2,
   VolumeX,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  BagPanel,
+  CharacterPanel,
+  ShopPanel,
+  SkillsPanel,
+} from "@/components/game/panels";
 import { CLASSES, CLASS_SKILLS, ITEMS, SKILLS } from "@/lib/game/data";
 import {
+  addItem,
   createSave,
   effectiveStats,
   expToNext,
@@ -25,16 +33,36 @@ import {
   persistSave,
   removeItem,
 } from "@/lib/game/engine";
-import type { ClassId, GameSave } from "@/lib/game/types";
+import type { ClassId, GameSave, QuestSaveEntry } from "@/lib/game/types";
 import { initAudio, playSfx, startBgm, stopBgm } from "@/lib/world/audio";
+import {
+  applyDelta,
+  createClientView,
+  viewToSnapshot,
+  type ClientView,
+} from "@/lib/world/delta";
+import {
+  decodeMessage,
+  encodeMessage,
+  type AckMessage,
+  type HelloMessage,
+  type ServerMessage,
+} from "@/lib/world/protocol";
+import { QUESTS, questGoal, questStatusLabel, type QuestView } from "@/lib/world/quests";
 import {
   drawWorld,
   type RenderParticle,
   type RenderSnapshot,
   type SkillEffect,
 } from "@/lib/world/render";
-import { isBlockedAt, TILE, WORLD_H, WORLD_W } from "@/lib/world/terrain";
-import type { WorldSnapshot } from "@/lib/world/state";
+import type { NpcView, PortalView, WorldSnapshot } from "@/lib/world/state";
+import {
+  isBlockedAt,
+  roomConfig,
+  ROOMS,
+  TILE,
+  type RoomId,
+} from "@/lib/world/terrain";
 import { cn } from "@/lib/utils";
 
 const CLIENT_KEY = "tf_world_client";
@@ -53,7 +81,17 @@ const MOVE_KEYS = new Set([
   "arrowleft",
   "arrowright",
 ]);
-const SKILL_KEYS = ["1", "2", "3", "4"];
+/** 键盘 1-4，同时支持 Q/E/R 快捷键（W 留给移动） */
+const SKILL_KEY_MAP: Record<string, number> = {
+  "1": 0,
+  "2": 1,
+  "3": 2,
+  "4": 3,
+  q: 0,
+  e: 2,
+  r: 3,
+};
+const SKILL_KEYS = ["Q", "W", "E", "R"];
 
 const btn =
   "rounded border-2 border-slate-600 bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-slate-100 transition-colors hover:bg-slate-700 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40";
@@ -71,6 +109,10 @@ type Self = {
   dead: boolean;
   kills: number;
 };
+
+type PanelKind = "character" | "bag" | "skills" | "shop";
+
+type ActResponse = Omit<AckMessage, "t" | "rid">;
 
 function getClientId(): string {
   let id = localStorage.getItem(CLIENT_KEY);
@@ -131,13 +173,18 @@ export function WorldGame() {
   const [self, setSelf] = useState<Self | null>(null);
   const [party, setParty] = useState<WorldSnapshot["players"]>([]);
   const [online, setOnline] = useState(0);
+  const [room, setRoom] = useState<RoomId>("world");
+  const [quests, setQuests] = useState<QuestView[]>([]);
+  const [nearNpc, setNearNpc] = useState<NpcView | null>(null);
+  const [nearPortal, setNearPortal] = useState<PortalView | null>(null);
+  const [npcDialog, setNpcDialog] = useState<NpcView | null>(null);
+  const [questOpen, setQuestOpen] = useState(false);
+  const [panel, setPanel] = useState<PanelKind | null>(null);
   const [bgmOn, setBgmOn] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
   const [isTouch, setIsTouch] = useState(false);
-  const [skillCd, setSkillCd] = useState(false);
   const [recallReadyAt, setRecallReadyAt] = useState(0);
   const [potionOpen, setPotionOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [daily, setDaily] = useState<DailyProgress>({
     date: "",
     kills: 0,
@@ -146,6 +193,7 @@ export function WorldGame() {
   const [nativeFullscreen, setNativeFullscreen] = useState(false);
   const [pseudoFullscreen, setPseudoFullscreen] = useState(false);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
+  const [nowTick, setNowTick] = useState(() => Date.now());
 
   const [createName, setCreateName] = useState("");
   const [createClass, setCreateClass] = useState<ClassId>("warrior");
@@ -156,18 +204,28 @@ export function WorldGame() {
   const moveVecRef = useRef({ x: 0, y: 0 });
   const snapshotRef = useRef<WorldSnapshot | null>(null);
   const meRef = useRef({ x: 0, y: 0, dir: 1 as 1 | -1 });
+  const inputRef = useRef({ x: 0, y: 0 });
   const keysRef = useRef(new Set<string>());
   const myIdRef = useRef("");
   const lastSeqRef = useRef(0);
   const particlesRef = useRef<RenderParticle[]>([]);
   const saveRef = useRef<GameSave | null>(null);
   const selfRef = useRef<Self | null>(null);
-  const sseRef = useRef<EventSource | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const viewRef = useRef<ClientView | null>(null);
+  const frameSeqRef = useRef(0);
+  const pendingRef = useRef(
+    new Map<number, { resolve: (value: ActResponse | null) => void; timer: number }>()
+  );
+  const ridSeqRef = useRef(0);
+  const wantConnectedRef = useRef(false);
+  const joinedRef = useRef(false);
+  const reconnectRef = useRef<number | null>(null);
+  const retryRef = useRef(0);
   const rafRef = useRef(0);
   const lastSendRef = useRef(0);
   const lastFrameRef = useRef(0);
   const lastHudRef = useRef(0);
-  const lastSkillRef = useRef(0);
   const lastPosRef = useRef({ x: 0, y: 0, at: 0 });
   const swingsRef = useRef<Record<string, number>>({});
   const flashesRef = useRef<Record<string, number>>({});
@@ -185,6 +243,12 @@ export function WorldGame() {
   const dailyRef = useRef<DailyProgress>({ date: "", kills: 0, claimed: false });
   const sizeRef = useRef({ width: 720, height: VIEW_HEIGHT });
   const soundRef = useRef(true);
+  const roomRef = useRef<RoomId>("world");
+  const cdReadyRef = useRef<Record<string, number>>({});
+  const nearNpcRef = useRef<NpcView | null>(null);
+  const nearPortalRef = useRef<PortalView | null>(null);
+  const uiOpenRef = useRef(false);
+
   const fullscreen = nativeFullscreen || pseudoFullscreen;
 
   useEffect(() => {
@@ -207,23 +271,43 @@ export function WorldGame() {
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
+  // 面板/对话打开时屏蔽快捷键
+  useEffect(() => {
+    uiOpenRef.current = !!(panel || npcDialog || questOpen);
+  }, [panel, npcDialog, questOpen]);
+
+  // 冷却与倒计时刷新
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const timer = window.setInterval(() => setNowTick(Date.now()), 200);
+    return () => window.clearInterval(timer);
+  }, [phase]);
+
+  // 应用层心跳：刷新服务端活跃时间，配合连接层 ping 探测半开连接
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const timer = window.setInterval(() => {
+      post({ t: "ping" });
+    }, 10_000);
+    return () => window.clearInterval(timer);
+  }, [phase]);
+
   // 卸载时离开世界
   useEffect(() => {
     return () => {
-      sseRef.current?.close();
+      wantConnectedRef.current = false;
+      const ws = wsRef.current;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(encodeMessage({ t: "leave" }));
+        } catch {
+          // 忽略
+        }
+      }
+      ws?.close();
+      if (reconnectRef.current) window.clearTimeout(reconnectRef.current);
       cancelAnimationFrame(rafRef.current);
       stopBgm();
-      if (myIdRef.current) {
-        fetch("/api/world/act", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            clientId: myIdRef.current,
-            type: "leave",
-          }),
-          keepalive: true,
-        }).catch(() => undefined);
-      }
     };
   }, []);
 
@@ -231,25 +315,120 @@ export function WorldGame() {
     if (soundRef.current) playSfx(kind);
   }
 
+  /** 直接通过双工连接发送，不等待回执（移动/心跳等可丢弃操作） */
   function post(payload: Record<string, unknown>) {
-    const clientId = myIdRef.current;
-    if (!clientId) return;
-    fetch("/api/world/act", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientId, ...payload }),
-    }).catch(() => undefined);
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    try {
+      ws.send(encodeMessage(payload));
+    } catch {
+      // 连接刚断开，等待自动重连
+    }
   }
 
-  function applyReward(exp: number, gold: number) {
+  function rejectPending() {
+    for (const pending of pendingRef.current.values()) {
+      window.clearTimeout(pending.timer);
+      pending.resolve(null);
+    }
+    pendingRef.current.clear();
+  }
+
+  /** 关键操作带请求号，服务端通过同一条连接回执，弱网下不会走两次 HTTP */
+  function postAction(payload: Record<string, unknown>): Promise<ActResponse | null> {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      return Promise.resolve(null);
+    }
+    ridSeqRef.current += 1;
+    const rid = ridSeqRef.current;
+    return new Promise((resolve) => {
+      const timer = window.setTimeout(() => {
+        pendingRef.current.delete(rid);
+        resolve(null);
+      }, 5000);
+      pendingRef.current.set(rid, { resolve, timer });
+      try {
+        ws.send(encodeMessage({ ...payload, rid }));
+      } catch {
+        window.clearTimeout(timer);
+        pendingRef.current.delete(rid);
+        resolve(null);
+      }
+    });
+  }
+
+  function wsUrl(): string {
+    const configured = process.env.NEXT_PUBLIC_REALTIME_URL;
+    if (configured) return configured;
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return `${protocol}//${window.location.host}/ws`;
+  }
+
+  function joinPayload(current: GameSave) {
+    const stats = effectiveStats(current);
+    return {
+      name: current.name,
+      classId: current.classId,
+      level: current.level,
+      maxHp: stats.maxHp,
+      maxMp: stats.maxMp,
+      atk: stats.atk,
+      def: stats.def,
+      crit: stats.crit,
+      cdr: stats.cdr,
+      lifesteal: stats.lifesteal,
+      weapon: current.equipment.weapon,
+      armor: current.equipment.armor,
+      potions: potionStock(current),
+      quests: current.quests,
+      room: roomRef.current,
+    };
+  }
+
+  /** 本地存档变更（装备/背包/商店）后持久化并同步到服务器 */
+  function applySave(next: GameSave) {
+    saveRef.current = next;
+    setSave(next);
+    persistSave(next);
+    post({ t: "sync", player: joinPayload(next) });
+  }
+
+  function applyReward(
+    exp: number,
+    gold: number,
+    items?: { itemId: string; count: number }[]
+  ) {
     const current = saveRef.current;
     if (!current) return;
-    let next: GameSave = { ...current, gold: current.gold + gold };
+
+    let inventory = current.inventory;
+    const gained: string[] = [];
+    if (items) {
+      for (const entry of items) {
+        const def = ITEMS[entry.itemId];
+        if (!def) continue;
+        for (let i = 0; i < Math.max(1, entry.count); i += 1) {
+          inventory = addItem(inventory, entry.itemId);
+        }
+        gained.push(def.name);
+      }
+    }
+
+    let next: GameSave = {
+      ...current,
+      gold: current.gold + gold,
+      inventory,
+    };
     const result = gainExp(next, exp);
     next = result.save;
     saveRef.current = next;
     setSave(next);
     persistSave(next);
+
+    if (gained.length > 0) {
+      toast.success(`🎁 获得 ${gained.join("、")}`);
+    }
 
     if (result.levels > 0) {
       sfx("levelup");
@@ -262,25 +441,39 @@ export function WorldGame() {
         skillId: "levelup",
         at: performance.now(),
       });
-      const stats = effectiveStats(next);
       post({
-        type: "sync",
-        player: {
-          name: next.name,
-          classId: next.classId,
-          level: next.level,
-          maxHp: stats.maxHp,
-          maxMp: stats.maxMp,
-          atk: stats.atk,
-          def: stats.def,
-          crit: stats.crit,
-          weapon: next.equipment.weapon,
-          armor: next.equipment.armor,
-          potions: potionStock(next),
-        },
+        t: "sync",
+        player: joinPayload(next),
         restoreHp: true,
       });
     }
+  }
+
+  /** 把服务端任务进度合并进本地存档，避免刷新后丢失 */
+  function mergeQuests(view: QuestView[]) {
+    setQuests(view);
+    const current = saveRef.current;
+    if (!current) return;
+    const map: Record<string, QuestSaveEntry> = {};
+    for (const quest of view) {
+      map[quest.id] = { progress: quest.progress, status: quest.status };
+    }
+    const prev = current.quests ?? {};
+    let changed = Object.keys(map).length !== Object.keys(prev).length;
+    if (!changed) {
+      for (const [id, entry] of Object.entries(map)) {
+        const old = prev[id];
+        if (!old || old.progress !== entry.progress || old.status !== entry.status) {
+          changed = true;
+          break;
+        }
+      }
+    }
+    if (!changed) return;
+    const next: GameSave = { ...current, quests: map };
+    saveRef.current = next;
+    setSave(next);
+    persistSave(next);
   }
 
   function recordKill() {
@@ -315,6 +508,24 @@ export function WorldGame() {
     snapshotRef.current = snapshot;
     const now = performance.now();
     const myId = myIdRef.current;
+
+    // 房间切换（进入/离开副本）：以服务器为准重置本地预测位置
+    if (snapshot.room !== roomRef.current) {
+      roomRef.current = snapshot.room;
+      setRoom(snapshot.room);
+      const me = snapshot.players.find((player) => player.id === myId);
+      if (me) meRef.current = { x: me.x, y: me.y, dir: me.dir as 1 | -1 };
+      prevTargetPosRef.current = {};
+      targetPosRef.current = {};
+      snapAtRef.current = now;
+      lastPosRef.current = { x: 0, y: 0, at: 0 };
+      cdReadyRef.current = {};
+      setNearNpc(null);
+      setNearPortal(null);
+      nearNpcRef.current = null;
+      nearPortalRef.current = null;
+      setPotionOpen(false);
+    }
 
     // 记录上一帧坐标，用于渲染插值（10Hz 快照平滑到 60fps）
     const nextTargets: Record<string, { x: number; y: number }> = {};
@@ -464,9 +675,16 @@ export function WorldGame() {
           break;
         case "reward":
           if (event.to === myId) {
-            applyReward(event.exp ?? 0, event.gold ?? 0);
+            const loot = event.items?.map((id) => ({ itemId: id, count: 1 }));
+            applyReward(event.exp ?? 0, event.gold ?? 0, loot);
             recordKill();
           }
+          break;
+        case "quest":
+          if (event.text) toast.success(`📜 ${event.text}`);
+          break;
+        case "room":
+          if (event.text) toast(event.text, { duration: 1600 });
           break;
         case "join":
           if (event.text) {
@@ -502,6 +720,32 @@ export function WorldGame() {
       }
       setOnline(snapshot.online);
       setParty(snapshot.players.filter((player) => player.id !== myId));
+      mergeQuests(snapshot.self.quests);
+
+      // 冷却以服务端为准
+      for (const id of snapshot.self.cooldowns ? Object.keys(snapshot.self.cooldowns) : []) {
+        const remain = snapshot.self.cooldowns[id] ?? 0;
+        if (remain > 0) cdReadyRef.current[id] = Date.now() + remain;
+      }
+
+      // 靠近 NPC / 传送门时提供交互
+      const pos = meRef.current;
+      const npc =
+        snapshot.npcs.find(
+          (entry) => Math.hypot(entry.x - pos.x, entry.y - pos.y) < 96
+        ) ?? null;
+      if ((nearNpcRef.current?.id ?? null) !== (npc?.id ?? null)) {
+        nearNpcRef.current = npc;
+        setNearNpc(npc);
+      }
+      const portal =
+        snapshot.portals.find(
+          (entry) => Math.hypot(entry.x - pos.x, entry.y - pos.y) < 110
+        ) ?? null;
+      if ((nearPortalRef.current?.id ?? null) !== (portal?.id ?? null)) {
+        nearPortalRef.current = portal;
+        setNearPortal(portal);
+      }
 
       const prev = prevPositionsRef.current;
       for (const player of snapshot.players) {
@@ -517,127 +761,179 @@ export function WorldGame() {
     }
   }
 
-  function openStream(clientId: string) {
-    sseRef.current?.close();
-    const source = new EventSource(`/api/world/stream?clientId=${clientId}`);
-    sseRef.current = source;
-    source.onopen = () => {
-      setStatus("online");
-      // 断线重连后服务器可能已移除该玩家，重新加入以恢复可见与操作
-      void rejoinWorld();
+  function scheduleReconnect() {
+    if (!wantConnectedRef.current) return;
+    if (reconnectRef.current) window.clearTimeout(reconnectRef.current);
+    // 指数退避，避免弱网下疯狂重连
+    const delay = Math.min(15_000, 800 * Math.pow(1.7, retryRef.current));
+    retryRef.current += 1;
+    reconnectRef.current = window.setTimeout(() => {
+      reconnectRef.current = null;
+      connectRealtime();
+    }, delay);
+  }
+
+  /** 单条 WebSocket 双工连接：上行操作 + 下行增量快照都走这里 */
+  function connectRealtime() {
+    if (!wantConnectedRef.current) return;
+    const current = saveRef.current;
+    if (!current) return;
+    const existing = wsRef.current;
+    if (
+      existing &&
+      (existing.readyState === WebSocket.OPEN ||
+        existing.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
+
+    setStatus("connecting");
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(wsUrl());
+    } catch {
+      scheduleReconnect();
+      return;
+    }
+    wsRef.current = ws;
+    ws.binaryType = "arraybuffer";
+
+    ws.onopen = () => {
+      if (wsRef.current !== ws) return;
+      const latest = saveRef.current;
+      if (!latest) return;
+      frameSeqRef.current = 0;
+      ws.send(
+        encodeMessage({
+          t: "join",
+          clientId: getClientId(),
+          ...joinPayload(latest),
+          // 重连时补发断线期间遗漏的事件（奖励/任务进度）
+          lastEventSeq: joinedRef.current ? lastSeqRef.current : undefined,
+        })
+      );
     };
-    source.onerror = () => setStatus("offline");
-    source.onmessage = (event) => {
+
+    ws.onmessage = (event) => {
+      if (wsRef.current !== ws) return;
+      let message: ServerMessage;
       try {
-        handleSnapshot(JSON.parse(event.data) as WorldSnapshot);
+        message = decodeMessage(event.data as ArrayBuffer) as ServerMessage;
       } catch {
-        // 忽略非 JSON 帧
+        return;
       }
+      handleServerMessage(message);
+    };
+
+    ws.onclose = () => {
+      if (wsRef.current !== ws) return;
+      wsRef.current = null;
+      setStatus("offline");
+      rejectPending();
+      scheduleReconnect();
+    };
+
+    ws.onerror = () => {
+      // 交由 onclose 统一处理重连
     };
   }
 
-  async function rejoinWorld() {
-    const current = saveRef.current;
-    const clientId = myIdRef.current;
-    if (!current || !clientId) return;
-    const stats = effectiveStats(current);
-    try {
-      const response = await fetch("/api/world/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId,
-          name: current.name,
-          classId: current.classId,
-          level: current.level,
-          maxHp: stats.maxHp,
-          maxMp: stats.maxMp,
-          atk: stats.atk,
-          def: stats.def,
-          crit: stats.crit,
-          weapon: current.equipment.weapon,
-          armor: current.equipment.armor,
-          potions: potionStock(current),
-        }),
-      });
-      if (!response.ok) return;
-      const data = await response.json();
+  function handleHello(message: HelloMessage) {
+    spawnRef.current = message.info.spawn;
+    const nextRoom = message.player.room as RoomId;
+    const roomChanged = nextRoom !== roomRef.current;
+    roomRef.current = nextRoom;
+    setRoom(nextRoom);
+
+    if (!joinedRef.current) {
+      lastSeqRef.current = message.eventSeq;
+      meRef.current = { x: message.player.x, y: message.player.y, dir: 1 };
+      lastPosRef.current = { x: 0, y: 0, at: 0 };
+      prevTargetPosRef.current = {};
+      targetPosRef.current = {};
+      snapAtRef.current = performance.now();
+      particlesRef.current = [];
+      cdReadyRef.current = {};
+    } else {
+      // 重连补发事件时不要跳过，保留更大的事件序号
+      lastSeqRef.current = Math.max(lastSeqRef.current, message.eventSeq);
       const me = meRef.current;
-      // 被服务器移除后重建会回到出生点，差距过大时同步本地位置
       if (
-        data?.player &&
-        Math.hypot(data.player.x - me.x, data.player.y - me.y) > 220
+        roomChanged ||
+        Math.hypot(message.player.x - me.x, message.player.y - me.y) > 260
       ) {
-        me.x = data.player.x;
-        me.y = data.player.y;
+        meRef.current = { x: message.player.x, y: message.player.y, dir: 1 };
         lastPosRef.current = { x: 0, y: 0, at: 0 };
+        prevTargetPosRef.current = {};
+        targetPosRef.current = {};
+        snapAtRef.current = performance.now();
+        cdReadyRef.current = {};
       }
-    } catch {
-      // 网络异常时等待下一次自动重连
+    }
+
+    joinedRef.current = true;
+    retryRef.current = 0;
+
+    const current = saveRef.current;
+    const nextSelf: Self = {
+      id: getClientId(),
+      name: current?.name ?? "冒险者",
+      level: current?.level ?? 1,
+      hp: message.player.hp,
+      maxHp: message.player.maxHp,
+      mp: message.player.mp,
+      maxMp: message.player.maxMp,
+      dead: false,
+      kills: selfRef.current?.kills ?? 0,
+    };
+    selfRef.current = nextSelf;
+    setSelf(nextSelf);
+    setStatus("online");
+    setPhase("playing");
+  }
+
+  function handleServerMessage(message: ServerMessage) {
+    switch (message.t) {
+      case "hello":
+        handleHello(message);
+        break;
+      case "d": {
+        // seq 不连续说明丢帧，请求服务端重发全量基线
+        if (!message.full && message.seq !== frameSeqRef.current + 1) {
+          post({ t: "resync" });
+          return;
+        }
+        frameSeqRef.current = message.seq;
+        const view = viewRef.current ?? (viewRef.current = createClientView());
+        applyDelta(view, message);
+        handleSnapshot(viewToSnapshot(view, message.events ?? [], message.time));
+        break;
+      }
+      case "ack": {
+        const pending = pendingRef.current.get(message.rid);
+        if (!pending) break;
+        window.clearTimeout(pending.timer);
+        pendingRef.current.delete(message.rid);
+        pending.resolve(message);
+        break;
+      }
+      case "error":
+        toast.error(message.message);
+        break;
     }
   }
 
-  async function enterWorld() {
+  function enterWorld() {
     const current = saveRef.current;
     if (!current) return;
     initAudio();
     startBgm();
     setBgmOn(true);
+    myIdRef.current = getClientId();
+    wantConnectedRef.current = true;
+    retryRef.current = 0;
     setStatus("connecting");
-
-    const clientId = getClientId();
-    const stats = effectiveStats(current);
-
-    try {
-      const response = await fetch("/api/world/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId,
-          name: current.name,
-          classId: current.classId,
-          level: current.level,
-          maxHp: stats.maxHp,
-          maxMp: stats.maxMp,
-          atk: stats.atk,
-          def: stats.def,
-          crit: stats.crit,
-          weapon: current.equipment.weapon,
-          armor: current.equipment.armor,
-          potions: potionStock(current),
-        }),
-      });
-      if (!response.ok) throw new Error("join failed");
-      const data = await response.json();
-
-      myIdRef.current = clientId;
-      lastSeqRef.current = data.eventSeq;
-      if (data.info?.spawn) {
-        spawnRef.current = data.info.spawn;
-      }
-      meRef.current = { x: data.player.x, y: data.player.y, dir: 1 };
-      lastPosRef.current = { x: 0, y: 0, at: 0 };
-      particlesRef.current = [];
-
-      const nextSelf: Self = {
-        id: clientId,
-        name: current.name,
-        level: current.level,
-        hp: data.player.hp,
-        maxHp: data.player.maxHp,
-        mp: data.player.mp,
-        maxMp: data.player.maxMp,
-        dead: false,
-        kills: 0,
-      };
-      selfRef.current = nextSelf;
-      setSelf(nextSelf);
-      setPhase("playing");
-      openStream(clientId);
-    } catch {
-      toast.error("连接世界失败，请稍后重试");
-      setStatus("offline");
-    }
+    connectRealtime();
   }
 
   // 渲染循环
@@ -675,17 +971,20 @@ export function WorldGame() {
         ix = joy.x + joy.y;
         iy = -joy.x + joy.y;
       }
+      inputRef.current = { x: ix, y: iy };
 
       const me = meRef.current;
       const selfNow = selfRef.current;
+      const currentRoom = roomRef.current;
       if ((ix !== 0 || iy !== 0) && !selfNow?.dead) {
         const length = Math.hypot(ix, iy) || 1;
         const nx = me.x + (ix / length) * SPEED * dt;
         const ny = me.y + (iy / length) * SPEED * dt;
-        if (!isBlockedAt(nx, me.y, 9)) me.x = nx;
-        if (!isBlockedAt(me.x, ny, 9)) me.y = ny;
-        me.x = Math.max(TILE, Math.min(WORLD_W * TILE - TILE, me.x));
-        me.y = Math.max(TILE, Math.min(WORLD_H * TILE - TILE, me.y));
+        if (!isBlockedAt(nx, me.y, 9, currentRoom)) me.x = nx;
+        if (!isBlockedAt(me.x, ny, 9, currentRoom)) me.y = ny;
+        const cfg = roomConfig(currentRoom);
+        me.x = Math.max(TILE, Math.min(cfg.w * TILE - TILE, me.x));
+        me.y = Math.max(TILE, Math.min(cfg.h * TILE - TILE, me.y));
         // 朝向按屏幕水平位移判断，与服务端攻击方向保持一致
         const screenDx = ix - iy;
         if (Math.abs(screenDx) > 0.01) me.dir = screenDx > 0 ? 1 : -1;
@@ -701,7 +1000,7 @@ export function WorldGame() {
           now - last.at > 1500
         ) {
           lastPosRef.current = { x: me.x, y: me.y, at: now };
-          post({ type: "move", x: Math.round(me.x), y: Math.round(me.y) });
+          post({ t: "move", x: Math.round(me.x), y: Math.round(me.y) });
         }
       }
 
@@ -765,18 +1064,22 @@ export function WorldGame() {
                 : monster;
             }),
             drops: rawSnapshot.drops,
+            npcs: rawSnapshot.npcs,
+            portals: rawSnapshot.portals,
           };
         }
 
         drawWorld(canvas, {
           width,
           height,
+          room: currentRoom,
           meId: myIdRef.current,
           meX: me.x,
           meY: me.y,
           meName: selfNow?.name ?? saveRef.current?.name ?? "我",
           meHp: selfNow?.hp ?? 100,
           meMaxHp: selfNow?.maxHp ?? 100,
+          meLevel: selfNow?.level ?? saveRef.current?.level ?? 1,
           meDir: me.dir,
           meDead: selfNow?.dead ?? false,
           meMoving: now - meMovingRef.current < 200,
@@ -824,7 +1127,7 @@ export function WorldGame() {
     return () => observer.disconnect();
   }, [phase, fullscreen, isTouch]);
 
-  function doSkill(index: number) {
+  async function doSkill(index: number) {
     const current = saveRef.current;
     const selfNow = selfRef.current;
     if (!current || !selfNow) return;
@@ -835,18 +1138,96 @@ export function WorldGame() {
       toast.error(`Lv.${skill.level} 解锁该技能`);
       return;
     }
+    if (selfNow.dead) return;
     if (selfNow.mp < skill.mp) {
-      toast.error("魔法不足");
+      toast.error("法力不足");
       return;
     }
-    const now = performance.now();
-    if (now - lastSkillRef.current < 900) return;
-    lastSkillRef.current = now;
-    swingsRef.current[myIdRef.current] = now;
-    setSkillCd(true);
-    window.setTimeout(() => setSkillCd(false), 900);
+    const now = Date.now();
+    if (now < (cdReadyRef.current[skillId] ?? 0)) return;
+
+    // 乐观冷却，服务端返回失败时回滚
+    cdReadyRef.current[skillId] = now + (skill.cooldown ?? 5) * 1000;
+    setNowTick(now);
+    swingsRef.current[myIdRef.current] = performance.now();
     sfx("skill");
-    post({ type: "skill", skillId });
+
+    const input = inputRef.current;
+    const result = await postAction({
+      t: "skill",
+      skillId,
+      dirX: input.x,
+      dirY: input.y,
+    });
+    if (!result) return;
+    if (result.ok === false) {
+      cdReadyRef.current[skillId] = 0;
+      setNowTick(Date.now());
+      if (result.message) toast.error(result.message);
+    }
+  }
+
+  function applyTravel(result: ActResponse | null) {
+    if (!result) {
+      toast.error("网络异常，请重试");
+      return;
+    }
+    if (result.ok === false) {
+      if (result.message) toast.error(result.message);
+      return;
+    }
+    if (result.room) {
+      roomRef.current = result.room as RoomId;
+      setRoom(result.room as RoomId);
+    }
+    if (typeof result.x === "number" && typeof result.y === "number") {
+      meRef.current.x = result.x;
+      meRef.current.y = result.y;
+    }
+    prevTargetPosRef.current = {};
+    targetPosRef.current = {};
+    snapAtRef.current = performance.now();
+    lastPosRef.current = { x: 0, y: 0, at: 0 };
+    if (result.message) toast.success(result.message);
+  }
+
+  async function enterPortal(portal: PortalView) {
+    // 副本内的传送门用于返回开放世界
+    if (portal.target === "world") {
+      await leaveDungeon();
+      return;
+    }
+    const level = selfRef.current?.level ?? saveRef.current?.level ?? 1;
+    if (level < portal.unlockLevel) {
+      toast.error(`需要 ${portal.unlockLevel} 级才能进入`);
+      return;
+    }
+    const result = await postAction({ t: "enter", dungeonId: portal.target });
+    applyTravel(result);
+    nearPortalRef.current = null;
+    setNearPortal(null);
+  }
+
+  async function leaveDungeon() {
+    const result = await postAction({ t: "exit" });
+    applyTravel(result);
+    nearPortalRef.current = null;
+    setNearPortal(null);
+  }
+
+  function openNpc(npc: NpcView) {
+    setNpcDialog(npc);
+  }
+
+  function interact() {
+    if (uiOpenRef.current) return;
+    const portal = nearPortalRef.current;
+    if (portal) {
+      void enterPortal(portal);
+      return;
+    }
+    const npc = nearNpcRef.current;
+    if (npc) openNpc(npc);
   }
 
   // 键盘操作
@@ -854,21 +1235,33 @@ export function WorldGame() {
     if (phase !== "playing") return;
     const down = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
+      if (key === "escape") {
+        setPanel(null);
+        setNpcDialog(null);
+        setQuestOpen(false);
+        return;
+      }
+      if (uiOpenRef.current) return;
       if (MOVE_KEYS.has(key)) {
         keysRef.current.add(key);
         event.preventDefault();
         return;
       }
       if (event.repeat) return;
-      if (key === "r") {
+      if (key === "b") {
         event.preventDefault();
         doRecall();
         return;
       }
-      const index = SKILL_KEYS.indexOf(key);
-      if (index >= 0) {
+      if (key === "f") {
         event.preventDefault();
-        doSkill(index);
+        interact();
+        return;
+      }
+      const index = SKILL_KEY_MAP[key];
+      if (index !== undefined) {
+        event.preventDefault();
+        void doSkill(index);
       }
     };
     const up = (event: KeyboardEvent) => {
@@ -882,13 +1275,39 @@ export function WorldGame() {
       keysRef.current.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, save]);
+  }, [phase]);
 
   function leaveWorld() {
-    post({ type: "leave" });
+    const current = saveRef.current;
+    const selfNow = selfRef.current;
+    if (current && selfNow) {
+      const next: GameSave = {
+        ...current,
+        hp: Math.round(selfNow.hp),
+        mp: Math.round(selfNow.mp),
+      };
+      saveRef.current = next;
+      setSave(next);
+      persistSave(next);
+    }
+    wantConnectedRef.current = false;
+    post({ t: "leave" });
     myIdRef.current = "";
-    sseRef.current?.close();
-    sseRef.current = null;
+    // 下次进入统一从开放世界村庄出生
+    roomRef.current = "world";
+    setRoom("world");
+    joinedRef.current = false;
+    frameSeqRef.current = 0;
+    viewRef.current = createClientView();
+    rejectPending();
+    const ws = wsRef.current;
+    wsRef.current = null;
+    ws?.close();
+    if (reconnectRef.current) {
+      window.clearTimeout(reconnectRef.current);
+      reconnectRef.current = null;
+    }
+    retryRef.current = 0;
     cancelAnimationFrame(rafRef.current);
     stopBgm();
     setBgmOn(false);
@@ -896,6 +1315,10 @@ export function WorldGame() {
     setStatus("idle");
     setSelf(null);
     setParty([]);
+    setQuests([]);
+    setPanel(null);
+    setNpcDialog(null);
+    setQuestOpen(false);
     setPseudoFullscreen(false);
     if (document.fullscreenElement) {
       void document.exitFullscreen().catch(() => undefined);
@@ -950,19 +1373,23 @@ export function WorldGame() {
       toast.error("回城冷却中");
       return;
     }
-    post({ type: "recall" });
-    meRef.current = {
-      x: spawnRef.current.x,
-      y: spawnRef.current.y,
-      dir: meRef.current.dir,
-    };
-    lastPosRef.current = { x: 0, y: 0, at: 0 };
     recallReadyRef.current = now + 20_000;
     setRecallReadyAt(now + 20_000);
     window.setTimeout(() => {
       recallReadyRef.current = 0;
       setRecallReadyAt(0);
     }, 20_000);
+    roomRef.current = "world";
+    setRoom("world");
+    meRef.current = {
+      x: spawnRef.current.x,
+      y: spawnRef.current.y,
+      dir: meRef.current.dir,
+    };
+    lastPosRef.current = { x: 0, y: 0, at: 0 };
+    prevTargetPosRef.current = {};
+    targetPosRef.current = {};
+    void postAction({ t: "recall" });
     toast.success("已回城");
   }
 
@@ -987,7 +1414,54 @@ export function WorldGame() {
     saveRef.current = next;
     setSave(next);
     persistSave(next);
-    post({ type: "potion", itemId });
+    post({ t: "potion", itemId });
+  }
+
+  async function acceptQuestById(questId: string) {
+    const result = await postAction({ t: "acceptQuest", questId });
+    if (!result) {
+      toast.error("网络异常，请重试");
+      return;
+    }
+    if (result.ok === false) {
+      toast.error(result.message ?? "无法接取任务");
+      return;
+    }
+    toast.success(result.message ?? "已接取任务");
+    setQuests((prev) =>
+      prev.some((quest) => quest.id === questId)
+        ? prev
+        : [
+            ...prev,
+            {
+              id: questId,
+              status: "active",
+              progress: 0,
+              goal: questGoal(QUESTS[questId]),
+            },
+          ]
+    );
+  }
+
+  async function turnInQuestById(questId: string) {
+    const result = await postAction({ t: "turnInQuest", questId });
+    if (!result) {
+      toast.error("网络异常，请重试");
+      return;
+    }
+    if (result.ok === false) {
+      toast.error(result.message ?? "无法交付任务");
+      return;
+    }
+    toast.success(result.message ?? "任务完成");
+    if (result.reward) {
+      applyReward(result.reward.exp, result.reward.gold, result.reward.items);
+    }
+    setQuests((prev) =>
+      prev.map((quest) =>
+        quest.id === questId ? { ...quest, status: "turnedIn" } : quest
+      )
+    );
   }
 
   function toggleBgm() {
@@ -995,6 +1469,7 @@ export function WorldGame() {
       stopBgm();
       setBgmOn(false);
     } else {
+      initAudio();
       startBgm();
       setBgmOn(true);
     }
@@ -1055,8 +1530,8 @@ export function WorldGame() {
           })}
         </div>
         <div className="flex items-center justify-between gap-2">
-          <Link href="/game" className="text-[10px] text-slate-500 hover:text-slate-300">
-            返回单人副本
+          <Link href="/" className="text-[10px] text-slate-500 hover:text-slate-300">
+            返回首页
           </Link>
           <button
             type="button"
@@ -1082,13 +1557,13 @@ export function WorldGame() {
       <div className="space-y-4 rounded-xl border-2 border-slate-700 bg-slate-950 p-4 text-slate-100 shadow-[6px_6px_0_rgba(0,0,0,0.3)]">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold">开放世界 · 实时组队</h2>
+            <h2 className="text-sm font-bold">翡翠大陆 · 实时开放世界</h2>
             <p className="mt-1 text-[10px] text-slate-500">
-              进入同一世界的玩家会自动同屏协作，怪物由服务器统一刷新
+              开放世界与副本共用同一套实时战斗，副本从世界中的传送门进入
             </p>
           </div>
-          <Link href="/game" className="shrink-0 text-[10px] text-slate-500 hover:text-slate-300">
-            单人副本
+          <Link href="/" className="shrink-0 text-[10px] text-slate-500 hover:text-slate-300">
+            首页
           </Link>
         </div>
 
@@ -1116,20 +1591,37 @@ export function WorldGame() {
 
         <ul className="space-y-1 text-[11px] leading-relaxed text-slate-400">
           <li>· 移动：WASD / 方向键，移动端使用左下角虚拟摇杆</li>
-          <li>· 攻击：靠近怪物自动挥砍；技能：数字键 1-4 或底部技能栏</li>
-          <li>· 右上角可开启全屏，HUD 与操作区都叠加在画面上</li>
-          <li>· 击杀经验与金币会写回角色存档，并实时显示伤害与音效</li>
+          <li>· 战斗：靠近怪物自动攻击，QWER 技能栏（键盘 1-4 / Q E R）</li>
+          <li>· 交互：靠近 NPC 或传送门后按 F，进入副本、接取任务、买卖装备</li>
+          <li>· 背包、装备、技能、商店都可在游戏内直接打开，无需切换页面</li>
+          <li>· 弱网环境下会自动断线重连，关键操作会重试以避免丢失</li>
         </ul>
 
-        <button type="button" className={btnPrimary} onClick={() => void enterWorld()}>
-          {status === "connecting" ? "连接中…" : "进入世界"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className={btnPrimary} onClick={() => void enterWorld()}>
+            {status === "connecting" ? "连接中…" : "进入世界"}
+          </button>
+          {current && (
+            <button
+              type="button"
+              className={btn}
+              onClick={() => {
+                const next = createSave(createName || current.name, createClass);
+                saveRef.current = next;
+                setSave(next);
+                persistSave(next);
+                toast.success("已创建新角色");
+              }}
+            >
+              新建角色
+            </button>
+          )}
+        </div>
       </div>
     );
   }
 
   const skills = save ? CLASS_SKILLS[save.classId] : [];
-  const profileStats = save ? effectiveStats(save) : null;
   const potionItems = save
     ? Object.entries(save.inventory)
         .filter(([id, count]) => count > 0 && ITEMS[id]?.kind === "consumable")
@@ -1143,6 +1635,8 @@ export function WorldGame() {
       ? 100
       : Math.min(100, (save.exp / expNeed) * 100)
     : 0;
+  const roomName = ROOMS[room].name;
+  const myLevel = self?.level ?? save?.level ?? 1;
 
   return (
     <div
@@ -1178,16 +1672,14 @@ export function WorldGame() {
             <button
               type="button"
               className="flex min-w-0 items-center gap-2 text-left"
-              onClick={() => setProfileOpen(true)}
-              title="查看角色属性"
+              onClick={() => setPanel("character")}
+              title="查看角色与装备"
             >
               <span className="text-xl">{save ? CLASSES[save.classId].icon : "🧙"}</span>
               <div className="min-w-0">
                 <p className="truncate text-[11px] font-bold">
                   {save?.name ?? "冒险者"}
-                  <span className="ml-1.5 text-amber-300">
-                    Lv.{self?.level ?? save?.level ?? 1}
-                  </span>
+                  <span className="ml-1.5 text-amber-300">Lv.{myLevel}</span>
                 </p>
                 <p className="flex items-center gap-1 text-[10px] text-slate-400">
                   <span
@@ -1196,7 +1688,7 @@ export function WorldGame() {
                       status === "online" ? "bg-emerald-400" : "bg-amber-400"
                     )}
                   />
-                  在线 {online} 人 · 击杀 {self?.kills ?? 0}
+                  {roomName} · 在线 {online} 人 · 击杀 {self?.kills ?? 0}
                 </p>
               </div>
             </button>
@@ -1264,11 +1756,18 @@ export function WorldGame() {
           </div>
         </div>
 
+        {/* 弱网提示 */}
+        {status !== "online" && (
+          <div className="pointer-events-none absolute left-1/2 top-28 z-20 -translate-x-1/2 rounded-full border border-amber-500/50 bg-slate-950/90 px-3 py-1 text-[10px] font-bold text-amber-300">
+            网络不稳定，正在自动重连…
+          </div>
+        )}
+
         {/* 移动端虚拟摇杆，叠加在画面上 */}
         {isTouch && (
           <div
             data-testid="joystick"
-            className="absolute bottom-24 left-4 z-20 size-24 touch-none rounded-full border-2 border-white/20 bg-slate-950/40 backdrop-blur-sm"
+            className="absolute bottom-32 left-4 z-20 size-24 touch-none rounded-full border-2 border-white/20 bg-slate-950/40 backdrop-blur-sm"
             onPointerDown={(event) => {
               event.preventDefault();
               event.currentTarget.setPointerCapture(event.pointerId);
@@ -1297,31 +1796,124 @@ export function WorldGame() {
           <div className="pointer-events-auto flex flex-wrap items-center gap-1">
             {skills.map((id, index) => {
               const skill = SKILLS[id];
-              const locked = (self?.level ?? save?.level ?? 1) < skill.level;
+              const locked = myLevel < skill.level;
               const noMp = (self?.mp ?? 0) < skill.mp;
+              const remaining = Math.max(0, (cdReadyRef.current[id] ?? 0) - nowTick);
+              const cooling = remaining > 0;
               return (
                 <button
                   key={id}
                   type="button"
-                  className={cn(btn, "bg-slate-900/80")}
-                  disabled={locked || noMp || skillCd}
-                  onClick={() => doSkill(index)}
+                  className={cn(btn, "relative overflow-hidden bg-slate-900/85")}
+                  disabled={locked || noMp || cooling || !!self?.dead}
+                  onClick={() => void doSkill(index)}
                   title={skill.desc}
                 >
-                  <span className="mr-0.5">{skill.icon}</span>
-                  {skill.name}
-                  <span className="ml-1 text-[10px] font-normal text-slate-400">
-                    {locked ? `Lv.${skill.level}` : `${skill.mp}MP`}
+                  <span className="mr-1 inline-flex size-4 items-center justify-center rounded border border-slate-500 text-[9px] font-black text-amber-300">
+                    {skill.key ?? SKILL_KEYS[index]}
                   </span>
+                  <span className="mr-0.5">{skill.icon}</span>
+                  <span className="hidden sm:inline">{skill.name}</span>
+                  <span className="ml-1 text-[10px] font-normal text-slate-400">
+                    {locked
+                      ? `Lv.${skill.level}`
+                      : cooling
+                        ? `${Math.ceil(remaining / 1000)}s`
+                        : `${skill.mp}MP`}
+                  </span>
+                  {cooling && (
+                    <span
+                      className="pointer-events-none absolute inset-0 bg-slate-950/60"
+                      style={{
+                        opacity: Math.min(
+                          0.25,
+                          0.25 * (remaining / ((skill.cooldown ?? 5) * 1000))
+                        ),
+                      }}
+                    />
+                  )}
                 </button>
               );
             })}
+
+            {/* 交互按钮 */}
+            {nearPortal && (
+              <button
+                type="button"
+                className={cn(btn, "border-sky-500/70 bg-sky-500/15 text-sky-200")}
+                onClick={() => void enterPortal(nearPortal)}
+              >
+                {nearPortal.target === "world"
+                  ? "🚪 离开副本"
+                  : `🌀 进入${nearPortal.label}`}
+              </button>
+            )}
+            {nearNpc && (
+              <button
+                type="button"
+                className={cn(btn, "border-amber-500/70 bg-amber-500/15 text-amber-200")}
+                onClick={() => openNpc(nearNpc)}
+              >
+                💬 {nearNpc.name}
+              </button>
+            )}
+            {room !== "world" && (
+              <button
+                type="button"
+                className={cn(btn, "border-emerald-500/60 bg-emerald-500/10 text-emerald-200")}
+                onClick={() => void leaveDungeon()}
+              >
+                🚪 离开副本
+              </button>
+            )}
+          </div>
+
+          <div className="pointer-events-auto mt-1 flex flex-wrap items-center gap-1">
             <button
               type="button"
-              className={cn(btn, "bg-slate-900/80")}
+              className={cn(btn, "bg-slate-900/85")}
+              onClick={() => setPanel("character")}
+            >
+              🧙 角色
+            </button>
+            <button
+              type="button"
+              className={cn(btn, "bg-slate-900/85")}
+              onClick={() => setPanel("bag")}
+            >
+              🎒 背包
+            </button>
+            <button
+              type="button"
+              className={cn(btn, "bg-slate-900/85")}
+              onClick={() => setPanel("skills")}
+            >
+              ⚡ 技能
+            </button>
+            <button
+              type="button"
+              className={cn(btn, "bg-slate-900/85")}
+              onClick={() => setPanel("shop")}
+            >
+              🛒 商店
+            </button>
+            <button
+              type="button"
+              className={cn(
+                btn,
+                "bg-slate-900/85",
+                quests.length > 0 && "border-amber-500/60 text-amber-300"
+              )}
+              onClick={() => setQuestOpen((open) => !open)}
+            >
+              📜 任务
+            </button>
+            <button
+              type="button"
+              className={cn(btn, "bg-slate-900/85")}
               disabled={recallReadyAt > Date.now()}
               onClick={doRecall}
-              title="回城（R），20 秒冷却"
+              title="回城（B），20 秒冷却"
             >
               🏠 回城
             </button>
@@ -1329,14 +1921,14 @@ export function WorldGame() {
               type="button"
               className={cn(
                 btn,
-                "bg-slate-900/80",
+                "bg-slate-900/85",
                 potionOpen && "border-amber-500 bg-amber-500/20 text-amber-300"
               )}
               disabled={potionItems.length === 0}
               onClick={() => setPotionOpen((open) => !open)}
               title="使用背包药水"
             >
-              🎒 药水
+              🧪 药水
               {potionItems.length > 0 && (
                 <span className="ml-1 text-[10px] font-normal text-slate-400">
                   {potionItems.reduce((sum, entry) => sum + entry.count, 0)}
@@ -1344,7 +1936,7 @@ export function WorldGame() {
               )}
             </button>
             <span className="ml-auto hidden text-[10px] text-slate-500 sm:inline">
-              自动攻击 · 1-4 技能 · R 回城
+              自动攻击 · QWER 技能 · F 交互 · B 回城
             </span>
           </div>
 
@@ -1366,6 +1958,7 @@ export function WorldGame() {
               ))}
             </div>
           )}
+
           <div className="pointer-events-auto mt-1 flex items-center gap-1 overflow-x-auto text-[10px] text-slate-400">
             <Users className="size-3.5 shrink-0" />
             <span className="shrink-0">在线 {online} 人</span>
@@ -1395,106 +1988,290 @@ export function WorldGame() {
           </div>
         </div>
 
-        {profileOpen && save && profileStats && (
+        {/* NPC 对话 / 任务 */}
+        {npcDialog && (
           <div
             className="absolute inset-0 z-40 flex items-center justify-center bg-black/65 p-4"
-            onClick={() => setProfileOpen(false)}
+            onClick={() => setNpcDialog(null)}
           >
             <div
-              className="w-full max-w-sm rounded-xl border-2 border-slate-600 bg-slate-950 p-4 text-slate-100 shadow-2xl"
+              className="max-h-[80%] w-full max-w-sm overflow-y-auto rounded-xl border-2 border-slate-600 bg-slate-950 p-4 text-slate-100 shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-bold">
-                  {save.name}
-                  <span className="ml-1.5 text-amber-300">Lv.{save.level}</span>
-                </p>
-                <button
-                  type="button"
-                  className={btn}
-                  onClick={() => setProfileOpen(false)}
-                >
-                  关闭
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{npcDialog.icon}</span>
+                  <div>
+                    <p className="text-sm font-bold">
+                      {npcDialog.name}
+                      <span className="ml-1.5 text-[10px] font-normal text-slate-400">
+                        {npcDialog.title}
+                      </span>
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      {npcDialog.role === "shop"
+                        ? "商人"
+                        : npcDialog.role === "equip"
+                          ? "铁匠"
+                          : "任务发布者"}
+                    </p>
+                  </div>
+                </div>
+                <button type="button" className={btn} onClick={() => setNpcDialog(null)}>
+                  <X className="size-3.5" />
                 </button>
               </div>
-              <p className="mt-0.5 text-[10px] text-slate-500">
-                {CLASSES[save.classId].name} · 击杀 {self?.kills ?? 0} · 金币{" "}
-                {save.gold}
-              </p>
 
-              <div className="mt-3 grid grid-cols-2 gap-1.5 text-[11px]">
-                {[
-                  { label: "攻击", value: Math.round(profileStats.atk) },
-                  { label: "防御", value: Math.round(profileStats.def) },
-                  { label: "速度", value: Math.round(profileStats.spd) },
-                  { label: "暴击", value: `${Math.round(profileStats.crit)}%` },
-                ].map((row) => (
-                  <div
-                    key={row.label}
-                    className="flex items-center justify-between rounded bg-slate-900 px-2 py-1"
+              {npcDialog.role === "shop" && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-[11px] text-slate-400">
+                    药水、洛式装备都在这里，购买后可立即在背包中装备。
+                  </p>
+                  <button
+                    type="button"
+                    className={btnPrimary}
+                    onClick={() => {
+                      setPanel("shop");
+                      setNpcDialog(null);
+                    }}
                   >
-                    <span className="text-slate-500">{row.label}</span>
-                    <span className="font-bold">{row.value}</span>
-                  </div>
-                ))}
-              </div>
+                    打开商店
+                  </button>
+                </div>
+              )}
 
-              <div className="mt-3 space-y-1 text-[11px]">
-                {[
-                  { label: "武器", id: save.equipment.weapon },
-                  { label: "护甲", id: save.equipment.armor },
-                  { label: "饰品", id: save.equipment.accessory },
-                ].map((slot) => {
-                  const item = slot.id ? ITEMS[slot.id] : null;
-                  return (
-                    <div
-                      key={slot.label}
-                      className="flex items-center gap-2 rounded bg-slate-900/70 px-2 py-1"
+              {npcDialog.role === "equip" && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-[11px] text-slate-400">
+                    打完副本的战利品可以直接在游戏内装备，无需离开世界。
+                  </p>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      className={btnPrimary}
+                      onClick={() => {
+                        setPanel("character");
+                        setNpcDialog(null);
+                      }}
                     >
-                      <span className="w-8 shrink-0 text-slate-500">
-                        {slot.label}
-                      </span>
-                      <span>{item?.icon ?? "—"}</span>
-                      <span className="min-w-0 flex-1 truncate">
-                        {item?.name ?? "未装备"}
-                      </span>
-                      <span className="shrink-0 text-[10px] text-slate-500">
-                        {item
-                          ? [
-                              item.atk ? `攻+${item.atk}` : "",
-                              item.def ? `防+${item.def}` : "",
-                              item.spd ? `速+${item.spd}` : "",
-                              item.crit ? `暴+${item.crit}%` : "",
-                            ]
-                              .filter(Boolean)
-                              .join(" ")
-                          : ""}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-3">
-                <div className="flex items-center justify-between text-[10px] text-slate-500">
-                  <span>经验</span>
-                  <span>
-                    {save.level >= MAX_LEVEL
-                      ? "已满级"
-                      : `${save.exp} / ${expToNext(save.level)}`}
-                  </span>
+                      角色与装备
+                    </button>
+                    <button
+                      type="button"
+                      className={btn}
+                      onClick={() => {
+                        setPanel("bag");
+                        setNpcDialog(null);
+                      }}
+                    >
+                      打开背包
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-1 h-1.5 overflow-hidden rounded bg-slate-800">
-                  <div
-                    className="h-full rounded bg-violet-400"
-                    style={{ width: `${expPercent}%` }}
-                  />
-                </div>
-              </div>
+              )}
 
-              <p className="mt-3 text-[10px] leading-relaxed text-slate-500">
-                退出世界后可在「单人副本 → 角色」更换装备；世界内可直接使用药水与回城。
-              </p>
+              {npcDialog.role === "quest" && (
+                <div className="mt-3 space-y-2">
+                  {Object.values(QUESTS)
+                    .filter((quest) => quest.npcId === npcDialog.id)
+                    .map((quest) => {
+                      const state = quests.find((entry) => entry.id === quest.id);
+                      const active = state?.status === "active";
+                      const complete = state?.status === "complete";
+                      const done = state?.status === "turnedIn";
+                      const locked = myLevel < (quest.requireLevel ?? 1);
+                      return (
+                        <div
+                          key={quest.id}
+                          className="rounded-lg border border-slate-800 bg-slate-900/70 p-2.5"
+                        >
+                          <p className="flex items-center justify-between text-[11px] font-bold text-slate-100">
+                            {quest.title}
+                            <span className="text-[10px] font-normal text-amber-300">
+                              {state ? questStatusLabel(state.status) : `${quest.reward.gold} 金币`}
+                            </span>
+                          </p>
+                          <p className="mt-1 text-[10px] leading-relaxed text-slate-400">
+                            {quest.desc}
+                          </p>
+                          {state && (
+                            <div className="mt-1.5">
+                              <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                <span>进度</span>
+                                <span>
+                                  {state.progress} / {state.goal}
+                                </span>
+                              </div>
+                              <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-slate-800">
+                                <div
+                                  className="h-full rounded bg-amber-400"
+                                  style={{
+                                    width: `${Math.min(
+                                      100,
+                                      (state.progress / Math.max(1, state.goal)) * 100
+                                    )}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          <div className="mt-2">
+                            {done ? (
+                              <span className="text-[10px] text-emerald-400">✓ 已完成</span>
+                            ) : complete ? (
+                              <button
+                                type="button"
+                                className={btnPrimary}
+                                onClick={() => void turnInQuestById(quest.id)}
+                              >
+                                交付任务
+                              </button>
+                            ) : active ? (
+                              <span className="text-[10px] text-slate-500">任务进行中</span>
+                            ) : (
+                              <button
+                                type="button"
+                                className={btnPrimary}
+                                disabled={locked}
+                                onClick={() => void acceptQuestById(quest.id)}
+                              >
+                                {locked ? `需 Lv.${quest.requireLevel}` : "接取任务"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  {Object.values(QUESTS).filter((quest) => quest.npcId === npcDialog.id)
+                    .length === 0 && (
+                    <p className="text-[11px] text-slate-500">暂时没有可接的任务。</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 任务日志 */}
+        {questOpen && (
+          <div
+            className="absolute inset-0 z-40 flex items-center justify-center bg-black/65 p-4"
+            onClick={() => setQuestOpen(false)}
+          >
+            <div
+              className="max-h-[80%] w-full max-w-sm overflow-y-auto rounded-xl border-2 border-slate-600 bg-slate-950 p-4 text-slate-100 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold">任务日志</p>
+                <button type="button" className={btn} onClick={() => setQuestOpen(false)}>
+                  <X className="size-3.5" />
+                </button>
+              </div>
+              {quests.length === 0 ? (
+                <p className="mt-3 text-[11px] text-slate-500">
+                  还没有任务，去村庄找头顶「!」的 NPC 接取吧。
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {quests.map((state) => {
+                    const def = QUESTS[state.id];
+                    if (!def) return null;
+                    return (
+                      <li
+                        key={state.id}
+                        className="rounded-lg border border-slate-800 bg-slate-900/70 p-2.5"
+                      >
+                        <p className="flex items-center justify-between text-[11px] font-bold">
+                          {def.title}
+                          <span
+                            className={cn(
+                              "text-[10px] font-normal",
+                              state.status === "turnedIn"
+                                ? "text-emerald-400"
+                                : state.status === "complete"
+                                  ? "text-amber-300"
+                                  : "text-slate-500"
+                            )}
+                          >
+                            {questStatusLabel(state.status)}
+                          </span>
+                        </p>
+                        <p className="mt-1 text-[10px] text-slate-400">{def.desc}</p>
+                        <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500">
+                          <span>进度</span>
+                          <span>
+                            {state.progress} / {state.goal}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-slate-800">
+                          <div
+                            className="h-full rounded bg-amber-400"
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                (state.progress / Math.max(1, state.goal)) * 100
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 游戏内面板：角色 / 背包 / 技能 / 商店 */}
+        {panel && save && (
+          <div
+            className="absolute inset-0 z-40 flex items-center justify-center bg-black/65 p-3"
+            onClick={() => setPanel(null)}
+          >
+            <div
+              className="max-h-[88%] w-full max-w-lg overflow-y-auto rounded-xl border-2 border-slate-600 bg-slate-950 p-3 text-slate-100 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="mb-2 flex items-center justify-between gap-1">
+                <div className="flex flex-wrap gap-1">
+                  {(
+                    [
+                      { key: "character" as const, label: "角色" },
+                      { key: "bag" as const, label: "背包" },
+                      { key: "skills" as const, label: "技能" },
+                      { key: "shop" as const, label: "商店" },
+                    ] as const
+                  ).map((entry) => (
+                    <button
+                      key={entry.key}
+                      type="button"
+                      onClick={() => setPanel(entry.key)}
+                      className={cn(
+                        btn,
+                        panel === entry.key &&
+                          "border-amber-500 bg-amber-500/20 text-amber-300"
+                      )}
+                    >
+                      {entry.label}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className={btn} onClick={() => setPanel(null)}>
+                  <X className="size-3.5" />
+                </button>
+              </div>
+              {panel === "character" && (
+                <CharacterPanel save={save} onChange={applySave} notify={toastNotify} />
+              )}
+              {panel === "bag" && (
+                <BagPanel save={save} onChange={applySave} notify={toastNotify} />
+              )}
+              {panel === "skills" && <SkillsPanel save={save} />}
+              {panel === "shop" && (
+                <ShopPanel save={save} onChange={applySave} notify={toastNotify} />
+              )}
             </div>
           </div>
         )}
@@ -1507,4 +2284,8 @@ export function WorldGame() {
       </div>
     </div>
   );
+}
+
+function toastNotify(message: string) {
+  toast(message);
 }

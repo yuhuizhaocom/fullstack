@@ -57,10 +57,10 @@ export default function LoginPage() {
             无需登录，分享附件（≤100MB / 24 小时） →
           </Link>
           <Link
-            href="/game"
+            href="/world"
             className="block text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
           >
-            无需登录，玩像素冒险 RPG →
+            无需登录，进入像素开放世界 →
           </Link>
           <Link
             href="/clip"

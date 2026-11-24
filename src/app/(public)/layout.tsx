@@ -55,12 +55,12 @@ export default async function PublicLayout({
               <span className="hidden sm:inline">剪贴板</span>
             </Link>
             <Link
-              href="/game"
-              title="像素冒险"
+              href="/world"
+              title="开放世界"
               className="flex items-center gap-1 hover:text-foreground"
             >
               <Gamepad2 className="size-3.5" />
-              <span className="hidden sm:inline">像素冒险</span>
+              <span className="hidden sm:inline">开放世界</span>
             </Link>
             <span className="h-3 w-px bg-border" />
             {user ? (

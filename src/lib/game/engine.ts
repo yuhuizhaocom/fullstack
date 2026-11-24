@@ -32,7 +32,7 @@ export function createSave(name: string, classId: ClassId): GameSave {
     hp: cls.base.maxHp,
     mp: cls.base.maxMp,
     stats: { ...cls.base },
-    equipment: { weapon: cls.weapon, armor: null, accessory: null },
+    equipment: { weapon: cls.weapon, armor: null, boots: null, accessory: null },
     inventory: { potion_small_hp: 3, potion_small_mp: 1 },
     pets: [{ id: "firefox", level: 1, exp: 0 }],
     activePet: "firefox",
@@ -52,6 +52,21 @@ export function loadSave(): GameSave | null {
       return null;
     }
     if (!CLASSES[parsed.classId]) return null;
+    // 兼容旧存档：补齐新增字段
+    parsed.stats = {
+      ...parsed.stats,
+      cdr: Number(parsed.stats.cdr ?? 0),
+      lifesteal: Number(parsed.stats.lifesteal ?? 0),
+    };
+    parsed.equipment = {
+      weapon: parsed.equipment?.weapon ?? null,
+      armor: parsed.equipment?.armor ?? null,
+      boots: parsed.equipment?.boots ?? null,
+      accessory: parsed.equipment?.accessory ?? null,
+    };
+    if (!parsed.inventory) parsed.inventory = {};
+    if (!parsed.pets) parsed.pets = [];
+    if (!parsed.cleared) parsed.cleared = [];
     return parsed;
   } catch {
     return null;
@@ -83,7 +98,13 @@ export function effectiveStats(save: GameSave): Stats {
     stats.def += item.def ?? 0;
     stats.spd += item.spd ?? 0;
     stats.crit += item.crit ?? 0;
+    stats.maxHp += item.maxHp ?? 0;
+    stats.maxMp += item.maxMp ?? 0;
+    stats.cdr += item.cdr ?? 0;
+    stats.lifesteal += item.lifesteal ?? 0;
   }
+  stats.cdr = Math.max(0, Math.min(50, stats.cdr));
+  stats.lifesteal = Math.max(0, Math.min(60, stats.lifesteal));
   return stats;
 }
 
@@ -110,6 +131,8 @@ export function gainExp(
     next.stats.def = Math.round((next.stats.def + growth.def) * 10) / 10;
     next.stats.spd = Math.round((next.stats.spd + growth.spd) * 10) / 10;
     next.stats.crit = Math.round((next.stats.crit + growth.crit) * 10) / 10;
+    next.stats.cdr = Math.round((next.stats.cdr + growth.cdr) * 10) / 10;
+    next.stats.lifesteal = Math.round((next.stats.lifesteal + growth.lifesteal) * 10) / 10;
   }
 
   if (levels > 0) {

@@ -1,4 +1,11 @@
-import { SPAWN_X, SPAWN_Y, terrainAt, TILE, WORLD_H, WORLD_W } from "./terrain";
+import {
+  roomConfig,
+  roomSpawn,
+  terrainAt,
+  TILE,
+  type RoomId,
+  type RoomTheme,
+} from "./terrain";
 
 export type RenderParticle = {
   x: number;
@@ -18,6 +25,7 @@ export type SkillEffect = {
   y: number;
   skillId: string;
   at: number;
+  radius?: number;
 };
 
 export type RenderSnapshot = {
@@ -47,6 +55,26 @@ export type RenderSnapshot = {
     maxHp: number;
   }[];
   drops: { id: string; x: number; y: number; heal: number }[];
+  npcs?: {
+    id: string;
+    name: string;
+    title: string;
+    icon: string;
+    color: string;
+    role: string;
+    x: number;
+    y: number;
+    quests: string[];
+  }[];
+  portals?: {
+    id: string;
+    target: string;
+    label: string;
+    icon: string;
+    x: number;
+    y: number;
+    unlockLevel: number;
+  }[];
 };
 
 const ISO_HALF_W = 32;
@@ -65,6 +93,10 @@ const ARMOR_BODY: Record<string, string> = {
   chain_mail: "#8494a8",
   plate_armor: "#64748b",
   dragon_armor: "#b91c1c",
+  randuin: "#38bdf8",
+  guardian_angel: "#fbbf24",
+  thornmail: "#4ade80",
+  warmog: "#f87171",
 };
 
 type WeaponKind = "sword" | "staff" | "bow" | "mace";
@@ -74,6 +106,9 @@ const WEAPON_STYLES: Record<string, WeaponStyle> = {
   wooden_sword: { kind: "sword", color: "#b45309" },
   iron_sword: { kind: "sword", color: "#cbd5e1" },
   flame_sword: { kind: "sword", color: "#fb923c", glow: "#f97316" },
+  doran_blade: { kind: "sword", color: "#fbbf24", glow: "#f59e0b" },
+  infinity_edge: { kind: "sword", color: "#fef3c7", glow: "#facc15" },
+  bloodthirster: { kind: "sword", color: "#f87171", glow: "#dc2626" },
   oak_staff: { kind: "staff", color: "#a78bfa" },
   crystal_staff: { kind: "staff", color: "#38bdf8", glow: "#0ea5e9" },
   arcane_staff: { kind: "staff", color: "#c084fc", glow: "#a855f7" },
@@ -112,6 +147,22 @@ function diamondPath(
   ctx.closePath();
 }
 
+const GROUND_PALETTES: Record<RoomTheme, string[]> = {
+  overworld: ["#1b4227", "#1d472b", "#1a3d24"],
+  forest: ["#163a22", "#183f25", "#14341f"],
+  cave: ["#20252d", "#242a33", "#1d222a"],
+  ruins: ["#262a30", "#2a2e35", "#22262c"],
+  volcano: ["#2a1510", "#301812", "#24110d"],
+};
+
+const GROUND_BG: Record<RoomTheme, string> = {
+  overworld: "#08160d",
+  forest: "#07130c",
+  cave: "#090d13",
+  ruins: "#0c0e12",
+  volcano: "#170906",
+};
+
 function drawGroundTile(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -119,22 +170,26 @@ function drawGroundTile(
   terrain: string,
   tx: number,
   ty: number,
-  time: number
+  time: number,
+  theme: RoomTheme
 ): void {
   const shade = (tx * 7 + ty * 13) % 3;
-  const grass = ["#1b4227", "#1d472b", "#1a3d24"][shade];
+  const palette = GROUND_PALETTES[theme];
+  const water =
+    theme === "volcano" ? "#7c2d12" : theme === "cave" ? "#13384d" : "#1b4a72";
 
   diamondPath(ctx, x, y, ISO_HALF_W, ISO_HALF_H);
-  ctx.fillStyle = terrain === "water" ? "#1b4a72" : grass;
+  ctx.fillStyle = terrain === "water" ? water : palette[shade];
   ctx.fill();
 
   if (terrain === "flower") {
-    ctx.fillStyle = "#facc15";
+    ctx.fillStyle = theme === "volcano" ? "#fb923c" : theme === "cave" ? "#67e8f9" : "#facc15";
     ctx.fillRect(x - 7, y - 3, 2, 2);
     ctx.fillRect(x + 6, y + 3, 2, 2);
   } else if (terrain === "water") {
     const wave = Math.sin(time / 600 + tx * 0.7 + ty * 0.4) * 4;
-    ctx.strokeStyle = "rgba(125,211,252,0.35)";
+    ctx.strokeStyle =
+      theme === "volcano" ? "rgba(251,146,60,0.5)" : "rgba(125,211,252,0.3)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x - 16, y + wave);
@@ -143,7 +198,12 @@ function drawGroundTile(
   }
 }
 
-function drawTree(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+function drawTree(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  theme: RoomTheme
+): void {
   ctx.fillStyle = "rgba(0,0,0,0.28)";
   ctx.beginPath();
   ctx.ellipse(x, y + 2, 17, 7, 0, 0, Math.PI * 2);
@@ -152,51 +212,57 @@ function drawTree(ctx: CanvasRenderingContext2D, x: number, y: number): void {
   ctx.fillStyle = "#5b3a1e";
   ctx.fillRect(x - 3, y - 30, 6, 30);
 
-  ctx.fillStyle = "#256b38";
-  ctx.beginPath();
-  ctx.moveTo(x, y - 68);
-  ctx.lineTo(x - 22, y - 36);
-  ctx.lineTo(x + 22, y - 36);
-  ctx.closePath();
-  ctx.fill();
+  const layers =
+    theme === "ruins"
+      ? ["#57616e", "#6b7280", "#7c8794"]
+      : theme === "cave"
+        ? ["#1f3b33", "#294a40", "#335a4d"]
+        : ["#256b38", "#2f7a3f", "#3c9350"];
 
-  ctx.fillStyle = "#2f7a3f";
-  ctx.beginPath();
-  ctx.moveTo(x, y - 55);
-  ctx.lineTo(x - 26, y - 24);
-  ctx.lineTo(x + 26, y - 24);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#3c9350";
-  ctx.beginPath();
-  ctx.moveTo(x, y - 43);
-  ctx.lineTo(x - 20, y - 15);
-  ctx.lineTo(x + 20, y - 15);
-  ctx.closePath();
-  ctx.fill();
+  const offsets: [number, number, number][] = [
+    [-68, -36, 22],
+    [-55, -24, 26],
+    [-43, -15, 20],
+  ];
+  layers.forEach((color, index) => {
+    const [top, bottom, half] = offsets[index];
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x, y + top);
+    ctx.lineTo(x - half, y + bottom);
+    ctx.lineTo(x + half, y + bottom);
+    ctx.closePath();
+    ctx.fill();
+  });
 }
 
-function drawRock(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+function drawRock(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  theme: RoomTheme
+): void {
   ctx.fillStyle = "rgba(0,0,0,0.25)";
   ctx.beginPath();
   ctx.ellipse(x, y + 1, 16, 6, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#4b5563";
+  ctx.fillStyle = theme === "volcano" ? "#4a2118" : "#4b5563";
   ctx.beginPath();
   ctx.ellipse(x, y - 8, 16, 12, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#6b7280";
+  ctx.fillStyle = theme === "volcano" ? "#6b2f1f" : "#6b7280";
   ctx.beginPath();
   ctx.ellipse(x - 3, y - 13, 12, 9, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#9ca3af";
-  ctx.beginPath();
-  ctx.ellipse(x - 6, y - 17, 4, 3, 0, 0, Math.PI * 2);
-  ctx.fill();
+  if (theme === "volcano") {
+    ctx.fillStyle = "rgba(251,146,60,0.35)";
+    ctx.beginPath();
+    ctx.ellipse(x - 6, y - 17, 3, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 function drawCampfire(
@@ -245,38 +311,134 @@ function drawCampfire(
   ctx.beginPath();
   ctx.ellipse(x, y - 16, 4, 7 + flicker * 0.5, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "rgba(254,240,138,0.9)";
-  ctx.beginPath();
-  ctx.ellipse(x, y - 18, 1.8, 3, 0, 0, Math.PI * 2);
-  ctx.fill();
 }
 
-const MINIMAP_SIZE = 88;
-let minimapCache: HTMLCanvasElement | null = null;
+function drawPortal(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  portal: { label: string; icon: string; unlockLevel: number },
+  meLevel: number,
+  time: number
+): void {
+  const locked = portal.unlockLevel > meLevel;
+  const pulse = 1 + Math.sin(time / 260) * 0.08;
+  ctx.save();
+  ctx.globalAlpha = locked ? 0.45 : 1;
 
-function getMinimapCache(): HTMLCanvasElement {
-  if (minimapCache) return minimapCache;
+  const glow = ctx.createRadialGradient(x, y - 14, 2, x, y - 14, 46);
+  glow.addColorStop(0, locked ? "rgba(148,163,184,0.35)" : "rgba(56,189,248,0.4)");
+  glow.addColorStop(1, "rgba(56,189,248,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.ellipse(x, y - 12, 44, 30, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = locked ? "rgba(148,163,184,0.8)" : "rgba(125,211,252,0.95)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(x, y, 26 * pulse, 12 * pulse, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = locked ? "rgba(148,163,184,0.35)" : "rgba(56,189,248,0.45)";
+  ctx.beginPath();
+  ctx.ellipse(x, y - 8, 18 * pulse, 8 * pulse, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.font = "22px serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(portal.icon, x, y - 18 + Math.sin(time / 320) * 2);
+
+  ctx.font = "bold 10px ui-monospace, Menlo, monospace";
+  ctx.fillStyle = locked ? "#94a3b8" : "#7dd3fc";
+  ctx.fillText(locked ? `${portal.label} Lv.${portal.unlockLevel}` : portal.label, x, y - 46);
+  ctx.restore();
+}
+
+function drawNpc(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  npc: {
+    name: string;
+    title: string;
+    icon: string;
+    color: string;
+    quests: string[];
+  },
+  time: number
+): void {
+  const bob = Math.sin(time / 420 + x) * 1.5;
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + 1, 13, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#1e293b";
+  ctx.fillRect(x - 6, y - 11, 4, 11);
+  ctx.fillRect(x + 2, y - 11, 4, 11);
+
+  ctx.fillStyle = npc.color;
+  ctx.fillRect(x - 9, y - 28 + bob, 18, 19);
+  ctx.fillStyle = "rgba(255,255,255,0.2)";
+  ctx.fillRect(x - 8, y - 26 + bob, 16, 3);
+
+  ctx.fillStyle = "#f0c39b";
+  ctx.fillRect(x - 6, y - 40 + bob, 12, 12);
+  ctx.fillStyle = "#1f2937";
+  ctx.fillRect(x - 3, y - 35 + bob, 2, 2);
+  ctx.fillRect(x + 1, y - 35 + bob, 2, 2);
+
+  ctx.font = "13px serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(npc.icon, x, y - 44 + bob);
+
+  ctx.font = "10px ui-monospace, Menlo, monospace";
+  ctx.fillStyle = "#fde68a";
+  ctx.fillText(npc.name, x, y - 51 + bob);
+
+  if (npc.quests.length > 0) {
+    const markerY = y - 64 + Math.sin(time / 240) * 3;
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.beginPath();
+    ctx.arc(x + 14, markerY, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#facc15";
+    ctx.font = "bold 12px ui-monospace, Menlo, monospace";
+    ctx.fillText("!", x + 14, markerY + 4);
+  }
+}
+
+const MINIMAP_CACHE_SIZE = 128;
+const minimapCaches = new Map<RoomId, HTMLCanvasElement>();
+
+function getMinimapCache(room: RoomId): HTMLCanvasElement {
+  const cached = minimapCaches.get(room);
+  if (cached) return cached;
+  const cfg = roomConfig(room);
   const canvas = document.createElement("canvas");
-  canvas.width = MINIMAP_SIZE;
-  canvas.height = MINIMAP_SIZE;
+  canvas.width = MINIMAP_CACHE_SIZE;
+  canvas.height = MINIMAP_CACHE_SIZE;
   const ctx = canvas.getContext("2d");
   if (ctx) {
-    ctx.fillStyle = "rgba(8,22,13,0.9)";
-    ctx.fillRect(0, 0, MINIMAP_SIZE, MINIMAP_SIZE);
-    const sx = MINIMAP_SIZE / WORLD_W;
-    const sy = MINIMAP_SIZE / WORLD_H;
-    for (let ty = 0; ty < WORLD_H; ty += 1) {
-      for (let tx = 0; tx < WORLD_W; tx += 1) {
-        const terrain = terrainAt(tx, ty);
+    ctx.fillStyle = "rgba(8,22,13,0.92)";
+    ctx.fillRect(0, 0, MINIMAP_CACHE_SIZE, MINIMAP_CACHE_SIZE);
+    const sx = MINIMAP_CACHE_SIZE / cfg.w;
+    const sy = MINIMAP_CACHE_SIZE / cfg.h;
+    for (let ty = 0; ty < cfg.h; ty += 1) {
+      for (let tx = 0; tx < cfg.w; tx += 1) {
+        const terrain = terrainAt(tx, ty, room);
         if (terrain === "tree") ctx.fillStyle = "rgba(34,90,50,0.9)";
         else if (terrain === "rock") ctx.fillStyle = "rgba(100,116,139,0.85)";
-        else if (terrain === "water") ctx.fillStyle = "rgba(30,90,140,0.9)";
+        else if (terrain === "water")
+          ctx.fillStyle = cfg.theme === "volcano" ? "rgba(194,65,12,0.9)" : "rgba(30,90,140,0.9)";
         else continue;
         ctx.fillRect(tx * sx, ty * sy, Math.ceil(sx), Math.ceil(sy));
       }
     }
   }
-  minimapCache = canvas;
+  minimapCaches.set(room, canvas);
   return canvas;
 }
 
@@ -297,11 +459,7 @@ function drawBossBar(
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "#f0abfc";
-  ctx.fillText(
-    `${boss.name}  ${Math.ceil(boss.hp)} / ${boss.maxHp}`,
-    width / 2,
-    y - 7
-  );
+  ctx.fillText(`${boss.name}  ${Math.ceil(boss.hp)} / ${boss.maxHp}`, width / 2, y - 7);
 
   ctx.fillStyle = "rgba(0,0,0,0.6)";
   ctx.fillRect(x, y, barWidth, 8);
@@ -317,21 +475,24 @@ function drawMinimap(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
+  room: RoomId,
   meId: string,
   meX: number,
   meY: number,
   snapshot: RenderSnapshot | null,
   time: number
 ): void {
-  const size = MINIMAP_SIZE;
+  const cfg = roomConfig(room);
+  const size = Math.round(Math.min(132, Math.max(88, width * 0.2)));
   const x = width - size - 8;
   const y = 92;
-  const sx = size / WORLD_W;
-  const sy = size / WORLD_H;
+  const sx = size / cfg.w;
+  const sy = size / cfg.h;
+  const spawn = roomSpawn(room);
 
   ctx.save();
-  ctx.globalAlpha = 0.92;
-  ctx.drawImage(getMinimapCache(), x, y);
+  ctx.globalAlpha = 0.94;
+  ctx.drawImage(getMinimapCache(room), x, y, size, size);
   ctx.globalAlpha = 1;
   ctx.strokeStyle = "rgba(148,163,184,0.5)";
   ctx.lineWidth = 1;
@@ -340,13 +501,25 @@ function drawMinimap(
   ctx.strokeStyle = "rgba(134,239,172,0.55)";
   ctx.beginPath();
   ctx.arc(
-    x + (SPAWN_X / TILE) * sx,
-    y + (SPAWN_Y / TILE) * sy,
-    (220 / TILE) * sx,
+    x + (spawn.x / TILE) * sx,
+    y + (spawn.y / TILE) * sy,
+    (240 / TILE) * sx,
     0,
     Math.PI * 2
   );
   ctx.stroke();
+
+  for (const portal of snapshot?.portals ?? []) {
+    ctx.fillStyle = "#38bdf8";
+    ctx.beginPath();
+    ctx.arc(x + (portal.x / TILE) * sx, y + (portal.y / TILE) * sy, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (const npc of snapshot?.npcs ?? []) {
+    ctx.fillStyle = "#facc15";
+    ctx.fillRect(x + (npc.x / TILE) * sx - 1, y + (npc.y / TILE) * sy - 1, 2.4, 2.4);
+  }
 
   for (const monster of snapshot?.monsters ?? []) {
     ctx.fillStyle = monster.boss ? "#e879f9" : "#f87171";
@@ -380,7 +553,6 @@ function drawMinimap(
   ctx.arc(selfX, selfY, 4 + Math.sin(time / 300) * 1.2, 0, Math.PI * 2);
   ctx.stroke();
 
-  // 当前视野范围
   const viewW = Math.min(size, (width / TILE) * sx * 1.4);
   const viewH = Math.min(size, ((height * 2) / TILE) * sy * 1.2);
   ctx.strokeStyle = "rgba(226,232,240,0.32)";
@@ -472,8 +644,7 @@ function drawHero(
 ): void {
   const now = look.time;
   const swingElapsed = look.swingAt ? now - look.swingAt : Number.POSITIVE_INFINITY;
-  const swingProgress =
-    swingElapsed >= 0 && swingElapsed < 300 ? swingElapsed / 300 : -1;
+  const swingProgress = swingElapsed >= 0 && swingElapsed < 300 ? swingElapsed / 300 : -1;
   const swinging = swingProgress >= 0;
   const swingAngle = swinging
     ? swingProgress < 0.32
@@ -742,19 +913,21 @@ function drawMonsterBody(
       ctx.stroke();
       break;
     }
-    case "fire": {
+    case "fire":
+    case "lavabeast": {
       const flicker = Math.sin(time / 90) * 2;
+      const big = kind === "lavabeast";
       ctx.fillStyle = "rgba(249,115,22,0.92)";
       ctx.beginPath();
-      ctx.ellipse(0, -14, 13, 15 + flicker, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -14, big ? 18 : 13, (big ? 17 : 15) + flicker, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "rgba(251,191,36,0.92)";
       ctx.beginPath();
-      ctx.ellipse(0, -16, 8, 10 + flicker * 0.6, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -16, big ? 11 : 8, (big ? 12 : 10) + flicker * 0.6, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "rgba(254,240,138,0.95)";
       ctx.beginPath();
-      ctx.ellipse(0, -18, 4, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -18, big ? 6 : 4, big ? 7 : 5, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#111827";
       ctx.fillRect(-5, -17, 2.5, 2.5);
@@ -793,6 +966,84 @@ function drawMonsterBody(
       ctx.fillStyle = "#fbbf24";
       ctx.fillRect(-5, -20, 3, 3);
       ctx.fillRect(2, -20, 3, 3);
+      break;
+    }
+    case "bat":
+    case "ghost": {
+      const ghost = kind === "ghost";
+      ctx.fillStyle = ghost ? "rgba(226,232,240,0.75)" : "#7c3aed";
+      ctx.beginPath();
+      ctx.moveTo(-4, -22);
+      ctx.lineTo(-24, -34);
+      ctx.lineTo(-12, -8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(4, -22);
+      ctx.lineTo(24, -34);
+      ctx.lineTo(12, -8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(0, -14, ghost ? 11 : 8, ghost ? 14 : 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      if (ghost) {
+        ctx.fillStyle = "rgba(226,232,240,0.5)";
+        ctx.beginPath();
+        ctx.ellipse(0, -2, 9, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#f87171";
+      ctx.fillRect(-5, -19, 3, 3);
+      ctx.fillRect(2, -19, 3, 3);
+      break;
+    }
+    case "spider": {
+      ctx.strokeStyle = "#4c1d95";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 4; i += 1) {
+        const offset = -12 + i * 8;
+        ctx.beginPath();
+        ctx.moveTo(0, -12);
+        ctx.lineTo(offset - 10, -2);
+        ctx.moveTo(0, -12);
+        ctx.lineTo(offset + 10, -2);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#7c3aed";
+      ctx.beginPath();
+      ctx.ellipse(0, -14, 12, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#f87171";
+      ctx.fillRect(-6, -17, 2.5, 2.5);
+      ctx.fillRect(3, -17, 2.5, 2.5);
+      break;
+    }
+    case "golem":
+    case "gargoyle":
+    case "cavegolem":
+    case "guardian": {
+      const boss = kind === "cavegolem" || kind === "guardian";
+      const color = boss ? "#475569" : "#6b7280";
+      ctx.fillStyle = color;
+      ctx.fillRect(-13, -26, 26, 22);
+      ctx.fillStyle = boss ? "#94a3b8" : "#9ca3af";
+      ctx.fillRect(-10, -36, 20, 12);
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.fillRect(-13, -24, 26, 3);
+      ctx.fillStyle = boss ? "#38bdf8" : "#fbbf24";
+      ctx.fillRect(-6, -31, 4, 4);
+      ctx.fillRect(2, -31, 4, 4);
+      if (kind === "gargoyle") {
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-10, -22);
+        ctx.lineTo(-24, -34);
+        ctx.moveTo(10, -22);
+        ctx.lineTo(24, -34);
+        ctx.stroke();
+      }
       break;
     }
     case "dragon": {
@@ -869,9 +1120,7 @@ function drawMonster(
   ctx.ellipse(x, y + 2, 15 * scale, 7 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = monster.boss
-    ? "rgba(232,121,249,0.2)"
-    : "rgba(248,113,113,0.14)";
+  ctx.fillStyle = monster.boss ? "rgba(232,121,249,0.2)" : "rgba(248,113,113,0.14)";
   ctx.beginPath();
   ctx.ellipse(x, y + 1, 19 * scale, 9.5 * scale, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -897,13 +1146,22 @@ function drawMonster(
   ctx.fillStyle = "rgba(0,0,0,0.7)";
   ctx.fillRect(x - barWidth / 2, barY, barWidth, 3);
   ctx.fillStyle = monster.boss ? "#e879f9" : "#ef4444";
-  ctx.fillRect(
-    x - barWidth / 2,
-    barY,
-    barWidth * Math.max(0, monster.hp / monster.maxHp),
-    3
-  );
+  ctx.fillRect(x - barWidth / 2, barY, barWidth * Math.max(0, monster.hp / monster.maxHp), 3);
 }
+
+const AOE_RADIUS: Record<string, number> = {
+  judgment: 115,
+  tibbers: 150,
+  incinerate: 125,
+  volley: 135,
+  equinox: 130,
+};
+
+const HEAL_SKILLS = new Set(["astral_infusion", "wish", "heal"]);
+const EXECUTE_SKILLS = new Set(["demacia_justice", "crystal_arrow"]);
+const DASH_SKILLS = new Set(["tumble"]);
+const GOLD_SKILLS = new Set(["decisive_strike", "judgment", "demacia_justice", "crystal_arrow"]);
+const FROST_SKILLS = new Set(["frost_shot", "equinox"]);
 
 function drawSkillEffect(
   ctx: CanvasRenderingContext2D,
@@ -916,28 +1174,7 @@ function drawSkillEffect(
   ctx.save();
   ctx.globalAlpha = alpha;
 
-  if (
-    skillId === "fireball" ||
-    skillId === "thunderstorm" ||
-    skillId === "arcane_flow"
-  ) {
-    const color =
-      skillId === "arcane_flow"
-        ? "#c084fc"
-        : skillId === "thunderstorm"
-          ? "#fde047"
-          : "#fb923c";
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(x, y - 12, 10 + progress * 50, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.globalAlpha = alpha * 0.35;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(x, y - 12, 8 + progress * 26, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (skillId === "levelup") {
+  if (skillId === "levelup") {
     ctx.strokeStyle = "#fde68a";
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -947,84 +1184,108 @@ function drawSkillEffect(
     for (let i = 0; i < 8; i += 1) {
       const angle = (i / 8) * Math.PI * 2 + progress * 1.5;
       ctx.beginPath();
-      ctx.arc(
-        x + Math.cos(angle) * (12 + progress * 26),
-        y - progress * 40 + Math.sin(angle) * 4,
-        2,
-        0,
-        Math.PI * 2
-      );
+      ctx.arc(x + Math.cos(angle) * (12 + progress * 26), y - progress * 40 + Math.sin(angle) * 4, 2, 0, Math.PI * 2);
       ctx.fill();
     }
   } else if (skillId === "boss_aoe") {
     ctx.strokeStyle = "#f87171";
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.ellipse(
-      x,
-      y,
-      16 + progress * 108,
-      8 + progress * 54,
-      0,
-      0,
-      Math.PI * 2
-    );
+    ctx.ellipse(x, y, 16 + progress * 108, 8 + progress * 54, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.globalAlpha = alpha * 0.22;
     ctx.fillStyle = "#ef4444";
     ctx.beginPath();
-    ctx.ellipse(
-      x,
-      y,
-      16 + progress * 108,
-      8 + progress * 54,
-      0,
-      0,
-      Math.PI * 2
-    );
+    ctx.ellipse(x, y, 16 + progress * 108, 8 + progress * 54, 0, 0, Math.PI * 2);
     ctx.fill();
-  } else if (skillId === "earth_split") {
-    ctx.strokeStyle = "#d97706";
+  } else if (AOE_RADIUS[skillId]) {
+    const radius = AOE_RADIUS[skillId] * (0.25 + progress * 0.9);
+    const color =
+      skillId === "tibbers"
+        ? "#fb923c"
+        : skillId === "equinox"
+          ? "#f0abfc"
+          : skillId === "incinerate"
+            ? "#f97316"
+            : skillId === "volley"
+              ? "#86efac"
+              : "#fbbf24";
+    ctx.strokeStyle = color;
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.ellipse(x, y, 12 + progress * 62, 6 + progress * 26, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y, radius, radius * 0.5, 0, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = "#92400e";
-    for (let i = 0; i < 7; i += 1) {
-      const angle = (i / 7) * Math.PI * 2;
-      const distance = 8 + progress * 52;
-      ctx.fillRect(
-        x + Math.cos(angle) * distance,
-        y + Math.sin(angle) * distance * 0.45 - progress * 18,
-        3,
-        3
-      );
+    ctx.globalAlpha = alpha * 0.2;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(x, y, radius, radius * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (let i = 0; i < 10; i += 1) {
+      const angle = (i / 10) * Math.PI * 2 + progress;
+      ctx.globalAlpha = alpha * 0.85;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius * 0.5 - progress * 18, 3, 0, Math.PI * 2);
+      ctx.fill();
     }
-  } else if (
-    skillId === "heal" ||
-    skillId === "sanctuary" ||
-    skillId === "judgment"
-  ) {
-    ctx.fillStyle = skillId === "judgment" ? "#fef9c3" : "#86efac";
-    for (let i = 0; i < 9; i += 1) {
-      const angle = (i / 9) * Math.PI * 2 + progress * 2;
-      const radius = 8 + progress * 20;
+  } else if (DASH_SKILLS.has(skillId)) {
+    ctx.strokeStyle = "#86efac";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x - 30 * (1 - progress), y + 8);
+    ctx.lineTo(x + 18, y - 8);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(134,239,172,0.3)";
+    ctx.beginPath();
+    ctx.ellipse(x + 10, y - 6, 22, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (HEAL_SKILLS.has(skillId)) {
+    ctx.fillStyle = skillId === "wish" ? "#f0abfc" : "#86efac";
+    for (let i = 0; i < 11; i += 1) {
+      const angle = (i / 11) * Math.PI * 2 + progress * 2;
+      const radius = 8 + progress * 24;
       ctx.beginPath();
       ctx.arc(
         x + Math.cos(angle) * radius,
-        y - 8 - progress * 26 + Math.sin(angle) * 5,
-        2.5,
+        y - 8 - progress * 32 + Math.sin(angle) * 5,
+        skillId === "wish" ? 3 : 2.5,
         0,
         Math.PI * 2
       );
       ctx.fill();
     }
-  } else {
+  } else if (EXECUTE_SKILLS.has(skillId)) {
     ctx.strokeStyle = "#fde68a";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(x, y - 10, 10 + progress * 54, -1.3, 0.9);
+    ctx.stroke();
+    ctx.globalAlpha = alpha * 0.4;
+    ctx.fillStyle = "#facc15";
+    ctx.beginPath();
+    ctx.arc(x, y - 10, 6 + progress * 30, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (FROST_SKILLS.has(skillId)) {
+    ctx.strokeStyle = "#7dd3fc";
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 6; i += 1) {
+      const angle = (i / 6) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y - 10);
+      ctx.lineTo(x + Math.cos(angle) * (18 + progress * 34), y - 10 + Math.sin(angle) * (9 + progress * 17));
+      ctx.stroke();
+    }
+  } else {
+    ctx.strokeStyle = GOLD_SKILLS.has(skillId) ? "#fde68a" : "#a78bfa";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(x, y - 12, 8 + progress * 36, 0, Math.PI * 2);
+    ctx.arc(x, y - 12, 8 + progress * 42, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.globalAlpha = alpha * 0.35;
+    ctx.fillStyle = GOLD_SKILLS.has(skillId) ? "#fef3c7" : "#c4b5fd";
+    ctx.beginPath();
+    ctx.arc(x, y - 12, 5 + progress * 20, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   ctx.restore();
@@ -1035,12 +1296,14 @@ export function drawWorld(
   input: {
     width: number;
     height: number;
+    room: RoomId;
     meId: string;
     meX: number;
     meY: number;
     meName: string;
     meHp: number;
     meMaxHp: number;
+    meLevel: number;
     meDir: number;
     meDead: boolean;
     meMoving: boolean;
@@ -1060,6 +1323,7 @@ export function drawWorld(
   if (!ctx) return;
 
   const { width, height } = input;
+  const cfg = roomConfig(input.room);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const scale = canvas.width / width;
   ctx.scale(scale, scale);
@@ -1067,18 +1331,16 @@ export function drawWorld(
 
   const meIsoX = input.meX - input.meY;
   const meIsoY = (input.meX + input.meY) / 2;
-  const isoMinX = -WORLD_H * TILE;
-  const isoMaxX = WORLD_W * TILE;
+  const isoMinX = -cfg.h * TILE;
+  const isoMaxX = cfg.w * TILE;
   const isoMinY = 0;
-  const isoMaxY = ((WORLD_W + WORLD_H) * TILE) / 2;
+  const isoMaxY = ((cfg.w + cfg.h) * TILE) / 2;
   const shakeX = input.shake ? (Math.random() - 0.5) * 8 : 0;
   const shakeY = input.shake ? (Math.random() - 0.5) * 8 : 0;
-  const camX =
-    Math.max(isoMinX, Math.min(isoMaxX - width, meIsoX - width / 2)) + shakeX;
-  const camY =
-    Math.max(isoMinY, Math.min(isoMaxY - height, meIsoY - height / 2)) + shakeY;
+  const camX = Math.max(isoMinX, Math.min(isoMaxX - width, meIsoX - width / 2)) + shakeX;
+  const camY = Math.max(isoMinY, Math.min(isoMaxY - height, meIsoY - height / 2)) + shakeY;
 
-  ctx.fillStyle = "#08160d";
+  ctx.fillStyle = GROUND_BG[cfg.theme];
   ctx.fillRect(0, 0, width, height);
 
   const unproject = (sx: number, sy: number) => {
@@ -1086,28 +1348,11 @@ export function drawWorld(
     const isoY = sy + camY;
     return { x: isoY + isoX / 2, y: isoY - isoX / 2 };
   };
-  const corners = [
-    unproject(0, 0),
-    unproject(width, 0),
-    unproject(0, height),
-    unproject(width, height),
-  ];
-  const minTx = Math.max(
-    0,
-    Math.floor(Math.min(...corners.map((corner) => corner.x)) / TILE) - 2
-  );
-  const maxTx = Math.min(
-    WORLD_W - 1,
-    Math.ceil(Math.max(...corners.map((corner) => corner.x)) / TILE) + 2
-  );
-  const minTy = Math.max(
-    0,
-    Math.floor(Math.min(...corners.map((corner) => corner.y)) / TILE) - 2
-  );
-  const maxTy = Math.min(
-    WORLD_H - 1,
-    Math.ceil(Math.max(...corners.map((corner) => corner.y)) / TILE) + 2
-  );
+  const corners = [unproject(0, 0), unproject(width, 0), unproject(0, height), unproject(width, height)];
+  const minTx = Math.max(0, Math.floor(Math.min(...corners.map((corner) => corner.x)) / TILE) - 2);
+  const maxTx = Math.min(cfg.w - 1, Math.ceil(Math.max(...corners.map((corner) => corner.x)) / TILE) + 2);
+  const minTy = Math.max(0, Math.floor(Math.min(...corners.map((corner) => corner.y)) / TILE) - 2);
+  const maxTy = Math.min(cfg.h - 1, Math.ceil(Math.max(...corners.map((corner) => corner.y)) / TILE) + 2);
 
   type Entity = { depth: number; draw: () => void };
   const entities: Entity[] = [];
@@ -1126,15 +1371,15 @@ export function drawWorld(
         continue;
       }
 
-      const terrain = terrainAt(tx, ty);
-      drawGroundTile(ctx, screen.x, screen.y, terrain, tx, ty, input.time);
+      const terrain = terrainAt(tx, ty, input.room);
+      drawGroundTile(ctx, screen.x, screen.y, terrain, tx, ty, input.time, cfg.theme);
 
       if (terrain === "tree" || terrain === "rock") {
         entities.push({
           depth: wx + wy,
           draw: () => {
-            if (terrain === "tree") drawTree(ctx, screen.x, screen.y);
-            else drawRock(ctx, screen.x, screen.y);
+            if (terrain === "tree") drawTree(ctx, screen.x, screen.y, cfg.theme);
+            else drawRock(ctx, screen.x, screen.y, cfg.theme);
           },
         });
       }
@@ -1144,16 +1389,27 @@ export function drawWorld(
   const snapshot = input.snapshot;
 
   if (snapshot) {
+    for (const portal of snapshot.portals ?? []) {
+      const screen = toScreen(portal.x, portal.y, camX, camY);
+      if (screen.x < -80 || screen.y < -80 || screen.x > width + 80 || screen.y > height + 80) continue;
+      entities.push({
+        depth: portal.x + portal.y - 6,
+        draw: () => drawPortal(ctx, screen.x, screen.y, portal, input.meLevel, input.time),
+      });
+    }
+
+    for (const npc of snapshot.npcs ?? []) {
+      const screen = toScreen(npc.x, npc.y, camX, camY);
+      if (screen.x < -80 || screen.y < -80 || screen.x > width + 80 || screen.y > height + 80) continue;
+      entities.push({
+        depth: npc.x + npc.y,
+        draw: () => drawNpc(ctx, screen.x, screen.y, npc, input.time),
+      });
+    }
+
     for (const drop of snapshot.drops) {
       const screen = toScreen(drop.x, drop.y, camX, camY);
-      if (
-        screen.x < -40 ||
-        screen.y < -40 ||
-        screen.x > width + 40 ||
-        screen.y > height + 40
-      ) {
-        continue;
-      }
+      if (screen.x < -40 || screen.y < -40 || screen.x > width + 40 || screen.y > height + 40) continue;
       entities.push({
         depth: drop.x + drop.y,
         draw: () => {
@@ -1176,19 +1432,9 @@ export function drawWorld(
 
     for (const monster of snapshot.monsters) {
       const screen = toScreen(monster.x, monster.y, camX, camY);
-      if (
-        screen.x < -60 ||
-        screen.y < -60 ||
-        screen.x > width + 60 ||
-        screen.y > height + 60
-      ) {
-        continue;
-      }
+      if (screen.x < -60 || screen.y < -60 || screen.x > width + 60 || screen.y > height + 60) continue;
       const flashAt = input.flashes[monster.id];
-      const distanceToMe = Math.hypot(
-        monster.x - input.meX,
-        monster.y - input.meY
-      );
+      const distanceToMe = Math.hypot(monster.x - input.meX, monster.y - input.meY);
       entities.push({
         depth: monster.x + monster.y,
         draw: () =>
@@ -1207,14 +1453,7 @@ export function drawWorld(
     for (const player of snapshot.players) {
       if (player.id === input.meId) continue;
       const screen = toScreen(player.x, player.y, camX, camY);
-      if (
-        screen.x < -60 ||
-        screen.y < -60 ||
-        screen.x > width + 60 ||
-        screen.y > height + 60
-      ) {
-        continue;
-      }
+      if (screen.x < -60 || screen.y < -60 || screen.x > width + 60 || screen.y > height + 60) continue;
       entities.push({
         depth: player.x + player.y,
         draw: () =>
@@ -1245,17 +1484,20 @@ export function drawWorld(
   const meSnapshot = snapshot?.players.find((player) => player.id === input.meId);
   const meScreen = toScreen(input.meX, input.meY, camX, camY);
 
-  const fireScreen = toScreen(SPAWN_X, SPAWN_Y, camX, camY);
-  if (
-    fireScreen.x > -60 &&
-    fireScreen.x < width + 60 &&
-    fireScreen.y > -60 &&
-    fireScreen.y < height + 60
-  ) {
-    entities.push({
-      depth: SPAWN_X + SPAWN_Y,
-      draw: () => drawCampfire(ctx, fireScreen.x, fireScreen.y, input.time),
-    });
+  const worldSpawn = roomSpawn("world");
+  if (input.room === "world") {
+    const fireScreen = toScreen(worldSpawn.x, worldSpawn.y, camX, camY);
+    if (
+      fireScreen.x > -60 &&
+      fireScreen.x < width + 60 &&
+      fireScreen.y > -60 &&
+      fireScreen.y < height + 60
+    ) {
+      entities.push({
+        depth: worldSpawn.x + worldSpawn.y,
+        draw: () => drawCampfire(ctx, fireScreen.x, fireScreen.y, input.time),
+      });
+    }
   }
 
   entities.push({
@@ -1310,9 +1552,7 @@ export function drawWorld(
 
   const nearbyBoss = snapshot?.monsters
     .filter(
-      (monster) =>
-        monster.boss &&
-        Math.hypot(monster.x - input.meX, monster.y - input.meY) < 460
+      (monster) => monster.boss && Math.hypot(monster.x - input.meX, monster.y - input.meY) < 460
     )
     .sort(
       (a, b) =>
@@ -1327,6 +1567,7 @@ export function drawWorld(
     ctx,
     width,
     height,
+    input.room,
     input.meId,
     input.meX,
     input.meY,

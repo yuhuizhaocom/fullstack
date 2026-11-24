@@ -381,17 +381,17 @@ export default async function DashboardPage() {
 
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">像素冒险</CardTitle>
-            <CardDescription>无需登录的回合制 RPG</CardDescription>
+            <CardTitle className="text-base">像素开放世界</CardTitle>
+            <CardDescription>实时多人 · 开放世界与副本</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs leading-relaxed text-muted-foreground">
-              选择职业，探索四个副本，挑战 BOSS、培养宠物；存档自动保存在本机浏览器。
+              选择职业进入 10 倍大小的开放世界，与同服玩家实时协作；从传送门进入实时副本，接取 NPC 任务并收集洛式装备。
             </p>
             <Button asChild size="sm" variant="outline" className="w-fit">
-              <Link href="/game">
+              <Link href="/world">
                 <Gamepad2 className="size-4" />
-                开始冒险
+                进入世界
               </Link>
             </Button>
           </CardContent>

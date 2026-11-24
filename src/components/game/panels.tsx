@@ -36,16 +36,23 @@ export function itemStats(item: ItemDef): string {
   const parts: string[] = [];
   if (item.atk) parts.push(`攻击 +${item.atk}`);
   if (item.def) parts.push(`防御 +${item.def}`);
-  if (item.spd) parts.push(`速度 +${item.spd}`);
+  if (item.spd) parts.push(`移速 +${item.spd}`);
+  if (item.maxHp) parts.push(`生命 +${item.maxHp}`);
+  if (item.maxMp) parts.push(`法力 +${item.maxMp}`);
   if (item.crit) parts.push(`暴击 +${item.crit}%`);
+  if (item.cdr) parts.push(`冷却缩减 +${item.cdr}%`);
+  if (item.lifesteal) parts.push(`吸血 +${item.lifesteal}%`);
   if (item.hp) parts.push(`回复 ${item.hp} 生命`);
   if (item.mp) parts.push(`回复 ${item.mp} 魔法`);
   return parts.join(" · ");
 }
 
-const EQUIP_SLOTS: { key: "weapon" | "armor" | "accessory"; label: string; icon: string }[] = [
+type EquipSlot = "weapon" | "armor" | "boots" | "accessory";
+
+const EQUIP_SLOTS: { key: EquipSlot; label: string; icon: string }[] = [
   { key: "weapon", label: "武器", icon: "🗡️" },
   { key: "armor", label: "护甲", icon: "🛡️" },
+  { key: "boots", label: "鞋子", icon: "👟" },
   { key: "accessory", label: "饰品", icon: "💍" },
 ];
 
@@ -54,7 +61,7 @@ export function CharacterPanel({ save, onChange, notify }: PanelProps) {
   const cls = CLASSES[save.classId];
   const need = expToNext(save.level);
 
-  function unequip(slot: "weapon" | "armor" | "accessory") {
+  function unequip(slot: EquipSlot) {
     const id = save.equipment[slot];
     if (!id) return;
     onChange({
@@ -124,6 +131,10 @@ export function CharacterPanel({ save, onChange, notify }: PanelProps) {
             { label: "防御", value: Math.round(stats.def) },
             { label: "速度", value: Math.round(stats.spd) },
             { label: "暴击", value: `${Math.round(stats.crit)}%` },
+            { label: "冷却缩减", value: `${Math.round(stats.cdr)}%` },
+            { label: "吸血", value: `${Math.round(stats.lifesteal)}%` },
+            { label: "生命上限", value: Math.round(stats.maxHp) },
+            { label: "法力上限", value: Math.round(stats.maxMp) },
           ].map((row) => (
             <div
               key={row.label}
@@ -180,6 +191,7 @@ const BAG_FILTERS: { key: ItemKind | "all"; label: string }[] = [
   { key: "consumable", label: "药水" },
   { key: "weapon", label: "武器" },
   { key: "armor", label: "护甲" },
+  { key: "boots", label: "鞋子" },
   { key: "accessory", label: "饰品" },
   { key: "material", label: "材料" },
 ];
@@ -208,8 +220,14 @@ export function BagPanel({ save, onChange, notify }: PanelProps) {
       notify(!item.classId || item.classId === save.classId ? "等级不足" : "职业不符");
       return;
     }
-    const slot =
-      item.kind === "weapon" ? "weapon" : item.kind === "armor" ? "armor" : "accessory";
+    const slot: EquipSlot =
+      item.kind === "weapon"
+        ? "weapon"
+        : item.kind === "armor"
+          ? "armor"
+          : item.kind === "boots"
+            ? "boots"
+            : "accessory";
     const prev = save.equipment[slot];
     let inventory = removeItem(save.inventory, item.id);
     if (prev) inventory = addItem(inventory, prev);
@@ -258,7 +276,7 @@ export function BagPanel({ save, onChange, notify }: PanelProps) {
         ) : (
           <ul className="space-y-1.5">
             {entries.map(({ item, count }) => {
-              const equippable = ["weapon", "armor", "accessory"].includes(item.kind);
+              const equippable = ["weapon", "armor", "boots", "accessory"].includes(item.kind);
               return (
                 <li
                   key={item.id}
@@ -310,12 +328,13 @@ export function SkillsPanel({ save }: { save: GameSave }) {
   return (
     <div className="space-y-3">
       <p className="text-[11px] text-slate-400">
-        技能随等级自动解锁，战斗中消耗魔法释放。
+        技能随等级自动解锁，战斗中消耗魔法释放，冷却时间受冷却缩减影响。
       </p>
       <div className="grid gap-2 sm:grid-cols-2">
-        {skillIds.map((id) => {
+        {skillIds.map((id, index) => {
           const skill = SKILLS[id];
           const unlocked = save.level >= skill.level;
+          const key = skill.key ?? ["Q", "W", "E", "R"][index] ?? "Q";
           return (
             <div
               key={id}
@@ -327,11 +346,15 @@ export function SkillsPanel({ save }: { save: GameSave }) {
               )}
             >
               <div className="flex items-center gap-2">
+                <span className="flex size-6 items-center justify-center rounded border-2 border-slate-600 bg-slate-800 text-[11px] font-black text-amber-300">
+                  {key}
+                </span>
                 <span className="text-xl">{skill.icon}</span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[12px] font-bold text-slate-100">{skill.name}</p>
                   <p className="text-[10px] text-slate-500">
                     {unlocked ? "已解锁" : `Lv.${skill.level} 解锁`} · {skill.mp} 魔法
+                    {skill.cooldown ? ` · CD ${skill.cooldown}s` : ""}
                   </p>
                 </div>
               </div>

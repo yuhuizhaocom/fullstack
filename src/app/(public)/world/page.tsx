@@ -12,7 +12,7 @@ export default function WorldPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">开放世界</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          实时多人 · 自动组队 · 共享角色存档 · 音效与背景音乐
+          实时多人开放世界 · 副本传送门 · NPC 任务 · 洛式装备与 QWER 技能
         </p>
       </div>
       <WorldGame />

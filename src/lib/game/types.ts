@@ -8,6 +8,10 @@ export type Stats = {
   spd: number;
   /** 暴击率百分比 */
   crit: number;
+  /** 冷却缩减百分比（英雄联盟风格） */
+  cdr: number;
+  /** 吸血百分比 */
+  lifesteal: number;
 };
 
 export type ClassDef = {
@@ -21,7 +25,17 @@ export type ClassDef = {
   weapon: string;
 };
 
-export type SkillKind = "damage" | "heal" | "buff" | "guard";
+export type SkillKey = "Q" | "W" | "E" | "R";
+
+export type SkillKind =
+  | "damage"
+  | "heal"
+  | "buff"
+  | "guard"
+  | "aoe"
+  | "execute"
+  | "dash"
+  | "slow";
 
 export type SkillDef = {
   id: string;
@@ -32,6 +46,18 @@ export type SkillDef = {
   /** 解锁等级 */
   level: number;
   kind: SkillKind;
+  /** 英雄联盟风格的 Q/W/E/R 键位 */
+  key?: SkillKey;
+  /** 冷却时间（秒） */
+  cooldown?: number;
+  /** 施法距离（像素） */
+  range?: number;
+  /** 影响半径（像素） */
+  radius?: number;
+  /** 位移距离（像素） */
+  dashDistance?: number;
+  /** 减速持续时间（毫秒） */
+  slowMs?: number;
   /** 伤害倍率（damage） */
   multiplier?: number;
   /** 段数（damage） */
@@ -51,6 +77,7 @@ export type ItemKind =
   | "material"
   | "weapon"
   | "armor"
+  | "boots"
   | "accessory";
 
 export type ItemDef = {
@@ -67,6 +94,10 @@ export type ItemDef = {
   def?: number;
   spd?: number;
   crit?: number;
+  maxHp?: number;
+  maxMp?: number;
+  cdr?: number;
+  lifesteal?: number;
   classId?: ClassId;
   level?: number;
 };
@@ -125,7 +156,13 @@ export type DungeonDef = {
 export type Equipment = {
   weapon: string | null;
   armor: string | null;
+  boots: string | null;
   accessory: string | null;
+};
+
+export type QuestSaveEntry = {
+  progress: number;
+  status: "active" | "complete" | "turnedIn";
 };
 
 export type GameSave = {
@@ -147,6 +184,8 @@ export type GameSave = {
   cleared: string[];
   wins: number;
   createdAt: number;
+  /** 任务进度（可选，兼容旧存档） */
+  quests?: Record<string, QuestSaveEntry>;
 };
 
 export type BattleState = {

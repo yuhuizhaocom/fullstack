@@ -37,11 +37,22 @@ if [ -f "$BASE/app.pid" ]; then
   rm -f "$BASE/app.pid"
 fi
 
-# 兜底：清理 npm start 派生的 next-server 残留
+# 兜底：清理 npm start 派生的实时服务 / next-server 残留
+if pkill -f 'tsx server.ts' 2>/dev/null; then
+  echo "已清理残留实时服务进程（tsx server.ts）"
+fi
+if pkill -f 'node.*server\.ts' 2>/dev/null; then
+  echo "已清理残留 Node 服务进程（server.ts）"
+fi
 if pkill -f 'next-server' 2>/dev/null; then
   echo "已清理残留 next-server 进程"
 fi
 pkill -f 'next start' 2>/dev/null || true
+
+# 最后兜底：释放监听端口（专用部署环境，占用者即旧实例）
+if command -v fuser >/dev/null 2>&1; then
+  fuser -k "${APP_PORT}/tcp" >/dev/null 2>&1 || true
+fi
 
 for _ in $(seq 1 10); do
   port_in_use || break
