@@ -10,6 +10,7 @@ import {
   Inbox,
   ListTodo,
   MessageSquare,
+  Paperclip,
 } from "lucide-react";
 
 import { DatabaseNotice } from "@/components/database-notice";
@@ -354,6 +355,24 @@ export default async function DashboardPage() {
               <Link href="/chat">
                 <MessageSquare className="size-4" />
                 进入聊天室
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">附件分享</CardTitle>
+            <CardDescription>上传文件生成下载链接，24 小时有效</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              无需登录，单文件最大 100MB；到期后自动从数据库与磁盘删除。
+            </p>
+            <Button asChild size="sm" variant="outline" className="w-fit">
+              <Link href="/files">
+                <Paperclip className="size-4" />
+                分享附件
               </Link>
             </Button>
           </CardContent>

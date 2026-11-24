@@ -51,6 +51,12 @@ export default function LoginPage() {
             无需登录，进入公共聊天室 →
           </Link>
           <Link
+            href="/files"
+            className="block text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+          >
+            无需登录，分享附件（≤100MB / 24 小时） →
+          </Link>
+          <Link
             href="/clip"
             className="block text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
           >

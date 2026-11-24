@@ -428,3 +428,27 @@ cloudflared tunnel --no-autoupdate --url http://127.0.0.1:25045
 - 消息内容按纯文本渲染（`whitespace-pre-wrap`），不解析 HTML，避免 XSS
 - 游客限流按 `cf-connecting-ip` 记录，直连场景回退 `x-forwarded-for`
 
+---
+
+## 14. 附件分享（公开）
+
+| 项目 | 说明 |
+| --- | --- |
+| 入口 | https://www.722.qzz.io/files （登录页、仪表盘、公开区导航均有入口） |
+| 存储 | 磁盘 `$APP_DIR/var/files`（可用 `FILES_DIR` 覆盖），数据库 `shared_files` 只存元数据 |
+| 上传 | `PUT /api/files`，请求体为原始字节；文件名放 `x-file-name`（URL 编码），流式写 `.part` 后转正 |
+| 下载 | `GET /api/files/{id}`，强制 `attachment` + `nosniff` |
+| 列表 | `GET /api/files`，返回最近 30 个未过期附件 |
+| 限制 | 单文件 ≤ 100MB；游客 10 个/小时/IP，登录用户 30 个/小时 |
+| 清理 | 进程内每 10 分钟清理一次，同时列表/下载/上传时惰性兜底；到期删除数据库记录与磁盘文件 |
+
+要点：
+
+- 部署脚本只替换压缩包内的条目，`var/` 不在包中，因此发版不会丢失仍在有效期内的附件
+- 上传走流式管道并累计字节数，超 100MB 立即中断并删除临时文件，不会把 100MB 读进内存
+- Cloudflare 免费版请求体上限约 100MB，正好贴边的大文件可能被边缘直接拒绝（返回非 JSON 的 413）；需要稳定上传大文件时建议实际控制在 95MB 以内
+- 下载不映射原始 MIME，统一 `application/octet-stream`，避免上传 HTML/SVG 后被内联执行
+- 多副本部署时附件必须使用共享存储（NFS/S3 等），否则其它实例下载不到文件
+- 磁盘占用约等于最近 24 小时的上传总量，公开部署建议监控 `var/files` 空间
+
+

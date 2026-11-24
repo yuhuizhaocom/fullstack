@@ -89,6 +89,20 @@ model ChatMessage {
   @@map("chat_messages")
 }
 
+model SharedFile {
+  id         String   @id @default(cuid())
+  name       String   @db.VarChar(200)
+  size       Int
+  mimeType   String?  @db.VarChar(120)
+  storageKey String   @unique @db.VarChar(80)
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([expiresAt])
+  @@index([createdAt])
+  @@map("shared_files")
+}
+
 model ClipEntry {
   id        String   @id @default(cuid())
   channel   String   @db.VarChar(16)
