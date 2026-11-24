@@ -37,6 +37,7 @@ model User {
   tasks        Task[]        @relation("TaskOwner")
   sessions     Session[]
   chatMessages ChatMessage[] @relation("ChatAuthor")
+  gameSave     GameSave?
 
   @@index([disabled])
   @@map("users")
@@ -87,6 +88,17 @@ model ChatMessage {
   @@index([createdAt])
   @@index([userId])
   @@map("chat_messages")
+}
+
+model GameSave {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("game_saves")
 }
 
 model SharedFile {

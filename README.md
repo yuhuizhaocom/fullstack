@@ -11,6 +11,8 @@
 - **公共聊天室**：登录用户以账号名发言，未登录填昵称即可参与，同一大厅 SSE 实时收发；消息保留 7 天
 - **附件分享**：无需登录，单文件 ≤ 100MB，上传后生成下载链接，24 小时后自动删除记录与磁盘文件
 - **像素冒险**：无需登录的回合制像素 RPG，含 4 职业、技能、装备、宠物、怪物、BOSS 与 4 个副本，存档存于浏览器 localStorage
+- **开放世界**：实时多人同屏、自动组队打怪，服务器统一刷新怪物与 BOSS，带伤害数字、音效与背景音乐（Web Audio 合成）
+- **云存档**：登录后可将角色存档上传到 `game_saves`，换设备一键恢复
 - **仪表盘**：任务总数、各状态数量、完成率、最近 5 条任务、服务与数据库连通状态
 - **任务管理**：列表（表格 / 移动端卡片双形态）、关键词搜索（标题 / 描述 / 负责人）、按状态与优先级筛选、分页
 - **CRUD**：新建、编辑、切换状态、删除，全部走 Server Actions + Zod 校验
@@ -81,11 +83,14 @@ src/
 │  │  ├─ clip/                 临时剪贴板：加入频道
 │  │  ├─ clip/[code]/          频道页（SSE 实时同步）
 │  │  ├─ files/                附件分享（上传 / 下载链接）
-│  │  └─ game/                 像素 RPG（本地存档单机游戏）
+│  │  ├─ game/                 像素 RPG（本地存档单机游戏）
+│  │  └─ world/                开放世界（实时多人）
 │  └─ api/
 │     ├─ health/route.ts       健康检查（SELECT 1 + 版本号）
 │     ├─ chat/                 聊天历史读写 + SSE 流
 │     ├─ files/                附件流式上传、列表与下载
+│     ├─ game/save/            云存档读写（登录用户）
+│     ├─ world/                加入世界、实时动作、SSE 快照流
 │     └─ clip/[code]/          消息读写 + SSE 流
 ├─ actions/
 │  ├─ auth.ts                  注册 / 登录 / 退出 / 修改密码
@@ -96,7 +101,8 @@ src/
 │  ├─ chat/                    聊天室组件（消息流、身份切换）
 │  ├─ clip/                    加入频道表单、频道房间
 │  ├─ files/                   附件上传（拖拽 / 进度）与列表
-│  ├─ game/                    像素 RPG：主界面、面板、战斗
+│  ├─ game/                    像素 RPG：主界面、面板、战斗、云存档
+│  ├─ world/                   开放世界：Canvas 游戏界面、组队面板、音效开关
 │  ├─ layout/                  侧边栏、移动端头部、用户卡片、导航配置
 │  ├─ tasks/                   对话框表单、表格、卡片列表、筛选器、行操作
 │  ├─ users/                   角色选择器、禁用开关
@@ -107,13 +113,14 @@ src/
    ├─ clip/                    频道常量、内存广播、限流
    ├─ files/                   附件常量、磁盘存储、过期清理
    ├─ game/                    游戏数据、类型、战斗与升级引擎
+   ├─ world/                   地形、服务器世界状态、Canvas 渲染、8-bit 音频
    ├─ prisma.ts                PrismaClient 单例（开发环境避免连接泄漏）
    ├─ task-meta.ts             状态/优先级文案与样式映射
    ├─ validations/task.ts      Zod schema
    └─ format.ts / utils.ts     日期格式化、cn()
 
 prisma/
-├─ schema.prisma               User / Session / Task / ChatMessage / SharedFile / ClipEntry 模型与索引
+├─ schema.prisma               User / Session / Task / ChatMessage / SharedFile / ClipEntry / GameSave 模型与索引
 ├─ migrations/                 SQL 迁移
 └─ seed.mjs                    10 条示例任务（upsert，可重复执行）
 

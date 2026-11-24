@@ -47,6 +47,7 @@ import {
   ShopPanel,
   SkillsPanel,
 } from "./panels";
+import { CloudSync } from "./cloud-sync";
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: "adventure", label: "冒险", icon: "🗺️" },
@@ -767,7 +768,10 @@ export function PixelRpg() {
           ))}
 
         {tab === "character" && (
-          <CharacterPanel save={save} onChange={setSave} notify={notify} />
+          <div>
+            <CharacterPanel save={save} onChange={setSave} notify={notify} />
+            <CloudSync save={save} onRestore={setSave} />
+          </div>
         )}
         {tab === "bag" && (
           <BagPanel save={save} onChange={setSave} notify={notify} />
