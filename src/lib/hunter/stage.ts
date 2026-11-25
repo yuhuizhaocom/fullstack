@@ -549,6 +549,7 @@ class PixiHunterStage implements HunterStage {
     if (this.fogAt < 0 || state.time - this.fogAt > 0.25) this.drawFog(state);
 
     this.entityLayer.sortChildren();
+    this.app.render();
   }
 
   resize(width: number, height: number): void {
