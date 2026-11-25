@@ -1,6 +1,6 @@
 // 巨魔 AI 使用的网格寻路（A*），建筑变化后由调用方按需重建。
 
-import { MAP_TILES, TILE, isTerrainBlocked } from "./config";
+import { BASE_ROOMS, BUILD_SPECS, MAP_TILES, TILE, isTerrainBlocked } from "./config";
 import type { GameState, Point } from "./types";
 
 export interface NavGrid {
@@ -16,7 +16,7 @@ export function buildNav(state: GameState): NavGrid {
   }
   for (const b of state.buildings) {
     if (!b.alive) continue;
-    const size = b.kind === "tree" ? 2 : 1;
+    const size = BUILD_SPECS[b.kind].size;
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
         const gx = b.gx + x;
@@ -26,7 +26,34 @@ export function buildNav(state: GameState): NavGrid {
       }
     }
   }
-  return { blocked };
+  // 房间入口被堵一块墙后，2×2 的巨魔就把整个入口视为封死
+  for (const room of BASE_ROOMS) {
+    const sealed = state.buildings.some(
+      (b) =>
+        b.alive &&
+        ((b.gx === room.gateX && b.gy === room.gateY) || (b.gx === room.gate2X && b.gy === room.gate2Y)),
+    );
+    if (sealed) {
+      blocked[room.gateY * MAP_TILES + room.gateX] = 1;
+      blocked[room.gate2Y * MAP_TILES + room.gate2X] = 1;
+    }
+  }
+
+  // 巨魔体积 2×2：只有 1 格宽的缝隙它挤不过去，寻路时直接视为不可通行，
+  // 这样它会转而攻击堵在门口的墙。小精灵（1×1）不受影响。
+  const narrow = new Uint8Array(blocked);
+  for (let gy = 0; gy < MAP_TILES; gy++) {
+    for (let gx = 0; gx < MAP_TILES; gx++) {
+      const idx = gy * MAP_TILES + gx;
+      if (blocked[idx]) continue;
+      const bN = gy > 0 ? blocked[(gy - 1) * MAP_TILES + gx] : 1;
+      const bS = gy < MAP_TILES - 1 ? blocked[(gy + 1) * MAP_TILES + gx] : 1;
+      const bW = gx > 0 ? blocked[gy * MAP_TILES + gx - 1] : 1;
+      const bE = gx < MAP_TILES - 1 ? blocked[gy * MAP_TILES + gx + 1] : 1;
+      if ((bN && bS) || (bW && bE)) narrow[idx] = 1;
+    }
+  }
+  return { blocked: narrow };
 }
 
 export function isNavBlocked(nav: NavGrid, gx: number, gy: number): boolean {

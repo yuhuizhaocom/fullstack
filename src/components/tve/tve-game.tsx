@@ -1,362 +1,379 @@
 "use client";
 
-// 「巨魔 VS 精灵」主组件：资源加载、固定步长循环、相机、输入、HUD 状态桥接。
+import Link from "next/link";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-
-import { TveHud, TveMenu, TveResult, type HudSnapshot } from "@/components/tve/tve-hud";
+import { TveHud, TveMenu, TveResult, type HudSelected, type HudSnapshot } from "./tve-hud";
+import { drawGame, drawMinimap, screenToWorld, type RenderView } from "@/lib/tve/render";
 import { loadTveAssets, type TveAssets } from "@/lib/tve/assets";
+import { BUILD_SPECS, TILE } from "@/lib/tve/config";
 import {
-  BASE_SITES,
-  BUILD_SPECS,
-  MAP_SIZE,
-  TILE,
-  clamp,
-  tileCenter,
-} from "@/lib/tve/config";
-import {
-  buyTrollUpgrade,
+  buyScroll,
+  buyShopItem,
+  buyWood,
   canBuildAt,
-  castRush,
+  castElfSkill,
+  castTrollSkill,
   createGame,
   demolishBuilding,
-  pushHint,
+  repairBuilding,
+  repairCost,
   stepGame,
-  tryBuildForBase,
-  tryUpgradeForBase,
+  tryBuildForElf,
+  tryUpgradeBuilding,
 } from "@/lib/tve/engine";
-import { drawGame, drawMinimap, screenToWorld, type RenderView } from "@/lib/tve/render";
+import { initAudio, playSfx, startBgm, stopBgm } from "@/lib/world/audio";
 import type {
   BuildingKind,
-  Camera,
   Difficulty,
+  ElfSkill,
   Faction,
+  GameMode,
   GameState,
-  UpgradeTrack,
+  ShopKey,
+  TrollRule,
+  TrollSkill,
 } from "@/lib/tve/types";
-import { initAudio, playSfx, startBgm, stopBgm } from "@/lib/world/audio";
-import { cn } from "@/lib/utils";
 
-type Phase = "menu" | "playing" | "result";
+const EMPTY_ASSETS: TveAssets = {
+  terrain: { grass: null, dirt: null },
+  sprites: {},
+  loaded: 0,
+  total: 0,
+};
 
-const ALLOWED_SFX = new Set([
-  "attack",
-  "attack_bow",
-  "attack_staff",
-  "hurt",
-  "kill",
-  "skill",
-  "skill_fire",
-  "skill_frost",
-  "heal",
-  "levelup",
-  "death",
-  "pickup",
-  "quest",
-]);
+interface CameraState {
+  x: number;
+  y: number;
+  zoom: number;
+}
 
-const ELF_KINDS: BuildingKind[] = ["mine", "wall", "arrow", "magic"];
+// 选中/建造状态放在模块级 ref，供 makeSnapshot 读取，避免把 UI 状态耦合进引擎
+const selectedBuildingRef: { current: number | null } = { current: null };
+const selectedPlacingRef: { current: BuildingKind | null } = { current: null };
 
-function buildSnapshot(state: GameState, placingKind: BuildingKind | null, selectedId: number | null): HudSnapshot {
-  const gold = state.faction === "elf" ? state.bases[state.playerBase]?.gold ?? 0 : state.troll.gold;
-  const bases = state.bases.map((base) => {
-    const tree = state.buildings.find((b) => b.id === base.treeId);
-    return {
-      id: base.id,
-      name: base.name,
-      alive: base.alive,
-      hp: tree?.hp ?? 0,
-      maxHp: tree?.maxHp ?? 1,
-      isPlayer: base.isPlayer,
-    };
-  });
-  const selectedBuilding = selectedId !== null ? state.buildings.find((b) => b.id === selectedId && b.alive) : undefined;
-  const levels = selectedBuilding ? BUILD_SPECS[selectedBuilding.kind].levels : [];
-  const upgradeCost = selectedBuilding && selectedBuilding.level < levels.length ? levels[selectedBuilding.level].cost : null;
-  const villagers = state.playerBase >= 0
-    ? state.villagers.filter((v) => v.baseId === state.playerBase && !v.dead).length
-    : 0;
+function heroOf(state: GameState): { x: number; y: number } | null {
+  if (state.faction === "elf") {
+    const elf = state.elves[state.playerElf];
+    return elf ? { x: elf.x, y: elf.y } : null;
+  }
+  const troll = state.trolls[state.playerTroll];
+  return troll ? { x: troll.x, y: troll.y } : null;
+}
+
+function makeSnapshot(state: GameState, paused: boolean, muted: boolean): HudSnapshot {
+  const elf = state.playerElf >= 0 ? state.elves[state.playerElf] : null;
+  const troll = state.playerTroll >= 0 ? state.trolls[state.playerTroll] : null;
+  const selectedBuilding = selectedBuildingOf(state);
+  const selected: HudSelected | null = selectedBuilding
+    ? (() => {
+        const spec = BUILD_SPECS[selectedBuilding.kind];
+        const next = selectedBuilding.level < spec.levels.length ? spec.levels[selectedBuilding.level] : null;
+        return {
+          id: selectedBuilding.id,
+          kind: selectedBuilding.kind,
+          level: selectedBuilding.level,
+          maxLevel: spec.levels.length,
+          hp: selectedBuilding.hp,
+          maxHp: selectedBuilding.maxHp,
+          upgradeGold: next ? next.cost : null,
+          upgradeWood: next ? next.wood : 0,
+          repairCost: repairCost(selectedBuilding),
+          canRepair: selectedBuilding.hp < selectedBuilding.maxHp,
+        };
+      })()
+    : null;
+
+  let hutLevel = 0;
+  let hutUpgradeGold: number | null = null;
+  if (troll && troll.hutId >= 0) {
+    const hut = state.buildings.find((b) => b.id === troll.hutId && b.alive);
+    if (hut) {
+      hutLevel = hut.level;
+      const levels = BUILD_SPECS.hut.levels;
+      hutUpgradeGold = hut.level < levels.length ? levels[hut.level].cost : null;
+    }
+  }
+
+  let towerBonus = 0;
+  if (state.playerElf >= 0) {
+    for (const b of state.buildings) {
+      if (!b.alive || b.team !== "elf" || b.owner !== state.playerElf || b.kind !== "lab") continue;
+      towerBonus += BUILD_SPECS.lab.levels[b.level - 1].towerBonus ?? 0;
+    }
+  }
 
   return {
     faction: state.faction,
     difficulty: state.difficulty,
-    gold,
-    trollHp: Math.max(0, state.troll.hp),
-    trollMaxHp: state.troll.maxHp,
-    night: state.night,
-    dayTimer: state.dayTimer,
+    mode: state.mode,
+    rule: state.rule,
+    paused,
+    muted,
+    gold: elf ? elf.gold : troll ? troll.gold : 0,
+    wood: elf ? elf.wood : 0,
+    woodPrice: state.woodPrice,
+    elf: elf ? { name: elf.name, hp: elf.hp, maxHp: elf.maxHp, alive: elf.alive } : null,
+    trolls: state.trolls.map((t) => ({
+      name: t.name,
+      hp: t.hp,
+      maxHp: t.maxHp,
+      wolf: t.wolf,
+      alive: t.alive,
+      isPlayer: t.isPlayer,
+    })),
+    hutLevel,
+    hutUpgradeGold,
+    night: state.nightTimer > 0,
+    nightTimer: state.nightTimer,
     time: state.time,
+    surviveTime: state.surviveTime,
     hint: state.hint?.text ?? null,
+    selected,
+    placing: selectedPlacingRef.current,
+    skills: {
+      elf: elf ? elf.cooldowns : { night: 0, entangle: 0, blink: 0, reinforce: 0 },
+      troll: troll
+        ? { windwalk: Math.max(troll.windwalkCd, troll.windwalk), recall: troll.recallCd }
+        : { windwalk: 0, recall: 0 },
+    },
+    items: troll ? troll.items : { weapon: 0, gloves: 0, boots: 0, armor: 0, vitality: 0, regen: 0 },
+    stats: state.stats,
+    towerBonus,
     result: state.result,
-    bases,
-    villagers,
-    selected: selectedBuilding
-      ? {
-          id: selectedBuilding.id,
-          kind: selectedBuilding.kind,
-          level: selectedBuilding.level,
-          hp: Math.max(0, selectedBuilding.hp),
-          maxHp: selectedBuilding.maxHp,
-          upgradeCost,
-          refund: Math.floor(selectedBuilding.spent * 0.5),
-        }
-      : null,
-    placingKind,
-    claw: state.troll.claw,
-    swift: state.troll.swift,
-    hide: state.troll.hide,
-    rushCd: state.troll.rushCd,
-    stats: { ...state.stats },
+    elfCount: state.elves.length,
+    aliveElves: state.elves.filter((e) => e.alive).length,
+    aliveTrolls: state.trolls.filter((t) => t.alive).length,
   };
 }
 
+// 这两个 ref 在组件内赋值，供 makeSnapshot 读取，避免把 UI 状态耦合进引擎
+function selectedBuildingOf(state: GameState) {
+  const id = selectedBuildingRef.current;
+  if (id === null) return null;
+  const building = state.buildings.find((b) => b.id === id && b.alive);
+  return building ?? null;
+}
+
 export function TveGame() {
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const minimapRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const minimapRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const assetsRef = useRef<TveAssets | null>(null);
-  const stateRef = useRef<GameState | null>(null);
-  const camRef = useRef<Camera>({ x: MAP_SIZE / 2, y: MAP_SIZE / 2, zoom: 1.1 });
-  const sizeRef = useRef({ w: 320, h: 240, dpr: 1 });
-  const phaseRef = useRef<Phase>("menu");
-  const pausedRef = useRef(false);
-  const selectedIdRef = useRef<number | null>(null);
-  const placingRef = useRef<BuildingKind | null>(null);
-  const joystickRef = useRef({ x: 0, y: 0 });
+  const gameRef = useRef<GameState | null>(null);
+  const assetsRef = useRef<TveAssets>(EMPTY_ASSETS);
+  const camRef = useRef<CameraState>({ x: 0, y: 0, zoom: 1 });
+  const viewRef = useRef({ width: 1, height: 1, dpr: 1 });
+  const inputRef = useRef({ mx: 0, my: 0 });
+  const joyRef = useRef({ mx: 0, my: 0 });
   const keysRef = useRef<Set<string>>(new Set());
-  const ghostRef = useRef({ gx: 0, gy: 0 });
-  const freeCamUntilRef = useRef(0);
-  const soundOnRef = useRef(true);
-  const accumulateRef = useRef(0);
+  const pointerWorldRef = useRef({ x: 0, y: 0 });
+  const pointerInsideRef = useRef(false);
+  const manualCamUntilRef = useRef(0);
+  const pausedRef = useRef(false);
+  const mutedRef = useRef(false);
+  const resultShownRef = useRef(false);
+  const lastSnapshotRef = useRef(0);
 
-  const [assetsReady, setAssetsReady] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<Phase>("menu");
-  const [paused, setPaused] = useState(false);
-  const [placingKind, setPlacingKind] = useState<BuildingKind | null>(null);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [screen, setScreen] = useState<"menu" | "game">("menu");
   const [snapshot, setSnapshot] = useState<HudSnapshot | null>(null);
-  const [soundOn, setSoundOn] = useState(true);
-  const [fullscreen, setFullscreen] = useState(false);
-  const [pseudoFull, setPseudoFull] = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
+
   const [faction, setFaction] = useState<Faction>("elf");
+  const [mode, setMode] = useState<GameMode>("old");
+  const [rule, setRule] = useState<TrollRule>("single");
   const [difficulty, setDifficulty] = useState<Difficulty>("normal");
 
-  // 资源加载
+  const sync = () => {
+    const game = gameRef.current;
+    if (!game) return;
+    setSnapshot(makeSnapshot(game, pausedRef.current, mutedRef.current));
+  };
+
+  const setPlacingKind = (kind: BuildingKind | null) => {
+    selectedPlacingRef.current = kind;
+    sync();
+  };
+
+  const selectBuilding = (id: number | null) => {
+    selectedBuildingRef.current = id;
+    sync();
+  };
+
   useEffect(() => {
     let cancelled = false;
     loadTveAssets((loaded, total) => {
-      if (!cancelled) setProgress(total > 0 ? loaded / total : 0);
-    })
-      .then((assets) => {
-        if (cancelled) return;
-        assetsRef.current = assets;
-        setAssetsReady(true);
-        setProgress(1);
-      })
-      .catch(() => {
-        if (!cancelled) setAssetsReady(true);
-      });
+      if (!cancelled) setLoadProgress(Math.round((loaded / total) * 100));
+    }).then((assets) => {
+      if (cancelled) return;
+      assetsRef.current = assets;
+      setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const updatePlacing = useCallback((kind: BuildingKind | null) => {
-    placingRef.current = kind;
-    setPlacingKind(kind);
-  }, []);
-
-  const updateSelected = useCallback((id: number | null) => {
-    selectedIdRef.current = id;
-    setSelectedId(id);
-  }, []);
-
-  const viewFor = useCallback((): RenderView => {
-    const state = stateRef.current;
-    return {
-      cam: camRef.current,
-      width: sizeRef.current.w,
-      height: sizeRef.current.h,
-      selectedId: selectedIdRef.current,
-      placing: (() => {
-        const kind = placingRef.current;
-        if (!kind || !state) return null;
-        const { gx, gy } = ghostRef.current;
-        const base = state.bases[state.playerBase];
-        const check = canBuildAt(state, state.playerBase, kind, gx, gy);
-        const cost = BUILD_SPECS[kind].levels[0].cost;
-        return { kind, gx, gy, ok: check.ok && !!base && base.gold >= cost };
-      })(),
-      faction: state?.faction ?? "elf",
-    };
-  }, []);
-
-  const clampCamera = useCallback(() => {
-    const cam = camRef.current;
-    const { w, h } = sizeRef.current;
-    const halfW = w / (2 * cam.zoom);
-    const halfH = h / (2 * cam.zoom);
-    cam.x = halfW * 2 >= MAP_SIZE ? MAP_SIZE / 2 : clamp(cam.x, halfW, MAP_SIZE - halfW);
-    cam.y = halfH * 2 >= MAP_SIZE ? MAP_SIZE / 2 : clamp(cam.y, halfH, MAP_SIZE - halfH);
-  }, []);
-
-  // 画布尺寸与 DPR
   useEffect(() => {
-    const wrap = wrapRef.current;
-    const canvas = canvasRef.current;
-    if (!wrap || !canvas) return;
     const resize = () => {
-      const rect = wrap.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      const w = Math.max(1, Math.round(rect.width));
-      const h = Math.max(1, Math.round(rect.height));
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      sizeRef.current = { w, h, dpr };
-      clampCamera();
+      const container = containerRef.current;
+      const canvas = canvasRef.current;
+      if (!container || !canvas) return;
+      const rect = container.getBoundingClientRect();
+      const fallbackW = typeof window !== "undefined" ? window.innerWidth : 360;
+      const fallbackH = typeof window !== "undefined" ? window.innerHeight : 640;
+      const width = Math.max(1, Math.round(rect.width || fallbackW));
+      const height = Math.max(1, Math.round(rect.height || fallbackH));
+      const dpr = Math.min(2, typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      viewRef.current = { width, height, dpr };
     };
     resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(wrap);
-    window.addEventListener("orientationchange", resize);
+    const container = containerRef.current;
+    let observer: ResizeObserver | null = null;
+    if (container && typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(resize);
+      observer.observe(container);
+    }
+    window.addEventListener("resize", resize);
     return () => {
-      observer.disconnect();
-      window.removeEventListener("orientationchange", resize);
+      observer?.disconnect();
+      window.removeEventListener("resize", resize);
     };
-  }, [clampCamera]);
+  }, []);
 
-  // 主循环
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
     let raf = 0;
     let last = performance.now();
-    let lastHud = 0;
-    let lastMini = 0;
 
-    const render = () => {
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext("2d");
-      const assets = assetsRef.current;
-      const state = stateRef.current;
-      if (!canvas || !ctx) return;
-      const { dpr, w, h } = sizeRef.current;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (!state || !assets) {
-        ctx.fillStyle = "#0b1410";
-        ctx.fillRect(0, 0, w, h);
-        return;
-      }
-      drawGame(ctx, state, viewFor(), assets, performance.now() / 1000);
-    };
-
-    const loop = (now: number) => {
-      raf = requestAnimationFrame(loop);
-      const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+    const frame = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      const state = stateRef.current;
+      const game = gameRef.current;
+      const { width, height, dpr } = viewRef.current;
 
-      if (state && phaseRef.current === "playing" && !pausedRef.current) {
-        accumulateRef.current += dt;
-        let steps = 0;
-        const keys = keysRef.current;
-        let kx = 0;
-        let ky = 0;
-        if (state.faction === "troll") {
-          if (keys.has("KeyW") || keys.has("ArrowUp")) ky -= 1;
-          if (keys.has("KeyS") || keys.has("ArrowDown")) ky += 1;
-          if (keys.has("KeyA") || keys.has("ArrowLeft")) kx -= 1;
-          if (keys.has("KeyD") || keys.has("ArrowRight")) kx += 1;
-        }
-        const joy = joystickRef.current;
-        let mx = joy.x + kx;
-        let my = joy.y + ky;
-        const mag = Math.hypot(mx, my);
-        if (mag > 1) {
-          mx /= mag;
-          my /= mag;
-        }
-        while (accumulateRef.current >= 1 / 60 && steps < 6) {
-          stepGame(state, 1 / 60, { mx, my, rush: false });
-          accumulateRef.current -= 1 / 60;
-          steps++;
-        }
-        for (const name of state.sfx) {
-          if (ALLOWED_SFX.has(name) && soundOnRef.current) {
-            playSfx(name as Parameters<typeof playSfx>[0]);
+      if (game) {
+        if (!pausedRef.current && !game.result) {
+          // 键盘 + 摇杆合成移动输入
+          let mx = joyRef.current.mx;
+          let my = joyRef.current.my;
+          if (Math.hypot(mx, my) < 0.05) {
+            const keys = keysRef.current;
+            if (keys.has("a") || keys.has("arrowleft")) mx -= 1;
+            if (keys.has("d") || keys.has("arrowright")) mx += 1;
+            if (keys.has("w") || keys.has("arrowup")) my -= 1;
+            if (keys.has("s") || keys.has("arrowdown")) my += 1;
+            const len = Math.hypot(mx, my);
+            if (len > 1) {
+              mx /= len;
+              my /= len;
+            }
+          }
+          inputRef.current = { mx, my };
+
+          let acc = dt;
+          let guard = 0;
+          while (acc > 0 && guard < 5) {
+            const step = Math.min(1 / 60, acc);
+            stepGame(game, step, inputRef.current);
+            acc -= step;
+            guard += 1;
+            if (game.result) break;
+          }
+
+          if (game.sfx.length > 0) {
+            if (!mutedRef.current) {
+              const kind = game.sfx[game.sfx.length - 1] as Parameters<typeof playSfx>[0];
+              playSfx(kind);
+            }
+            game.sfx.length = 0;
+          }
+
+          const hero = heroOf(game);
+          if (hero && now > manualCamUntilRef.current) {
+            camRef.current.x += (hero.x - camRef.current.x) * Math.min(1, dt * 5);
+            camRef.current.y += (hero.y - camRef.current.y) * Math.min(1, dt * 5);
+          }
+
+          if (game.result && !resultShownRef.current) {
+            resultShownRef.current = true;
+            pausedRef.current = false;
+            setSnapshot(makeSnapshot(game, false, mutedRef.current));
           }
         }
-        state.sfx.length = 0;
 
-        if (state.troll.hp > 0 && state.faction === "troll" && now > freeCamUntilRef.current) {
-          const cam = camRef.current;
-          const lerp = Math.min(1, dt * 5);
-          cam.x += (state.troll.x - cam.x) * lerp;
-          cam.y += (state.troll.y - cam.y) * lerp;
+        const cam = camRef.current;
+        const view: RenderView = {
+          cam,
+          width,
+          height,
+          selectedId: selectedBuildingRef.current,
+          placing: null,
+          faction: game.faction,
+        };
+        if (selectedPlacingRef.current && pointerInsideRef.current && game.faction === "elf") {
+          const kind = selectedPlacingRef.current;
+          const p = pointerWorldRef.current;
+          const size = BUILD_SPECS[kind].size;
+          const gx = Math.floor(p.x / TILE - (size - 1) / 2);
+          const gy = Math.floor(p.y / TILE - (size - 1) / 2);
+          const check = canBuildAt(game, game.playerElf, kind, gx, gy);
+          view.placing = { kind, gx, gy, ok: check.ok };
         }
-        clampCamera();
 
-        if (state.result) {
-          phaseRef.current = "result";
-          setPhase("result");
-          setSnapshot(buildSnapshot(state, placingRef.current, selectedIdRef.current));
-          stopBgm();
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawGame(ctx, game, view, assetsRef.current, game.time);
+
+        if (minimapRef.current) {
+          const mctx = minimapRef.current.getContext("2d");
+          if (mctx) drawMinimap(mctx, game, 132);
         }
+
+        if (now - lastSnapshotRef.current > 120) {
+          lastSnapshotRef.current = now;
+          setSnapshot(makeSnapshot(game, pausedRef.current, mutedRef.current));
+        }
+      } else {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillStyle = "#0b1410";
+        ctx.fillRect(0, 0, width, height);
       }
 
-      render();
-
-      if (state && now - lastHud > 100) {
-        lastHud = now;
-        setSnapshot(buildSnapshot(state, placingRef.current, selectedIdRef.current));
-      }
-      if (state && now - lastMini > 260) {
-        lastMini = now;
-        const mini = minimapRef.current;
-        const ctx = mini?.getContext("2d");
-        if (mini && ctx) {
-          if (mini.width !== 184) {
-            mini.width = 184;
-            mini.height = 184;
-          }
-          ctx.setTransform(2, 0, 0, 2, 0, 0);
-          drawMinimap(ctx, state, 92);
-        }
-      }
+      raf = requestAnimationFrame(frame);
     };
 
-    raf = requestAnimationFrame(loop);
+    raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [clampCamera, viewFor]);
+  }, []);
 
-  // 键盘
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (phaseRef.current !== "playing") return;
-      const state = stateRef.current;
-      if (!state) return;
-      keysRef.current.add(event.code);
-      if (event.code === "Space") {
+      const key = event.key.toLowerCase();
+      keysRef.current.add(key);
+      if (key === " " || event.code === "Space") {
         event.preventDefault();
-        pausedRef.current = !pausedRef.current;
-        setPaused(pausedRef.current);
-      } else if (event.code === "Escape") {
-        updatePlacing(null);
-        updateSelected(null);
-        setUpgradeOpen(false);
-      } else if (state.faction === "elf") {
-        const index = Number(event.code.replace("Digit", "")) - 1;
-        if (index >= 0 && index < ELF_KINDS.length) {
-          updatePlacing(ELF_KINDS[index]);
-          setUpgradeOpen(false);
+        if (gameRef.current && !gameRef.current.result) {
+          pausedRef.current = !pausedRef.current;
+          sync();
         }
+      }
+      if (key === "escape") {
+        setPlacingKind(null);
+        selectBuilding(null);
       }
     };
     const onKeyUp = (event: KeyboardEvent) => {
-      keysRef.current.delete(event.code);
+      keysRef.current.delete(event.key.toLowerCase());
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
@@ -364,375 +381,364 @@ export function TveGame() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [updatePlacing, updateSelected]);
-
-  // 全屏状态同步
-  useEffect(() => {
-    const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener("fullscreenchange", onChange);
-    return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      stopBgm();
-    };
-  }, []);
-
-  const startGame = useCallback(
-    (nextFaction: Faction, nextDifficulty: Difficulty) => {
-      initAudio();
-      if (soundOnRef.current) startBgm();
-      const state = createGame(nextFaction, nextDifficulty);
-      stateRef.current = state;
-      accumulateRef.current = 0;
-      setFaction(nextFaction);
-      setDifficulty(nextDifficulty);
-      updatePlacing(null);
-      updateSelected(null);
-      setUpgradeOpen(false);
-      pausedRef.current = false;
-      setPaused(false);
-
-      const site = BASE_SITES[0];
-      const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
-      camRef.current = {
-        x: nextFaction === "troll" ? state.troll.x : tileCenter(site.tx),
-        y: nextFaction === "troll" ? state.troll.y : tileCenter(site.ty),
-        zoom: isTouch ? 1 : 1.15,
-      };
-      ghostRef.current = { gx: site.tx + 3, gy: site.ty };
-      freeCamUntilRef.current = 0;
-      phaseRef.current = "playing";
-      setPhase("playing");
-      setSnapshot(buildSnapshot(state, null, null));
-    },
-    [updatePlacing, updateSelected],
-  );
-
-  const exitToMenu = useCallback(() => {
-    stopBgm();
-    stateRef.current = null;
-    phaseRef.current = "menu";
-    setPhase("menu");
-    updatePlacing(null);
-    updateSelected(null);
+  const startGame = () => {
+    initAudio();
+    if (!mutedRef.current) startBgm();
+    const game = createGame(faction, difficulty, mode, rule);
+    gameRef.current = game;
+    resultShownRef.current = false;
     pausedRef.current = false;
-    setPaused(false);
-    setUpgradeOpen(false);
-    setPseudoFull(false);
-    if (document.fullscreenElement) void document.exitFullscreen();
-  }, [updatePlacing, updateSelected]);
+    setPlacingKind(null);
+    selectBuilding(null);
+    joyRef.current = { mx: 0, my: 0 };
+    inputRef.current = { mx: 0, my: 0 };
+    keysRef.current.clear();
+    const hero = heroOf(game);
+    camRef.current = {
+      x: hero?.x ?? game.elves[0]?.x ?? 0,
+      y: hero?.y ?? game.elves[0]?.y ?? 0,
+      zoom: viewRef.current.width < 720 ? 0.7 : 0.95,
+    };
+    manualCamUntilRef.current = 0;
+    setSnapshot(makeSnapshot(game, false, mutedRef.current));
+    setScreen("game");
+  };
 
-  const restart = useCallback(() => {
-    startGame(faction, difficulty);
-  }, [difficulty, faction, startGame]);
+  const exitToMenu = () => {
+    stopBgm();
+    gameRef.current = null;
+    setSnapshot(null);
+    pausedRef.current = false;
+    setPlacingKind(null);
+    selectBuilding(null);
+    setScreen("menu");
+  };
 
-  const handlePointerDown = useCallback(
-    (event: React.PointerEvent<HTMLCanvasElement>) => {
-      const state = stateRef.current;
-      if (!state || phaseRef.current !== "playing" || pausedRef.current) return;
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      canvas.setPointerCapture(event.pointerId);
-      pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      if (pointersRef.current.size === 1) {
-        dragRef.current = {
-          startX: event.clientX,
-          startY: event.clientY,
-          camX: camRef.current.x,
-          camY: camRef.current.y,
-          moved: false,
-          time: performance.now(),
-        };
-        const rect = canvas.getBoundingClientRect();
-        const world = screenToWorld(viewFor(), event.clientX - rect.left, event.clientY - rect.top);
-        ghostRef.current = {
-          gx: Math.floor(world.x / TILE),
-          gy: Math.floor(world.y / TILE),
-        };
-      } else if (pointersRef.current.size === 2) {
-        pinchRef.current = {
-          dist: pointerDistance(pointersRef.current),
-          zoom: camRef.current.zoom,
-        };
-        if (dragRef.current) dragRef.current.moved = true;
-      }
-    },
-    [viewFor],
-  );
+  const togglePause = () => {
+    if (!gameRef.current || gameRef.current.result) return;
+    pausedRef.current = !pausedRef.current;
+    if (pausedRef.current) stopBgm();
+    else if (!mutedRef.current) startBgm();
+    sync();
+  };
 
-  const handlePointerMove = useCallback(
-    (event: React.PointerEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const pointers = pointersRef.current;
-      if (!pointers.has(event.pointerId)) {
-        if (placingRef.current) {
-          const rect = canvas.getBoundingClientRect();
-          const world = screenToWorld(viewFor(), event.clientX - rect.left, event.clientY - rect.top);
-          ghostRef.current = { gx: Math.floor(world.x / TILE), gy: Math.floor(world.y / TILE) };
-        }
-        return;
-      }
-      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      const cam = camRef.current;
+  const toggleMute = () => {
+    mutedRef.current = !mutedRef.current;
+    if (mutedRef.current) stopBgm();
+    else if (screen === "game" && !pausedRef.current) startBgm();
+    sync();
+  };
 
-      if (pointers.size === 2 && pinchRef.current) {
-        const dist = pointerDistance(pointers);
-        const factor = dist / Math.max(1, pinchRef.current.dist);
-        cam.zoom = clamp(pinchRef.current.zoom * factor, 0.7, 1.7);
-        freeCamUntilRef.current = performance.now() + 2200;
-        clampCamera();
-        return;
-      }
+  /* ---------------- 指针交互 ---------------- */
 
-      const drag = dragRef.current;
-      if (!drag) return;
-      const dx = event.clientX - drag.startX;
-      const dy = event.clientY - drag.startY;
-      if (!drag.moved && Math.abs(dx) + Math.abs(dy) > 9) drag.moved = true;
-      if (drag.moved) {
-        cam.x = drag.camX - dx / cam.zoom;
-        cam.y = drag.camY - dy / cam.zoom;
-        freeCamUntilRef.current = performance.now() + 2500;
-        clampCamera();
-      }
-    },
-    [clampCamera, viewFor],
-  );
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const dragRef = useRef({
+    active: false,
+    moved: false,
+    startX: 0,
+    startY: 0,
+    camX: 0,
+    camY: 0,
+    pinch: 0,
+    zoom: 1,
+  });
 
-  const handlePointerUp = useCallback(
-    (event: React.PointerEvent<HTMLCanvasElement>) => {
-      const pointers = pointersRef.current;
-      const drag = dragRef.current;
-      const wasSingle = pointers.size === 1;
-      pointers.delete(event.pointerId);
-      if (pointers.size < 2) pinchRef.current = null;
-
-      const state = stateRef.current;
-      const canvas = canvasRef.current;
-      if (!state || !canvas || phaseRef.current !== "playing") {
-        if (pointers.size === 0) dragRef.current = null;
-        return;
-      }
-      if (pointers.size === 0) {
-        dragRef.current = null;
-        const isTap = wasSingle && drag && !drag.moved && performance.now() - drag.time < 420;
-        if (isTap) {
-          const rect = canvas.getBoundingClientRect();
-          const world = screenToWorld(viewFor(), event.clientX - rect.left, event.clientY - rect.top);
-          const gx = Math.floor(world.x / TILE);
-          const gy = Math.floor(world.y / TILE);
-          const placing = placingRef.current;
-          if (placing) {
-            const base = state.bases[state.playerBase];
-            const cost = BUILD_SPECS[placing].levels[0].cost;
-            const check = canBuildAt(state, state.playerBase, placing, gx, gy);
-            if (!check.ok) {
-              pushHint(state, check.reason ?? "无法建造", 2);
-            } else if (!base || base.gold < cost) {
-              pushHint(state, "金币不足", 2);
-            } else if (tryBuildForBase(state, state.playerBase, placing, gx, gy)) {
-              updatePlacing(null);
-              setSnapshot(buildSnapshot(state, null, selectedIdRef.current));
-            }
-          } else {
-            const hit = state.buildings.find((b) => {
-              if (!b.alive) return false;
-              const size = BUILD_SPECS[b.kind].size;
-              return gx >= b.gx && gx < b.gx + size && gy >= b.gy && gy < b.gy + size;
-            });
-            updateSelected(hit && state.faction === "elf" ? hit.id : null);
-          }
-        }
-      }
-    },
-    [clampCamera, updatePlacing, updateSelected, viewFor],
-  );
-
-  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
-  const dragRef = useRef<{ startX: number; startY: number; camX: number; camY: number; moved: boolean; time: number } | null>(null);
-  const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
-
-  // 滚轮缩放
-  useEffect(() => {
+  const onPointerDown = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      const cam = camRef.current;
-      const view = viewFor();
-      const rect = canvas.getBoundingClientRect();
-      const before = screenToWorld(view, event.clientX - rect.left, event.clientY - rect.top);
-      cam.zoom = clamp(cam.zoom * (event.deltaY > 0 ? 0.9 : 1.1), 0.7, 1.7);
-      const after = screenToWorld(view, event.clientX - rect.left, event.clientY - rect.top);
-      cam.x += before.x - after.x;
-      cam.y += before.y - after.y;
-      freeCamUntilRef.current = performance.now() + 2200;
-      clampCamera();
-    };
-    canvas.addEventListener("wheel", onWheel, { passive: false });
-    return () => canvas.removeEventListener("wheel", onWheel);
-  }, [clampCamera, viewFor]);
+    canvas.setPointerCapture(event.pointerId);
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const rect = canvas.getBoundingClientRect();
+    const sx = event.clientX - rect.left;
+    const sy = event.clientY - rect.top;
+    const world = screenToWorld(
+      { cam: camRef.current, width: viewRef.current.width, height: viewRef.current.height, selectedId: null, placing: null, faction: faction },
+      sx,
+      sy,
+    );
+    pointerWorldRef.current = world;
+    pointerInsideRef.current = true;
 
-  const handleBuild = useCallback(
-    (kind: BuildingKind) => {
-      if (placingRef.current === kind) {
-        updatePlacing(null);
-        return;
-      }
-      const state = stateRef.current;
-      if (!state) return;
-      updatePlacing(kind);
-      updateSelected(null);
-      setUpgradeOpen(false);
-      const base = state.bases[state.playerBase];
-      if (base) {
-        ghostRef.current = { gx: base.tx + 3, gy: base.ty };
-      }
-    },
-    [updatePlacing, updateSelected],
-  );
-
-  const handleUpgrade = useCallback(() => {
-    const state = stateRef.current;
-    const id = selectedIdRef.current;
-    if (!state || id === null) return;
-    if (!tryUpgradeForBase(state, state.playerBase, id)) {
-      pushHint(state, "金币不足或已满级", 2);
+    if (pointersRef.current.size === 1) {
+      dragRef.current = {
+        active: true,
+        moved: false,
+        startX: event.clientX,
+        startY: event.clientY,
+        camX: camRef.current.x,
+        camY: camRef.current.y,
+        pinch: 0,
+        zoom: camRef.current.zoom,
+      };
+    } else if (pointersRef.current.size === 2) {
+      const [a, b] = Array.from(pointersRef.current.values());
+      dragRef.current.pinch = Math.hypot(a.x - b.x, a.y - b.y);
+      dragRef.current.zoom = camRef.current.zoom;
+      dragRef.current.moved = true;
     }
-    setSnapshot(buildSnapshot(state, placingRef.current, selectedIdRef.current));
-  }, []);
+  };
 
-  const handleDemolish = useCallback(() => {
-    const state = stateRef.current;
-    const id = selectedIdRef.current;
-    if (!state || id === null) return;
-    demolishBuilding(state, id);
-    updateSelected(null);
-    setSnapshot(buildSnapshot(state, placingRef.current, null));
-  }, [updateSelected]);
+  const onPointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const sx = event.clientX - rect.left;
+    const sy = event.clientY - rect.top;
+    pointerWorldRef.current = screenToWorld(
+      { cam: camRef.current, width: viewRef.current.width, height: viewRef.current.height, selectedId: null, placing: null, faction: faction },
+      sx,
+      sy,
+    );
+    pointerInsideRef.current = true;
 
-  const handleBuyUpgrade = useCallback((track: UpgradeTrack) => {
-    const state = stateRef.current;
-    if (!state) return;
-    buyTrollUpgrade(state, track);
-    setSnapshot(buildSnapshot(state, placingRef.current, selectedIdRef.current));
-  }, []);
+    if (!pointersRef.current.has(event.pointerId)) return;
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
 
-  const handleRush = useCallback(() => {
-    const state = stateRef.current;
-    if (!state || pausedRef.current) return;
-    castRush(state);
-    setSnapshot(buildSnapshot(state, placingRef.current, selectedIdRef.current));
-  }, []);
-
-  const togglePause = useCallback(() => {
-    if (phaseRef.current !== "playing") return;
-    pausedRef.current = !pausedRef.current;
-    setPaused(pausedRef.current);
-  }, []);
-
-  const toggleSound = useCallback(() => {
-    const next = !soundOnRef.current;
-    soundOnRef.current = next;
-    setSoundOn(next);
-    if (next) {
-      initAudio();
-      if (phaseRef.current !== "menu") startBgm();
-    } else {
-      stopBgm();
-    }
-  }, []);
-
-  const toggleFullscreen = useCallback(async () => {
-    const el = wrapRef.current;
-    if (!el) return;
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
+    if (pointersRef.current.size >= 2) {
+      const [a, b] = Array.from(pointersRef.current.values());
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (dragRef.current.pinch > 0) {
+        const zoom = Math.max(0.45, Math.min(1.9, (dragRef.current.zoom * dist) / dragRef.current.pinch));
+        camRef.current.zoom = zoom;
+      }
+      dragRef.current.moved = true;
       return;
     }
-    const request = el.requestFullscreen?.bind(el);
-    if (request) {
-      try {
-        await request();
-        return;
-      } catch {
-        // iOS Safari 等场景退回伪全屏
+
+    if (!dragRef.current.active) return;
+    const dx = event.clientX - dragRef.current.startX;
+    const dy = event.clientY - dragRef.current.startY;
+    if (Math.hypot(dx, dy) > 8) dragRef.current.moved = true;
+    if (dragRef.current.moved) {
+      camRef.current.x = dragRef.current.camX - dx / camRef.current.zoom;
+      camRef.current.y = dragRef.current.camY - dy / camRef.current.zoom;
+      manualCamUntilRef.current = performance.now() + 2600;
+    }
+  };
+
+  const onPointerUp = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    pointersRef.current.delete(event.pointerId);
+    const wasDrag = dragRef.current.moved;
+    dragRef.current.active = false;
+    if (pointersRef.current.size > 0) return;
+    pointerInsideRef.current = false;
+
+    const game = gameRef.current;
+    if (!game || wasDrag || game.result) return;
+    handleTap(pointerWorldRef.current.x, pointerWorldRef.current.y);
+  };
+
+  const handleTap = (wx: number, wy: number) => {
+    const game = gameRef.current;
+    if (!game) return;
+    const gx = Math.floor(wx / TILE);
+    const gy = Math.floor(wy / TILE);
+
+    if (selectedPlacingRef.current) {
+      if (game.faction !== "elf") return;
+      const kind = selectedPlacingRef.current;
+      const size = BUILD_SPECS[kind].size;
+      const bx = Math.floor(wx / TILE - (size - 1) / 2);
+      const by = Math.floor(wy / TILE - (size - 1) / 2);
+      const ok = tryBuildForElf(game, game.playerElf, kind, bx, by);
+      if (!ok) {
+        const check = canBuildAt(game, game.playerElf, kind, bx, by);
+        if (check.reason) setSnapshot({ ...makeSnapshot(game, pausedRef.current, mutedRef.current), hint: check.reason });
+      }
+      sync();
+      return;
+    }
+
+    if (game.faction !== "elf") {
+      selectBuilding(null);
+      return;
+    }
+
+    let hitId: number | null = null;
+    for (const b of game.buildings) {
+      if (!b.alive || b.team !== "elf") continue;
+      if (gx >= b.gx && gx < b.gx + b.size && gy >= b.gy && gy < b.gy + b.size) {
+        hitId = b.id;
+        break;
       }
     }
-    setPseudoFull((value) => {
-      const next = !value;
-      setFullscreen(next);
-      return next;
-    });
-  }, []);
+    selectBuilding(hitId);
+    sync();
+  };
 
-  const handleJoystick = useCallback((x: number, y: number) => {
-    joystickRef.current = { x, y };
-  }, []);
+  const onWheel = (event: ReactWheelEvent<HTMLCanvasElement>) => {
+    event.preventDefault();
+    const next = camRef.current.zoom * (event.deltaY > 0 ? 0.92 : 1.08);
+    camRef.current.zoom = Math.max(0.45, Math.min(1.9, next));
+  };
 
-  const hud = snapshot ?? (stateRef.current ? buildSnapshot(stateRef.current, placingKind, selectedId) : null);
+  /* ---------------- HUD 回调 ---------------- */
+
+  const handleBuild = (kind: BuildingKind) => {
+    selectBuilding(null);
+    setPlacingKind(kind);
+  };
+
+  const handleUpgrade = (id: number) => {
+    const game = gameRef.current;
+    if (!game) return;
+    tryUpgradeBuilding(game, id);
+    sync();
+  };
+
+  const handleRepair = (id: number) => {
+    const game = gameRef.current;
+    if (!game) return;
+    repairBuilding(game, id);
+    sync();
+  };
+
+  const handleDemolish = (id: number) => {
+    const game = gameRef.current;
+    if (!game) return;
+    if (demolishBuilding(game, id)) selectBuilding(null);
+    sync();
+  };
+
+  const handleBuyWood = () => {
+    const game = gameRef.current;
+    if (!game) return;
+    buyWood(game);
+    sync();
+  };
+
+  const handleShop = (key: ShopKey) => {
+    const game = gameRef.current;
+    if (!game) return;
+    buyShopItem(game, game.playerTroll, key);
+    sync();
+  };
+
+  const handleScroll = () => {
+    const game = gameRef.current;
+    if (!game) return;
+    buyScroll(game, game.playerTroll);
+    sync();
+  };
+
+  const handleHutUpgrade = () => {
+    const game = gameRef.current;
+    if (!game) return;
+    const troll = game.playerTroll >= 0 ? game.trolls[game.playerTroll] : null;
+    if (troll && troll.hutId >= 0) tryUpgradeBuilding(game, troll.hutId);
+    sync();
+  };
+
+  const handleElfSkill = (skill: ElfSkill) => {
+    const game = gameRef.current;
+    if (!game) return;
+    castElfSkill(game, skill, inputRef.current.mx, inputRef.current.my);
+    sync();
+  };
+
+  const handleTrollSkill = (skill: TrollSkill) => {
+    const game = gameRef.current;
+    if (!game) return;
+    castTrollSkill(game, game.playerTroll, skill);
+    sync();
+  };
+
+  const handleJoystick = (x: number, y: number) => {
+    joyRef.current = { mx: x, my: y };
+  };
+
+  const showResult = snapshot?.result && screen === "game";
 
   return (
     <div
-      ref={wrapRef}
-      className={cn(
-        "relative isolate h-[100dvh] w-full touch-none select-none overflow-hidden overscroll-none bg-[#0b1410]",
-        pseudoFull && "fixed inset-0 z-[60]",
-      )}
-      onContextMenu={(event) => {
-        event.preventDefault();
-        updatePlacing(null);
-      }}
+      ref={containerRef}
+      className="relative w-full overflow-hidden bg-[#0b1410] text-white"
+      style={{ height: "100dvh", minHeight: "100dvh" }}
     >
       <canvas
         ref={canvasRef}
-        role="application"
-        aria-label="巨魔 VS 精灵 游戏画面"
-        className="absolute inset-0 size-full"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        className="absolute inset-0 h-full w-full touch-none select-none"
+        style={{ touchAction: "none" }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onPointerLeave={() => {
+          pointerInsideRef.current = false;
+        }}
+        onWheel={onWheel}
+        onContextMenu={(event) => event.preventDefault()}
       />
 
-      {hud && phase !== "menu" && (
-        <TveHud
-          hud={hud}
-          paused={paused}
-          soundOn={soundOn}
-          fullscreen={fullscreen || pseudoFull}
-          upgradeOpen={upgradeOpen}
-          minimapRef={minimapRef}
-          onBuild={handleBuild}
-          onCancelPlacement={() => updatePlacing(null)}
-          onUpgrade={handleUpgrade}
-          onDemolish={handleDemolish}
-          onBuyUpgrade={handleBuyUpgrade}
-          onRush={handleRush}
-          onTogglePause={togglePause}
-          onToggleSound={toggleSound}
-          onToggleFullscreen={() => void toggleFullscreen()}
-          onToggleUpgrade={() => setUpgradeOpen((value) => !value)}
-          onExit={exitToMenu}
-          onCloseSelected={() => updateSelected(null)}
-          onJoystick={handleJoystick}
+      {screen === "menu" ? (
+        <TveMenu
+          faction={faction}
+          mode={mode}
+          rule={rule}
+          difficulty={difficulty}
+          onFaction={setFaction}
+          onMode={setMode}
+          onRule={setRule}
+          onDifficulty={setDifficulty}
+          onStart={startGame}
+          onBack={() => {
+            window.location.href = "/";
+          }}
         />
-      )}
+      ) : null}
 
-      {hud && phase === "result" && <TveResult hud={hud} onRestart={restart} onMenu={exitToMenu} />}
+      {screen === "game" && snapshot ? (
+        <TveHud
+          snapshot={snapshot}
+          minimapRef={minimapRef}
+          onJoystickChange={handleJoystick}
+          onPause={togglePause}
+          onResume={togglePause}
+          onMute={toggleMute}
+          onExit={exitToMenu}
+          onBuild={handleBuild}
+          onCancelPlacing={() => setPlacingKind(null)}
+          onUpgrade={handleUpgrade}
+          onRepair={handleRepair}
+          onDemolish={handleDemolish}
+          onCloseSelected={() => selectBuilding(null)}
+          onBuyWood={handleBuyWood}
+          onShop={handleShop}
+          onScroll={handleScroll}
+          onHutUpgrade={handleHutUpgrade}
+          onElfSkill={handleElfSkill}
+          onTrollSkill={handleTrollSkill}
+        />
+      ) : null}
 
-      {phase === "menu" && (
-        <TveMenu ready={assetsReady} progress={progress} onStart={startGame} />
-      )}
+      {showResult && snapshot ? (
+        <TveResult
+          result={snapshot.result}
+          snapshot={snapshot}
+          onRestart={startGame}
+          onMenu={exitToMenu}
+        />
+      ) : null}
+
+      {screen === "menu" ? (
+        <div className="pointer-events-auto absolute left-3 top-[max(12px,env(safe-area-inset-top))] z-50">
+          <Link
+            href="/"
+            className="flex items-center gap-1 rounded-xl border border-white/15 bg-black/40 px-2.5 py-1.5 text-xs text-white/75 backdrop-blur"
+          >
+            <ArrowLeft size={14} /> 大厅
+          </Link>
+        </div>
+      ) : null}
+
+      {loading ? (
+        <div className="pointer-events-none absolute bottom-3 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/60 px-3 py-1.5 text-[11px] text-white/70 backdrop-blur">
+          <Loader2 size={13} className="animate-spin" />
+          素材加载 {loadProgress}%
+        </div>
+      ) : null}
     </div>
   );
-}
-
-function pointerDistance(pointers: Map<number, { x: number; y: number }>): number {
-  const list = Array.from(pointers.values());
-  if (list.length < 2) return 1;
-  return Math.hypot(list[0].x - list[1].x, list[0].y - list[1].y) || 1;
 }

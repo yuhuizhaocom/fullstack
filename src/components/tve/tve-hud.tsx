@@ -1,679 +1,876 @@
 "use client";
 
-// 「巨魔 VS 精灵」HUD：纯展示组件，所有状态由 TveGame 传入。
-
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import {
-  ArrowLeft,
   Castle,
   Coins,
   Crosshair,
-  Hammer,
+  Flame,
+  FlaskConical,
   Heart,
-  Maximize,
-  Minimize,
   Moon,
   Pause,
+  Pickaxe,
   Play,
-  RotateCcw,
   Shield,
+  Snowflake,
   Sparkles,
-  Sun,
   Swords,
+  Tent,
+  Timer,
+  TreePine,
   Volume2,
   VolumeX,
   Wind,
+  Wrench,
   X,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
+import {
+  BUILD_CATEGORIES,
+  BUILD_SPECS,
+  DIFFICULTIES,
+  GAME_MODES,
+  SHOP_ITEMS,
+  TROLL_RULES,
+  SCROLL,
+  WOOD_PACK,
+} from "@/lib/tve/config";
+import type {
+  BuildingKind,
+  Difficulty,
+  ElfSkill,
+  Faction,
+  GameMode,
+  GameResult,
+  GameStats,
+  ShopKey,
+  TrollRule,
+  TrollSkill,
+} from "@/lib/tve/types";
 
-import { BUILD_SPECS, DIFFICULTIES, TROLL_UPGRADES } from "@/lib/tve/config";
-import type { BuildingKind, Difficulty, Faction, GameResult, UpgradeTrack } from "@/lib/tve/types";
-import { UI_IMAGES } from "@/lib/tve/assets";
-import { cn } from "@/lib/utils";
+const KIND_ICON: Record<BuildingKind, LucideIcon> = {
+  tree: TreePine,
+  tent: Tent,
+  goldmine: Pickaxe,
+  workshop: Wrench,
+  lab: FlaskConical,
+  woodwall: Shield,
+  stone: Shield,
+  icewall: Snowflake,
+  arrow: Crosshair,
+  gun: Flame,
+  poison: Zap,
+  ice: Snowflake,
+  moon: Moon,
+  hut: Castle,
+};
 
-export interface HudBase {
-  id: number;
-  name: string;
-  alive: boolean;
-  hp: number;
-  maxHp: number;
-  isPlayer: boolean;
-}
+const ELF_SKILL_META: Record<ElfSkill, { label: string; desc: string; icon: LucideIcon }> = {
+  night: { label: "黑夜", desc: "12 秒黑夜，巨魔视野受限", icon: Moon },
+  entangle: { label: "缠绕", desc: "定身最近巨魔 2.2 秒", icon: Sparkles },
+  blink: { label: "闪现", desc: "向移动方向瞬移 6 格", icon: Wind },
+  reinforce: { label: "加固", desc: "全体建筑恢复生命", icon: Shield },
+};
+
+const TROLL_SKILL_META: Record<TrollSkill, { label: string; desc: string; icon: LucideIcon }> = {
+  windwalk: { label: "疾风步", desc: "隐身 5 秒并提速", icon: Wind },
+  recall: { label: "召回", desc: "立刻回到巨魔小屋", icon: Castle },
+};
+
+const SHOP_META: Record<ShopKey, { icon: LucideIcon }> = {
+  weapon: { icon: Swords },
+  gloves: { icon: Zap },
+  boots: { icon: Wind },
+  armor: { icon: Shield },
+  vitality: { icon: Heart },
+  regen: { icon: Sparkles },
+};
 
 export interface HudSelected {
   id: number;
   kind: BuildingKind;
   level: number;
+  maxLevel: number;
   hp: number;
   maxHp: number;
-  upgradeCost: number | null;
-  refund: number;
+  upgradeGold: number | null;
+  upgradeWood: number;
+  repairCost: number;
+  canRepair: boolean;
 }
 
 export interface HudSnapshot {
   faction: Faction;
   difficulty: Difficulty;
+  mode: GameMode;
+  rule: TrollRule;
+  paused: boolean;
+  muted: boolean;
   gold: number;
-  trollHp: number;
-  trollMaxHp: number;
+  wood: number;
+  woodPrice: number;
+  elf: { name: string; hp: number; maxHp: number; alive: boolean } | null;
+  trolls: { name: string; hp: number; maxHp: number; wolf: boolean; alive: boolean; isPlayer: boolean }[];
+  hutLevel: number;
+  hutUpgradeGold: number | null;
   night: boolean;
-  dayTimer: number;
+  nightTimer: number;
   time: number;
+  surviveTime: number | null;
   hint: string | null;
-  result: GameResult;
-  bases: HudBase[];
-  villagers: number;
   selected: HudSelected | null;
-  placingKind: BuildingKind | null;
-  claw: number;
-  swift: number;
-  hide: number;
-  rushCd: number;
-  stats: { kills: number; destroyed: number; goldEarned: number };
+  placing: BuildingKind | null;
+  skills: { elf: Record<ElfSkill, number>; troll: Record<TrollSkill, number> };
+  items: Record<ShopKey, number>;
+  stats: GameStats;
+  towerBonus: number;
+  result: GameResult;
+  elfCount: number;
+  aliveElves: number;
+  aliveTrolls: number;
 }
 
-const KIND_ICON: Record<BuildingKind, typeof Coins> = {
-  tree: Castle,
-  mine: Coins,
-  wall: Shield,
-  arrow: Crosshair,
-  magic: Sparkles,
-};
+interface TveHudProps {
+  snapshot: HudSnapshot;
+  minimapRef: RefObject<HTMLCanvasElement | null>;
+  onJoystickChange: (x: number, y: number) => void;
+  onPause: () => void;
+  onResume: () => void;
+  onMute: () => void;
+  onExit: () => void;
+  onBuild: (kind: BuildingKind) => void;
+  onCancelPlacing: () => void;
+  onUpgrade: (id: number) => void;
+  onRepair: (id: number) => void;
+  onDemolish: (id: number) => void;
+  onCloseSelected: () => void;
+  onBuyWood: () => void;
+  onShop: (key: ShopKey) => void;
+  onScroll: () => void;
+  onHutUpgrade: () => void;
+  onElfSkill: (skill: ElfSkill) => void;
+  onTrollSkill: (skill: TrollSkill) => void;
+}
+
+type Sheet = "build" | "skill" | "shop" | null;
 
 function formatTime(seconds: number): string {
-  const s = Math.max(0, Math.ceil(seconds));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const total = Math.max(0, Math.floor(seconds));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-function IconButton({
-  children,
-  onClick,
-  label,
-  active,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  label: string;
-  active?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className={cn(
-        "flex size-9 items-center justify-center rounded-xl border border-white/15 bg-black/45 text-white/85 backdrop-blur transition-colors active:scale-95 sm:size-10",
-        active && "bg-amber-400/25 text-amber-200",
-      )}
-    >
-      {children}
-    </button>
-  );
+function coin(value: number): string {
+  return Math.floor(value).toLocaleString("zh-CN");
 }
 
-/** 左上角资源/时间/阵营信息 */
-function TopBar({
-  hud,
-  soundOn,
-  fullscreen,
-  onPause,
-  onSound,
-  onFullscreen,
-  onExit,
-}: {
-  hud: HudSnapshot;
-  soundOn: boolean;
-  fullscreen: boolean;
-  onPause: () => void;
-  onSound: () => void;
-  onFullscreen: () => void;
-  onExit: () => void;
-}) {
-  const isTroll = hud.faction === "troll";
+export function TveHud(props: TveHudProps) {
+  const { snapshot, minimapRef } = props;
+  const [sheet, setSheet] = useState<Sheet>(null);
+  const troll = snapshot.trolls.find((t) => t.isPlayer) ?? null;
+
+  const closeSheet = () => setSheet(null);
+
+  const canAfford = (kind: BuildingKind) => {
+    const level = BUILD_SPECS[kind].levels[0];
+    return snapshot.gold >= level.cost && snapshot.wood >= level.wood;
+  };
+
   return (
-    <div
-      className="pointer-events-none absolute inset-x-0 top-0 z-20 px-2"
-      style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
-    >
-      <div className="pointer-events-auto mx-auto flex max-w-3xl items-start gap-2">
-        <div className="flex shrink-0 gap-1 sm:gap-1.5">
-          <IconButton label="暂停" onClick={onPause}>
-            <Pause className="size-4" />
-          </IconButton>
-          <IconButton label={soundOn ? "关闭音效" : "开启音效"} onClick={onSound}>
-            {soundOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
-          </IconButton>
-          <div className="hidden sm:block">
-            <IconButton label="全屏" onClick={onFullscreen} active={fullscreen}>
-              {fullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
-            </IconButton>
-          </div>
-          <IconButton label="返回菜单" onClick={onExit}>
-            <ArrowLeft className="size-4" />
-          </IconButton>
-        </div>
-
-        <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-          <div className="flex items-center gap-1 whitespace-nowrap rounded-full border border-white/15 bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur sm:gap-2 sm:px-3 sm:py-1 sm:text-xs">
-            {hud.night ? <Moon className="size-3.5 text-sky-300" /> : <Sun className="size-3.5 text-amber-300" />}
-            <span className={hud.night ? "text-sky-200" : "text-amber-100"}>
-              {hud.night ? "夜晚" : "白天"} {formatTime(hud.dayTimer)}
-            </span>
-            <span className="text-white/30">|</span>
-            <Swords className="size-3.5 text-rose-300" />
-            <span className="text-white/80">{isTroll ? "巨魔" : "精灵"}</span>
-          </div>
-
-          <div className="flex w-full max-w-md items-center gap-1.5 sm:gap-2">
-            {hud.faction === "elf" ? (
-              <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg bg-black/50 px-1.5 py-1 backdrop-blur sm:px-2">
-                <span className="hidden whitespace-nowrap text-[10px] text-white/55 sm:inline">生命之树</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/15">
-                  <div
-                    className="h-full rounded-full bg-emerald-400"
-                    style={{ width: `${hud.bases[0] ? (hud.bases[0].hp / hud.bases[0].maxHp) * 100 : 0}%` }}
-                  />
-                </div>
-                <span className="whitespace-nowrap text-[9px] text-white/70 sm:text-[10px]">
-                  {hud.bases[0] ? `${Math.ceil(hud.bases[0].hp)}/${hud.bases[0].maxHp}` : "-"}
-                </span>
-              </div>
-            ) : (
-              <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg bg-black/50 px-1.5 py-1 backdrop-blur sm:gap-2 sm:px-2">
-                <span className="hidden whitespace-nowrap text-[10px] text-rose-200 sm:inline">巨魔</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/15">
-                  <div className="h-full rounded-full bg-rose-400" style={{ width: `${(hud.trollHp / hud.trollMaxHp) * 100}%` }} />
-                </div>
-                <span className="whitespace-nowrap text-[9px] text-white/70 sm:text-[10px]">
-                  {Math.ceil(hud.trollHp)}/{hud.trollMaxHp}
-                </span>
-              </div>
-            )}
-            <div className="flex shrink-0 items-center gap-1 rounded-lg border border-amber-300/30 bg-black/50 px-1.5 py-1 text-amber-200 backdrop-blur sm:px-2">
-              <Coins className="size-3 sm:size-3.5" />
-              <span className="text-[11px] font-semibold sm:text-xs">{Math.floor(hud.gold)}</span>
+    <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
+      {/* 顶部状态栏 */}
+      <div className="pointer-events-auto flex items-start justify-between gap-2 px-2 pt-[max(6px,env(safe-area-inset-top))]">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={snapshot.paused ? props.onResume : props.onPause}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-black/45 text-white backdrop-blur"
+            aria-label={snapshot.paused ? "继续" : "暂停"}
+          >
+            {snapshot.paused ? <Play size={17} /> : <Pause size={17} />}
+          </button>
+          <button
+            type="button"
+            onClick={props.onMute}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-black/45 text-white backdrop-blur"
+            aria-label="音效"
+          >
+            {snapshot.muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+          </button>
+          <div className="rounded-xl border border-white/10 bg-black/45 px-2.5 py-1.5 text-[11px] leading-tight text-white/80 backdrop-blur">
+            <div className="font-semibold text-white">{GAME_MODES[snapshot.mode].label}</div>
+            <div className="flex items-center gap-1 text-[10px] text-white/60">
+              <Timer size={10} />
+              {formatTime(snapshot.time)}
+              {snapshot.surviveTime ? <span className="text-amber-200">/{formatTime(snapshot.surviveTime)}</span> : null}
             </div>
           </div>
         </div>
 
-        {hud.faction === "troll" ? (
-          <div className="flex w-[3.25rem] shrink-0 flex-col gap-1 sm:w-16">
-            {hud.bases.map((base) => (
-              <div key={base.id} className="flex min-w-0 items-center gap-1">
-                <span className={cn("shrink-0 whitespace-nowrap text-[9px]", base.alive ? "text-emerald-200" : "text-white/30 line-through")}>
-                  {base.name.slice(0, 2)}
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/45 px-2.5 py-1.5 text-white backdrop-blur">
+            <span className="flex items-center gap-1 text-sm font-bold text-amber-300">
+              <Coins size={14} /> {coin(snapshot.gold)}
+            </span>
+            {snapshot.faction === "elf" ? (
+              <span className="flex items-center gap-1 text-sm font-bold text-lime-300">
+                <TreePine size={14} /> {Math.floor(snapshot.wood)}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-sm font-bold text-orange-300">
+                <Castle size={14} /> Lv{snapshot.hutLevel}
+              </span>
+            )}
+          </div>
+          {snapshot.faction === "elf" && snapshot.elf ? (
+            <div className="w-40 rounded-lg border border-white/10 bg-black/45 px-2 py-1 backdrop-blur">
+              <div className="flex items-center justify-between text-[10px] text-white/70">
+                <span>精灵 {snapshot.elf.name}</span>
+                <span>
+                  {Math.ceil(snapshot.elf.hp)}/{Math.round(snapshot.elf.maxHp)}
                 </span>
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/15">
-                  <div
-                    className={cn("h-full rounded-full", base.alive ? "bg-emerald-400" : "bg-white/20")}
-                    style={{ width: base.alive ? `${(base.hp / base.maxHp) * 100}%` : "0%" }}
-                  />
-                </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex w-[3.25rem] shrink-0 flex-col items-end gap-1 rounded-xl border border-white/10 bg-black/40 px-1 py-1 text-[8px] whitespace-nowrap text-white/60 backdrop-blur sm:w-16 sm:px-1.5 sm:text-[9px]">
-            <span>盟友 {hud.bases.filter((b) => b.alive && !b.isPlayer).length}/2</span>
-            <span>村民 {hud.villagers}</span>
-          </div>
-        )}
+              <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-lime-400 to-emerald-300"
+                  style={{ width: `${Math.max(0, Math.min(100, (snapshot.elf.hp / snapshot.elf.maxHp) * 100))}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+          {snapshot.faction === "troll" && troll ? (
+            <div className="w-44 rounded-lg border border-white/10 bg-black/45 px-2 py-1 backdrop-blur">
+              <div className="flex items-center justify-between text-[10px] text-white/70">
+                <span>{troll.wolf ? "幽灵狼" : "巨魔"} · 存活 {snapshot.aliveTrolls}</span>
+                <span>
+                  {Math.ceil(troll.hp)}/{Math.round(troll.maxHp)}
+                </span>
+              </div>
+              <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-orange-400 to-rose-400"
+                  style={{ width: `${Math.max(0, Math.min(100, (troll.hp / troll.maxHp) * 100))}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
-    </div>
-  );
-}
 
-function Minimap({ canvasRef, night, size = 92 }: { canvasRef: React.RefObject<HTMLCanvasElement | null>; night: boolean; size?: number }) {
-  return (
-    <div className="pointer-events-none absolute right-2 top-24 z-20 hidden sm:block">
-      <div
-        className={cn(
-          "overflow-hidden rounded-xl border shadow-lg",
-          night ? "border-sky-300/25 bg-slate-950/70" : "border-amber-200/25 bg-emerald-950/70",
-        )}
-        style={{ width: size, height: size }}
-      >
-        <canvas ref={canvasRef} style={{ width: size, height: size }} />
+      {/* 夜晚 / 提示 */}
+      <div className="pointer-events-none flex flex-1 flex-col items-center justify-start gap-2 px-4 pt-3">
+        {snapshot.night ? (
+          <div className="rounded-full border border-indigo-300/30 bg-indigo-950/70 px-3 py-1 text-xs font-medium text-indigo-100 backdrop-blur">
+            <Moon size={12} className="mr-1 inline" />
+            黑夜 {Math.ceil(snapshot.nightTimer)}s
+          </div>
+        ) : null}
+        {snapshot.hint ? (
+          <div className="max-w-[85%] rounded-full border border-white/10 bg-black/55 px-3 py-1.5 text-center text-xs text-white/90 backdrop-blur">
+            {snapshot.hint}
+          </div>
+        ) : null}
+        {snapshot.placing ? (
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-950/70 px-3 py-1.5 text-xs text-amber-100 backdrop-blur">
+            点击空地放置 {BUILD_SPECS[snapshot.placing].label}
+            <button type="button" onClick={props.onCancelPlacing} className="rounded-full bg-white/15 p-0.5" aria-label="取消建造">
+              <X size={13} />
+            </button>
+          </div>
+        ) : null}
       </div>
-    </div>
-  );
-}
 
-function SelectedPanel({
-  selected,
-  gold,
-  onUpgrade,
-  onDemolish,
-  onClose,
-}: {
-  selected: HudSelected;
-  gold: number;
-  onUpgrade: () => void;
-  onDemolish: () => void;
-  onClose: () => void;
-}) {
-  const Icon = KIND_ICON[selected.kind];
-  const canUpgrade = selected.upgradeCost !== null && gold >= selected.upgradeCost;
-  return (
-    <div className="pointer-events-auto absolute inset-x-2 bottom-28 z-30 mx-auto max-w-sm rounded-2xl border border-white/15 bg-slate-950/85 p-3 text-white shadow-2xl backdrop-blur">
-      <div className="flex items-center gap-2">
-        <span className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-200">
-          <Icon className="size-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">
-            {BUILD_SPECS[selected.kind].label} Lv.{selected.level}
-          </p>
-          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/15">
-            <div className="h-full rounded-full bg-emerald-400" style={{ width: `${(selected.hp / selected.maxHp) * 100}%` }} />
+      {/* 小地图（桌面） */}
+      <div className="pointer-events-auto absolute right-3 top-24 hidden md:block">
+        <div className="rounded-xl border border-white/15 bg-black/50 p-1.5 backdrop-blur">
+          <canvas ref={minimapRef} width={132} height={132} className="block h-[132px] w-[132px] rounded-lg" />
+        </div>
+      </div>
+
+      {/* 选中建筑面板 */}
+      {snapshot.selected ? (
+        <div className="pointer-events-auto absolute bottom-40 left-1/2 w-[min(420px,92vw)] -translate-x-1/2 rounded-2xl border border-white/15 bg-slate-950/85 p-3 text-white shadow-2xl backdrop-blur md:bottom-32">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-1.5 text-sm font-bold">
+                {(() => {
+                  const Icon = KIND_ICON[snapshot.selected.kind];
+                  return <Icon size={16} />;
+                })()}
+                {BUILD_SPECS[snapshot.selected.kind].label}
+                <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-white/70">
+                  Lv{snapshot.selected.level}
+                  {snapshot.selected.maxLevel > 1 ? `/${snapshot.selected.maxLevel}` : ""}
+                </span>
+              </div>
+              <div className="mt-1.5 h-1.5 w-40 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-lime-300"
+                  style={{ width: `${Math.max(0, Math.min(100, (snapshot.selected.hp / snapshot.selected.maxHp) * 100))}%` }}
+                />
+              </div>
+              <div className="mt-1 text-[10px] text-white/60">
+                {Math.ceil(snapshot.selected.hp)} / {Math.round(snapshot.selected.maxHp)}
+              </div>
+            </div>
+            <button type="button" onClick={props.onCloseSelected} className="rounded-lg bg-white/10 p-1.5">
+              <X size={14} />
+            </button>
+          </div>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {snapshot.selected.upgradeGold !== null && snapshot.selected.level < snapshot.selected.maxLevel ? (
+              <button
+                type="button"
+                onClick={() => props.onUpgrade(snapshot.selected!.id)}
+                disabled={snapshot.gold < snapshot.selected.upgradeGold || snapshot.wood < snapshot.selected.upgradeWood}
+                className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-amber-500/90 px-3 py-2 text-xs font-bold text-amber-950 disabled:opacity-40"
+              >
+                升级
+                <span className="font-semibold">
+                  {snapshot.selected.upgradeGold}
+                  {snapshot.selected.upgradeWood > 0 ? ` + ${snapshot.selected.upgradeWood}木` : ""}
+                </span>
+              </button>
+            ) : null}
+            {snapshot.selected.canRepair ? (
+              <button
+                type="button"
+                onClick={() => props.onRepair(snapshot.selected!.id)}
+                disabled={snapshot.gold < snapshot.selected.repairCost}
+                className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-500/90 px-3 py-2 text-xs font-bold text-emerald-950 disabled:opacity-40"
+              >
+                修理 <span>{snapshot.selected.repairCost}</span>
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => props.onDemolish(snapshot.selected!.id)}
+              className="rounded-xl border border-rose-400/40 bg-rose-500/15 px-3 py-2 text-xs font-semibold text-rose-200"
+            >
+              拆除
+            </button>
           </div>
         </div>
-        <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-white/60 hover:bg-white/10" aria-label="关闭">
-          <X className="size-4" />
-        </button>
-      </div>
-      <p className="mt-2 text-[11px] leading-relaxed text-white/60">{BUILD_SPECS[selected.kind].desc}</p>
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          disabled={!canUpgrade}
-          onClick={onUpgrade}
-          className={cn(
-            "flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
-            canUpgrade ? "bg-emerald-500 text-emerald-950 active:scale-95" : "bg-white/10 text-white/35",
+      ) : null}
+
+      {/* 底部动作区 */}
+      <div className="pointer-events-auto flex items-end justify-between gap-3 px-3 pb-[max(10px,env(safe-area-inset-bottom))]">
+        <Joystick onChange={props.onJoystickChange} />
+
+        <div className="flex flex-col items-end gap-2">
+          {snapshot.faction === "elf" ? (
+            <>
+              <div className="flex items-center gap-2">
+                <ActionButton
+                  icon={TreePine}
+                  label={`买木 ${snapshot.woodPrice}`}
+                  disabled={snapshot.gold < snapshot.woodPrice}
+                  onClick={props.onBuyWood}
+                />
+                <ActionButton
+                  icon={Sparkles}
+                  label="技能"
+                  onClick={() => setSheet(sheet === "skill" ? null : "skill")}
+                  active={sheet === "skill"}
+                  cooldown={Math.min(
+                    snapshot.skills.elf.night,
+                    snapshot.skills.elf.entangle,
+                    snapshot.skills.elf.blink,
+                    snapshot.skills.elf.reinforce,
+                  )}
+                />
+                <ActionButton
+                  icon={Castle}
+                  label="建造"
+                  onClick={() => setSheet(sheet === "build" ? null : "build")}
+                  active={sheet === "build"}
+                  primary
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              {snapshot.hutUpgradeGold !== null ? (
+                <ActionButton
+                  icon={Castle}
+                  label={`小屋 ${snapshot.hutUpgradeGold}`}
+                  disabled={snapshot.gold < snapshot.hutUpgradeGold}
+                  onClick={props.onHutUpgrade}
+                />
+              ) : null}
+              <ActionButton
+                icon={Wind}
+                label="技能"
+                onClick={() => setSheet(sheet === "skill" ? null : "skill")}
+                active={sheet === "skill"}
+                cooldown={Math.min(snapshot.skills.troll.windwalk, snapshot.skills.troll.recall)}
+              />
+              <ActionButton
+                icon={Coins}
+                label="商店"
+                onClick={() => setSheet(sheet === "shop" ? null : "shop")}
+                active={sheet === "shop"}
+                primary
+              />
+            </div>
           )}
-        >
-          <Sparkles className="size-3.5" />
-          {selected.upgradeCost === null ? "已满级" : `升级 ${selected.upgradeCost}`}
-        </button>
-        <button
-          type="button"
-          onClick={onDemolish}
-          className="flex items-center justify-center gap-1.5 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white/75 active:scale-95"
-        >
-          <RotateCcw className="size-3.5" />
-          拆除 +{selected.refund}
-        </button>
+        </div>
       </div>
-    </div>
-  );
-}
 
-function BuildBar({
-  hud,
-  onBuild,
-  onCancel,
-}: {
-  hud: HudSnapshot;
-  onBuild: (kind: BuildingKind) => void;
-  onCancel: () => void;
-}) {
-  const kinds: BuildingKind[] = ["mine", "wall", "arrow", "magic"];
-  return (
-    <div
-      className="pointer-events-auto absolute inset-x-0 bottom-0 z-30 px-2"
-      style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
-    >
-      <div className="mx-auto flex max-w-lg items-stretch justify-center gap-2">
-        {hud.placingKind && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex flex-col items-center justify-center rounded-xl border border-rose-300/40 bg-rose-500/20 px-2 text-rose-100"
-          >
-            <X className="size-5" />
-            <span className="text-[10px]">取消</span>
-          </button>
-        )}
-        {kinds.map((kind, index) => {
-          const spec = BUILD_SPECS[kind];
-          const Icon = KIND_ICON[kind];
-          const affordable = hud.gold >= spec.levels[0].cost;
-          const active = hud.placingKind === kind;
-          return (
-            <button
-              key={kind}
-              type="button"
-              onClick={() => onBuild(kind)}
-              className={cn(
-                "relative flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl border px-1 py-2 text-white backdrop-blur transition-all active:scale-95",
-                active
-                  ? "border-amber-300 bg-amber-400/25 text-amber-100"
-                  : affordable
-                    ? "border-white/15 bg-slate-950/70"
-                    : "border-white/10 bg-slate-950/45 text-white/35",
-              )}
-            >
-              <span className="absolute left-1 top-1 text-[9px] text-white/35">{index + 1}</span>
-              <Icon className="size-5" />
-              <span className="text-[11px] font-medium">{spec.label}</span>
-              <span className="flex items-center gap-0.5 text-[10px] text-amber-200/85">
-                <Coins className="size-2.5" />
-                {spec.levels[0].cost}
-              </span>
+      {/* 底部抽屉 */}
+      {sheet ? (
+        <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 max-h-[64vh] overflow-y-auto rounded-t-3xl border-t border-white/15 bg-slate-950/95 px-3 pb-[max(14px,env(safe-area-inset-bottom))] pt-2 text-white shadow-2xl backdrop-blur">
+          <div className="sticky top-0 z-10 -mx-3 mb-2 flex items-center justify-between bg-slate-950/95 px-3 pb-2 pt-1">
+            <div className="text-sm font-bold">
+              {sheet === "build" ? "建造" : sheet === "skill" ? "技能" : "巨魔商店"}
+            </div>
+            <button type="button" onClick={closeSheet} className="rounded-lg bg-white/10 p-1.5">
+              <X size={15} />
             </button>
-          );
-        })}
-      </div>
+          </div>
+
+          {sheet === "build" ? (
+            <div className="space-y-3 pb-2">
+              {BUILD_CATEGORIES.map((category) => (
+                <div key={category.key}>
+                  <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/45">{category.label}</div>
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                    {category.kinds.map((kind) => {
+                      const spec = BUILD_SPECS[kind];
+                      const level = spec.levels[0];
+                      const Icon = KIND_ICON[kind];
+                      const affordable = canAfford(kind);
+                      return (
+                        <button
+                          key={kind}
+                          type="button"
+                          disabled={!affordable}
+                          onClick={() => {
+                            props.onBuild(kind);
+                            closeSheet();
+                          }}
+                          className="flex flex-col items-start gap-1 rounded-xl border border-white/10 bg-white/5 p-2 text-left transition active:scale-[0.97] disabled:opacity-35"
+                        >
+                          <span className="flex w-full items-center justify-between">
+                            <Icon size={18} className="text-amber-200" />
+                            <span className="text-[10px] text-white/50">Lv1</span>
+                          </span>
+                          <span className="text-xs font-semibold">{spec.label}</span>
+                          <span className="text-[10px] text-amber-200">
+                            {level.cost} 金{level.wood > 0 ? ` · ${level.wood} 木` : ""}
+                          </span>
+                          <span className="line-clamp-2 text-[9px] leading-tight text-white/45">{spec.desc}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {sheet === "skill" ? (
+            <div className="grid grid-cols-2 gap-2 pb-2 sm:grid-cols-4">
+              {snapshot.faction === "elf"
+                ? (Object.keys(ELF_SKILL_META) as ElfSkill[]).map((skill) => {
+                    const meta = ELF_SKILL_META[skill];
+                    const Icon = meta.icon;
+                    const cd = snapshot.skills.elf[skill];
+                    return (
+                      <button
+                        key={skill}
+                        type="button"
+                        disabled={cd > 0 || !snapshot.elf?.alive}
+                        onClick={() => {
+                          props.onElfSkill(skill);
+                          closeSheet();
+                        }}
+                        className="relative flex flex-col items-start gap-1 overflow-hidden rounded-xl border border-white/10 bg-white/5 p-2.5 text-left disabled:opacity-45"
+                      >
+                        <Icon size={20} className="text-sky-200" />
+                        <span className="text-xs font-semibold">{meta.label}</span>
+                        <span className="text-[10px] leading-tight text-white/50">{meta.desc}</span>
+                        {cd > 0 ? (
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-lg font-bold text-white">
+                            {Math.ceil(cd)}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })
+                : (Object.keys(TROLL_SKILL_META) as TrollSkill[]).map((skill) => {
+                    const meta = TROLL_SKILL_META[skill];
+                    const Icon = meta.icon;
+                    const cd = snapshot.skills.troll[skill];
+                    return (
+                      <button
+                        key={skill}
+                        type="button"
+                        disabled={cd > 0 || troll?.wolf}
+                        onClick={() => {
+                          props.onTrollSkill(skill);
+                          closeSheet();
+                        }}
+                        className="relative flex flex-col items-start gap-1 overflow-hidden rounded-xl border border-white/10 bg-white/5 p-2.5 text-left disabled:opacity-45"
+                      >
+                        <Icon size={20} className="text-orange-200" />
+                        <span className="text-xs font-semibold">{meta.label}</span>
+                        <span className="text-[10px] leading-tight text-white/50">{meta.desc}</span>
+                        {cd > 0 ? (
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-lg font-bold text-white">
+                            {Math.ceil(cd)}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+            </div>
+          ) : null}
+
+          {sheet === "shop" ? (
+            <div className="space-y-2 pb-2">
+              {(Object.keys(SHOP_ITEMS) as ShopKey[]).map((key) => {
+                const spec = SHOP_ITEMS[key];
+                const level = snapshot.items[key];
+                const maxed = level >= spec.costs.length;
+                const cost = maxed ? 0 : spec.costs[level];
+                const Icon = SHOP_META[key].icon;
+                return (
+                  <div key={key} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-400/15 text-orange-200">
+                      <Icon size={18} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold">
+                        {spec.label}
+                        <span className="rounded bg-white/10 px-1 py-0.5 text-[9px] text-white/60">
+                          {level}/{spec.costs.length}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-white/50">{spec.desc}</div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={maxed || snapshot.gold < cost || troll?.wolf}
+                      onClick={() => props.onShop(key)}
+                      className="rounded-lg bg-amber-500/90 px-2.5 py-1.5 text-[11px] font-bold text-amber-950 disabled:opacity-35"
+                    >
+                      {maxed ? "满级" : `${cost} 金`}
+                    </button>
+                  </div>
+                );
+              })}
+              <button
+                type="button"
+                disabled={snapshot.gold < SCROLL.cost || troll?.wolf}
+                onClick={props.onScroll}
+                className="flex w-full items-center justify-between rounded-xl border border-emerald-400/30 bg-emerald-500/15 px-3 py-2.5 text-xs font-semibold text-emerald-100 disabled:opacity-35"
+              >
+                <span className="flex items-center gap-2">
+                  <Heart size={16} /> 生命卷轴 · 立即恢复 {SCROLL.heal} 生命
+                </span>
+                <span>{SCROLL.cost} 金</span>
+              </button>
+              <div className="pt-1 text-[10px] leading-relaxed text-white/45">
+                巨魔拆墙每击获得金币，摧毁建筑另有赏金；小屋提供每秒被动收入。
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* 暂停遮罩 */}
+      {snapshot.paused && !snapshot.result ? (
+        <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-[min(320px,86vw)] rounded-3xl border border-white/15 bg-slate-900/95 p-5 text-center text-white shadow-2xl">
+            <div className="text-lg font-bold">已暂停</div>
+            <div className="mt-1 text-xs text-white/50">
+              {GAME_MODES[snapshot.mode].label} · {TROLL_RULES[snapshot.rule].label} · {DIFFICULTIES[snapshot.difficulty].label}
+            </div>
+            <div className="mt-4 flex flex-col gap-2">
+              <button type="button" onClick={props.onResume} className="rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-amber-950">
+                继续游戏
+              </button>
+              <button type="button" onClick={props.onExit} className="rounded-xl bg-white/10 py-2.5 text-sm font-semibold text-white/80">
+                返回菜单
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-export function Joystick({ onChange }: { onChange: (x: number, y: number) => void }) {
-  const baseRef = useRef<HTMLDivElement | null>(null);
-  const pointerRef = useRef<number | null>(null);
+interface JoystickProps {
+  onChange: (x: number, y: number) => void;
+}
+
+export function Joystick({ onChange }: JoystickProps) {
+  const baseRef = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
+  const activeRef = useRef(false);
 
-  const update = useCallback(
-    (clientX: number, clientY: number) => {
-      const el = baseRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const max = rect.width / 2 - 16;
-      let dx = clientX - cx;
-      let dy = clientY - cy;
-      const len = Math.hypot(dx, dy);
-      if (len > max) {
-        dx = (dx / len) * max;
-        dy = (dy / len) * max;
-      }
-      setKnob({ x: dx, y: dy });
-      const nx = dx / max;
-      const ny = dy / max;
-      const dead = 0.14;
-      const mag = Math.hypot(nx, ny);
-      if (mag < dead) {
-        onChange(0, 0);
-      } else {
-        onChange(nx, ny);
-      }
-    },
-    [onChange],
-  );
+  const update = (clientX: number, clientY: number) => {
+    const base = baseRef.current;
+    if (!base) return;
+    const rect = base.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const max = rect.width / 2 - 16;
+    let dx = clientX - cx;
+    let dy = clientY - cy;
+    const len = Math.hypot(dx, dy);
+    if (len > max) {
+      dx = (dx / len) * max;
+      dy = (dy / len) * max;
+    }
+    setKnob({ x: dx, y: dy });
+    onChange(dx / max, dy / max);
+  };
 
-  const end = useCallback(() => {
-    pointerRef.current = null;
+  const end = () => {
+    activeRef.current = false;
     setKnob({ x: 0, y: 0 });
     onChange(0, 0);
-  }, [onChange]);
+  };
 
   return (
     <div
       ref={baseRef}
-      className="pointer-events-auto relative size-28 touch-none select-none rounded-full border border-white/20 bg-black/35 backdrop-blur"
       onPointerDown={(event) => {
-        pointerRef.current = event.pointerId;
+        activeRef.current = true;
         event.currentTarget.setPointerCapture(event.pointerId);
         update(event.clientX, event.clientY);
       }}
       onPointerMove={(event) => {
-        if (pointerRef.current !== event.pointerId) return;
+        if (!activeRef.current) return;
         update(event.clientX, event.clientY);
       }}
-      onPointerUp={(event) => {
-        if (pointerRef.current === event.pointerId) end();
-      }}
+      onPointerUp={end}
       onPointerCancel={end}
+      onLostPointerCapture={end}
+      className="relative h-28 w-28 touch-none rounded-full border border-white/20 bg-black/35 backdrop-blur"
+      style={{ touchAction: "none" }}
     >
-      <div className="absolute inset-4 rounded-full border border-white/10" />
+      <div className="pointer-events-none absolute inset-4 rounded-full border border-white/10" />
       <div
-        className="absolute left-1/2 top-1/2 size-12 rounded-full bg-gradient-to-br from-emerald-300/90 to-emerald-600/90 shadow-lg"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-12 w-12 rounded-full border border-white/30 bg-white/25"
         style={{ transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))` }}
       />
     </div>
   );
 }
 
-function TrollUpgradeSheet({
-  hud,
-  onBuy,
-  onClose,
-}: {
-  hud: HudSnapshot;
-  onBuy: (track: UpgradeTrack) => void;
-  onClose: () => void;
-}) {
-  const tracks: UpgradeTrack[] = ["claw", "swift", "hide"];
-  const icons = { claw: Zap, swift: Wind, hide: Heart };
+interface ActionButtonProps {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  primary?: boolean;
+  cooldown?: number;
+}
+
+function ActionButton({ icon: Icon, label, onClick, disabled, active, primary, cooldown }: ActionButtonProps) {
   return (
-    <div className="pointer-events-auto absolute inset-x-2 bottom-24 z-30 mx-auto max-w-sm rounded-2xl border border-white/15 bg-slate-950/90 p-3 text-white shadow-2xl backdrop-blur">
-      <div className="flex items-center justify-between">
-        <p className="flex items-center gap-1.5 text-sm font-semibold">
-          <Zap className="size-4 text-rose-300" />
-          巨魔强化
-        </p>
-        <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-white/60 hover:bg-white/10" aria-label="关闭">
-          <X className="size-4" />
-        </button>
-      </div>
-      <div className="mt-2 space-y-2">
-        {tracks.map((track) => {
-          const spec = TROLL_UPGRADES[track];
-          const level = hud[track];
-          const maxed = level >= spec.costs.length;
-          const cost = maxed ? 0 : spec.costs[level];
-          const Icon = icons[track];
-          const affordable = !maxed && hud.gold >= cost;
-          return (
-            <div key={track} className="flex items-center gap-2 rounded-xl bg-white/5 p-2">
-              <span className="flex size-9 items-center justify-center rounded-lg bg-rose-500/20 text-rose-200">
-                <Icon className="size-4" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold">{spec.label}</p>
-                <p className="text-[10px] text-white/55">{spec.desc}</p>
-                <div className="mt-1 flex gap-1">
-                  {spec.costs.map((_, index) => (
-                    <span key={index} className={cn("h-1.5 flex-1 rounded-full", index < level ? "bg-rose-400" : "bg-white/15")} />
-                  ))}
-                </div>
-              </div>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={[
+        "relative flex h-14 w-14 flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl border text-[10px] font-semibold shadow-lg backdrop-blur transition active:scale-95 disabled:opacity-40 sm:h-16 sm:w-16",
+        primary
+          ? "border-amber-300/40 bg-amber-500/90 text-amber-950"
+          : active
+            ? "border-white/40 bg-white/25 text-white"
+            : "border-white/15 bg-black/45 text-white/85",
+      ].join(" ")}
+    >
+      <Icon size={20} />
+      <span className="max-w-full truncate px-0.5">{label}</span>
+      {cooldown && cooldown > 0 ? (
+        <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-sm font-bold text-white">
+          {Math.ceil(cooldown)}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 开始菜单                                                            */
+/* ------------------------------------------------------------------ */
+
+interface TveMenuProps {
+  faction: Faction;
+  mode: GameMode;
+  rule: TrollRule;
+  difficulty: Difficulty;
+  onFaction: (value: Faction) => void;
+  onMode: (value: GameMode) => void;
+  onRule: (value: TrollRule) => void;
+  onDifficulty: (value: Difficulty) => void;
+  onStart: () => void;
+  onBack: () => void;
+}
+
+export function TveMenu(props: TveMenuProps) {
+  return (
+    <div className="absolute inset-0 z-40 overflow-y-auto bg-[radial-gradient(circle_at_50%_0%,#243524,#0b120b_70%)] px-4 py-[max(20px,env(safe-area-inset-top))] text-white">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 pb-8">
+        <div className="flex items-center justify-between">
+          <button type="button" onClick={props.onBack} className="rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/70">
+            返回
+          </button>
+          <span className="text-[11px] tracking-[0.3em] text-white/35">TROLL &amp; ELVES</span>
+        </div>
+
+        <div>
+          <h1 className="text-3xl font-black leading-tight">新巨魔与精灵</h1>
+          <p className="mt-1 text-xs leading-relaxed text-white/55">
+            1 巨魔对抗多名精灵。精灵靠帐篷产金、买木升级、堵路造塔；巨魔拆墙刷金、升级小屋、商店买装备。杀死所有精灵，或让精灵活到终局。
+          </p>
+        </div>
+
+        <section>
+          <h2 className="mb-2 text-xs font-bold text-white/45">选择阵营</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {(["elf", "troll"] as Faction[]).map((value) => (
               <button
+                key={value}
                 type="button"
-                disabled={!affordable}
-                onClick={() => onBuy(track)}
-                className={cn(
-                  "flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-2 text-[11px] font-semibold",
-                  affordable ? "bg-rose-500 text-white active:scale-95" : "bg-white/10 text-white/35",
-                )}
+                onClick={() => props.onFaction(value)}
+                className={[
+                  "rounded-2xl border p-3 text-left transition",
+                  props.faction === value
+                    ? "border-lime-300/60 bg-lime-400/15"
+                    : "border-white/10 bg-white/5 hover:bg-white/10",
+                ].join(" ")}
               >
-                {maxed ? (
-                  "满级"
-                ) : (
-                  <>
-                    <Coins className="size-3" />
-                    {cost}
-                  </>
-                )}
+                <div className="text-sm font-bold">{value === "elf" ? "精灵" : "巨魔"}</div>
+                <div className="mt-1 text-[11px] leading-relaxed text-white/50">
+                  {value === "elf" ? "经营经济、堵路造塔、技能逃生" : "拆建筑刷金、买装备、追杀精灵"}
+                </div>
               </button>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-2 text-xs font-bold text-white/45">模式</h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {(Object.keys(GAME_MODES) as GameMode[]).map((key) => {
+              const spec = GAME_MODES[key];
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => props.onMode(key)}
+                  className={[
+                    "rounded-xl border px-2.5 py-2 text-left transition",
+                    props.mode === key ? "border-amber-300/60 bg-amber-400/15" : "border-white/10 bg-white/5",
+                  ].join(" ")}
+                >
+                  <div className="text-xs font-bold">{spec.label}</div>
+                  <div className="mt-0.5 text-[10px] leading-snug text-white/45">{spec.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <h2 className="mb-2 text-xs font-bold text-white/45">巨魔规则</h2>
+            <div className="grid grid-cols-2 gap-2">
+              {(Object.keys(TROLL_RULES) as TrollRule[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => props.onRule(key)}
+                  className={[
+                    "rounded-xl border px-2.5 py-2 text-left transition",
+                    props.rule === key ? "border-orange-300/60 bg-orange-400/15" : "border-white/10 bg-white/5",
+                  ].join(" ")}
+                >
+                  <div className="text-xs font-bold">{TROLL_RULES[key].label}</div>
+                  <div className="mt-0.5 text-[10px] leading-snug text-white/45">{TROLL_RULES[key].desc}</div>
+                </button>
+              ))}
             </div>
-          );
-        })}
+          </div>
+          <div>
+            <h2 className="mb-2 text-xs font-bold text-white/45">难度</h2>
+            <div className="grid grid-cols-3 gap-2">
+              {(Object.keys(DIFFICULTIES) as Difficulty[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => props.onDifficulty(key)}
+                  className={[
+                    "rounded-xl border px-2 py-2 text-center text-xs font-semibold transition",
+                    props.difficulty === key ? "border-sky-300/60 bg-sky-400/15" : "border-white/10 bg-white/5",
+                  ].join(" ")}
+                >
+                  {DIFFICULTIES[key].label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <button
+          type="button"
+          onClick={props.onStart}
+          className="mt-1 w-full rounded-2xl bg-gradient-to-r from-amber-400 to-lime-400 py-3.5 text-base font-black text-emerald-950 shadow-xl shadow-lime-900/30 active:scale-[0.99]"
+        >
+          开始对局
+        </button>
+
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-3 text-[10px] leading-relaxed text-white/45">
+          操作：左下摇杆移动英雄；精灵点「建造」选建筑后点空地放置；点选自己的建筑可升级/修理/拆除。巨魔点「商店」购买装备，「技能」使用疾风步与召回。
+        </div>
       </div>
     </div>
   );
 }
 
-export interface TveHudProps {
-  hud: HudSnapshot;
-  paused: boolean;
-  soundOn: boolean;
-  fullscreen: boolean;
-  upgradeOpen: boolean;
-  minimapRef: React.RefObject<HTMLCanvasElement | null>;
-  onBuild: (kind: BuildingKind) => void;
-  onCancelPlacement: () => void;
-  onUpgrade: () => void;
-  onDemolish: () => void;
-  onBuyUpgrade: (track: UpgradeTrack) => void;
-  onRush: () => void;
-  onTogglePause: () => void;
-  onToggleSound: () => void;
-  onToggleFullscreen: () => void;
-  onToggleUpgrade: () => void;
-  onExit: () => void;
-  onCloseSelected: () => void;
-  onJoystick: (x: number, y: number) => void;
-}
+/* ------------------------------------------------------------------ */
+/* 结算                                                                */
+/* ------------------------------------------------------------------ */
 
-export function TveHud(props: TveHudProps) {
-  const { hud } = props;
-  const isTroll = hud.faction === "troll";
-  return (
-    <div className="pointer-events-none absolute inset-0 z-10 select-none">
-      <TopBar
-        hud={hud}
-        soundOn={props.soundOn}
-        fullscreen={props.fullscreen}
-        onPause={props.onTogglePause}
-        onSound={props.onToggleSound}
-        onFullscreen={props.onToggleFullscreen}
-        onExit={props.onExit}
-      />
-
-      <Minimap canvasRef={props.minimapRef} night={hud.night} />
-
-      {hud.hint && (
-        <div className="absolute inset-x-0 top-[7rem] z-20 flex justify-center px-4 sm:top-24">
-          <div className="rounded-full border border-white/15 bg-black/65 px-4 py-1.5 text-center text-xs font-medium text-white shadow-lg backdrop-blur">
-            {hud.hint}
-          </div>
-        </div>
-      )}
-
-      {hud.selected && hud.faction === "elf" && (
-        <SelectedPanel
-          selected={hud.selected}
-          gold={hud.gold}
-          onUpgrade={props.onUpgrade}
-          onDemolish={props.onDemolish}
-          onClose={props.onCloseSelected}
-        />
-      )}
-
-      {hud.faction === "elf" && (
-        <BuildBar hud={hud} onBuild={props.onBuild} onCancel={props.onCancelPlacement} />
-      )}
-
-      {isTroll && (
-        <>
-          <div
-            className="absolute left-3 z-30"
-            style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
-          >
-            <Joystick onChange={props.onJoystick} />
-          </div>
-          <div
-            className="pointer-events-auto absolute right-3 z-30 flex flex-col items-center gap-2"
-            style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
-          >
-            <button
-              type="button"
-              onClick={props.onRush}
-              disabled={hud.rushCd > 0}
-              className={cn(
-                "relative flex size-20 flex-col items-center justify-center rounded-full border-2 text-white shadow-xl backdrop-blur transition-transform active:scale-95",
-                hud.rushCd > 0
-                  ? "border-white/15 bg-slate-900/60 text-white/40"
-                  : "border-amber-300/80 bg-amber-500/30 text-amber-100",
-              )}
-            >
-              <Zap className="size-6" />
-              <span className="text-[11px] font-semibold">冲锋</span>
-              {hud.rushCd > 0 && <span className="text-[10px]">{Math.ceil(hud.rushCd)}s</span>}
-            </button>
-            <button
-              type="button"
-              onClick={props.onToggleUpgrade}
-              className="flex size-14 flex-col items-center justify-center rounded-full border border-white/20 bg-slate-950/70 text-white shadow-lg backdrop-blur active:scale-95"
-            >
-              <Hammer className="size-5" />
-              <span className="text-[10px]">强化</span>
-            </button>
-          </div>
-          {props.upgradeOpen && <TrollUpgradeSheet hud={hud} onBuy={props.onBuyUpgrade} onClose={props.onToggleUpgrade} />}
-        </>
-      )}
-
-      {props.paused && (
-        <div className="pointer-events-auto absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-slate-950/70 backdrop-blur">
-          <p className="text-lg font-semibold text-white">已暂停</p>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={props.onTogglePause}
-              className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-emerald-950 active:scale-95"
-            >
-              <Play className="size-4" />
-              继续
-            </button>
-            <button
-              type="button"
-              onClick={props.onExit}
-              className="flex items-center gap-2 rounded-xl bg-white/10 px-5 py-2.5 text-sm font-semibold text-white active:scale-95"
-            >
-              <ArrowLeft className="size-4" />
-              返回菜单
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function TveResult({
-  hud,
-  onRestart,
-  onMenu,
-}: {
-  hud: HudSnapshot;
+interface TveResultProps {
+  result: GameResult;
+  snapshot: HudSnapshot;
   onRestart: () => void;
   onMenu: () => void;
-}) {
-  const win = hud.result === "win";
+}
+
+export function TveResult({ result, snapshot, onRestart, onMenu }: TveResultProps) {
+  const win = result === "win";
   return (
-    <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur">
-      <div className="w-full max-w-sm rounded-3xl border border-white/15 bg-slate-900/90 p-6 text-center text-white shadow-2xl">
-        <p className={cn("text-3xl font-black tracking-wide", win ? "text-amber-300" : "text-rose-400")}>
-          {win ? "胜 利" : "失 败"}
-        </p>
-        <p className="mt-1 text-xs text-white/55">
-          {hud.faction === "elf" ? "精灵阵营" : "巨魔阵营"} · {DIFFICULTIES[hud.difficulty].label}难度
-        </p>
-        <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-xl bg-white/5 p-2">
-            <p className="text-[10px] text-white/45">存活</p>
-            <p className="text-sm font-semibold">{formatTime(hud.time)}</p>
-          </div>
-          <div className="rounded-xl bg-white/5 p-2">
-            <p className="text-[10px] text-white/45">{hud.faction === "elf" ? "击杀村民" : "摧毁建筑"}</p>
-            <p className="text-sm font-semibold">{hud.faction === "elf" ? hud.stats.kills : hud.stats.destroyed}</p>
-          </div>
-          <div className="rounded-xl bg-white/5 p-2">
-            <p className="text-[10px] text-white/45">累计金币</p>
-            <p className="text-sm font-semibold">{Math.floor(hud.stats.goldEarned)}</p>
-          </div>
+    <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 px-4 backdrop-blur-md">
+      <div className="w-[min(360px,92vw)] rounded-3xl border border-white/15 bg-slate-900/95 p-5 text-center text-white shadow-2xl">
+        <div className={`text-2xl font-black ${win ? "text-lime-300" : "text-rose-300"}`}>{win ? "胜利" : "失败"}</div>
+        <div className="mt-1 text-xs text-white/50">
+          {GAME_MODES[snapshot.mode].label} · {TROLL_RULES[snapshot.rule].label} · {DIFFICULTIES[snapshot.difficulty].label}
         </div>
-        <div className="mt-6 flex gap-2">
-          <button
-            type="button"
-            onClick={onRestart}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-emerald-950 active:scale-95"
-          >
-            <RotateCcw className="size-4" />
+        <div className="mt-4 grid grid-cols-2 gap-2 text-left text-xs">
+          <Stat label="用时" value={formatTime(snapshot.time)} />
+          <Stat label="金币" value={`${coin(snapshot.stats.goldEarned)}`} />
+          <Stat label="摧毁建筑" value={`${snapshot.stats.destroyed}`} />
+          <Stat label="伐木总量" value={`${Math.floor(snapshot.stats.woodGathered)}`} />
+        </div>
+        <div className="mt-2 text-[10px] text-white/35">每次购买木材为 {WOOD_PACK.amount} 木</div>
+        <div className="mt-4 flex flex-col gap-2">
+          <button type="button" onClick={onRestart} className="rounded-xl bg-amber-500 py-2.5 text-sm font-bold text-amber-950">
             再来一局
           </button>
-          <button
-            type="button"
-            onClick={onMenu}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/10 py-2.5 text-sm font-semibold text-white active:scale-95"
-          >
-            <ArrowLeft className="size-4" />
+          <button type="button" onClick={onMenu} className="rounded-xl bg-white/10 py-2.5 text-sm font-semibold text-white/80">
             返回菜单
           </button>
         </div>
@@ -682,121 +879,11 @@ export function TveResult({
   );
 }
 
-export function TveMenu({
-  ready,
-  progress,
-  onStart,
-}: {
-  ready: boolean;
-  progress: number;
-  onStart: (faction: Faction, difficulty: Difficulty) => void;
-}) {
-  const [faction, setFaction] = useState<Faction>("elf");
-  const [difficulty, setDifficulty] = useState<Difficulty>("normal");
-  const [coverFailed, setCoverFailed] = useState(false);
-
-  useEffect(() => {
-    const img = new Image();
-    img.onerror = () => setCoverFailed(true);
-    img.src = UI_IMAGES.cover;
-  }, []);
-
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="absolute inset-0 z-50 overflow-y-auto bg-slate-950 text-white">
-      <div className="relative min-h-full">
-        {!coverFailed && (
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${UI_IMAGES.cover})` }}
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/55 via-slate-950/70 to-slate-950" />
-        <div className="relative mx-auto flex min-h-full w-full max-w-lg flex-col justify-center px-4 py-10">
-          <div className="text-center">
-            <p className="text-[11px] uppercase tracking-[0.35em] text-amber-200/70">Troll vs Elves</p>
-            <h1 className="mt-2 text-4xl font-black tracking-wider text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
-              巨魔 <span className="text-rose-400">VS</span> 精灵
-            </h1>
-            <p className="mt-2 text-xs text-white/55">白天发育，夜晚求生 · 非对称单机对抗</p>
-          </div>
-
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            {(
-              [
-                { key: "elf", title: "精灵", sub: "采金 · 建墙 · 守塔", img: UI_IMAGES.elf },
-                { key: "troll", title: "巨魔", sub: "夜袭 · 拆家 · 猎杀", img: UI_IMAGES.troll },
-              ] as const
-            ).map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setFaction(item.key)}
-                className={cn(
-                  "group relative overflow-hidden rounded-2xl border-2 text-left transition-all active:scale-[0.98]",
-                  faction === item.key
-                    ? "border-amber-300 shadow-[0_0_24px_rgba(252,211,77,0.35)]"
-                    : "border-white/15 opacity-80",
-                )}
-              >
-                <div className="aspect-[4/5] w-full bg-slate-800">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.img} alt={item.title} className="size-full object-cover object-top" />
-                </div>
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-3">
-                  <p className="text-base font-bold">{item.title}</p>
-                  <p className="text-[11px] text-white/60">{item.sub}</p>
-                </div>
-                {faction === item.key && (
-                  <span className="absolute right-2 top-2 rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-950">
-                    选择
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-5">
-            <p className="mb-2 text-xs text-white/50">难度</p>
-            <div className="grid grid-cols-3 gap-2">
-              {(Object.keys(DIFFICULTIES) as Difficulty[]).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setDifficulty(key)}
-                  className={cn(
-                    "rounded-xl border px-2 py-2 text-xs font-semibold transition-colors",
-                    difficulty === key
-                      ? "border-amber-300 bg-amber-400/20 text-amber-100"
-                      : "border-white/15 bg-white/5 text-white/65",
-                  )}
-                >
-                  {DIFFICULTIES[key].label}
-                </button>
-              ))}
-            </div>
-            <p className="mt-1.5 h-4 text-[10px] text-white/40">{DIFFICULTIES[difficulty].desc}</p>
-          </div>
-
-          <button
-            type="button"
-            disabled={!ready}
-            onClick={() => onStart(faction, difficulty)}
-            className={cn(
-              "mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-bold transition-all active:scale-[0.98]",
-              ready ? "bg-amber-400 text-amber-950 shadow-lg" : "bg-white/10 text-white/40",
-            )}
-          >
-            <Swords className="size-4" />
-            {ready ? "开始对战" : `资源加载中 ${Math.round(progress * 100)}%`}
-          </button>
-
-          <div className="mt-4 space-y-1 text-center text-[10px] leading-relaxed text-white/35">
-            <p>精灵：点击下方建造栏 → 点击地面放置；点选建筑可升级或拆除。</p>
-            <p>巨魔：左侧摇杆移动，自动攻击近处目标；夜间自动强化。</p>
-            <p>桌面：WASD 移动、1-4 建造、Esc 取消、空格暂停、滚轮缩放。</p>
-          </div>
-        </div>
-      </div>
+    <div className="rounded-xl border border-white/10 bg-white/5 px-2.5 py-2">
+      <div className="text-[10px] text-white/40">{label}</div>
+      <div className="text-sm font-bold">{value}</div>
     </div>
   );
 }
