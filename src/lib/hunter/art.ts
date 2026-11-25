@@ -183,6 +183,8 @@ const BUILDING_STYLE: Record<BuildingKind, { body: string; roof: string; accent:
   researchLab: { body: "#3f3f46", roof: "#18181b", accent: "#a78bfa", tall: 15, kind: "lab" },
   golemFactory: { body: "#44403c", roof: "#292524", accent: "#f59e0b", tall: 17, kind: "factory" },
   hunterBarracks: { body: "#7c2d12", roof: "#431407", accent: "#fbbf24", tall: 16, kind: "tent" },
+  healthFountain: { body: "#166534", roof: "#14532d", accent: "#4ade80", tall: 10, kind: "fountain" },
+  manaFountain: { body: "#1e3a8a", roof: "#172554", accent: "#60a5fa", tall: 10, kind: "fountain" },
 };
 
 function drawBuilding(kind: BuildingKind): Texture {
@@ -211,6 +213,21 @@ function drawBuilding(kind: BuildingKind): Texture {
         px(8, baseY - wallH + 4, 3, 2, "#e0e7ff");
         px(15, baseY - wallH + 6, 3, 2, "#e0e7ff");
       }
+      return;
+    }
+
+    if (style.kind === "fountain") {
+      // 泉水：石台 + 水池 + 中央喷流
+      const baseY = H - 5;
+      px(5, baseY - 5, 18, 5, "#78716c");
+      px(6, baseY - 7, 16, 2, "#a8a29e");
+      px(8, baseY - 6, 12, 3, style.body);
+      px(9, baseY - 5, 10, 2, style.accent);
+      px(12, baseY - 14, 4, 9, "#a8a29e");
+      px(13, baseY - 18, 2, 5, style.accent);
+      px(11, baseY - 20, 6, 2, style.accent);
+      px(8, baseY - 11, 1, 1, style.accent);
+      px(19, baseY - 10, 1, 1, style.accent);
       return;
     }
 

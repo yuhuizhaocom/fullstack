@@ -291,6 +291,13 @@ function blob(
   }
 }
 
+function angleDiff(a: number, b: number): number {
+  let d = a - b;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return Math.abs(d);
+}
+
 /** 生成一张适合 7 农民 vs 3 猎人的森林地图 */
 export function createMap(seed: number): GameMap {
   const rand = mulberry32(seed);
@@ -356,6 +363,20 @@ export function createMap(seed: number): GameMap {
         if (Math.hypot(tx - sx, ty - sy) <= 7.2) {
           drawTerrain(map, tx, ty, hash2(tx, ty, seed + 7) < 0.12 ? "flower" : "grass");
         }
+      }
+    }
+    // 起家点外围围成树屋：只留朝中心与朝外两条窄路，农民可以砍树另开通道
+    const toCenter = Math.atan2(48 - sy, 48 - sx);
+    const gaps = [toCenter, toCenter + Math.PI];
+    for (let ty = sy - 9; ty <= sy + 9; ty += 1) {
+      for (let tx = sx - 9; tx <= sx + 9; tx += 1) {
+        if (tx < 1 || ty < 1 || tx >= map.w - 1 || ty >= map.h - 1) continue;
+        const dist = Math.hypot(tx - sx, ty - sy);
+        if (dist < 7.3 || dist > 8.6) continue;
+        const angle = Math.atan2(ty - sy, tx - sx);
+        if (gaps.some((gap) => angleDiff(angle, gap) < 0.24)) continue;
+        if (hash2(tx, ty, seed + 21) < 0.06) continue;
+        drawTerrain(map, tx, ty, "tree");
       }
     }
     const point = tileCenter(sx, sy);

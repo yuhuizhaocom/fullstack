@@ -21,7 +21,7 @@ import {
   serializeGame,
   stepGame,
 } from "@/lib/hunter/engine";
-import { tileCenter } from "@/lib/hunter/map";
+import { terrainAtTile, tileCenter } from "@/lib/hunter/map";
 import { createHunterStage, type HunterStage } from "@/lib/hunter/stage";
 import { DEFAULT_SETTINGS } from "@/lib/hunter/types";
 import type {
@@ -643,6 +643,16 @@ export function HunterGame() {
       if (wall) {
         applyCommand(state, { t: "toggleWall", id: wall.id });
         showToast(wall.open ? "魔法墙已关闭" : "魔法墙已打开");
+        return;
+      }
+
+      // 农民点树即砍树开路（透明塔/魔法墙等仍走上面的建筑逻辑）
+      if (state.side === "farmer" && terrainAtTile(state.map, tile.tx, tile.ty) === "tree") {
+        if (applyCommand(state, { t: "chop", tx: tile.tx, ty: tile.ty })) {
+          showToast("前往砍树");
+        } else {
+          showToast("够不到这棵树");
+        }
         return;
       }
 

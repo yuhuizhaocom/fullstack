@@ -336,6 +336,12 @@ export type BuildingSpec = {
   unique?: boolean;
   /** 不可建造（固定建筑） */
   fixed?: boolean;
+  /** 泉水：范围内持续恢复 */
+  fountain?: "health" | "mana";
+  /** 泉水作用半径 */
+  fountainRadius?: number;
+  /** 不可被破坏 */
+  invulnerable?: boolean;
 };
 
 export const BUILDINGS: Record<BuildingKind, BuildingSpec> = {
@@ -376,9 +382,9 @@ export const BUILDINGS: Record<BuildingKind, BuildingSpec> = {
     name: "弱逼墙",
     icon: "🧱",
     side: "farmer",
-    hp: 300,
+    hp: 10,
     costGold: 7,
-    desc: "最便宜的封路墙，挡一挡猎人的路。",
+    desc: "最便宜的封路墙，只有 10 血，主要用来升级或补视野。",
     group: "wall",
   },
   barricade: {
@@ -434,10 +440,11 @@ export const BUILDINGS: Record<BuildingKind, BuildingSpec> = {
     side: "farmer",
     hp: 320,
     costGold: 50,
-    desc: "提供 300 反隐视野，可以当门让人穿过。",
+    desc: "升级期间可当门穿人，同时保留箭塔的 20 攻击与 300 反隐视野。",
     group: "tower",
     passable: true,
     reveal: 300,
+    tower: { range: 300, atk: 20, interval: 0.9, color: 0x67e8f9 },
   },
   rocketTower: {
     name: "火箭塔",
@@ -447,7 +454,7 @@ export const BUILDINGS: Record<BuildingKind, BuildingSpec> = {
     costGold: 180,
     desc: "射程 340，对建筑造成双倍伤害。",
     group: "tower",
-    tower: { range: 340, atk: 35, interval: 1.6, vsBuilding: 2, color: 0xf97316 },
+    tower: { range: 340, atk: 26, interval: 1.6, vsBuilding: 2, color: 0xf97316 },
   },
   boulderTower: {
     name: "巨石塔",
@@ -467,7 +474,7 @@ export const BUILDINGS: Record<BuildingKind, BuildingSpec> = {
     costGold: 220,
     desc: "范围火焰，适合清理猎人的巡逻兵。",
     group: "tower",
-    tower: { range: 280, atk: 26, interval: 1, aoe: 70, color: 0xef4444 },
+    tower: { range: 280, atk: 14, interval: 0.55, aoe: 70, color: 0xef4444 },
   },
   frostTower: {
     name: "寒冰塔",
@@ -477,7 +484,7 @@ export const BUILDINGS: Record<BuildingKind, BuildingSpec> = {
     costGold: 220,
     desc: "范围减速 50%，把猎人困在塔下。",
     group: "tower",
-    tower: { range: 300, atk: 18, interval: 1.2, slow: 0.5, color: 0x67e8f9 },
+    tower: { range: 300, atk: 24, interval: 1.2, slow: 0.5, color: 0x67e8f9 },
   },
   researchLab: {
     name: "研究所",
@@ -507,6 +514,34 @@ export const BUILDINGS: Record<BuildingKind, BuildingSpec> = {
     desc: "地图中央的固定兵营，可花 40 金买巡逻兵。",
     group: "tech",
     fixed: true,
+  },
+  healthFountain: {
+    name: "生命之泉",
+    icon: "💚",
+    side: "hunter",
+    hp: 99999,
+    costGold: 0,
+    desc: "中央营地旁的泉水，猎人站在附近可快速回复生命。",
+    group: "tech",
+    fixed: true,
+    passable: true,
+    fountain: "health",
+    fountainRadius: 220,
+    invulnerable: true,
+  },
+  manaFountain: {
+    name: "魔法之泉",
+    icon: "💙",
+    side: "hunter",
+    hp: 99999,
+    costGold: 0,
+    desc: "中央营地旁的泉水，猎人站在附近可加速技能冷却恢复。",
+    group: "tech",
+    fixed: true,
+    passable: true,
+    fountain: "mana",
+    fountainRadius: 220,
+    invulnerable: true,
   },
 };
 
@@ -628,9 +663,9 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
     unlockAt: 20 * 60,
   },
   potion: {
-    name: "治疗药水",
+    name: "恢复药水",
     icon: "🧪",
-    cost: 50,
+    cost: 80,
     desc: "立即恢复 400 生命。",
   },
 };

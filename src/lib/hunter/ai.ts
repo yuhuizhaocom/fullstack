@@ -41,9 +41,16 @@ function countUnits(state: GameState, side: Side, owner: number, kind: UnitKind)
   return state.units.filter((u) => u.side === side && u.owner === owner && u.kind === kind && !u.dead).length;
 }
 
-function placeNear(state: GameState, side: Side, owner: number, kind: BuildingKind, anchor: Vec): boolean {
+function placeNear(
+  state: GameState,
+  side: Side,
+  owner: number,
+  kind: BuildingKind,
+  anchor: Vec,
+  maxRing = 10
+): boolean {
   const base = pixelToTile(anchor.x, anchor.y);
-  for (let r = 1; r <= 10; r += 1) {
+  for (let r = 1; r <= maxRing; r += 1) {
     for (let dy = -r; dy <= r; dy += 1) {
       for (let dx = -r; dx <= r; dx += 1) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
@@ -205,7 +212,8 @@ function farmerAI(state: GameState, owner: number): void {
     for (const kind of farmPlan(state, owner, hero)) {
       if (!kind) continue;
       if (built >= 2) break;
-      if (placeNear(state, "farmer", owner, kind, base)) built += 1;
+      // 只往自己的树屋里建，避免把塔墙堆到树屋外的路口给猎人送经验
+      if (placeNear(state, "farmer", owner, kind, base, 6)) built += 1;
     }
   }
 
@@ -341,10 +349,20 @@ function hunterAI(state: GameState, owner: number): void {
   const hpRatio = hero.hp / hero.maxHp;
   const swarm = farmerFightersNear(state, hero.x, hero.y, 220);
 
+  // 低血量先回生命之泉补给（原作猎人的常规回血方式）
+  if (hpRatio < 0.6) {
+    const health = state.buildings.find((b) => BUILDINGS[b.kind].fountain === "health" && b.hp > 0);
+    if (health && Math.hypot(health.x - hero.x, health.y - hero.y) > 120) {
+      hero.targetId = null;
+      setUnitDestination(state, hero, health.x, health.y);
+      return;
+    }
+  }
+
   // 塔火覆盖下先撤；号角生效（塔失效）时 towerPressure 会归零，可继续输出
   if (
     hpRatio < 0.45 ||
-    towerPressure(state, hero.x, hero.y) > 0 ||
+    towerPressure(state, hero.x, hero.y, 380) > 0 ||
     (swarm >= 3 && hpRatio < 0.8)
   ) {
     const camp = state.map.hunterCamp;
@@ -359,7 +377,7 @@ function hunterAI(state: GameState, owner: number): void {
   );
   if (
     animal &&
-    towerPressure(state, animal.x, animal.y) === 0 &&
+    towerPressure(state, animal.x, animal.y, 380) === 0 &&
     farmerFightersNear(state, animal.x, animal.y, 180) <= 1
   ) {
     setUnitDestination(state, hero, animal.x, animal.y);
@@ -369,7 +387,7 @@ function hunterAI(state: GameState, owner: number): void {
   // 只拆没有塔火保护、守卫不多的建筑；号角生效后塔火会自动消失
   const enemyBuilding = nearestVisibleBuilding(state, "hunter", hero, 520);
   if (enemyBuilding) {
-    const covered = towerPressure(state, enemyBuilding.x, enemyBuilding.y) > 0;
+    const covered = towerPressure(state, enemyBuilding.x, enemyBuilding.y, 380) > 0;
     const guards = farmerFightersNear(state, enemyBuilding.x, enemyBuilding.y, 200);
     if (!covered && guards <= 1) {
       setUnitDestination(state, hero, enemyBuilding.x, enemyBuilding.y);

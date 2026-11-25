@@ -37,7 +37,9 @@ export type BuildingKind =
   | "frostTower"
   | "researchLab"
   | "golemFactory"
-  | "hunterBarracks";
+  | "hunterBarracks"
+  | "healthFountain"
+  | "manaFountain";
 
 export type SkillId = "eye" | "golemQ" | "golemE" | "golemW";
 export type ItemKind = "hammer" | "horn" | "gloves" | "poison" | "mine" | "potion";
@@ -151,6 +153,11 @@ export type Unit = {
   /** 动物升级后的额外收入 */
   incomeBonus: number;
   animSeed: number;
+  /** 砍树目标格（-1 表示没有砍树指令） */
+  chopTx: number;
+  chopTy: number;
+  /** 砍倒这棵树的时刻 */
+  chopUntil: number;
 };
 
 export type Building = {
@@ -271,6 +278,7 @@ export type GameState = {
 
 export type Command =
   | { t: "move"; x: number; y: number }
+  | { t: "chop"; tx: number; ty: number }
   | { t: "build"; kind: BuildingKind; tx: number; ty: number }
   | { t: "sell"; id: string }
   | { t: "research"; kind: ResearchKind }

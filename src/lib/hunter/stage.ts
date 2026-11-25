@@ -489,6 +489,17 @@ class PixiHunterStage implements HunterStage {
     this.fx
       .ellipse(isoX(merchant.x, merchant.y), isoY(merchant.x, merchant.y), 18, 9)
       .stroke({ color: 0xfbbf24, width: 1.5, alpha: 0.7 });
+    // 泉水光环
+    for (const building of state.buildings) {
+      const spec = BUILDINGS[building.kind];
+      if (!spec.fountain || building.hp <= 0) continue;
+      const color = spec.fountain === "health" ? 0x4ade80 : 0x60a5fa;
+      const cx = isoX(building.x, building.y);
+      const cy = isoY(building.x, building.y);
+      const pulse = 26 + Math.sin(state.time * 2.2 + building.x * 0.01) * 5;
+      this.fx.ellipse(cx, cy, pulse, pulse / 2).stroke({ color, width: 2, alpha: 0.45 });
+      this.fx.ellipse(cx, cy - 4, pulse * 0.55, pulse * 0.28).stroke({ color, width: 1, alpha: 0.3 });
+    }
     for (const projectile of state.projectiles) {
       const sx = isoX(projectile.x, projectile.y);
       const sy = isoY(projectile.x, projectile.y) - 14;

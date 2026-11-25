@@ -27,6 +27,7 @@ import {
   isStaticBlocked,
   nearestOpenTile,
   pixelToTile,
+  TERRAIN_INDEX,
   terrainAtTile,
   tileCenter,
 } from "./map";
@@ -52,6 +53,7 @@ import type {
   SkillId,
   Unit,
   UnitKind,
+  Vec,
 } from "./types";
 
 const ALL_SKILLS: SkillId[] = ["eye", "golemQ", "golemE", "golemW"];
@@ -161,6 +163,9 @@ export function spawnUnit(
     armedAt: 0,
     incomeBonus: 0,
     animSeed: Math.random() * 1000,
+    chopTx: -1,
+    chopTy: -1,
+    chopUntil: 0,
   };
   state.units.push(unit);
   if (kind === "golem") applyGolemBuffs(state, unit);
@@ -174,6 +179,94 @@ export function unitById(state: GameState, id: string | null): Unit | null {
 
 export function playerUnit(state: GameState): Unit | null {
   return unitById(state, state.playerUnitId);
+}
+
+/** 树木可被农民攻击砍倒：靠近后按攻击间隔削减树木血量 */
+const CHOP_RANGE = TILE * 1.6;
+const CHOP_NEIGHBORS: [number, number][] = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+];
+
+function clearChop(unit: Unit): void {
+  unit.chopTx = -1;
+  unit.chopTy = -1;
+  unit.chopUntil = 0;
+}
+
+export function orderChopFor(state: GameState, tx: number, ty: number): boolean {
+  const unit = playerUnit(state);
+  if (!unit || unit.dead) return false;
+  if (unit.side !== "farmer" || unit.atk <= 0) return false;
+  if (terrainAtTile(state.map, tx, ty) !== "tree") return false;
+  const center = tileCenter(tx, ty);
+  unit.chopTx = tx;
+  unit.chopTy = ty;
+  unit.chopUntil = 0;
+  unit.targetId = null;
+  if (Math.hypot(center.x - unit.x, center.y - unit.y) <= CHOP_RANGE) {
+    unit.path = [];
+    unit.dest = null;
+    return true;
+  }
+
+  const blocked = blockedFn(state);
+  let best: Vec | null = null;
+  let bestLen = Infinity;
+  for (const [dx, dy] of CHOP_NEIGHBORS) {
+    const nx = tx + dx;
+    const ny = ty + dy;
+    if (nx < 1 || ny < 1 || nx >= state.map.w - 1 || ny >= state.map.h - 1) continue;
+    if (blocked(nx, ny)) continue;
+    const spot = tileCenter(nx, ny);
+    const path = findPath(state.map, unit.x, unit.y, spot.x, spot.y, blocked);
+    if (path.length === 0) continue;
+    if (path.length < bestLen) {
+      bestLen = path.length;
+      best = spot;
+    }
+  }
+  if (!best) {
+    clearChop(unit);
+    return false;
+  }
+  setUnitDestination(state, unit, best.x, best.y);
+  return true;
+}
+
+export function updateChop(state: GameState, unit: Unit): void {
+  if (unit.chopTx < 0 || unit.chopTy < 0) return;
+  const tx = unit.chopTx;
+  const ty = unit.chopTy;
+  if (terrainAtTile(state.map, tx, ty) !== "tree") {
+    clearChop(unit);
+    return;
+  }
+  const center = tileCenter(tx, ty);
+  if (Math.hypot(center.x - unit.x, center.y - unit.y) > CHOP_RANGE) {
+    if (unit.path.length === 0) clearChop(unit);
+    return;
+  }
+  unit.path = [];
+  unit.dest = null;
+  unit.moving = false;
+  unit.targetId = null;
+  unit.facing = center.x >= unit.x ? 1 : -1;
+  if (unit.cooldown > 0) return;
+  const index = ty * state.map.w + tx;
+  state.map.trees[index] = Math.max(0, state.map.trees[index] - Math.max(1, Math.round(unit.atk)));
+  unit.cooldown = unit.attackInterval;
+  if (state.map.trees[index] <= 0) {
+    state.map.terrain[index] = TERRAIN_INDEX.grass;
+    pushEvent(state, "kill", "农民砍倒了一棵树", center.x, center.y, "farmer");
+    clearChop(unit);
+  }
 }
 
 export function playerHero(state: GameState): Unit | null {
@@ -365,6 +458,37 @@ export function createGame(opts: {
     open: false,
     tier: 0,
   });
+
+  // 中央营地两侧的泉水：生命之泉 / 魔法之泉
+  const fountainSpots: { kind: BuildingKind; tx: number; ty: number }[] = [
+    { kind: "healthFountain", tx: campTile.tx - 3, ty: campTile.ty + 1 },
+    { kind: "manaFountain", tx: campTile.tx + 3, ty: campTile.ty + 1 },
+  ];
+  for (const spot of fountainSpots) {
+    const spec = BUILDINGS[spot.kind];
+    const center = tileCenter(spot.tx, spot.ty);
+    state.buildings.push({
+      id: nextId(state, "b"),
+      side: "hunter",
+      owner: 0,
+      kind: spot.kind,
+      tx: spot.tx,
+      ty: spot.ty,
+      x: center.x,
+      y: center.y,
+      hp: spec.hp,
+      maxHp: spec.hp,
+      cooldown: 0,
+      produceTimer: 0,
+      produced: 0,
+      flashAt: 0,
+      atk: 0,
+      range: 0,
+      disabledUntil: 0,
+      open: false,
+      tier: 0,
+    });
+  }
 
   if (opts.side === "farmer") {
     state.playerOwner = 0;
@@ -612,6 +736,7 @@ function killUnit(state: GameState, unit: Unit, killerSide: Side, killerOwner: n
   unit.hp = 0;
   unit.path = [];
   unit.dest = null;
+  clearChop(unit);
   if (!unit.isHero) {
     unit.dead = true;
     unit.respawnAt = Infinity;
@@ -687,6 +812,8 @@ function damageBuilding(
   attackerOwner: number
 ): void {
   if (building.hp <= 0) return;
+  // 泉水是地图机制，不可被破坏
+  if (BUILDINGS[building.kind].invulnerable) return;
   let final = damage;
   if (building.side === "farmer") {
     const defLv = researchLevel(state, "farmer", "buildDef");
@@ -939,6 +1066,14 @@ function updateUnit(state: GameState, unit: Unit, dt: number): void {
     return;
   }
 
+  if (unit.chopTx >= 0) {
+    const treeCenter = tileCenter(unit.chopTx, unit.chopTy);
+    const adjacent = Math.hypot(treeCenter.x - unit.x, treeCenter.y - unit.y) <= CHOP_RANGE;
+    updateChop(state, unit);
+    // 站定砍树时不再参与自动索敌
+    if (adjacent && unit.chopTx >= 0) return;
+  }
+
   const isPlayer = unit.id === state.playerUnitId;
   const hasCombat = unit.atk > 0 && unit.attackInterval > 0;
 
@@ -1107,6 +1242,28 @@ function updateBuilding(state: GameState, building: Building, dt: number): void 
   updateTower(state, building, dt);
 }
 
+/** 生命之泉回血、魔法之泉加速技能冷却 */
+function updateFountains(state: GameState, dt: number): void {
+  for (const building of state.buildings) {
+    const spec = BUILDINGS[building.kind];
+    if (!spec.fountain || building.hp <= 0) continue;
+    const radius = spec.fountainRadius ?? 220;
+    for (const unit of state.units) {
+      if (unit.dead || unit.side !== "hunter") continue;
+      if (Math.hypot(unit.x - building.x, unit.y - building.y) > radius) continue;
+      if (spec.fountain === "health") {
+        unit.hp = Math.min(unit.maxHp, unit.hp + Math.max(6, unit.maxHp * 0.03) * dt);
+      } else {
+        const cooldowns = state.cooldowns[unit.id];
+        if (!cooldowns) continue;
+        for (const skill of ALL_SKILLS) {
+          if (cooldowns[skill] > 0) cooldowns[skill] = Math.max(0, cooldowns[skill] - dt * 2);
+        }
+      }
+    }
+  }
+}
+
 function updateProjectiles(state: GameState, dt: number): void {
   const alive: Projectile[] = [];
   for (const projectile of state.projectiles) {
@@ -1254,6 +1411,7 @@ export function stepGame(state: GameState, dt: number): void {
   updateMine(state);
 
   for (const building of state.buildings) updateBuilding(state, building, clamped);
+  updateFountains(state, clamped);
   updateProjectiles(state, clamped);
   separateUnits(state);
   upgradeAnimals(state);
@@ -1607,9 +1765,12 @@ export function applyCommand(state: GameState, command: Command): boolean {
     case "move": {
       const unit = playerUnit(state);
       if (!unit || unit.dead) return false;
+      clearChop(unit);
       setUnitDestination(state, unit, command.x, command.y);
       return true;
     }
+    case "chop":
+      return orderChopFor(state, command.tx, command.ty);
     case "build":
       return tryBuildFor(state, side, owner, command.kind, command.tx, command.ty);
     case "sell":
