@@ -150,7 +150,8 @@ type UiSettings = {
 const DEFAULT_UI: UiSettings = {
   joystickSide: "right",
   scale: "normal",
-  zoom: 0.75,
+  // 角色按新比例缩小后镜头略微拉远，一屏能看到更多场景
+  zoom: 0.68,
   autoCastAll: false,
   autoSkills: {},
 };
@@ -163,6 +164,8 @@ function loadUi(): UiSettings {
       return {
         ...DEFAULT_UI,
         ...parsed,
+        // 旧默认 0.75 是配旧体型用的，体型缩小后统一迁到新的默认视野
+        zoom: parsed.zoom === 0.75 ? DEFAULT_UI.zoom : parsed.zoom ?? DEFAULT_UI.zoom,
         autoSkills: { ...(parsed.autoSkills ?? {}) },
       };
     }
@@ -3027,9 +3030,9 @@ export function WorldGame() {
                   <div className="mt-1 grid grid-cols-3 gap-1">
                     {(
                       [
-                        { key: 0.9, label: "近" },
-                        { key: 0.75, label: "标准" },
-                        { key: 0.62, label: "远" },
+                        { key: 0.82, label: "近" },
+                        { key: 0.68, label: "标准" },
+                        { key: 0.6, label: "远" },
                       ]
                     ).map((entry) => (
                       <button

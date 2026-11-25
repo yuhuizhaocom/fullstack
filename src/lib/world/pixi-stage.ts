@@ -44,9 +44,15 @@ import {
 
 const ISO_HALF_W = 32;
 const ISO_HALF_H = 16;
-const SPRITE_SCALE = 2;
-/** NPC 贴图只有英雄的 1/3 高，放大后和玩家、怪物站在一起才不显得像小孩 */
-const NPC_SCALE = 1.85;
+/**
+ * 角色贴图的放大倍数。贴图本体约 16×25 像素，1.06 倍后身高 ≈53px，
+ * 正好略高于一格瓦片（32px）而与树、房屋形成正常的人/景比例。
+ */
+const SPRITE_SCALE = 1.06;
+/** 相对旧版 2 倍的体型系数，名牌/光环等以 root 像素计的布局都按它换算 */
+const HERO_H = SPRITE_SCALE / 2;
+/** NPC 贴图比英雄矮，1.15 倍后约 35px，站在玩家旁边刚好矮一头 */
+const NPC_SCALE = 1.15;
 /** 职业代表色：脚下光环、面板标签统一使用 */
 const CLASS_AURA: Record<string, string> = {
   warrior: "#fbbf24",
@@ -223,6 +229,7 @@ class HeroView {
   constructor() {
     this.root.sortableChildren = false;
     this.shadow.anchor.set(0.5, 0.5);
+    this.shadow.scale.set(HERO_H);
     this.body.scale.set(SPRITE_SCALE);
     this.legBack.anchor.set(0.5, 0);
     this.legFront.anchor.set(0.5, 0);
@@ -234,7 +241,8 @@ class HeroView {
     this.weaponGlow.anchor.set(0.5, 0.5);
     this.weaponGlow.blendMode = "add";
     this.weaponGlow.alpha = 0.55;
-    this.hpBar.position.set(0, -137);
+    // 血条位置每帧按镜头缩放补偿（见 update），这里只放一个初始值
+    this.hpBar.position.set(0, -142 * HERO_H + 5);
 
     // 贴图经过 PixelBuffer 2x 放大，坐标同样按放大后的像素计算
     this.legBack.position.set(-4.5, -20);
@@ -271,7 +279,7 @@ class HeroView {
     this.buffFx.blendMode = "add";
     this.body.addChild(this.slashFx, this.shotFx, this.castFx);
     this.nameText.anchor.set(0.5, 1);
-    this.nameText.position.set(0, -142);
+    this.nameText.position.set(0, -142 * HERO_H);
     this.classAura.visible = false;
     this.root.addChild(
       this.shadow,
@@ -357,14 +365,30 @@ class HeroView {
       this.classAura.visible = true;
       this.classAura.clear();
       this.classAura
-        .poly(ringPoints(0, 0, 22 + pulse * 2.5, 11 + pulse * 1.2, 2.8))
+        .poly(
+          ringPoints(
+            0,
+            0,
+            (22 + pulse * 2.5) * HERO_H,
+            (11 + pulse * 1.2) * HERO_H,
+            2.8 * HERO_H
+          )
+        )
         .fill({ color: auraTone, alpha: 0.42 + pulse * 0.22 });
       this.classAura
-        .ellipse(0, 0, 20, 10)
+        .ellipse(0, 0, 20 * HERO_H, 10 * HERO_H)
         .fill({ color: auraTone, alpha: 0.1 + pulse * 0.06 });
       if (lowHp) {
         this.classAura
-          .poly(ringPoints(0, 0, 27 + pulse * 3, 13.5 + pulse * 1.5, 1.6))
+          .poly(
+            ringPoints(
+              0,
+              0,
+              (27 + pulse * 3) * HERO_H,
+              (13.5 + pulse * 1.5) * HERO_H,
+              1.6 * HERO_H
+            )
+          )
           .fill({ color: 0xfca5a5, alpha: 0.3 + pulse * 0.35 });
       }
     } else {
@@ -378,17 +402,30 @@ class HeroView {
         // 守护：青蓝护盾泡包裹全身，外圈呼吸 + 顶部高光弧
         const pulse = 0.5 + Math.sin(t / 260) * 0.5;
         this.buffFx
-          .ellipse(0, -40, 22, 37)
+          .ellipse(0, -40 * HERO_H, 22 * HERO_H, 37 * HERO_H)
           .fill({ color: 0x38bdf8, alpha: 0.1 + pulse * 0.07 });
         this.buffFx
-          .poly(ringPoints(0, -40, 23, 38, 3.2, 0, Math.PI * 2, 36))
+          .poly(
+            ringPoints(0, -40 * HERO_H, 23 * HERO_H, 38 * HERO_H, 3.2 * HERO_H, 0, Math.PI * 2, 36)
+          )
           .fill({ color: 0x7dd3fc, alpha: 0.4 + pulse * 0.22 });
         this.buffFx
-          .poly(ringPoints(0, -40, 23, 38, 3.2, -Math.PI * 0.82, -Math.PI * 0.18, 14))
+          .poly(
+            ringPoints(
+              0,
+              -40 * HERO_H,
+              23 * HERO_H,
+              38 * HERO_H,
+              3.2 * HERO_H,
+              -Math.PI * 0.82,
+              -Math.PI * 0.18,
+              14
+            )
+          )
           .fill({ color: 0xe0f2fe, alpha: 0.45 + pulse * 0.3 });
         // 脚下扩散的能量涟漪
         this.buffFx
-          .poly(ringPoints(0, 0, 24, 12, 1.6))
+          .poly(ringPoints(0, 0, 24 * HERO_H, 12 * HERO_H, 1.6 * HERO_H))
           .fill({ color: 0x60a5fa, alpha: 0.24 + pulse * 0.16 });
       }
       if (opts.buff) {
@@ -396,16 +433,16 @@ class HeroView {
         const base = t / 900;
         for (let i = 0; i < 3; i += 1) {
           const a = base + (i * Math.PI * 2) / 3;
-          const px = Math.cos(a) * 24;
-          const py = -34 + Math.sin(a) * 7;
-          const s = 3.6 + Math.sin(a) * 0.9;
+          const px = Math.cos(a) * 24 * HERO_H;
+          const py = (-34 + Math.sin(a) * 7) * HERO_H;
+          const s = (3.6 + Math.sin(a) * 0.9) * HERO_H;
           const alpha = 0.62 + Math.sin(a + t / 300) * 0.24;
           this.buffFx
             .poly([px, py - s, px + s * 0.7, py, px, py + s, px - s * 0.7, py])
             .fill({ color: 0xfde68a, alpha: Math.min(0.95, Math.max(0.3, alpha)) });
         }
         this.buffFx
-          .poly(ringPoints(0, 0, 17, 8.5, 1.8))
+          .poly(ringPoints(0, 0, 17 * HERO_H, 8.5 * HERO_H, 1.8 * HERO_H))
           .fill({ color: 0xfbbf24, alpha: 0.38 + Math.sin(t / 320) * 0.14 });
       }
     }
@@ -435,9 +472,9 @@ class HeroView {
     const facing = opts.dir >= 0 ? 1 : -1;
     let bodyX = 0;
     let bodyY = 0;
-    if (this.weaponKind === "sword") bodyX = facing * atkP * 3.5;
-    else if (this.weaponKind === "bow") bodyX = -facing * atkP * 2.2;
-    else bodyY = -atkP * 2;
+    if (this.weaponKind === "sword") bodyX = facing * atkP * 3.5 * HERO_H * 2;
+    else if (this.weaponKind === "bow") bodyX = -facing * atkP * 2.2 * HERO_H * 2;
+    else bodyY = -atkP * 2 * HERO_H * 2;
     this.body.position.set(bodyX, bodyY);
     if (swing >= 0) {
       if (this.weaponKind === "bow") {
@@ -524,7 +561,7 @@ class HeroView {
       this.namePlate.clear();
       if (opts.name) {
         this.namePlate
-          .roundRect(-w / 2, -156, w, 15, 5)
+          .roundRect(-w / 2, -14, w, 15, 5)
           .fill({ color: 0x050b16, alpha: 1 });
       }
       this.namePlate.visible = !!opts.name;
@@ -545,6 +582,9 @@ class HeroView {
     this.nameText.scale.set(inv);
     this.namePlate.scale.set(inv);
     this.hpBar.scale.set(inv);
+    // 名牌底板与血条都以“名字位置”为锚点，避免不同镜头缩放时互相错位
+    this.namePlate.position.y = -142 * HERO_H;
+    this.hpBar.position.set(0, -142 * HERO_H + 5);
 
     // 血条带一段缓慢回落的黄色残影，掉血更有反馈
     const hpRatio = Math.max(0, Math.min(1, opts.hp / Math.max(1, opts.maxHp)));
@@ -808,7 +848,7 @@ class MonsterView {
     const impactAge = opts.time - this.impactAt;
     if (impactAge >= 0 && impactAge < 220) {
       const t = impactAge / 220;
-      const r = (12 + t * 18) * this.scale;
+      const r = (12 + t * 18) * this.scale * HERO_H;
       // BOSS/精英的受击环带各自主题色，普通怪保持纯白，混战时也能分清打到了谁
       const tone = opts.boss ? 0xf0abfc : opts.elite ? 0xfde68a : 0xffffff;
       this.impact
@@ -836,37 +876,37 @@ class MonsterView {
     this.aura.clear();
     if (opts.boss) {
       this.shadow.visible = true;
-      this.shadow.scale.set(this.scale * 1.05);
+      this.shadow.scale.set(this.scale * 1.05 * HERO_H);
       const pulse = 0.5 + Math.sin(opts.time / 300) * 0.22;
       this.aura
-        .poly(ringPoints(0, 0, 26 * this.scale, 13 * this.scale, 2.4))
+        .poly(ringPoints(0, 0, 26 * this.scale * HERO_H, 13 * this.scale * HERO_H, 2.4 * HERO_H))
         .fill({ color: 0xe879f9, alpha: 0.25 + pulse * 0.4 });
       this.aura
-        .ellipse(0, 0, 22 * this.scale, 11 * this.scale)
+        .ellipse(0, 0, 22 * this.scale * HERO_H, 11 * this.scale * HERO_H)
         .fill({ color: 0xe879f9, alpha: 0.05 + pulse * 0.05 });
       this.glow.visible = true;
-      this.glow.y = -34 * this.scale;
-      this.glow.scale.set(1.5 * this.scale);
+      this.glow.y = -34 * this.scale * HERO_H;
+      this.glow.scale.set(1.5 * this.scale * HERO_H);
       this.glow.alpha = 0.18 + pulse * 0.12;
     } else if (opts.elite) {
       this.shadow.visible = true;
-      this.shadow.scale.set(this.scale);
+      this.shadow.scale.set(this.scale * HERO_H);
       const pulse = 0.5 + Math.sin(opts.time / 260 + opts.x) * 0.3;
       this.aura
         .poly(
           ringPoints(
             0,
             0,
-            (20 + pulse * 5) * this.scale,
-            (10 + pulse * 2.5) * this.scale,
-            2
+            (20 + pulse * 5) * this.scale * HERO_H,
+            (10 + pulse * 2.5) * this.scale * HERO_H,
+            2 * HERO_H
           )
         )
         .fill({ color: 0xfacc15, alpha: 0.25 + pulse * 0.35 });
       this.glow.visible = false;
     } else {
       this.shadow.visible = true;
-      this.shadow.scale.set(this.scale);
+      this.shadow.scale.set(this.scale * HERO_H);
       this.glow.visible = false;
     }
 
@@ -875,14 +915,15 @@ class MonsterView {
       // 减速：脚下淡蓝寒气环 + 三块浮冰，配合偏蓝的贴图一眼能看出被控
       const flick = 0.5 + Math.sin(opts.time / 150 + opts.x) * 0.5;
       this.chill
-        .poly(ringPoints(0, 0, 20 * this.scale, 10 * this.scale, 2))
+        .poly(ringPoints(0, 0, 20 * this.scale * HERO_H, 10 * this.scale * HERO_H, 2 * HERO_H))
         .fill({ color: 0x7dd3fc, alpha: 0.3 + flick * 0.3 });
       for (let i = 0; i < 3; i += 1) {
         const a = opts.time / 520 + (i * Math.PI * 2) / 3;
-        const px = Math.cos(a) * 14 * this.scale;
-        const py = Math.sin(a) * 7 * this.scale - 3;
+        const px = Math.cos(a) * 14 * this.scale * HERO_H;
+        const py = Math.sin(a) * 7 * this.scale * HERO_H - 3 * HERO_H;
+        const s = 4 * HERO_H;
         this.chill
-          .poly([px, py - 4, px + 3, py, px, py + 4, px - 3, py])
+          .poly([px, py - s, px + s * 0.75, py, px, py + s, px - s * 0.75, py])
           .fill({ color: 0xbae6fd, alpha: 0.5 + flick * 0.3 });
       }
     }
@@ -890,11 +931,14 @@ class MonsterView {
     this.selection.clear();
     if (opts.selected) {
       const pulse = 0.55 + Math.sin(opts.time / 180) * 0.25;
-      this.selection.poly(ringPoints(0, 0, 24, 12, 2.4)).fill({ color: 0xfacc15, alpha: pulse });
       this.selection
-        .ellipse(0, 0, 22, 11)
+        .poly(ringPoints(0, 0, 24 * HERO_H, 12 * HERO_H, 2.4 * HERO_H))
+        .fill({ color: 0xfacc15, alpha: pulse });
+      this.selection
+        .ellipse(0, 0, 22 * HERO_H, 11 * HERO_H)
         .fill({ color: 0xfacc15, alpha: pulse * 0.08 });
-      const arrowY = -this.sprite.texture.height * this.scale - 14 + Math.sin(opts.time / 200) * 2;
+      const arrowY =
+        -this.sprite.texture.height * SPRITE_SCALE * this.scale - 14 + Math.sin(opts.time / 200) * 2;
       this.selection
         .poly([0, arrowY + 8, -5, arrowY, 5, arrowY])
         .fill({ color: 0xfde68a, alpha: pulse });
@@ -909,7 +953,7 @@ class MonsterView {
       this.namePlate.roundRect(-w / 2, -13.5, w, 14, 4).fill({ color: 0x0a0507, alpha: 0.55 });
     }
     this.nameText.style.fill = opts.boss ? "#f0abfc" : opts.elite ? "#fde68a" : "#fca5a5";
-    const top = -this.sprite.texture.height * this.scale - 6;
+    const top = -this.sprite.texture.height * SPRITE_SCALE * this.scale - 6;
     this.nameText.y = top;
     this.nameText.visible = opts.showHealth;
     this.hpBar.visible = opts.showHealth;
@@ -1450,10 +1494,10 @@ class PixiWorldStage implements WorldStage {
     this.pendingLabels.push({
       text: me.nameText,
       root: me.root,
-      baseY: -142,
+      baseY: -142 * HERO_H,
       priority: 0,
       plate: me.namePlate,
-      plateBaseY: 0,
+      plateBaseY: -142 * HERO_H,
     });
 
     for (const player of input.snapshot?.players ?? []) {
@@ -1491,10 +1535,10 @@ class PixiWorldStage implements WorldStage {
         this.pendingLabels.push({
           text: view.nameText,
           root: view.root,
-          baseY: -142,
+          baseY: -142 * HERO_H,
           priority: 2,
           plate: view.namePlate,
-          plateBaseY: 0,
+          plateBaseY: -142 * HERO_H,
         });
       }
       seen.add(player.id);
@@ -1662,7 +1706,7 @@ class PixiWorldStage implements WorldStage {
       sprite.zIndex = prop.x + prop.y;
       // 按坐标生成固定的大小差异，同一棵树每帧不变，整片树林不至于像复制粘贴
       const seed = Math.abs(Math.sin(prop.x * 0.37 + prop.y * 0.73));
-      const scale = prop.kind === "tree" ? 0.88 + seed * 0.26 : 0.86 + seed * 0.2;
+      const scale = prop.kind === "tree" ? 2.0 + seed * 0.5 : 1.55 + seed * 0.4;
       sprite.scale.set(scale);
       // 树木绕根部极轻微摇摆，静止画面也有风感
       sprite.rotation =
@@ -1671,14 +1715,14 @@ class PixiWorldStage implements WorldStage {
       const depth = prop.x + prop.y;
       const overMe =
         depth > meDepth + 2 &&
-        Math.abs(screen.x - meScreen.x) < 46 &&
-        meScreen.y - screen.y > -72 &&
+        Math.abs(screen.x - meScreen.x) < 58 &&
+        meScreen.y - screen.y > -112 &&
         meScreen.y - screen.y < 16;
       const overLock =
         !!lockScreen &&
         depth > lockDepth + 2 &&
-        Math.abs(screen.x - lockScreen.x) < 46 &&
-        lockScreen.y - screen.y > -72 &&
+        Math.abs(screen.x - lockScreen.x) < 58 &&
+        lockScreen.y - screen.y > -112 &&
         lockScreen.y - screen.y < 16;
       const wantAlpha = overMe || overLock ? 0.4 : 1;
       sprite.alpha += (wantAlpha - sprite.alpha) * 0.22;
@@ -1689,7 +1733,7 @@ class PixiWorldStage implements WorldStage {
         const shadow = this.propShadow(index);
         shadow.position.set(screen.x, screen.y + 1);
         shadow.zIndex = depth - 0.5;
-        shadow.scale.set(scale * 1.5);
+        shadow.scale.set(scale * 0.9);
         shadow.alpha = 0.55 * sprite.alpha;
         shadow.visible = true;
       } else {
@@ -1841,15 +1885,15 @@ class PixiWorldStage implements WorldStage {
         this.pendingLabels.push({
           text: view.name,
           root: view.root,
-          baseY: -62,
+          baseY: -46,
           priority: 3,
           marker: view.marker,
-          markerBaseY: -80,
+          markerBaseY: -60,
         });
       }
       view.marker.visible = questing;
       if (view.marker.visible) {
-        view.marker.y = -80 + Math.sin(input.time / 240) * 3;
+        view.marker.y = -60 + Math.sin(input.time / 240) * 3;
       }
       seen.add(npc.id);
     }
@@ -1864,14 +1908,14 @@ class PixiWorldStage implements WorldStage {
       const root = new Container();
       const shadow = new Sprite(art.shadowTexture());
       shadow.anchor.set(0.5, 0.5);
-      shadow.scale.set(1.1);
+      shadow.scale.set(0.7);
       shadow.alpha = 0.8;
       const sprite = new Sprite(art.npcTexture(color));
       sprite.anchor.set(0.5, 1);
       sprite.scale.set(NPC_SCALE);
       const name = new Text({ text: "", style: textStyle(10, "#fde68a"), resolution: 2 });
       name.anchor.set(0.5, 1);
-      name.y = -62;
+      name.y = -46;
       const marker = new Text({ text: "!", style: textStyle(12, "#facc15"), resolution: 2 });
       marker.anchor.set(0.5, 1);
       marker.x = 14;
