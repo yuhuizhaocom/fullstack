@@ -348,6 +348,7 @@ function hunterAI(state: GameState, owner: number): void {
     (swarm >= 3 && hpRatio < 0.8)
   ) {
     const camp = state.map.hunterCamp;
+    hero.targetId = null;
     setUnitDestination(state, hero, camp.x, camp.y);
     return;
   }

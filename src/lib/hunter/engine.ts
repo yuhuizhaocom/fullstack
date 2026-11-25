@@ -963,7 +963,10 @@ function updateUnit(state: GameState, unit: Unit, dt: number): void {
           return;
         }
         if (!isPlayer && unit.repathAt < state.time) {
-          setUnitDestination(state, unit, tx, ty);
+          // 自动索敌不得覆盖 AI 给出的远距离指令（如撤退），否则会被拖回塔下
+          const standingOrder =
+            unit.dest !== null && Math.hypot(unit.dest.x - tx, unit.dest.y - ty) > TILE * 3;
+          if (!standingOrder) setUnitDestination(state, unit, tx, ty);
         }
       } else {
         unit.targetId = null;
