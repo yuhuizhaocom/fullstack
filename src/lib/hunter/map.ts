@@ -291,7 +291,7 @@ function blob(
   }
 }
 
-/** 生成一张对称性较弱、适合 Hide & Seek 的森林地图 */
+/** 生成一张适合 7 农民 vs 3 猎人的森林地图 */
 export function createMap(seed: number): GameMap {
   const rand = mulberry32(seed);
   const map: GameMap = {
@@ -300,10 +300,11 @@ export function createMap(seed: number): GameMap {
     seed,
     terrain: new Uint8Array(MAP_W * MAP_H),
     trees: new Uint8Array(MAP_W * MAP_H),
-    farmerCamp: tileCenter(12, MAP_H - 12),
-    hunterCamp: tileCenter(MAP_W - 12, 12),
+    farmerStarts: [],
+    hunterCamp: tileCenter(48, 48),
     groves: [],
     patrol: [],
+    merchantSpots: [],
   };
 
   // 基础草地，随机花草
@@ -324,46 +325,70 @@ export function createMap(seed: number): GameMap {
   blob(map, rand, 48, 16, 4, "rock", 0.5, "grass");
   blob(map, rand, 50, 84, 4, "rock", 0.45, "grass");
 
-  // 四片主要密林（内部以灌木为主，夹杂树木，形成可藏匿空间）
+  // 密林（内部以灌木为主，夹杂树木，形成可藏匿空间）
   const forests: [number, number, number][] = [
-    [30, 74, 12],
-    [64, 78, 11],
-    [26, 36, 10],
-    [70, 42, 13],
-    [48, 50, 9],
-    [40, 62, 7],
+    [30, 74, 10],
+    [64, 78, 9],
+    [26, 36, 9],
+    [70, 42, 10],
+    [48, 34, 7],
+    [44, 62, 7],
+    [58, 24, 6],
+    [36, 52, 6],
   ];
   for (const [cx, cy, r] of forests) {
     blob(map, rand, cx, cy, r, "tree", 0.34, "bush");
   }
 
-  // 候选藏匿空地：密林中央的小片草地
-  const groveTiles: [number, number][] = [
+  // 7 个农民起家点：按钟表方位分布，5 点与 7 点是最推荐的两个角落
+  const startTiles: [number, number][] = [
+    [82, 80],
+    [14, 80],
+    [80, 16],
+    [16, 16],
+    [86, 50],
+    [10, 46],
+    [48, 86],
+  ];
+  for (const [sx, sy] of startTiles) {
+    for (let ty = sy - 7; ty <= sy + 7; ty += 1) {
+      for (let tx = sx - 7; tx <= sx + 7; tx += 1) {
+        if (Math.hypot(tx - sx, ty - sy) <= 7.2) {
+          drawTerrain(map, tx, ty, hash2(tx, ty, seed + 7) < 0.12 ? "flower" : "grass");
+        }
+      }
+    }
+    const point = tileCenter(sx, sy);
+    map.farmerStarts.push(point);
+    map.groves.push(point);
+  }
+
+  // 中央猎人营地：清出一块空地放兵营
+  const campTile = pixelToTile(map.hunterCamp.x, map.hunterCamp.y);
+  for (let ty = campTile.ty - 9; ty <= campTile.ty + 9; ty += 1) {
+    for (let tx = campTile.tx - 9; tx <= campTile.tx + 9; tx += 1) {
+      if (Math.hypot(tx - campTile.tx, ty - campTile.ty) <= 9.2) {
+        drawTerrain(map, tx, ty, hash2(tx, ty, seed + 13) < 0.1 ? "flower" : "grass");
+      }
+    }
+  }
+
+  // 额外藏匿点（树林深处）
+  const hideTiles: [number, number][] = [
     [30, 74],
     [64, 78],
     [26, 36],
     [70, 42],
+    [48, 34],
+    [44, 62],
   ];
-  for (const [gx, gy] of groveTiles) {
+  for (const [gx, gy] of hideTiles) {
     for (let ty = gy - 3; ty <= gy + 3; ty += 1) {
       for (let tx = gx - 3; tx <= gx + 3; tx += 1) {
         if (Math.hypot(tx - gx, ty - gy) <= 3.2) drawTerrain(map, tx, ty, "grass");
       }
     }
     map.groves.push(tileCenter(gx, gy));
-  }
-
-  // 营地清空
-  const camps: Vec[] = [map.farmerCamp, map.hunterCamp];
-  for (const camp of camps) {
-    const c = pixelToTile(camp.x, camp.y);
-    for (let ty = c.ty - 6; ty <= c.ty + 6; ty += 1) {
-      for (let tx = c.tx - 6; tx <= c.tx + 6; tx += 1) {
-        if (Math.hypot(tx - c.tx, ty - c.ty) <= 6.4) {
-          drawTerrain(map, tx, ty, hash2(tx, ty, seed + 9) < 0.15 ? "flower" : "grass");
-        }
-      }
-    }
   }
 
   // 边界树墙
@@ -375,17 +400,29 @@ export function createMap(seed: number): GameMap {
     }
   }
 
-  // 巡逻锚点：连接两座营地的主要路口
+  // 巡逻锚点：围绕中央营地与各起家点的路线
   map.patrol = [
-    tileCenter(20, 76),
-    tileCenter(34, 58),
-    tileCenter(50, 48),
-    tileCenter(66, 34),
-    tileCenter(78, 22),
-    tileCenter(46, 70),
-    // 营地外围的两个锚点，保证猎人会主动压到农民家门口，而不是只在空旷处打转
-    tileCenter(16, 78),
-    tileCenter(82, 16),
+    tileCenter(48, 34),
+    tileCenter(64, 38),
+    tileCenter(70, 58),
+    tileCenter(58, 70),
+    tileCenter(38, 66),
+    tileCenter(28, 50),
+    tileCenter(20, 70),
+    tileCenter(78, 24),
+  ];
+
+  // 移动商人刷新点（中央兵营周围与主要路口）
+  map.merchantSpots = [
+    tileCenter(48, 58),
+    tileCenter(40, 42),
+    tileCenter(58, 44),
+    tileCenter(60, 60),
+    tileCenter(36, 58),
+    tileCenter(84, 82),
+    tileCenter(12, 82),
+    tileCenter(82, 14),
+    tileCenter(14, 14),
   ];
 
   return map;

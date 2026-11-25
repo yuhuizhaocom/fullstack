@@ -3,20 +3,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { updateAI } from "@/lib/hunter/ai";
-import { BUILDINGS, ITEMS, PHASE_LABEL, TILE, UNITS, UPGRADES, phaseAllows } from "@/lib/hunter/config";
+import { BUILDINGS, ITEMS, PHASE_LABEL, TILE, UNITS, buildingCost } from "@/lib/hunter/config";
 import {
+  animalTotal,
   applyCommand,
-  buyItem,
-  buyUpgrade,
   canPlace,
   createGame,
   deserializeGame,
+  golemForOwner,
+  hunterLives,
   isUnitVisibleTo,
+  merchantNear,
+  playerGold,
   playerHero,
-  popCap,
+  playerHunterSlot,
+  playerUnit,
   serializeGame,
   stepGame,
-  useItem,
 } from "@/lib/hunter/engine";
 import { tileCenter } from "@/lib/hunter/map";
 import { createHunterStage, type HunterStage } from "@/lib/hunter/stage";
@@ -24,17 +27,16 @@ import { DEFAULT_SETTINGS } from "@/lib/hunter/types";
 import type {
   BuildingKind,
   Difficulty,
-  DurationMin,
   GameResult,
   GameState,
   HunterSettings,
   ItemKind,
+  Mode,
+  ResearchKind,
   Side,
   SideStats,
   SkillId,
-  Stance,
   UnitKind,
-  UpgradeKind,
 } from "@/lib/hunter/types";
 import { initAudio, playSfx, startBgm, stopBgm } from "@/lib/world/audio";
 
@@ -44,10 +46,10 @@ import {
   HirePanel,
   MenuScreen,
   PauseMenu,
+  ResearchPanel,
   ResultPanel,
   SettingsPanel,
   ShopPanel,
-  StancePanel,
   type HireOption,
   type SaveMeta,
 } from "./hunter-panels";
@@ -61,8 +63,7 @@ type Ghost = { kind: BuildingKind; tx: number; ty: number };
 
 const EMPTY_STATS: SideStats = { kills: 0, goldEarned: 0, goldSpent: 0, built: 0, hired: 0, lost: 0 };
 
-const FARMER_HIRES: UnitKind[] = ["lumberjack", "militia", "archer", "golem"];
-const HUNTER_HIRES: UnitKind[] = ["shadowScout", "trollSlinger", "frostShaman"];
+const NO_CD: Record<SkillId, number> = { eye: 0, golemQ: 0, golemE: 0, golemW: 0 };
 
 function loadSettings(): HunterSettings {
   try {
@@ -78,52 +79,95 @@ function loadMeta(): SaveMeta | null {
   try {
     const raw = localStorage.getItem(SAVE_META_KEY);
     if (!raw || !localStorage.getItem(SAVE_KEY)) return null;
-    return JSON.parse(raw) as SaveMeta;
+    const meta = JSON.parse(raw) as Partial<SaveMeta>;
+    if (!meta || (meta.side !== "farmer" && meta.side !== "hunter")) return null;
+    if (meta.mode !== "normal" && meta.mode !== "fast" && meta.mode !== "expert") return null;
+    if (meta.difficulty !== "easy" && meta.difficulty !== "normal" && meta.difficulty !== "hard") return null;
+    return {
+      side: meta.side,
+      mode: meta.mode,
+      difficulty: meta.difficulty,
+      elapsed: typeof meta.elapsed === "number" ? meta.elapsed : 0,
+    };
   } catch {
     return null;
   }
 }
 
 function hireOptions(state: GameState): HireOption[] {
-  const side = state.side;
-  const list = side === "farmer" ? FARMER_HIRES : HUNTER_HIRES;
-  const hasTavern =
-    side !== "farmer" ||
-    state.buildings.some((b) => b.side === "farmer" && b.kind === "tavern" && b.hp > 0);
-  return list.map((kind) => {
-    const spec = UNITS[kind];
+  if (state.side === "farmer") {
+    const spec = UNITS.golem;
+    const factory = state.buildings.some(
+      (b) => b.side === "farmer" && b.kind === "golemFactory" && b.hp > 0
+    );
+    const own = golemForOwner(state, state.playerOwner);
     let reason = "";
-    if (!phaseAllows(spec.unlock, state.phase)) reason = "本阶段尚未解锁";
-    else if (state.gold[side] < spec.costGold || state.wood[side] < spec.costWood) reason = "金币 / 木材不足";
-    else if (spec.pop > 0 && state.popUsed[side] + spec.pop > popCap(state, side)) reason = "人口已满";
-    else if (!hasTavern && (kind === "militia" || kind === "archer" || kind === "golem")) reason = "需要先建酒馆";
-    return { kind, ok: !reason, reason: reason || spec.desc };
-  });
+    if (!factory) reason = "需要全队先建傀儡工厂（2000 金）";
+    else if (own) reason = "你已经有主傀儡了";
+    else if (playerGold(state) < spec.costGold) reason = "金币不足 1800";
+    return [{ kind: "golem", ok: !reason, reason: reason || spec.desc }];
+  }
+  const spec = UNITS.mercenary;
+  const slot = playerHunterSlot(state);
+  const owned = state.units.filter(
+    (u) => u.side === "hunter" && u.owner === state.playerOwner && u.kind === "mercenary" && !u.dead
+  ).length;
+  let reason = "";
+  if ((slot?.kills ?? 0) < 1) reason = "先击杀一名农民，再回中间兵营";
+  else if (owned >= 6) reason = "雇佣兵已达上限 6";
+  else if (playerGold(state) < spec.costGold) reason = "金币不足 40";
+  return [{ kind: "mercenary", ok: !reason, reason: reason || spec.desc }];
 }
 
 function hudFrom(state: GameState, speed: number): HudSnapshot {
+  const unit = playerUnit(state);
   const side = state.side;
+  const golem = golemForOwner(state, state.playerOwner);
   const hero = playerHero(state);
-  const army = state.units.find((u) => u.side === side && !u.isHero && !u.dead && u.speed > 0);
+  const hunterSlot = playerHunterSlot(state);
+  const skills: SkillId[] = [];
+  if (unit && !unit.dead) {
+    if (unit.kind === "hunterHero") skills.push("eye");
+    else if (unit.kind === "golem") skills.push("golemQ", "golemE", "golemW");
+  }
   return {
+    side,
+    mode: state.mode,
     time: state.time,
     remaining: Math.max(0, state.durationMin * 60 - state.time),
     phase: state.phase,
-    gold: Math.floor(state.gold[side]),
-    wood: Math.floor(state.wood[side]),
-    popUsed: state.popUsed[side],
-    popCap: popCap(state, side),
-    heroHp: hero ? Math.max(0, hero.hp) : 0,
-    heroMaxHp: hero?.maxHp ?? 1,
-    heroDead: !hero || hero.dead,
-    respawnIn: hero && hero.dead ? Math.max(0, hero.respawnAt - state.time) : 0,
+    gold: playerGold(state),
+    animalTotal: animalTotal(state),
+    hunterLives: hunterLives(state),
+    unitName: unit ? UNITS[unit.kind].name : "—",
+    unitKind: unit?.kind ?? (side === "hunter" ? "hunterHero" : "farmerHero"),
+    unitHp: unit ? Math.max(0, unit.hp) : 0,
+    unitMaxHp: unit?.maxHp ?? 1,
+    unitDead: !unit || unit.dead,
+    respawnIn:
+      unit && unit.dead && Number.isFinite(unit.respawnAt)
+        ? Math.max(0, unit.respawnAt - state.time)
+        : 0,
     heroLives: side === "hunter" ? Math.max(0, hero?.livesLeft ?? 0) : 0,
     speed,
-    skillCd: { ...state.skillCd[side] },
-    stance: army?.stance ?? "follow",
-    stock: { ...state.stock[side] },
-    upgrades: { ...state.upgrades[side] },
+    skills,
+    skillCd: unit ? { ...NO_CD, ...(state.cooldowns[unit.id] ?? {}) } : { ...NO_CD },
+    canControlGolem: side === "farmer" && !!golem && !golem.dead,
+    controllingGolem: unit?.kind === "golem",
     hireOptions: hireOptions(state),
+    merchantNear: merchantNear(state),
+    owned: {
+      hammer: hunterSlot?.hammer ?? false,
+      gloves: hunterSlot?.gloves ?? false,
+      poison: hunterSlot?.poison ?? false,
+    },
+    stock: {
+      horns: hunterSlot?.horns ?? 0,
+      mines: hunterSlot?.mines ?? 0,
+      potions: hunterSlot?.potions ?? 0,
+    },
+    research: { ...state.research[side] },
+    hasLab: state.buildings.some((b) => b.side === "farmer" && b.kind === "researchLab" && b.hp > 0),
   };
 }
 
@@ -136,6 +180,15 @@ function paintMinimap(canvas: HTMLCanvasElement, state: GameState): void {
   ctx.clearRect(0, 0, size, size);
   ctx.fillStyle = "rgba(6,18,12,0.92)";
   ctx.fillRect(0, 0, size, size);
+
+  for (const start of state.map.farmerStarts) {
+    ctx.fillStyle = "rgba(163,230,53,0.55)";
+    ctx.fillRect(start.x * sx - 1.5, start.y * sy - 1.5, 3, 3);
+  }
+  ctx.fillStyle = "rgba(248,113,113,0.9)";
+  ctx.fillRect(state.map.hunterCamp.x * sx - 2, state.map.hunterCamp.y * sy - 2, 4, 4);
+  ctx.fillStyle = "rgba(251,191,36,0.95)";
+  ctx.fillRect(state.merchant.x * sx - 2, state.merchant.y * sy - 2, 4, 4);
 
   for (const building of state.buildings) {
     if (building.hp <= 0) continue;
@@ -152,25 +205,21 @@ function paintMinimap(canvas: HTMLCanvasElement, state: GameState): void {
     ctx.fillStyle = unit.side === state.side ? "rgba(187,247,208,0.85)" : "rgba(252,165,165,0.85)";
     ctx.fillRect(unit.x * sx - 1, unit.y * sy - 1, 2, 2);
   }
-  const hero = playerHero(state);
-  if (hero && !hero.dead) {
+  const control = playerUnit(state);
+  if (control && !control.dead) {
     ctx.strokeStyle = "#fde047";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(hero.x * sx, hero.y * sy, 4, 0, Math.PI * 2);
+    ctx.arc(control.x * sx, control.y * sy, 4, 0, Math.PI * 2);
     ctx.stroke();
   }
-  ctx.fillStyle = "rgba(251,191,36,0.9)";
-  ctx.fillRect(state.map.farmerCamp.x * sx - 2, state.map.farmerCamp.y * sy - 2, 4, 4);
-  ctx.fillStyle = "rgba(248,113,113,0.9)";
-  ctx.fillRect(state.map.hunterCamp.x * sx - 2, state.map.hunterCamp.y * sy - 2, 4, 4);
 }
 
 export function HunterGame() {
   const [screen, setScreen] = useState<"menu" | "playing">("menu");
   const [side, setSide] = useState<Side>("farmer");
+  const [mode, setMode] = useState<Mode>("normal");
   const [difficulty, setDifficulty] = useState<Difficulty>("normal");
-  const [durationMin, setDurationMin] = useState<DurationMin>(40);
   const [settings, setSettings] = useState<HunterSettings>(DEFAULT_SETTINGS);
   const [save, setSave] = useState<SaveMeta | null>(null);
   const [snapshot, setSnapshot] = useState<HudSnapshot | null>(null);
@@ -182,7 +231,6 @@ export function HunterGame() {
   const [ghostValid, setGhostValid] = useState(false);
   const [cast, setCast] = useState<SkillId | null>(null);
   const [demolish, setDemolish] = useState(false);
-  const [rallyMode, setRallyMode] = useState(false);
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [result, setResult] = useState<GameResult | null>(null);
@@ -211,7 +259,6 @@ export function HunterGame() {
     ghost: null as Ghost | null,
     cast: null as SkillId | null,
     demolish: false,
-    rally: false,
   });
 
   const showToast = useCallback((text: string) => {
@@ -229,8 +276,8 @@ export function HunterGame() {
       if (raw) {
         const meta = JSON.parse(raw) as SaveMeta;
         setSide(meta.side);
+        setMode(meta.mode);
         setDifficulty(meta.difficulty);
-        setDurationMin(meta.durationMin);
       }
     } catch {
       // 读取失败忽略
@@ -247,8 +294,8 @@ export function HunterGame() {
   }, [settings]);
 
   useEffect(() => {
-    uiRef.current = { paused, speed, placing, ghost, cast, demolish, rally: rallyMode };
-  }, [paused, speed, placing, ghost, cast, demolish, rallyMode]);
+    uiRef.current = { paused, speed, placing, ghost, cast, demolish };
+  }, [paused, speed, placing, ghost, cast, demolish]);
 
   useEffect(() => {
     stageRef.current?.setZoom(settings.zoom);
@@ -271,49 +318,44 @@ export function HunterGame() {
     return () => window.removeEventListener("resize", check);
   }, [screen]);
 
-  const begin = useCallback(
-    (game: GameState) => {
-      gameRef.current = game;
-      resultShown.current = false;
-      lastEvent.current = 0;
-      lastPhase.current = game.phase;
-      lastTime.current = 0;
-      acc.current = 0;
-      hudAcc.current = 0;
-      saveAcc.current = 0;
-      ghostValidRef.current = false;
-      joystickRef.current = { x: 0, y: 0 };
-      setSide(game.side);
-      setDifficulty(game.difficulty);
-      setDurationMin(game.durationMin);
-      setResult(null);
-      setPaused(false);
-      setSpeed(1);
-      setPanel(null);
-      setPlacing(null);
-      setGhost(null);
-      setCast(null);
-      setDemolish(false);
-      setRallyMode(false);
-      setSnapshot(hudFrom(game, 1));
-      setScreen("playing");
-    },
-    []
-  );
+  const begin = useCallback((game: GameState) => {
+    gameRef.current = game;
+    resultShown.current = false;
+    lastEvent.current = 0;
+    lastPhase.current = game.phase;
+    lastTime.current = 0;
+    acc.current = 0;
+    hudAcc.current = 0;
+    saveAcc.current = 0;
+    ghostValidRef.current = false;
+    joystickRef.current = { x: 0, y: 0 };
+    setSide(game.side);
+    setMode(game.mode);
+    setDifficulty(game.difficulty);
+    setResult(null);
+    setPaused(false);
+    setSpeed(1);
+    setPanel(null);
+    setPlacing(null);
+    setGhost(null);
+    setCast(null);
+    setDemolish(false);
+    setSnapshot(hudFrom(game, 1));
+    setScreen("playing");
+  }, []);
 
   const startGame = useCallback(
-    (opts?: { side?: Side; difficulty?: Difficulty; durationMin?: DurationMin }) => {
+    (opts?: { side?: Side; mode?: Mode; difficulty?: Difficulty }) => {
       initAudio();
-      const nextSide = opts?.side ?? side;
       const game = createGame({
-        side: nextSide,
+        side: opts?.side ?? side,
+        mode: opts?.mode ?? mode,
         difficulty: opts?.difficulty ?? difficulty,
-        durationMin: opts?.durationMin ?? durationMin,
         seed: Math.floor(Math.random() * 1_000_000),
       });
       begin(game);
     },
-    [begin, side, difficulty, durationMin]
+    [begin, side, mode, difficulty]
   );
 
   const continueGame = useCallback(() => {
@@ -336,8 +378,8 @@ export function HunterGame() {
         localStorage.setItem(SAVE_KEY, serializeGame(state));
         const meta: SaveMeta = {
           side: state.side,
+          mode: state.mode,
           difficulty: state.difficulty,
-          durationMin: state.durationMin,
           elapsed: state.time,
         };
         localStorage.setItem(SAVE_META_KEY, JSON.stringify(meta));
@@ -356,7 +398,6 @@ export function HunterGame() {
     setPlacing(null);
     setCast(null);
     setDemolish(false);
-    setRallyMode(false);
     stopBgm();
   }, []);
 
@@ -387,14 +428,14 @@ export function HunterGame() {
         const vec = joystickRef.current;
         if (Math.hypot(vec.x, vec.y) > 0.15) {
           moveTimer.current += realDt;
-          const hero = playerHero(state);
-          if (hero && !hero.dead && moveTimer.current >= 0.18) {
+          const unit = playerUnit(state);
+          if (unit && !unit.dead && moveTimer.current >= 0.18) {
             moveTimer.current = 0;
             // 屏幕方向转世界方向（等距投影）
             const wx = vec.y + vec.x / 2;
             const wy = vec.y - vec.x / 2;
             const len = Math.hypot(wx, wy) || 1;
-            applyCommand(state, { t: "move", x: hero.x + (wx / len) * 210, y: hero.y + (wy / len) * 210 });
+            applyCommand(state, { t: "move", x: unit.x + (wx / len) * 210, y: unit.y + (wy / len) * 210 });
           }
         } else {
           moveTimer.current = 0;
@@ -414,6 +455,13 @@ export function HunterGame() {
           if (event.id <= lastEvent.current) continue;
           lastEvent.current = event.id;
           if (!event.text) continue;
+          // 只播报战况，建造/购物/技能由玩家操作时单独提示，避免刷屏
+          const relevant =
+            event.kind === "death" ||
+            event.kind === "kill" ||
+            event.kind === "phase" ||
+            event.kind === "win";
+          if (!relevant) continue;
           showToast(event.text);
           if (settingsRef.current.sound) {
             if (event.kind === "death") playSfx("death");
@@ -451,11 +499,9 @@ export function HunterGame() {
       const g = ui.ghost;
       let valid = false;
       if (g) {
-        const spec = BUILDINGS[g.kind];
         valid =
           canPlace(state, state.side, g.kind, g.tx, g.ty) &&
-          state.gold[state.side] >= spec.costGold &&
-          state.wood[state.side] >= spec.costWood;
+          playerGold(state) >= buildingCost(g.kind, state.mode);
         if (valid !== ghostValidRef.current) {
           ghostValidRef.current = valid;
           setGhostValid(valid);
@@ -482,8 +528,8 @@ export function HunterGame() {
             SAVE_META_KEY,
             JSON.stringify({
               side: state.side,
+              mode: state.mode,
               difficulty: state.difficulty,
-              durationMin: state.durationMin,
               elapsed: state.time,
             })
           );
@@ -550,23 +596,15 @@ export function HunterGame() {
       if (cast) {
         if (applyCommand(state, { t: "skill", skill: cast, x: center.x, y: center.y })) {
           if (settingsRef.current.sound) playSfx("skill");
-          showToast(`施放${cast === "eye" ? "鹰眼" : cast === "slam" ? "裂地" : "哨兵"}`);
           setCast(null);
         } else {
-          showToast("技能冷却中");
+          showToast("技能冷却中，或该技能不属于当前单位");
         }
         return;
       }
 
       if (placing) {
         setGhost({ kind: placing, tx: tile.tx, ty: tile.ty });
-        return;
-      }
-
-      if (rallyMode) {
-        applyCommand(state, { t: "rally", x: center.x, y: center.y });
-        showToast("集结点已设置");
-        setRallyMode(false);
         return;
       }
 
@@ -578,8 +616,12 @@ export function HunterGame() {
           showToast("这里没有建筑");
           return;
         }
-        if (building.side !== state.side) {
+        if (building.side !== state.side || building.owner !== state.playerOwner) {
           showToast("只能拆除自己的建筑");
+          return;
+        }
+        if (building.kind === "hunterBarracks") {
+          showToast("中央兵营无法拆除");
           return;
         }
         const name = BUILDINGS[building.kind].name;
@@ -589,40 +631,64 @@ export function HunterGame() {
         return;
       }
 
-      applyCommand(state, { t: "move", x: center.x, y: center.y });
-    },
-    [screen, paused, cast, placing, rallyMode, demolish, showToast]
-  );
-
-  const handleAction = useCallback(
-    (action: HudAction) => {
-      if (action === "rally") {
-        setRallyMode((value) => !value);
-        setPanel(null);
-        setPlacing(null);
-        setCast(null);
+      const wall = state.buildings.find(
+        (b) =>
+          b.tx === tile.tx &&
+          b.ty === tile.ty &&
+          b.hp > 0 &&
+          b.side === state.side &&
+          b.owner === state.playerOwner &&
+          b.kind === "magicWall"
+      );
+      if (wall) {
+        applyCommand(state, { t: "toggleWall", id: wall.id });
+        showToast(wall.open ? "魔法墙已关闭" : "魔法墙已打开");
         return;
       }
-      setPanel((current) => (current === action ? null : action));
+
+      applyCommand(state, { t: "move", x: center.x, y: center.y });
+    },
+    [screen, paused, cast, placing, demolish, showToast]
+  );
+
+  const handleAction = useCallback((action: HudAction) => {
+    if (action === "control") {
+      const state = gameRef.current;
+      if (!state) return;
+      const unit = playerUnit(state);
+      const golem = golemForOwner(state, state.playerOwner);
+      if (unit?.kind === "golem") {
+        const hero = playerHero(state);
+        if (hero) {
+          applyCommand(state, { t: "control", unitId: hero.id });
+          showToast("已切回英雄");
+        }
+      } else if (golem && !golem.dead) {
+        applyCommand(state, { t: "control", unitId: golem.id });
+        showToast("正在操控主傀儡");
+      } else {
+        showToast("还没有主傀儡：先建傀儡工厂并招募");
+      }
+      setPanel(null);
       setPlacing(null);
       setCast(null);
       setGhost(null);
-      setRallyMode(false);
-      if (action !== "build") setDemolish(false);
-    },
-    []
-  );
+      return;
+    }
+    setPanel((current) => (current === action ? null : action));
+    setPlacing(null);
+    setCast(null);
+    setGhost(null);
+    if (action !== "build") setDemolish(false);
+  }, [showToast]);
 
-  const pickBuilding = useCallback(
-    (kind: BuildingKind) => {
-      setPlacing(kind);
-      setPanel(null);
-      setDemolish(false);
-      setCast(null);
-      setGhost(null);
-    },
-    []
-  );
+  const pickBuilding = useCallback((kind: BuildingKind) => {
+    setPlacing(kind);
+    setPanel(null);
+    setDemolish(false);
+    setCast(null);
+    setGhost(null);
+  }, []);
 
   const confirmGhost = useCallback(() => {
     const state = gameRef.current;
@@ -632,7 +698,7 @@ export function HunterGame() {
       if (settingsRef.current.sound) playSfx("pickup");
       setGhost(null);
     } else {
-      showToast("资源不足，或该位置不可建造");
+      showToast("金币不足，或该位置不可建造");
     }
   }, [ghost, showToast]);
 
@@ -645,25 +711,31 @@ export function HunterGame() {
     (kind: UnitKind) => {
       const state = gameRef.current;
       if (!state) return;
+      const option = hireOptions(state).find((item) => item.kind === kind);
+      if (!option?.ok) {
+        showToast(option?.reason ?? "条件未满足");
+        return;
+      }
       if (applyCommand(state, { t: "hire", unit: kind })) {
         showToast(`招募了${UNITS[kind].name}`);
         if (settingsRef.current.sound) playSfx("levelup");
       } else {
-        showToast("资源不足，或条件未满足");
+        showToast("金币不足，或条件未满足");
       }
     },
     [showToast]
   );
 
-  const handleStance = useCallback(
-    (stance: Stance) => {
+  const handleResearch = useCallback(
+    (kind: ResearchKind) => {
       const state = gameRef.current;
       if (!state) return;
-      applyCommand(state, { t: "stance", stance });
-      showToast(
-        stance === "follow" ? "部队跟随英雄" : stance === "guard" ? "部队守卫集结点" : "部队主动进攻"
-      );
-      setPanel(null);
+      if (applyCommand(state, { t: "research", kind })) {
+        showToast("科技已升级");
+        if (settingsRef.current.sound) playSfx("levelup");
+      } else {
+        showToast("金币不足，或需要研究所");
+      }
     },
     [showToast]
   );
@@ -672,11 +744,15 @@ export function HunterGame() {
     (item: ItemKind) => {
       const state = gameRef.current;
       if (!state) return;
-      if (buyItem(state, state.side, item)) {
-        showToast(`购买${ITEMS[item].name}`);
+      if (!merchantNear(state)) {
+        showToast("离商人太远：商人每 10 秒换位");
+        return;
+      }
+      if (applyCommand(state, { t: "buy", item })) {
+        showToast(`购买了${ITEMS[item].name}`);
         if (settingsRef.current.sound) playSfx("pickup");
       } else {
-        showToast("金币不足，或库存已满");
+        showToast("金币不足，或已达上限");
       }
     },
     [showToast]
@@ -686,24 +762,11 @@ export function HunterGame() {
     (item: ItemKind) => {
       const state = gameRef.current;
       if (!state) return;
-      if (useItem(state, state.side, item)) {
+      if (applyCommand(state, { t: "use", item })) {
         showToast(`使用${ITEMS[item].name}`);
         if (settingsRef.current.sound) playSfx("heal");
       } else {
         showToast("没有库存，或英雄已阵亡");
-      }
-    },
-    [showToast]
-  );
-
-  const handleUpgrade = useCallback(
-    (kind: UpgradeKind) => {
-      const state = gameRef.current;
-      if (!state) return;
-      if (buyUpgrade(state, state.side, kind)) {
-        showToast(`${UPGRADES[kind].name}已解锁`);
-      } else {
-        showToast("金币不足，或已经解锁");
       }
     },
     [showToast]
@@ -742,11 +805,11 @@ export function HunterGame() {
         </a>
         <MenuScreen
           side={side}
+          mode={mode}
           difficulty={difficulty}
-          durationMin={durationMin}
           onSide={setSide}
+          onMode={setMode}
           onDifficulty={setDifficulty}
-          onDuration={setDurationMin}
           onStart={() => startGame()}
           save={save}
           onContinue={continueGame}
@@ -763,11 +826,10 @@ export function HunterGame() {
 
       {snapshot ? (
         <HunterHud
-          side={side}
+          side={snapshot.side}
           snapshot={snapshot}
           settings={settings}
           panel={panel}
-          rallyMode={rallyMode}
           ghost={ghost ? { kind: ghost.kind, valid: ghostValid } : null}
           cast={cast}
           toast={toast}
@@ -780,7 +842,6 @@ export function HunterGame() {
             setPlacing(null);
             setGhost(null);
             setPanel(null);
-            setRallyMode(false);
           }}
           onAction={handleAction}
           onJoystick={(x, y) => {
@@ -809,10 +870,9 @@ export function HunterGame() {
         >
           {panel === "build" ? (
             <BuildPanel
-              side={side}
-              phase={snapshot.phase}
+              side={snapshot.side}
+              mode={snapshot.mode}
               gold={snapshot.gold}
-              wood={snapshot.wood}
               demolish={demolish}
               onPick={pickBuilding}
               onToggleDemolish={() => {
@@ -835,21 +895,26 @@ export function HunterGame() {
               onClose={() => setPanel(null)}
             />
           ) : null}
-          {panel === "shop" && side === "hunter" ? (
-            <ShopPanel
+          {panel === "research" && side === "farmer" ? (
+            <ResearchPanel
+              mode={snapshot.mode}
               gold={snapshot.gold}
-              stock={snapshot.stock}
-              upgrades={snapshot.upgrades}
-              onBuy={handleBuy}
-              onUse={handleUse}
-              onUpgrade={handleUpgrade}
+              levels={snapshot.research}
+              hasLab={snapshot.hasLab}
+              onBuy={handleResearch}
               onClose={() => setPanel(null)}
             />
           ) : null}
-          {panel === "stance" ? (
-            <StancePanel
-              stance={snapshot.stance}
-              onStance={handleStance}
+          {panel === "shop" && side === "hunter" ? (
+            <ShopPanel
+              gold={snapshot.gold}
+              mode={snapshot.mode}
+              time={snapshot.time}
+              canShop={snapshot.merchantNear}
+              owned={snapshot.owned}
+              stock={snapshot.stock}
+              onBuy={handleBuy}
+              onUse={handleUse}
               onClose={() => setPanel(null)}
             />
           ) : null}
@@ -878,7 +943,7 @@ export function HunterGame() {
           result={result}
           side={side}
           stats={stats}
-          onReplay={() => startGame({ side, difficulty, durationMin })}
+          onReplay={() => startGame({ side, mode, difficulty })}
           onMenu={exitToMenu}
         />
       ) : null}

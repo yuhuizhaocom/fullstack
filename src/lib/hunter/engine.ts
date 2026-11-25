@@ -1,20 +1,24 @@
 import {
-  BASE_POP,
+  ANIMAL_UPGRADE_TOTAL,
   BUILDINGS,
-  DIFFICULTY,
+  FARMER_COUNT,
+  HORN_DURATION,
+  HORN_RADIUS,
+  HUNTER_COUNT,
   ITEMS,
-  MAX_POP,
+  MERCHANT_INTERVAL,
+  MINE_FUSE,
+  MODES,
   PHASE_LABEL,
   PHASE_RATIO,
+  RESEARCH,
   RESPAWN_FARMER,
   RESPAWN_HUNTER,
   SKILLS,
   START_GOLD,
-  START_WOOD,
   TILE,
   UNITS,
-  UPGRADES,
-  phaseAllows,
+  buildingCost,
 } from "./config";
 import {
   createMap,
@@ -27,38 +31,34 @@ import {
   tileCenter,
 } from "./map";
 import type {
-  AIState,
   Building,
   BuildingKind,
   Command,
   Difficulty,
-  DurationMin,
+  FarmerSlot,
   GameEvent,
   GameEventKind,
   GameMap,
   GameResult,
   GameState,
+  HunterSlot,
   ItemKind,
+  Mode,
   Phase,
   Projectile,
+  ResearchKind,
   Side,
   SideStats,
   SkillId,
   Unit,
   UnitKind,
-  UpgradeKind,
-  Vec,
 } from "./types";
 
-const ALL_SKILLS: SkillId[] = ["eye", "slam", "sentinel"];
-const ALL_ITEMS: ItemKind[] = ["spray", "cdScroll", "regen", "dust", "bomb"];
+const ALL_SKILLS: SkillId[] = ["eye", "golemQ", "golemE", "golemW"];
+const ALL_ITEMS: ItemKind[] = ["hammer", "horn", "gloves", "poison", "mine", "potion"];
 
 function emptyStats(): SideStats {
   return { kills: 0, goldEarned: 0, goldSpent: 0, built: 0, hired: 0, lost: 0 };
-}
-
-function emptyAi(): AIState {
-  return { think: 0, anchor: 0, base: null, nextEyeAt: 0, pushAt: 0, nextBuyAt: 0 };
 }
 
 function nextId(state: GameState, prefix: string): string {
@@ -81,17 +81,35 @@ export function pushEvent(
   state.eventSeq += 1;
   const event: GameEvent = { id: state.eventSeq, at: state.time, kind, text, x, y, side };
   state.events.push(event);
-  if (state.events.length > 40) state.events.splice(0, state.events.length - 40);
+  if (state.events.length > 60) state.events.splice(0, state.events.length - 60);
 }
 
-export function addGold(state: GameState, side: Side, amount: number): void {
-  state.gold[side] += amount;
+export function addGold(state: GameState, side: Side, owner: number, amount: number): void {
+  const slot = side === "farmer" ? state.farmerSlots[owner] : state.hunterSlots[owner];
+  if (!slot) return;
+  slot.gold += amount;
   if (amount > 0) state.stats[side].goldEarned += amount;
+}
+
+export function playerGold(state: GameState): number {
+  const slot = state.side === "farmer" ? state.farmerSlots[state.playerOwner] : state.hunterSlots[state.playerOwner];
+  return Math.floor(slot?.gold ?? 0);
+}
+
+export function playerHunterSlot(state: GameState): HunterSlot | null {
+  if (state.side !== "hunter") return null;
+  return state.hunterSlots[state.playerOwner] ?? null;
+}
+
+export function playerFarmerSlot(state: GameState): FarmerSlot | null {
+  if (state.side !== "farmer") return null;
+  return state.farmerSlots[state.playerOwner] ?? null;
 }
 
 export function spawnUnit(
   state: GameState,
   side: Side,
+  owner: number,
   kind: UnitKind,
   x: number,
   y: number
@@ -100,6 +118,7 @@ export function spawnUnit(
   const unit: Unit = {
     id: nextId(state, "u"),
     side,
+    owner,
     kind,
     x,
     y,
@@ -119,7 +138,7 @@ export function spawnUnit(
     dest: null,
     repathAt: 0,
     stance: "follow",
-    hidden: kind === "shadowScout",
+    hidden: false,
     hiddenFor: 0,
     lastActionAt: 0,
     slowUntil: 0,
@@ -133,19 +152,18 @@ export function spawnUnit(
     livesLeft: spec.lives ?? 0,
     dead: false,
     respawnAt: 0,
-    pop: spec.pop,
     produceTimer: 0,
-    lumber: 0,
-    chopTarget: null,
-    chopTimer: 0,
     bounty: spec.bounty,
     homeX: x,
     homeY: y,
     expiresAt: 0,
     canSiege: !!spec.canSiege,
+    armedAt: 0,
+    incomeBonus: 0,
     animSeed: Math.random() * 1000,
   };
   state.units.push(unit);
+  if (kind === "golem") applyGolemBuffs(state, unit);
   return unit;
 }
 
@@ -154,17 +172,53 @@ export function unitById(state: GameState, id: string | null): Unit | null {
   return state.units.find((unit) => unit.id === id) ?? null;
 }
 
-export function buildingAt(state: GameState, tx: number, ty: number): Building | null {
-  return state.buildings.find((b) => b.tx === tx && b.ty === ty) ?? null;
+export function playerUnit(state: GameState): Unit | null {
+  return unitById(state, state.playerUnitId);
 }
 
 export function playerHero(state: GameState): Unit | null {
-  return unitById(state, state.playerHeroId);
+  const slot =
+    state.side === "farmer"
+      ? state.farmerSlots[state.playerOwner]
+      : state.hunterSlots[state.playerOwner];
+  if (!slot) return null;
+  return unitById(state, slot.heroId);
 }
 
-export function sideHero(state: GameState, side: Side): Unit | null {
-  const kind: UnitKind = side === "farmer" ? "farmerHero" : "hunterHero";
-  return state.units.find((unit) => unit.kind === kind && !unit.dead) ?? null;
+export function ownerHero(state: GameState, side: Side, owner: number): Unit | null {
+  const slot = side === "farmer" ? state.farmerSlots[owner] : state.hunterSlots[owner];
+  if (!slot) return null;
+  return unitById(state, slot.heroId);
+}
+
+export function sideHeroes(state: GameState, side: Side): Unit[] {
+  return state.units.filter((unit) => unit.side === side && unit.isHero && !unit.dead);
+}
+
+export function golemForOwner(state: GameState, owner: number): Unit | null {
+  return state.units.find((unit) => unit.kind === "golem" && unit.owner === owner && !unit.dead) ?? null;
+}
+
+export function buildingAt(state: GameState, tx: number, ty: number): Building | null {
+  return state.buildings.find((b) => b.tx === tx && b.ty === ty && b.hp > 0) ?? null;
+}
+
+export function animalTotal(state: GameState): number {
+  let count = 0;
+  for (const unit of state.units) {
+    if (unit.dead || unit.side !== "farmer") continue;
+    if (unit.kind === "chicken" || unit.kind === "sheep" || unit.kind === "pig") count += 1;
+  }
+  return count;
+}
+
+export function animalCountOf(state: GameState, owner: number): number {
+  let count = 0;
+  for (const unit of state.units) {
+    if (unit.dead || unit.side !== "farmer" || unit.owner !== owner) continue;
+    if (unit.kind === "chicken" || unit.kind === "sheep" || unit.kind === "pig") count += 1;
+  }
+  return count;
 }
 
 export function phaseAt(state: GameState, time: number): Phase {
@@ -180,25 +234,73 @@ export function remainingSeconds(state: GameState): number {
   return Math.max(0, state.durationMin * 60 - state.time);
 }
 
+function emptyResearch(): Record<Side, Record<ResearchKind, number>> {
+  const make = (): Record<ResearchKind, number> => ({
+    buildDef: 0,
+    arrowAtk: 0,
+    light: 0,
+    trueSight: 0,
+    golemHp: 0,
+    golemAtk: 0,
+    golemAspd: 0,
+    golemSpeed: 0,
+  });
+  return { farmer: make(), hunter: make() };
+}
+
+function makeFarmerSlots(map: GameMap): FarmerSlot[] {
+  const slots: FarmerSlot[] = [];
+  for (let i = 0; i < FARMER_COUNT; i += 1) {
+    const base = map.farmerStarts[i % map.farmerStarts.length] ?? map.farmerStarts[0];
+    slots.push({ gold: START_GOLD.farmer, heroId: "", base, thinkAt: 0, stage: 0 });
+  }
+  return slots;
+}
+
+function makeHunterSlots(): HunterSlot[] {
+  const slots: HunterSlot[] = [];
+  for (let i = 0; i < HUNTER_COUNT; i += 1) {
+    slots.push({
+      gold: START_GOLD.hunter,
+      heroId: "",
+      thinkAt: 0,
+      anchor: i,
+      eyeAt: 0,
+      hammer: false,
+      gloves: false,
+      poison: false,
+      horns: 0,
+      mines: 0,
+      potions: 0,
+      kills: 0,
+    });
+  }
+  return slots;
+}
+
 export function createGame(opts: {
   side: Side;
+  mode: Mode;
   difficulty: Difficulty;
-  durationMin: DurationMin;
   seed: number;
 }): GameState {
   const map = createMap(opts.seed);
+  const modeSpec = MODES[opts.mode];
   const state: GameState = {
-    version: 1,
+    version: 2,
     seed: opts.seed,
     map,
     side: opts.side,
+    mode: opts.mode,
     difficulty: opts.difficulty,
-    durationMin: opts.durationMin,
+    durationMin: modeSpec.durationMin,
     time: 0,
     phase: "hide",
     result: null,
-    gold: { farmer: START_GOLD.farmer, hunter: START_GOLD.hunter },
-    wood: { farmer: START_WOOD.farmer, hunter: START_WOOD.hunter },
+    farmerSlots: makeFarmerSlots(map),
+    hunterSlots: makeHunterSlots(),
+    playerOwner: 0,
+    playerUnitId: "",
     vision: {
       farmer: new Uint8Array(map.w * map.h),
       hunter: new Uint8Array(map.w * map.h),
@@ -206,53 +308,87 @@ export function createGame(opts: {
     units: [],
     buildings: [],
     projectiles: [],
-    skillCd: {
-      farmer: { eye: 0, slam: 0, sentinel: 0 },
-      hunter: { eye: 0, slam: 0, sentinel: 0 },
-    },
-    stock: {
-      farmer: { spray: 0, cdScroll: 0, regen: 0, dust: 0, bomb: 0 },
-      hunter: { spray: 0, cdScroll: 0, regen: 0, dust: 0, bomb: 0 },
-    },
-    upgrades: {
-      farmer: { bounty: false, atk: false, def: false },
-      hunter: { bounty: false, atk: false, def: false },
-    },
+    research: emptyResearch(),
+    cooldowns: {},
     reveal: [],
-    rally: { farmer: null, hunter: null },
+    merchant: { x: map.merchantSpots[0].x, y: map.merchantSpots[0].y, nextAt: MERCHANT_INTERVAL },
     events: [],
     eventSeq: 0,
     stats: { farmer: emptyStats(), hunter: emptyStats() },
-    ai: { farmer: emptyAi(), hunter: emptyAi() },
-    hunterReinforced: false,
-    playerHeroId: "",
     nextId: 0,
     visionAt: 0,
-    popUsed: { farmer: 0, hunter: 0 },
   };
 
-  const farmerHero = spawnUnit(state, "farmer", "farmerHero", map.farmerCamp.x, map.farmerCamp.y);
-  if (opts.side === "farmer") state.playerHeroId = farmerHero.id;
-  const hunterHero = spawnUnit(state, "hunter", "hunterHero", map.hunterCamp.x, map.hunterCamp.y);
-  if (opts.side === "hunter") state.playerHeroId = hunterHero.id;
+  // 7 名农民：各自出生在自己的起家点附近
+  for (let i = 0; i < state.farmerSlots.length; i += 1) {
+    const base = state.farmerSlots[i].base;
+    const jitter = (i % 3) * 26 - 26;
+    const hero = spawnUnit(state, "farmer", i, "farmerHero", base.x + jitter, base.y + jitter);
+    state.farmerSlots[i].heroId = hero.id;
+  }
 
-  // 农民开局自带两名伐木农民，保证经济能起步
-  spawnUnit(state, "farmer", "lumberjack", map.farmerCamp.x - 52, map.farmerCamp.y + 12);
-  spawnUnit(state, "farmer", "lumberjack", map.farmerCamp.x + 40, map.farmerCamp.y + 30);
+  // 3 名猎人：中间营地
+  for (let i = 0; i < state.hunterSlots.length; i += 1) {
+    const hero = spawnUnit(
+      state,
+      "hunter",
+      i,
+      "hunterHero",
+      map.hunterCamp.x + (i - 1) * 46,
+      map.hunterCamp.y + 30
+    );
+    state.hunterSlots[i].heroId = hero.id;
+  }
 
-  pushEvent(state, "info", "对局开始，猎人正在搜索森林", map.hunterCamp.x, map.hunterCamp.y);
-  pushEvent(state, "phase", "匿藏期：藏好并滚起经济", map.farmerCamp.x, map.farmerCamp.y, "farmer");
+  // 中间固定兵营
+  const campTile = pixelToTile(map.hunterCamp.x, map.hunterCamp.y);
+  const barracksCenter = tileCenter(campTile.tx, campTile.ty);
+  const barracksSpec = BUILDINGS.hunterBarracks;
+  state.buildings.push({
+    id: nextId(state, "b"),
+    side: "hunter",
+    owner: 0,
+    kind: "hunterBarracks",
+    tx: campTile.tx,
+    ty: campTile.ty,
+    x: barracksCenter.x,
+    y: barracksCenter.y,
+    hp: barracksSpec.hp,
+    maxHp: barracksSpec.hp,
+    cooldown: 0,
+    produceTimer: 0,
+    produced: 0,
+    flashAt: 0,
+    atk: 0,
+    range: 0,
+    disabledUntil: 0,
+    open: false,
+    tier: 0,
+  });
 
+  if (opts.side === "farmer") {
+    state.playerOwner = 0;
+    state.playerUnitId = state.farmerSlots[0].heroId;
+  } else {
+    state.playerOwner = 0;
+    state.playerUnitId = state.hunterSlots[0].heroId;
+  }
+
+  pushEvent(state, "info", "对局开始：7 农民 vs 3 猎人", map.hunterCamp.x, map.hunterCamp.y);
+  pushEvent(state, "phase", "匿藏期：先摆鸡窝、藏好", state.farmerSlots[0].base.x, state.farmerSlots[0].base.y, "farmer");
   updateVision(state);
   return state;
 }
 
-/** 综合阻挡判断：静态地形 + 建筑 */
+/** 综合阻挡判断：静态地形 + 建筑（透明塔与开门的魔法墙可通行） */
 export function blockedFn(state: GameState, ignoreBuildingId?: string) {
   const set = new Set<string>();
   for (const b of state.buildings) {
     if (b.id === ignoreBuildingId) continue;
     if (b.hp <= 0) continue;
+    const spec = BUILDINGS[b.kind];
+    if (spec.passable) continue;
+    if (b.kind === "magicWall" && b.open) continue;
     set.add(`${b.tx},${b.ty}`);
   }
   return (tx: number, ty: number): boolean => {
@@ -299,10 +435,11 @@ function moveAlongPath(state: GameState, unit: Unit, dt: number): void {
   }
 }
 
-/** 只渲染/判定视野内的实体，投降标记的单位使用此函数 */
 export function isUnitVisibleTo(state: GameState, unit: Unit, viewer: Side): boolean {
   if (unit.dead) return false;
   if (unit.side === viewer) return true;
+  // 地雷永远不被农民看到
+  if (unit.kind === "mine") return false;
   if (!unit.hidden) {
     const { tx, ty } = pixelToTile(unit.x, unit.y);
     if (tx < 0 || ty < 0 || tx >= state.map.w || ty >= state.map.h) return false;
@@ -318,9 +455,9 @@ export function isUnitVisibleTo(state: GameState, unit: Unit, viewer: Side): boo
     if (building.side !== viewer || !spec.reveal || building.hp <= 0) continue;
     if (Math.hypot(building.x - unit.x, building.y - unit.y) <= spec.reveal) return true;
   }
-  for (const viewer_ of state.units) {
-    if (viewer_.side !== viewer || viewer_.dead) continue;
-    if (Math.hypot(viewer_.x - unit.x, viewer_.y - unit.y) <= 90) return true;
+  for (const other of state.units) {
+    if (other.side !== viewer || other.dead) continue;
+    if (Math.hypot(other.x - unit.x, other.y - unit.y) <= 90) return true;
   }
   return false;
 }
@@ -331,12 +468,6 @@ export function isBuildingVisibleTo(state: GameState, building: Building, viewer
   const ty = building.ty;
   if (tx < 0 || ty < 0 || tx >= state.map.w || ty >= state.map.h) return false;
   return state.vision[viewer][ty * state.map.w + tx] === 2;
-}
-
-function sourceVisionRadius(state: GameState, side: Side, base: number): number {
-  const aiSide: Side = state.side === "farmer" ? "hunter" : "farmer";
-  if (side === aiSide) return base * DIFFICULTY[state.difficulty].vision;
-  return base;
 }
 
 export function updateVision(state: GameState): void {
@@ -354,45 +485,233 @@ export function updateVision(state: GameState): void {
       const maxY = Math.min(h - 1, c.ty + rTiles);
       for (let ty = minY; ty <= maxY; ty += 1) {
         for (let tx = minX; tx <= maxX; tx += 1) {
-          const cx = tx * TILE + TILE / 2;
-          const cy = ty * TILE + TILE / 2;
-          if (Math.hypot(cx - x, cy - y) <= radius) vis[ty * w + tx] = 1;
+          if (Math.hypot(tileCenter(tx, ty).x - x, tileCenter(tx, ty).y - y) <= radius) {
+            vis[ty * w + tx] = 2;
+          }
         }
       }
     };
+
     for (const unit of state.units) {
-      if (unit.side !== side || unit.dead) continue;
-      mark(unit.x, unit.y, sourceVisionRadius(state, side, unit.vision));
+      if (unit.dead || unit.side !== side) continue;
+      if (unit.kind === "mine") continue;
+      mark(unit.x, unit.y, unit.vision);
     }
+    const lightBonus = side === "farmer" ? state.research.farmer.light * 220 : 0;
     for (const building of state.buildings) {
-      if (building.side !== side || building.hp <= 0) continue;
+      if (building.hp <= 0 || building.side !== side) continue;
       const spec = BUILDINGS[building.kind];
-      const radius = Math.max(200, spec.reveal ?? 0);
-      mark(building.x, building.y, sourceVisionRadius(state, side, radius));
+      mark(building.x, building.y, 180 + (spec.reveal ?? 0) + lightBonus);
     }
-    const explored = state.vision[side];
-    for (let i = 0; i < vis.length; i += 1) {
-      if (vis[i]) explored[i] = 2;
-      else if (explored[i] === 2) explored[i] = 1;
+    if (side === "farmer" && state.research.farmer.trueSight > 0) {
+      vis.fill(2);
     }
+    state.vision[side] = vis;
   }
   state.visionAt = state.time;
 }
 
-function isRevealedTo(state: GameState, viewer: Side, unit: Unit): boolean {
-  return isUnitVisibleTo(state, unit, viewer);
+function researchLevel(state: GameState, side: Side, kind: ResearchKind): number {
+  return state.research[side][kind] ?? 0;
 }
 
-function findTarget(
+export function towerAttackBonus(state: GameState, building: Building): number {
+  if (building.kind !== "arrowTower") return 0;
+  return researchLevel(state, "farmer", "arrowAtk") * 3;
+}
+
+export function merchantNear(state: GameState): boolean {
+  const unit = playerUnit(state);
+  if (!unit) return false;
+  return Math.hypot(unit.x - state.merchant.x, unit.y - state.merchant.y) <= 480;
+}
+
+function applyGolemBuffs(state: GameState, unit: Unit): void {
+  if (unit.kind !== "golem" && unit.kind !== "golemClone") return;
+  const hpLv = researchLevel(state, "farmer", "golemHp");
+  const atkLv = researchLevel(state, "farmer", "golemAtk");
+  const aspdLv = researchLevel(state, "farmer", "golemAspd");
+  const speedLv = researchLevel(state, "farmer", "golemSpeed");
+  const mode = MODES[state.mode];
+  const cloneScale = unit.kind === "golemClone" ? 0.32 : 1;
+  unit.maxHp = Math.round((UNITS[unit.kind].hp + hpLv * mode.golemHpUp) * cloneScale);
+  unit.hp = Math.min(unit.hp, unit.maxHp);
+  if (unit.kind === "golem") unit.hp = unit.maxHp;
+  unit.atk = Math.round((UNITS[unit.kind].atk + atkLv * mode.golemAtkUp) * (unit.kind === "golem" ? 1 : 0.55));
+  unit.attackInterval = UNITS[unit.kind].attackInterval / (1 + aspdLv * 0.15);
+  unit.speed = UNITS[unit.kind].speed + speedLv * 40;
+}
+
+function refreshGolems(state: GameState): void {
+  for (const unit of state.units) {
+    if (unit.kind === "golem" || unit.kind === "golemClone") applyGolemBuffs(state, unit);
+  }
+}
+
+function reviveCostPenalty(state: GameState, owner: number): void {
+  const slot = state.farmerSlots[owner];
+  if (!slot) return;
+  slot.gold = Math.max(0, slot.gold - Math.floor(slot.gold * 0.1));
+}
+
+function finish(state: GameState, winner: Side, reason: GameResult["reason"]): void {
+  if (state.result) return;
+  state.result = { winner, reason };
+  state.phase = "over";
+  const point = winner === "farmer" ? state.map.hunterCamp : state.map.farmerStarts[0];
+  pushEvent(
+    state,
+    "win",
+    winner === "farmer" ? "三位猎人全部倒下，农民获胜！" : "计时结束，猎人存活获胜！",
+    point.x,
+    point.y,
+    winner
+  );
+}
+
+export function hunterAlive(state: GameState): boolean {
+  return state.units.some(
+    (unit) => unit.side === "hunter" && unit.isHero && (unit.livesLeft > 0 || !unit.dead)
+  );
+}
+
+function transferPlayerHunter(state: GameState): void {
+  if (state.side !== "hunter") return;
+  const current = playerHero(state);
+  if (current && !current.dead) return;
+  for (let i = 0; i < state.hunterSlots.length; i += 1) {
+    const hero = ownerHero(state, "hunter", i);
+    if (hero && !hero.dead && hero.livesLeft > 0) {
+      state.playerOwner = i;
+      if (state.playerUnitId === current?.id) state.playerUnitId = hero.id;
+      pushEvent(state, "info", "接管了另一名猎人", hero.x, hero.y, "hunter");
+      return;
+    }
+  }
+}
+
+function killUnit(state: GameState, unit: Unit, killerSide: Side, killerOwner: number): void {
+  if (unit.dead) return;
+  const spec = UNITS[unit.kind];
+  state.stats[killerSide].kills += 1;
+  state.stats[unit.side].lost += 1;
+  if (killerSide === "hunter" && unit.side === "farmer") {
+    const slot = state.hunterSlots[killerOwner];
+    if (slot && unit.kind !== "chicken" && unit.kind !== "sheep" && unit.kind !== "pig") {
+      slot.kills += 1;
+    }
+  }
+  if (killerSide !== unit.side && unit.bounty > 0) {
+    addGold(state, killerSide, killerOwner, unit.bounty);
+  }
+  if (unit.kind === "chicken" || unit.kind === "sheep" || unit.kind === "pig") {
+    // 动物死亡不刷屏
+  } else {
+    pushEvent(state, "death", `${spec.name}阵亡`, unit.x, unit.y, unit.side);
+  }
+  unit.hp = 0;
+  unit.path = [];
+  unit.dest = null;
+  if (!unit.isHero) {
+    unit.dead = true;
+    unit.respawnAt = Infinity;
+    // 玩家正在操控的傀儡阵亡后，自动把视角交还给农民英雄
+    if (unit.id === state.playerUnitId && unit.side === "farmer") {
+      const heroId = state.farmerSlots[unit.owner]?.heroId;
+      if (heroId) state.playerUnitId = heroId;
+    }
+    return;
+  }
+  unit.dead = true;
+  if (unit.side === "hunter") {
+    unit.livesLeft -= 1;
+    if (unit.livesLeft <= 0) {
+      unit.respawnAt = Infinity;
+      pushEvent(state, "death", "一名猎人彻底倒下", unit.x, unit.y, "hunter");
+      transferPlayerHunter(state);
+    } else {
+      unit.respawnAt = state.time + RESPAWN_HUNTER;
+    }
+  } else {
+    reviveCostPenalty(state, unit.owner);
+    unit.respawnAt = state.time + RESPAWN_FARMER;
+  }
+}
+
+function respawnHero(state: GameState, unit: Unit): void {
+  const camp =
+    unit.side === "farmer"
+      ? state.farmerSlots[unit.owner]?.base ?? state.map.farmerStarts[0]
+      : state.map.hunterCamp;
+  unit.dead = false;
+  unit.hp = unit.maxHp;
+  unit.x = camp.x + (Math.random() * 40 - 20);
+  unit.y = camp.y + (Math.random() * 40 - 20);
+  unit.path = [];
+  unit.dest = null;
+  unit.targetId = null;
+  unit.hidden = false;
+  unit.slowUntil = 0;
+  unit.slowFactor = 1;
+  unit.poisonUntil = 0;
+  unit.cooldown = 0;
+  pushEvent(state, "info", `${UNITS[unit.kind].name}已在营地复活`, unit.x, unit.y, unit.side);
+}
+
+function damageUnit(
   state: GameState,
-  unit: Unit
-): { unit?: Unit; building?: Building } | null {
+  target: Unit,
+  damage: number,
+  attackerSide: Side,
+  attackerOwner: number,
+  opts: { slowFactor?: number; slowUntil?: number; poisonUntil?: number } = {}
+): void {
+  if (target.dead) return;
+  target.hp -= damage;
+  target.hitFlashAt = state.time;
+  if (opts.slowUntil && opts.slowUntil > state.time) {
+    target.slowUntil = opts.slowUntil;
+    target.slowFactor = 1 - (opts.slowFactor ?? 0.3);
+  }
+  if (opts.poisonUntil && opts.poisonUntil > state.time) {
+    target.poisonUntil = opts.poisonUntil;
+  }
+  if (target.hp <= 0) killUnit(state, target, attackerSide, attackerOwner);
+}
+
+function damageBuilding(
+  state: GameState,
+  building: Building,
+  damage: number,
+  attackerSide: Side,
+  attackerOwner: number
+): void {
+  if (building.hp <= 0) return;
+  let final = damage;
+  if (building.side === "farmer") {
+    const defLv = researchLevel(state, "farmer", "buildDef");
+    final = damage * (1 - Math.min(0.6, defLv * 0.04));
+  }
+  building.hp -= final;
+  building.flashAt = state.time;
+  if (building.hp <= 0) {
+    building.hp = 0;
+    state.stats[attackerSide].kills += 1;
+    pushEvent(state, "kill", `${BUILDINGS[building.kind].name}被摧毁`, building.x, building.y, building.side);
+    if (building.kind === "golemFactory") {
+      pushEvent(state, "info", "傀儡工厂被摧毁", building.x, building.y, "farmer");
+    }
+    void attackerOwner;
+  }
+}
+
+function findTarget(state: GameState, unit: Unit): { unit?: Unit; building?: Building } | null {
   let bestUnit: Unit | null = null;
   let bestDist = Infinity;
   for (const other of state.units) {
     if (other.side === unit.side || other.dead) continue;
-    if (other.kind === "owl" || other.kind === "eyeWard") continue;
-    if (!isRevealedTo(state, unit.side, other)) continue;
+    if (other.kind === "eyeWard" || other.kind === "mine") continue;
+    if (!isUnitVisibleTo(state, other, unit.side)) continue;
     const d = Math.hypot(other.x - unit.x, other.y - unit.y);
     if (d <= unit.aggro && d < bestDist) {
       bestDist = d;
@@ -420,32 +739,42 @@ function findTarget(
 function spawnProjectile(
   state: GameState,
   side: Side,
+  owner: number,
   fromX: number,
   fromY: number,
-  targetUnitId: string,
+  targetId: string,
   targetX: number,
   targetY: number,
   damage: number,
-  opts: { aoe?: number; slowFactor?: number; slowUntil?: number; poisonUntil?: number; color?: number } = {}
+  opts: {
+    aoe?: number;
+    friendlyFire?: boolean;
+    vsBuilding?: number;
+    slowFactor?: number;
+    slowUntil?: number;
+    poisonUntil?: number;
+    color?: number;
+  } = {}
 ): void {
   const projectile: Projectile = {
     id: nextId(state, "p"),
     side,
+    owner,
     x: fromX,
     y: fromY,
-    targetId: targetUnitId,
-    targetBuilding: targetUnitId.startsWith("b"),
+    targetId: `${targetId}|${Math.round(targetX)}|${Math.round(targetY)}`,
     speed: 460,
     damage,
     aoe: opts.aoe ?? 0,
+    friendlyFire: !!opts.friendlyFire,
+    vsBuilding: opts.vsBuilding ?? 1,
     slowFactor: opts.slowFactor ?? 0,
     slowUntil: opts.slowUntil ?? 0,
     poisonUntil: opts.poisonUntil ?? 0,
     color: opts.color ?? (side === "hunter" ? 0xf87171 : 0x93c5fd),
     ttl: 2.5,
   };
-  // 目标点缓存用于目标消失后的落点
-  state.projectiles.push({ ...projectile, targetId: `${targetUnitId}|${Math.round(targetX)}|${Math.round(targetY)}` });
+  state.projectiles.push(projectile);
 }
 
 function splitTarget(ref: string): { id: string; x: number; y: number } {
@@ -453,115 +782,37 @@ function splitTarget(ref: string): { id: string; x: number; y: number } {
   return { id, x: Number(x) || 0, y: Number(y) || 0 };
 }
 
-function damageUnit(
-  state: GameState,
-  target: Unit,
-  damage: number,
-  attackerSide: Side,
-  opts: { slowFactor?: number; slowUntil?: number; poisonUntil?: number } = {}
-): void {
-  if (target.dead) return;
-  target.hp -= damage;
-  target.hitFlashAt = state.time;
-  if (opts.slowUntil && opts.slowUntil > state.time) {
-    target.slowUntil = opts.slowUntil;
-    target.slowFactor = 1 - (opts.slowFactor ?? 0.3);
-  }
-  if (opts.poisonUntil && opts.poisonUntil > state.time) {
-    target.poisonUntil = opts.poisonUntil;
-  }
-  if (target.hp <= 0) killUnit(state, target, attackerSide);
+function hunterAtkMultiplier(state: GameState, unit: Unit): number {
+  if (unit.side !== "hunter") return 1;
+  const slot = state.hunterSlots[unit.owner];
+  return slot?.hammer ? 1.25 : 1;
 }
 
-function damageBuilding(state: GameState, building: Building, damage: number, attackerSide: Side): void {
-  if (building.hp <= 0) return;
-  building.hp -= damage;
-  building.flashAt = state.time;
-  if (building.hp <= 0) {
-    building.hp = 0;
-    state.stats[attackerSide].kills += 1;
-    pushEvent(
-      state,
-      "kill",
-      `${BUILDINGS[building.kind].name}被摧毁`,
-      building.x,
-      building.y,
-      building.side
-    );
+function unitAttackInterval(state: GameState, unit: Unit): number {
+  if (unit.side === "hunter" && state.hunterSlots[unit.owner]?.gloves) {
+    return unit.attackInterval * 0.6;
   }
+  return unit.attackInterval;
 }
 
-function killUnit(state: GameState, unit: Unit, killerSide: Side): void {
-  if (unit.dead) return;
-  const spec = UNITS[unit.kind];
-  state.stats[killerSide].kills += 1;
-  state.stats[unit.side].lost += 1;
-  if (killerSide !== unit.side) {
-    const mult = state.upgrades[killerSide].bounty ? 1.5 : 1;
-    const gold = Math.round(unit.bounty * mult);
-    if (gold > 0) addGold(state, killerSide, gold);
-  }
-  pushEvent(state, "death", `${spec.name}阵亡`, unit.x, unit.y, unit.side);
-
-  if (unit.isHero) {
-    unit.hp = 0;
-    unit.dead = true;
-    unit.path = [];
-    unit.dest = null;
-    if (unit.side === "hunter") {
-      unit.livesLeft -= 1;
-      unit.respawnAt = state.time + RESPAWN_HUNTER;
-    } else {
-      const penalty = Math.floor(state.gold.farmer * 0.1);
-      state.gold.farmer = Math.max(0, state.gold.farmer - penalty);
-      unit.respawnAt = state.time + RESPAWN_FARMER;
-    }
-  } else {
-    unit.hp = 0;
-    unit.dead = true;
-    unit.respawnAt = Infinity;
-  }
-}
-
-function respawnHero(state: GameState, unit: Unit): void {
-  const camp = unit.side === "farmer" ? state.map.farmerCamp : state.map.hunterCamp;
-  unit.dead = false;
-  unit.hp = unit.maxHp;
-  unit.x = camp.x + (Math.random() * 40 - 20);
-  unit.y = camp.y + (Math.random() * 40 - 20);
-  unit.path = [];
-  unit.dest = null;
-  unit.targetId = null;
-  unit.hidden = false;
-  unit.slowUntil = 0;
-  unit.slowFactor = 1;
-  unit.poisonUntil = 0;
-  unit.cooldown = 0;
-  pushEvent(state, "info", `${UNITS[unit.kind].name}已在营地复活`, unit.x, unit.y, unit.side);
-}
-
-function performAttack(
-  state: GameState,
-  unit: Unit,
-  target: { unit?: Unit; building?: Building }
-): void {
+function performAttack(state: GameState, unit: Unit, target: { unit?: Unit; building?: Building }): void {
   if (unit.cooldown > 0) return;
-  unit.cooldown = unit.attackInterval;
+  unit.cooldown = unitAttackInterval(state, unit);
   unit.lastActionAt = state.time;
   unit.hidden = false;
-  const atkBuff = state.upgrades[unit.side].atk ? 1.15 : 1;
-  const atk = unit.atk * atkBuff;
+  const atk = unit.atk * hunterAtkMultiplier(state, unit);
+  const poisonSlot = unit.side === "hunter" ? state.hunterSlots[unit.owner] : null;
   if (target.unit) {
-    const def = target.unit.def + (state.upgrades[target.unit.side].def ? 3 : 0);
-    let damage = Math.max(1, atk - def * 0.6);
-    damage *= 1;
+    const def = target.unit.def;
+    const damage = Math.max(1, atk - def * 0.5);
     if (unit.range > 80) {
-      spawnProjectile(state, unit.side, unit.x, unit.y, target.unit.id, target.unit.x, target.unit.y, damage, {
-        slowFactor: unit.kind === "frostShaman" ? 0.3 : 0,
-        slowUntil: unit.kind === "frostShaman" ? state.time + 2 : 0,
+      spawnProjectile(state, unit.side, unit.owner, unit.x, unit.y, target.unit.id, target.unit.x, target.unit.y, damage, {
+        poisonUntil: poisonSlot?.poison ? state.time + 4 : 0,
       });
     } else {
-      damageUnit(state, target.unit, damage, unit.side);
+      damageUnit(state, target.unit, damage, unit.side, unit.owner, {
+        poisonUntil: poisonSlot?.poison ? state.time + 4 : 0,
+      });
     }
   } else if (target.building) {
     let damage = Math.max(1, atk);
@@ -570,6 +821,7 @@ function performAttack(
       spawnProjectile(
         state,
         unit.side,
+        unit.owner,
         unit.x,
         unit.y,
         target.building.id,
@@ -578,100 +830,76 @@ function performAttack(
         damage
       );
     } else {
-      damageBuilding(state, target.building, damage, unit.side);
+      damageBuilding(state, target.building, damage, unit.side, unit.owner);
     }
   }
 }
 
 function followLeader(state: GameState, unit: Unit): void {
-  // 英雄的移动由 AI 或玩家指令直接控制，不能被跟随逻辑覆盖
   if (unit.isHero) return;
-  const leader = sideHero(state, unit.side);
-  if (!leader) return;
   if (unit.stance === "attack") {
-    const enemyCamp = unit.side === "farmer" ? state.map.hunterCamp : state.map.farmerCamp;
-    setUnitDestination(state, unit, enemyCamp.x, enemyCamp.y);
+    const target =
+      unit.side === "farmer"
+        ? state.map.hunterCamp
+        : state.map.farmerStarts[unit.owner % state.map.farmerStarts.length];
+    setUnitDestination(state, unit, target.x, target.y);
     return;
   }
-  const rally = state.rally[unit.side];
-  const anchor = unit.stance === "guard" && rally ? rally : { x: leader.x, y: leader.y };
-  const d = Math.hypot(anchor.x - unit.x, anchor.y - unit.y);
+  const leader =
+    unit.side === "farmer"
+      ? golemForOwner(state, unit.owner) ?? ownerHero(state, "farmer", unit.owner)
+      : ownerHero(state, "hunter", unit.owner);
+  if (!leader) return;
+  const d = Math.hypot(leader.x - unit.x, leader.y - unit.y);
   if (d > TILE * 4.5) {
     const jitter = (unit.animSeed % 10) * 6 - 30;
-    setUnitDestination(state, unit, anchor.x + jitter, anchor.y + jitter);
+    setUnitDestination(state, unit, leader.x + jitter, leader.y + jitter);
   }
 }
 
-function updateLumberjack(state: GameState, unit: Unit, dt: number): void {
-  // 看到敌人就逃回营地
-  const threat = state.units.find(
-    (other) =>
-      other.side !== unit.side &&
-      !other.dead &&
-      other.canSiege &&
-      isUnitVisibleTo(state, other, unit.side) &&
-      Math.hypot(other.x - unit.x, other.y - unit.y) < 170
-  );
-  if (threat) {
-    const camp = state.map.farmerCamp;
-    if (Math.hypot(camp.x - unit.x, camp.y - unit.y) > 90) {
-      if (unit.repathAt < state.time) setUnitDestination(state, unit, camp.x, camp.y);
-      moveAlongPath(state, unit, dt);
-      unit.lastActionAt = state.time;
+export function explodeMine(state: GameState, mine: Unit): void {
+  if (mine.dead) return;
+  const radius = 150;
+  const damage = 420;
+  for (const unit of state.units) {
+    if (unit.side !== "farmer" || unit.dead) continue;
+    if (Math.hypot(unit.x - mine.x, unit.y - mine.y) <= radius) {
+      damageUnit(state, unit, damage, "hunter", mine.owner);
     }
-    return;
   }
+  for (const building of state.buildings) {
+    if (building.side !== "farmer" || building.hp <= 0) continue;
+    if (Math.hypot(building.x - mine.x, building.y - mine.y) <= radius) {
+      damageBuilding(state, building, damage, "hunter", mine.owner);
+    }
+  }
+  mine.dead = true;
+  mine.respawnAt = Infinity;
+  pushEvent(state, "item", "地雷爆炸", mine.x, mine.y, "hunter");
+}
 
-  const valid =
-    unit.chopTarget &&
-    terrainAtTile(state.map, unit.chopTarget.tx, unit.chopTarget.ty) === "tree" &&
-    state.map.trees[unit.chopTarget.ty * state.map.w + unit.chopTarget.tx] > 0;
-  if (!valid) {
-    unit.chopTarget = null;
-    const here = pixelToTile(unit.x, unit.y);
-    let best: { tx: number; ty: number; d: number } | null = null;
-    const radius = 12;
-    for (let dy = -radius; dy <= radius; dy += 1) {
-      for (let dx = -radius; dx <= radius; dx += 1) {
-        const tx = here.tx + dx;
-        const ty = here.ty + dy;
-        if (tx < 0 || ty < 0 || tx >= state.map.w || ty >= state.map.h) continue;
-        if (state.map.trees[ty * state.map.w + tx] <= 0) continue;
-        const d = Math.hypot(dx, dy);
-        if (!best || d < best.d) best = { tx, ty, d };
+function updateMine(state: GameState): void {
+  for (const unit of state.units) {
+    if (unit.dead || unit.kind !== "mine") continue;
+    if (state.time < unit.armedAt) continue;
+    let triggered = false;
+    for (const other of state.units) {
+      if (other.side !== "farmer" || other.dead) continue;
+      if (Math.hypot(other.x - unit.x, other.y - unit.y) <= 80) {
+        triggered = true;
+        break;
       }
     }
-    if (best) unit.chopTarget = { tx: best.tx, ty: best.ty };
-  }
-
-  if (unit.chopTarget) {
-    const c = tileCenter(unit.chopTarget.tx, unit.chopTarget.ty);
-    const d = Math.hypot(c.x - unit.x, c.y - unit.y);
-    if (d > TILE * 1.15) {
-      if (unit.repathAt < state.time) setUnitDestination(state, unit, c.x, c.y);
-      moveAlongPath(state, unit, dt);
-      unit.lastActionAt = state.time;
-      return;
-    }
-    unit.path = [];
-    unit.moving = false;
-    unit.chopTimer += dt;
-    const interval = UNITS.lumberjack.lumberInterval ?? 4;
-    if (unit.chopTimer >= interval) {
-      unit.chopTimer = 0;
-      const index = unit.chopTarget.ty * state.map.w + unit.chopTarget.tx;
-      if (state.map.trees[index] > 0) {
-        state.map.trees[index] -= 1;
-        state.wood.farmer += 1;
-        unit.lumber += 1;
-        unit.lastActionAt = state.time;
-        if (state.map.trees[index] <= 0) {
-          state.map.terrain[index] = 1; // 变为灌木
-          unit.chopTarget = null;
-          pushEvent(state, "info", "树木被砍倒", c.x, c.y, "farmer");
+    if (!triggered) {
+      for (const building of state.buildings) {
+        if (building.side !== "farmer" || building.hp <= 0) continue;
+        if (Math.hypot(building.x - unit.x, building.y - unit.y) <= 80) {
+          triggered = true;
+          break;
         }
       }
     }
+    if (triggered) explodeMine(state, unit);
   }
 }
 
@@ -681,9 +909,9 @@ function updateUnit(state: GameState, unit: Unit, dt: number): void {
 
   if (unit.regenUntil > state.time) unit.hp = Math.min(unit.maxHp, unit.hp + 8 * dt);
   if (unit.poisonUntil > state.time) {
-    unit.hp -= 5 * dt;
+    unit.hp -= 10 * dt;
     if (unit.hp <= 0) {
-      killUnit(state, unit, unit.side === "farmer" ? "hunter" : "farmer");
+      killUnit(state, unit, unit.side === "farmer" ? "hunter" : "farmer", 0);
       return;
     }
   }
@@ -694,22 +922,24 @@ function updateUnit(state: GameState, unit: Unit, dt: number): void {
     unit.produceTimer += dt;
     if (unit.produceTimer >= spec.incomeInterval) {
       unit.produceTimer = 0;
-      addGold(state, unit.side, spec.incomeGold);
+      addGold(state, unit.side, unit.owner, spec.incomeGold + unit.incomeBonus);
     }
     return;
   }
 
-  if (unit.kind === "eyeWard" || unit.kind === "owl") {
+  if (unit.kind === "eyeWard") {
     if (unit.expiresAt > 0 && state.time >= unit.expiresAt) unit.dead = true;
     return;
   }
 
-  if (unit.kind === "lumberjack") {
-    updateLumberjack(state, unit, dt);
+  if (unit.kind === "mine") {
+    if (unit.armedAt > 0 && state.time >= unit.armedAt && unit.armedAt + 30 < state.time) {
+      // 保险：长时间未触发也不会永久堆积
+    }
     return;
   }
 
-  const isPlayerHero = unit.id === state.playerHeroId;
+  const isPlayer = unit.id === state.playerUnitId;
   const hasCombat = unit.atk > 0 && unit.attackInterval > 0;
 
   if (hasCombat) {
@@ -732,7 +962,7 @@ function updateUnit(state: GameState, unit: Unit, dt: number): void {
           performAttack(state, unit, targetUnit ? { unit: targetUnit } : { building: targetBuilding ?? undefined });
           return;
         }
-        if (unit.repathAt < state.time) {
+        if (!isPlayer && unit.repathAt < state.time) {
           setUnitDestination(state, unit, tx, ty);
         }
       } else {
@@ -742,12 +972,12 @@ function updateUnit(state: GameState, unit: Unit, dt: number): void {
   }
 
   if (unit.path.length > 0) {
-    if (isPlayerHero) unit.lastActionAt = state.time;
+    if (isPlayer) unit.lastActionAt = state.time;
     moveAlongPath(state, unit, dt);
     return;
   }
 
-  if (isPlayerHero) {
+  if (isPlayer) {
     unit.moving = false;
     return;
   }
@@ -761,105 +991,117 @@ function updateUnit(state: GameState, unit: Unit, dt: number): void {
   }
 }
 
+function countAnimalsNear(state: GameState, building: Building, kind: UnitKind): number {
+  let count = 0;
+  for (const unit of state.units) {
+    if (unit.dead || unit.owner !== building.owner || unit.kind !== kind) continue;
+    // 只统计本窝孵出的动物，避免相邻窝互相占用上限
+    if (Math.hypot(unit.homeX - building.x, unit.homeY - building.y) < 1) count += 1;
+  }
+  return count;
+}
+
+function spawnAnimal(state: GameState, building: Building, kind: UnitKind): void {
+  const spot =
+    nearestOpenTile(
+      state.map,
+      building.tx + Math.floor(Math.random() * 5) - 2,
+      building.ty + 2 + Math.floor(Math.random() * 2),
+      blockedFn(state)
+    ) ?? { tx: building.tx, ty: building.ty + 2 };
+  const point = tileCenter(spot.tx, spot.ty);
+  const animal = spawnUnit(state, "farmer", building.owner, kind, point.x, point.y);
+  animal.homeX = building.x;
+  animal.homeY = building.y;
+  if (building.tier > 0) {
+    animal.incomeBonus = kind === "pig" ? 2 : 1;
+    animal.maxHp += 20;
+    animal.hp = animal.maxHp;
+  }
+}
+
+const TOWER_COLOR: Record<string, number> = {
+  arrowTower: 0xfbbf24,
+  rocketTower: 0xf97316,
+  boulderTower: 0xa8a29e,
+  flameTower: 0xef4444,
+  frostTower: 0x67e8f9,
+};
+
+function updateTower(state: GameState, building: Building, dt: number): void {
+  const spec = BUILDINGS[building.kind];
+  if (!spec.tower) return;
+  building.cooldown = Math.max(0, building.cooldown - dt);
+  if (state.time < building.disabledUntil) return;
+  if (building.cooldown > 0) return;
+
+  let targetUnit: Unit | null = null;
+  let targetBuilding: Building | null = null;
+  let best = Infinity;
+  for (const unit of state.units) {
+    if (unit.side === building.side || unit.dead) continue;
+    if (unit.kind === "eyeWard" || unit.kind === "mine") continue;
+    if (!isUnitVisibleTo(state, unit, building.side)) continue;
+    const d = Math.hypot(unit.x - building.x, unit.y - building.y);
+    if (d <= spec.tower.range && d < best) {
+      best = d;
+      targetUnit = unit;
+    }
+  }
+  if (!targetUnit && spec.tower.vsBuilding) {
+    for (const other of state.buildings) {
+      if (other.side === building.side || other.hp <= 0) continue;
+      if (!isBuildingVisibleTo(state, other, building.side)) continue;
+      const d = Math.hypot(other.x - building.x, other.y - building.y);
+      if (d <= spec.tower.range && d < best) {
+        best = d;
+        targetBuilding = other;
+      }
+    }
+  }
+  if (!targetUnit && !targetBuilding) return;
+
+  building.cooldown = spec.tower.interval;
+  const atk = spec.tower.atk + towerAttackBonus(state, building);
+  const damage = Math.max(1, atk);
+  spawnProjectile(
+    state,
+    building.side,
+    building.owner,
+    building.x,
+    building.y - 16,
+    targetUnit?.id ?? targetBuilding?.id ?? "",
+    targetUnit?.x ?? targetBuilding?.x ?? building.x,
+    targetUnit?.y ?? targetBuilding?.y ?? building.y,
+    damage,
+    {
+      aoe: spec.tower.aoe ?? 0,
+      friendlyFire: spec.tower.friendlyFire,
+      vsBuilding: spec.tower.vsBuilding ?? 1,
+      slowFactor: spec.tower.slow ?? 0,
+      slowUntil: spec.tower.slow ? state.time + 2 : 0,
+      color: TOWER_COLOR[building.kind] ?? 0xfbbf24,
+    }
+  );
+}
+
 function updateBuilding(state: GameState, building: Building, dt: number): void {
   if (building.hp <= 0) return;
   const spec = BUILDINGS[building.kind];
 
-  if (spec.income) {
+  if (spec.income && building.kind !== "hunterBarracks") {
     building.produceTimer += dt;
-    if (building.produceTimer >= spec.income.interval && building.produced < spec.income.max) {
+    if (building.produceTimer >= spec.income.interval) {
       building.produceTimer = 0;
-      building.produced += 1;
-      const spot = nearestOpenTile(
-        state.map,
-        building.tx + ((building.produced % 3) - 1) * 1,
-        building.ty + 2,
-        blockedFn(state)
-      );
-      const point = spot ? tileCenter(spot.tx, spot.ty) : { x: building.x, y: building.y + TILE };
-      spawnUnit(state, building.side, spec.income.kind, point.x, point.y);
-    }
-  }
-
-  if (spec.produceWood) {
-    building.produceTimer += dt;
-    if (building.produceTimer >= spec.produceWood.interval) {
-      building.produceTimer = 0;
-      state.wood[building.side] += spec.produceWood.amount;
-    }
-  }
-
-  if (spec.produceUnit) {
-    building.produceTimer += dt;
-    const alive = state.units.filter(
-      (u) => u.side === building.side && u.kind === spec.produceUnit?.kind && !u.dead
-    ).length;
-    if (building.produceTimer >= spec.produceUnit.interval && alive < spec.produceUnit.max) {
-      building.produceTimer = 0;
-      spawnUnit(state, building.side, spec.produceUnit.kind, building.x + 20, building.y + 20);
-    }
-  }
-
-  if (spec.produceBomb) {
-    building.produceTimer += dt;
-    if (
-      building.produceTimer >= spec.produceBomb.interval &&
-      state.stock[building.side].bomb < spec.produceBomb.max
-    ) {
-      building.produceTimer = 0;
-      state.stock[building.side].bomb += 1;
-    }
-  }
-
-  if (spec.auraSlow) {
-    for (const unit of state.units) {
-      if (unit.side === building.side || unit.dead) continue;
-      if (Math.hypot(unit.x - building.x, unit.y - building.y) <= spec.auraSlow.range) {
-        unit.slowUntil = Math.max(unit.slowUntil, state.time + 0.6);
-        unit.slowFactor = 1 - spec.auraSlow.factor;
-      }
-    }
-  }
-
-  if (spec.tower) {
-    building.cooldown = Math.max(0, building.cooldown - dt);
-    if (building.cooldown <= 0) {
-      let target: Unit | null = null;
-      let best = Infinity;
-      for (const unit of state.units) {
-        if (unit.side === building.side || unit.dead) continue;
-        if (unit.kind === "owl" || unit.kind === "eyeWard") continue;
-        if (!isRevealedTo(state, building.side, unit)) continue;
-        const d = Math.hypot(unit.x - building.x, unit.y - building.y);
-        if (d <= spec.tower.range && d < best) {
-          best = d;
-          target = unit;
+      if (animalTotal(state) < ANIMAL_UPGRADE_TOTAL) {
+        if (countAnimalsNear(state, building, spec.income.kind) < spec.income.max) {
+          spawnAnimal(state, building, spec.income.kind);
         }
       }
-      if (target) {
-        building.cooldown = spec.tower.interval;
-        const buff = state.upgrades[building.side].atk ? 1.15 : 1;
-        const damage = Math.max(1, spec.tower.atk * buff - target.def * 0.6);
-        spawnProjectile(
-          state,
-          building.side,
-          building.x,
-          building.y - 16,
-          target.id,
-          target.x,
-          target.y,
-          damage,
-          {
-            aoe: spec.tower.aoe ?? 0,
-            slowFactor: spec.tower.slow ?? 0,
-            slowUntil: spec.tower.slow ? state.time + 2 : 0,
-            poisonUntil: spec.tower.poison ? state.time + 4 : 0,
-            color: spec.tower.poison ? 0x84cc16 : 0xfbbf24,
-          }
-        );
-      }
     }
   }
+
+  updateTower(state, building, dt);
 }
 
 function updateProjectiles(state: GameState, dt: number): void {
@@ -882,24 +1124,35 @@ function updateProjectiles(state: GameState, dt: number): void {
       alive.push(projectile);
       continue;
     }
-    // 命中
     if (projectile.aoe > 0) {
       for (const unit of state.units) {
-        if (unit.side === projectile.side || unit.dead) continue;
+        if (unit.dead) continue;
+        if (!projectile.friendlyFire && unit.side === projectile.side) continue;
+        if (unit.kind === "eyeWard" || unit.kind === "mine") continue;
         if (Math.hypot(unit.x - tx, unit.y - ty) <= projectile.aoe) {
-          damageUnit(state, unit, projectile.damage, projectile.side);
+          damageUnit(state, unit, projectile.damage, projectile.side, projectile.owner, {
+            slowFactor: projectile.slowFactor,
+            slowUntil: projectile.slowUntil,
+          });
+        }
+      }
+      if (projectile.friendlyFire) {
+        for (const building of state.buildings) {
+          if (building.side === projectile.side || building.hp <= 0) continue;
+          if (Math.hypot(building.x - tx, building.y - ty) <= projectile.aoe) {
+            damageBuilding(state, building, projectile.damage * 0.5, projectile.side, projectile.owner);
+          }
         }
       }
     } else if (targetUnit) {
-      damageUnit(state, targetUnit, projectile.damage, projectile.side, {
+      damageUnit(state, targetUnit, projectile.damage, projectile.side, projectile.owner, {
         slowFactor: projectile.slowFactor,
         slowUntil: projectile.slowUntil,
         poisonUntil: projectile.poisonUntil,
       });
     } else if (targetBuilding) {
-      damageBuilding(state, targetBuilding, projectile.damage, projectile.side);
+      damageBuilding(state, targetBuilding, projectile.damage * projectile.vsBuilding, projectile.side, projectile.owner);
     }
-    pushEvent(state, "hit", "", tx, ty, projectile.side);
   }
   state.projectiles = alive;
 }
@@ -926,40 +1179,31 @@ function separateUnits(state: GameState): void {
   }
 }
 
-function hunterHeroAlive(state: GameState): boolean {
-  return state.units.some((unit) => unit.kind === "hunterHero" && unit.livesLeft > 0);
-}
-
-function finish(state: GameState, winner: Side, reason: GameResult["reason"]): void {
-  if (state.result) return;
-  state.result = { winner, reason };
-  state.phase = "over";
-  pushEvent(
-    state,
-    "win",
-    winner === "farmer" ? "猎人全部倒下，农民获胜！" : "计时结束，猎人存活获胜！",
-    winner === "farmer" ? state.map.hunterCamp.x : state.map.farmerCamp.x,
-    winner === "farmer" ? state.map.hunterCamp.y : state.map.farmerCamp.y
-  );
-}
-
-function refreshPop(state: GameState): void {
-  for (const side of ["farmer", "hunter"] as Side[]) {
-    let used = 0;
-    for (const unit of state.units) {
-      if (unit.side === side && !unit.dead) used += unit.pop;
-    }
-    state.popUsed[side] = used;
-  }
-}
-
-export function popCap(state: GameState, side: Side): number {
-  let bonus = 0;
+function upgradeAnimals(state: GameState): void {
+  const total = animalTotal(state);
+  if (total < ANIMAL_UPGRADE_TOTAL) return;
+  let upgraded = false;
   for (const building of state.buildings) {
-    if (building.side !== side || building.hp <= 0) continue;
-    bonus += BUILDINGS[building.kind].popBonus ?? 0;
+    if (building.side !== "farmer" || building.tier > 0 || !BUILDINGS[building.kind].income) continue;
+    building.tier = 1;
+    upgraded = true;
   }
-  return Math.min(MAX_POP, BASE_POP + bonus);
+  if (!upgraded) return;
+  for (const unit of state.units) {
+    if (unit.dead || unit.side !== "farmer") continue;
+    if (unit.kind === "chicken" || unit.kind === "sheep") unit.incomeBonus = 1;
+    else if (unit.kind === "pig") unit.incomeBonus = 2;
+  }
+  pushEvent(state, "phase", "动物总数达到 300，全部动物升级！", state.map.hunterCamp.x, state.map.hunterCamp.y, "farmer");
+}
+
+function moveMerchant(state: GameState): void {
+  if (state.time < state.merchant.nextAt) return;
+  state.merchant.nextAt = state.time + MERCHANT_INTERVAL;
+  const spots = state.map.merchantSpots;
+  const next = spots[Math.floor(Math.random() * spots.length)];
+  state.merchant.x = next.x;
+  state.merchant.y = next.y;
 }
 
 export function stepGame(state: GameState, dt: number): void {
@@ -968,64 +1212,32 @@ export function stepGame(state: GameState, dt: number): void {
   if (clamped <= 0) return;
   state.time += clamped;
 
-  // 阶段推进
   const nextPhase = phaseAt(state, state.time);
   if (nextPhase !== state.phase) {
     state.phase = nextPhase;
     if (nextPhase !== "over") {
-      pushEvent(
-        state,
-        "phase",
-        `进入${PHASE_LABEL[nextPhase]}`,
-        state.map.farmerCamp.x,
-        state.map.farmerCamp.y
-      );
-    }
-    if (nextPhase === "reversal" && !state.hunterReinforced) {
-      state.hunterReinforced = true;
-      const hunter = spawnUnit(
-        state,
-        "hunter",
-        "hunterHero",
-        state.map.hunterCamp.x + 40,
-        state.map.hunterCamp.y + 40
-      );
-      hunter.livesLeft = 3;
-      // 玩家玩猎人时，接管增援英雄，避免主英雄三条命耗尽后无事可做
-      if (state.side === "hunter") state.playerHeroId = hunter.id;
-      pushEvent(
-        state,
-        "phase",
-        "猎人增援抵达！",
-        hunter.x,
-        hunter.y,
-        "hunter"
-      );
+      pushEvent(state, "phase", `进入${PHASE_LABEL[nextPhase]}`, state.map.hunterCamp.x, state.map.hunterCamp.y);
     }
   }
 
-  // 技能冷却
-  for (const side of ["farmer", "hunter"] as Side[]) {
+  for (const unitId of Object.keys(state.cooldowns)) {
+    const map = state.cooldowns[unitId];
     for (const skill of ALL_SKILLS) {
-      state.skillCd[side][skill] = Math.max(0, state.skillCd[side][skill] - clamped);
+      if (map[skill] > 0) map[skill] = Math.max(0, map[skill] - clamped);
     }
   }
 
-  // 复活
   for (const unit of state.units) {
     if (!unit.dead || !unit.isHero) continue;
-    // 猎人 3 条命耗尽后不再复活；农民英雄无限复活
-    if (unit.kind === "hunterHero" && unit.livesLeft <= 0) continue;
+    if (unit.side === "hunter" && unit.livesLeft <= 0) continue;
     if (unit.respawnAt === Infinity) continue;
     if (state.time >= unit.respawnAt) respawnHero(state, unit);
   }
 
-  // 单位更新
   const snapshot = [...state.units];
   for (const unit of snapshot) {
     if (unit.dead) continue;
     updateUnit(state, unit, clamped);
-    // 隐蔽判定
     if (unit.side === "farmer" && !unit.dead) {
       const bush = isBushAt(state.map, unit.x, unit.y);
       if (bush && !unit.moving && state.time - unit.lastActionAt > 2) {
@@ -1034,28 +1246,27 @@ export function stepGame(state: GameState, dt: number): void {
         unit.hidden = false;
       }
     }
-    if (unit.kind === "shadowScout" && !unit.dead) unit.hidden = true;
   }
 
-  // 建筑更新
-  for (const building of state.buildings) {
-    updateBuilding(state, building, clamped);
-  }
+  updateMine(state);
 
+  for (const building of state.buildings) updateBuilding(state, building, clamped);
   updateProjectiles(state, clamped);
   separateUnits(state);
+  upgradeAnimals(state);
+  moveMerchant(state);
 
-  // 清理：死亡单位移除，但英雄保留在列表里等待复活（农民英雄无限复活）
   state.units = state.units.filter((unit) => !unit.dead || unit.isHero);
   state.buildings = state.buildings.filter((building) => building.hp > 0);
   state.reveal = state.reveal.filter((zone) => zone.until >= state.time);
 
-  refreshPop(state);
+  for (const key of Object.keys(state.cooldowns)) {
+    if (!state.units.some((unit) => unit.id === key)) delete state.cooldowns[key];
+  }
 
   if (state.time - state.visionAt > 0.2) updateVision(state);
 
-  // 胜负
-  if (!hunterHeroAlive(state)) {
+  if (!hunterAlive(state)) {
     finish(state, "farmer", "wiped");
     return;
   }
@@ -1077,34 +1288,43 @@ function inBuildRange(state: GameState, side: Side, x: number, y: number): boole
   return false;
 }
 
+function hasTeamBuilding(state: GameState, side: Side, kind: BuildingKind): boolean {
+  return state.buildings.some((b) => b.side === side && b.kind === kind && b.hp > 0);
+}
+
 export function canPlace(state: GameState, side: Side, kind: BuildingKind, tx: number, ty: number): boolean {
   const spec = BUILDINGS[kind];
   if (spec.side !== side) return false;
-  if (!phaseAllows(spec.unlock, state.phase)) return false;
+  if (spec.fixed) return false;
+  if (kind === "hunterBarracks") return false;
   if (tx < 1 || ty < 1 || tx >= state.map.w - 1 || ty >= state.map.h - 1) return false;
   if (isStaticBlocked(state.map, tx, ty)) return false;
   if (buildingAt(state, tx, ty)) return false;
+  if (spec.unique && hasTeamBuilding(state, side, kind)) return false;
   const center = tileCenter(tx, ty);
   return inBuildRange(state, side, center.x, center.y);
 }
 
-export function tryBuild(
+export function tryBuildFor(
   state: GameState,
   side: Side,
+  owner: number,
   kind: BuildingKind,
   tx: number,
   ty: number
 ): boolean {
   const spec = BUILDINGS[kind];
   if (!canPlace(state, side, kind, tx, ty)) return false;
-  if (state.gold[side] < spec.costGold || state.wood[side] < spec.costWood) return false;
-  state.gold[side] -= spec.costGold;
-  state.wood[side] -= spec.costWood;
-  state.stats[side].goldSpent += spec.costGold;
+  const slot = side === "farmer" ? state.farmerSlots[owner] : state.hunterSlots[owner];
+  const cost = buildingCost(kind, state.mode);
+  if (!slot || slot.gold < cost) return false;
+  slot.gold -= cost;
+  state.stats[side].goldSpent += cost;
   const center = tileCenter(tx, ty);
   const building: Building = {
     id: nextId(state, "b"),
     side,
+    owner,
     kind,
     tx,
     ty,
@@ -1118,209 +1338,311 @@ export function tryBuild(
     flashAt: 0,
     atk: spec.tower?.atk ?? 0,
     range: spec.tower?.range ?? 0,
+    disabledUntil: 0,
+    open: false,
+    tier: animalTotal(state) >= ANIMAL_UPGRADE_TOTAL && spec.income ? 1 : 0,
   };
   state.buildings.push(building);
   state.stats[side].built += 1;
   pushEvent(state, "build", `建造了${spec.name}`, center.x, center.y, side);
-  refreshPop(state);
   return true;
 }
 
-export function sellBuilding(state: GameState, side: Side, id: string): boolean {
-  const building = state.buildings.find((b) => b.id === id && b.side === side);
+export function sellBuilding(state: GameState, id: string): boolean {
+  const side = state.side;
+  const building = state.buildings.find((b) => b.id === id && b.side === side && b.owner === state.playerOwner);
   if (!building) return false;
   const spec = BUILDINGS[building.kind];
-  state.gold[side] += Math.floor(spec.costGold * 0.5);
-  state.wood[side] += Math.floor(spec.costWood * 0.5);
+  const refund = Math.floor(buildingCost(building.kind, state.mode) * 0.5);
+  const slot = side === "farmer" ? state.farmerSlots[state.playerOwner] : state.hunterSlots[state.playerOwner];
+  if (slot) slot.gold += refund;
   state.buildings = state.buildings.filter((b) => b.id !== id);
-  pushEvent(state, "info", `出售了${spec.name}`, building.x, building.y, side);
-  refreshPop(state);
+  pushEvent(state, "info", `出售了${spec.name}，返还 ${refund} 金`, building.x, building.y, side);
   return true;
 }
 
-function hasTavern(state: GameState, side: Side): boolean {
-  return state.buildings.some((b) => b.side === side && b.kind === "tavern" && b.hp > 0);
-}
-
-function findSpawnSpot(state: GameState, side: Side): Vec {
-  const hero = sideHero(state, side);
-  const anchor = hero ? { x: hero.x, y: hero.y } : side === "farmer" ? state.map.farmerCamp : state.map.hunterCamp;
-  const start = pixelToTile(anchor.x, anchor.y);
-  for (let r = 1; r <= 8; r += 1) {
-    for (let i = 0; i < 16; i += 1) {
-      const angle = (i / 16) * Math.PI * 2;
-      const tx = start.tx + Math.round(Math.cos(angle) * r);
-      const ty = start.ty + Math.round(Math.sin(angle) * r);
-      if (tx < 1 || ty < 1 || tx >= state.map.w - 1 || ty >= state.map.h - 1) continue;
-      if (isStaticBlocked(state.map, tx, ty)) continue;
-      if (buildingAt(state, tx, ty)) continue;
-      return tileCenter(tx, ty);
-    }
-  }
-  return { x: anchor.x, y: anchor.y };
-}
-
-export function tryHire(state: GameState, side: Side, kind: UnitKind): boolean {
+export function tryHireFor(state: GameState, side: Side, owner: number, kind: UnitKind): boolean {
   const spec = UNITS[kind];
   if (spec.side !== side) return false;
-  if (!phaseAllows(spec.unlock, state.phase)) return false;
-  if (state.gold[side] < spec.costGold || state.wood[side] < spec.costWood) return false;
-  if (spec.pop > 0 && state.popUsed[side] + spec.pop > popCap(state, side)) return false;
-  if (side === "farmer" && (kind === "militia" || kind === "archer" || kind === "golem")) {
-    if (!hasTavern(state, side)) return false;
-  }
-  const aiSide: Side = state.side === "farmer" ? "hunter" : "farmer";
-  if (side === aiSide) {
-    const military = state.units.filter(
-      (u) => u.side === side && !u.dead && !u.isHero && u.kind !== "sheep" && u.kind !== "pig" && u.kind !== "lumberjack"
-    ).length;
-    if (military >= DIFFICULTY[state.difficulty].unitCap) return false;
-  }
-  state.gold[side] -= spec.costGold;
-  state.wood[side] -= spec.costWood;
-  state.stats[side].goldSpent += spec.costGold;
-  state.stats[side].hired += 1;
-  const spot = findSpawnSpot(state, side);
-  spawnUnit(state, side, kind, spot.x, spot.y);
-  pushEvent(state, "hire", `招募了${spec.name}`, spot.x, spot.y, side);
-  refreshPop(state);
-  return true;
-}
+  const slot = side === "farmer" ? state.farmerSlots[owner] : state.hunterSlots[owner];
+  if (!slot || slot.gold < spec.costGold) return false;
 
-export function buyItem(state: GameState, side: Side, item: ItemKind): boolean {
-  const spec = ITEMS[item];
-  if (state.gold[side] < spec.cost) return false;
-  if (state.stock[side][item] >= 5) return false;
-  state.gold[side] -= spec.cost;
-  state.stats[side].goldSpent += spec.cost;
-  state.stock[side][item] += 1;
-  return true;
-}
-
-export function useItem(state: GameState, side: Side, item: ItemKind): boolean {
-  if (state.stock[side][item] <= 0) return false;
-  const hero = sideHero(state, side);
-  if (!hero) return false;
-  state.stock[side][item] -= 1;
-  switch (item) {
-    case "spray":
-      hero.hp = Math.min(hero.maxHp, hero.hp + 220);
-      break;
-    case "cdScroll":
-      for (const skill of ALL_SKILLS) state.skillCd[side][skill] *= 0.5;
-      break;
-    case "regen":
-      hero.regenUntil = state.time + 20;
-      break;
-    case "dust":
-      state.reveal.push({ x: hero.x, y: hero.y, r: 300, until: state.time + 6 });
-      pushEvent(state, "item", "反隐粉：显形周围敌人", hero.x, hero.y, side);
-      break;
-    case "bomb": {
-      for (const building of state.buildings) {
-        if (building.side === side || building.hp <= 0) continue;
-        if (Math.hypot(building.x - hero.x, building.y - hero.y) <= 90) {
-          damageBuilding(state, building, 300, side);
-        }
-      }
-      pushEvent(state, "item", "炸弹爆炸", hero.x, hero.y, side);
-      break;
+  if (kind === "golem") {
+    if (!hasTeamBuilding(state, "farmer", "golemFactory")) return false;
+    if (golemForOwner(state, owner)) return false;
+    slot.gold -= spec.costGold;
+    state.stats.farmer.goldSpent += spec.costGold;
+    const factory = state.buildings.find((b) => b.side === "farmer" && b.kind === "golemFactory" && b.hp > 0);
+    const at = factory ? { x: factory.x, y: factory.y + 40 } : state.farmerSlots[owner].base;
+    const golem = spawnUnit(state, "farmer", owner, "golem", at.x, at.y);
+    const clones = MODES[state.mode].cloneCount;
+    for (let i = 0; i < clones; i += 1) {
+      const angle = (i / clones) * Math.PI * 2;
+      const clone = spawnUnit(
+        state,
+        "farmer",
+        owner,
+        "golemClone",
+        at.x + Math.cos(angle) * 44,
+        at.y + Math.sin(angle) * 44
+      );
+      clone.atk = Math.max(8, Math.round(clone.atk * 0.55));
     }
-    default:
-      break;
+    state.stats.farmer.hired += 1;
+    pushEvent(state, "hire", "主傀儡出厂！", golem.x, golem.y, "farmer");
+    return true;
   }
-  return true;
+
+  if (kind === "mercenary") {
+    if (!hasTeamBuilding(state, "hunter", "hunterBarracks")) return false;
+    // 原作规则：先击杀农民，再回中间兵营购买
+    const hunterSlot = state.hunterSlots[owner];
+    if (!hunterSlot || hunterSlot.kills < 1) return false;
+    const owned = state.units.filter(
+      (u) => u.side === "hunter" && u.owner === owner && u.kind === "mercenary" && !u.dead
+    ).length;
+    if (owned >= 6) return false;
+    const buyer = ownerHero(state, "hunter", owner);
+    const barracksSpot = state.buildings.find((b) => b.kind === "hunterBarracks" && b.hp > 0);
+    if (!buyer || !barracksSpot) return false;
+    if (Math.hypot(buyer.x - barracksSpot.x, buyer.y - barracksSpot.y) > 480) return false;
+    hunterSlot.gold -= spec.costGold;
+    state.stats.hunter.goldSpent += spec.costGold;
+    const barracks = state.buildings.find((b) => b.kind === "hunterBarracks" && b.hp > 0);
+    const at = barracks ?? { x: state.map.hunterCamp.x, y: state.map.hunterCamp.y };
+    const spot = nearestOpenTile(state.map, pixelToTile(at.x, at.y).tx + 2, pixelToTile(at.x, at.y).ty + 2, blockedFn(state));
+    const point = spot ? tileCenter(spot.tx, spot.ty) : at;
+    spawnUnit(state, "hunter", owner, "mercenary", point.x, point.y);
+    state.stats.hunter.hired += 1;
+    pushEvent(state, "hire", "雇佣兵加入巡逻", point.x, point.y, "hunter");
+    return true;
+  }
+
+  return false;
 }
 
-export function buyUpgrade(state: GameState, side: Side, kind: UpgradeKind): boolean {
-  if (state.upgrades[side][kind]) return false;
-  const spec = UPGRADES[kind];
-  if (state.gold[side] < spec.cost) return false;
-  state.gold[side] -= spec.cost;
-  state.stats[side].goldSpent += spec.cost;
-  state.upgrades[side][kind] = true;
-  pushEvent(state, "info", `${spec.name}已解锁`, state.map.hunterCamp.x, state.map.hunterCamp.y, side);
-  return true;
-}
-
-export function castSkill(state: GameState, side: Side, skill: SkillId, x: number, y: number): boolean {
+export function buyItemFor(state: GameState, side: Side, owner: number, item: ItemKind): boolean {
   if (side !== "hunter") return false;
-  const hero = sideHero(state, side);
-  if (!hero) return false;
-  if (state.skillCd[side][skill] > 0) return false;
+  const spec = ITEMS[item];
+  const slot = state.hunterSlots[owner];
+  if (!slot || slot.gold < spec.cost) return false;
+  if (spec.unlockAt && state.time < spec.unlockAt) return false;
+  if (item === "mine" && !MODES[state.mode].mines) return false;
+  if (item === "hammer" && slot.hammer) return false;
+  if (item === "gloves" && slot.gloves) return false;
+  if (item === "poison" && slot.poison) return false;
+  if (item === "horn" && slot.horns >= 5) return false;
+  if (item === "mine" && slot.mines >= 9) return false;
+  if (item === "potion" && slot.potions >= 5) return false;
+  slot.gold -= spec.cost;
+  state.stats.hunter.goldSpent += spec.cost;
+  if (item === "hammer") slot.hammer = true;
+  else if (item === "gloves") slot.gloves = true;
+  else if (item === "poison") slot.poison = true;
+  else if (item === "horn") slot.horns += 1;
+  else if (item === "mine") slot.mines += spec.bundle ?? 3;
+  else if (item === "potion") slot.potions += 1;
+  pushEvent(state, "item", `购买了${spec.name}`, state.map.hunterCamp.x, state.map.hunterCamp.y, "hunter");
+  return true;
+}
+
+export function useItemFor(state: GameState, side: Side, owner: number, item: ItemKind): boolean {
+  if (side !== "hunter") return false;
+  const slot = state.hunterSlots[owner];
+  const hero = ownerHero(state, "hunter", owner);
+  if (!slot || !hero || hero.dead) return false;
+  if (item === "horn") {
+    if (slot.horns <= 0) return false;
+    slot.horns -= 1;
+    for (const building of state.buildings) {
+      if (building.side !== "farmer" || building.hp <= 0) continue;
+      if (!BUILDINGS[building.kind].tower) continue;
+      if (Math.hypot(building.x - hero.x, building.y - hero.y) <= HORN_RADIUS) {
+        building.disabledUntil = state.time + HORN_DURATION;
+      }
+    }
+    pushEvent(state, "item", "乌云号角：周围箭塔失效", hero.x, hero.y, "hunter");
+    return true;
+  }
+  if (item === "mine") {
+    if (slot.mines <= 0) return false;
+    slot.mines -= 1;
+    const mine = spawnUnit(state, "hunter", owner, "mine", hero.x, hero.y);
+    mine.armedAt = state.time + MINE_FUSE;
+    mine.hidden = true;
+    pushEvent(state, "item", "放置地雷", hero.x, hero.y, "hunter");
+    return true;
+  }
+  if (item === "potion") {
+    if (slot.potions <= 0) return false;
+    slot.potions -= 1;
+    hero.hp = Math.min(hero.maxHp, hero.hp + 400);
+    pushEvent(state, "item", "饮用药水恢复生命", hero.x, hero.y, "hunter");
+    return true;
+  }
+  return false;
+}
+
+export function buyResearchFor(state: GameState, side: Side, owner: number, kind: ResearchKind): boolean {
+  const spec = RESEARCH[kind];
+  const level = researchLevel(state, side, kind);
+  if (level >= spec.max) return false;
+  if (spec.requiresLab && !hasTeamBuilding(state, side, "researchLab")) return false;
+  const slot = side === "farmer" ? state.farmerSlots[owner] : state.hunterSlots[owner];
+  const cost = spec.cost(level + 1, state.mode);
+  if (!slot || slot.gold < cost) return false;
+  slot.gold -= cost;
+  state.stats[side].goldSpent += cost;
+  state.research[side][kind] = level + 1;
+  refreshGolems(state);
+  pushEvent(
+    state,
+    "info",
+    `${spec.name}升到 ${level + 1} 级`,
+    state.map.hunterCamp.x,
+    state.map.hunterCamp.y,
+    side
+  );
+  return true;
+}
+
+function setCooldown(state: GameState, unitId: string, skill: SkillId, seconds: number): void {
+  if (!state.cooldowns[unitId]) {
+    state.cooldowns[unitId] = { eye: 0, golemQ: 0, golemE: 0, golemW: 0 };
+  }
+  state.cooldowns[unitId][skill] = seconds;
+}
+
+export function skillCooldown(state: GameState, unitId: string, skill: SkillId): number {
+  return state.cooldowns[unitId]?.[skill] ?? 0;
+}
+
+export function castSkillFor(state: GameState, unit: Unit, skill: SkillId, x: number, y: number): boolean {
   const spec = SKILLS[skill];
+  if (spec.golem && unit.kind !== "golem") return false;
+  if (skill === "eye" && unit.kind !== "hunterHero") return false;
+  if (skillCooldown(state, unit.id, skill) > 0) return false;
   const px = clamp(x, TILE, (state.map.w - 1) * TILE);
   const py = clamp(y, TILE, (state.map.h - 1) * TILE);
-  state.skillCd[side][skill] = spec.cd;
-
+  let cd = spec.cd;
   if (skill === "eye") {
-    const ward = spawnUnit(state, side, "eyeWard", px, py);
-    ward.expiresAt = state.time + (spec.duration ?? 8);
-    state.reveal.push({ x: px, y: py, r: spec.radius, until: state.time + (spec.duration ?? 8) });
-    pushEvent(state, "skill", "鹰眼开启", px, py, side);
-  } else if (skill === "slam") {
-    for (const unit of state.units) {
-      if (unit.side === side || unit.dead) continue;
-      if (Math.hypot(unit.x - px, unit.y - py) <= spec.radius) {
-        damageUnit(state, unit, spec.damage ?? 40, side, {
-          slowFactor: spec.slowFactor ?? 0.4,
-          slowUntil: state.time + (spec.slowSeconds ?? 3),
+    cd = state.phase === "hide" ? 20 : state.phase === "expand" ? 15 : 10;
+    const ward = spawnUnit(state, unit.side, unit.owner, "eyeWard", px, py);
+    ward.expiresAt = state.time + (spec.duration ?? 6);
+    state.reveal.push({ x: px, y: py, r: spec.radius, until: state.time + (spec.duration ?? 6) });
+    pushEvent(state, "skill", "侦察之眼", px, py, unit.side);
+  } else if (skill === "golemQ" || skill === "golemE") {
+    const slow = skill === "golemE";
+    for (const other of state.units) {
+      if (other.side === unit.side || other.dead) continue;
+      if (other.kind === "mine") continue;
+      if (Math.hypot(other.x - px, other.y - py) <= spec.radius) {
+        damageUnit(state, other, (spec.damage ?? 120) + unit.atk, unit.side, unit.owner, {
+          slowFactor: slow ? spec.slowFactor ?? 0.5 : 0,
+          slowUntil: slow ? state.time + (spec.slowSeconds ?? 3) : 0,
         });
       }
     }
-    pushEvent(state, "skill", "裂地！", px, py, side);
-  } else {
-    const owl = spawnUnit(state, side, "owl", px, py);
-    owl.expiresAt = state.time + (spec.duration ?? 30);
-    state.reveal.push({ x: px, y: py, r: 180, until: state.time + (spec.duration ?? 30) });
-    pushEvent(state, "skill", "哨兵就位", px, py, side);
+    pushEvent(state, "skill", spec.name, px, py, unit.side);
+  } else if (skill === "golemW") {
+    const target = state.units.find(
+      (u) => u.side !== unit.side && !u.dead && Math.hypot(u.x - px, u.y - py) <= spec.radius
+    );
+    if (target) {
+      damageUnit(state, target, (spec.damage ?? 320) + unit.atk * 2, unit.side, unit.owner);
+    } else {
+      const building = state.buildings.find(
+        (b) => b.side !== unit.side && b.hp > 0 && Math.hypot(b.x - px, b.y - py) <= spec.radius
+      );
+      if (building) damageBuilding(state, building, (spec.damage ?? 320) + unit.atk * 2, unit.side, unit.owner);
+    }
+    pushEvent(state, "skill", spec.name, px, py, unit.side);
   }
+  setCooldown(state, unit.id, skill, cd);
+  return true;
+}
+
+export function castSkill(state: GameState, skill: SkillId, x: number, y: number): boolean {
+  const unit = playerUnit(state);
+  if (!unit || unit.dead) return false;
+  return castSkillFor(state, unit, skill, x, y);
+}
+
+export function detonateMine(state: GameState, id: string): boolean {
+  const mine = state.units.find(
+    (u) => u.id === id && u.kind === "mine" && u.side === "hunter" && u.owner === state.playerOwner && !u.dead
+  );
+  if (!mine) return false;
+  explodeMine(state, mine);
+  return true;
+}
+
+export function toggleWall(state: GameState, id: string): boolean {
+  const building = state.buildings.find(
+    (b) => b.id === id && b.side === state.side && b.owner === state.playerOwner && b.kind === "magicWall"
+  );
+  if (!building) return false;
+  building.open = !building.open;
+  pushEvent(state, "info", building.open ? "魔法墙已开门" : "魔法墙已关闭", building.x, building.y, state.side);
+  return true;
+}
+
+export function controlUnit(state: GameState, unitId: string): boolean {
+  const unit = state.units.find((u) => u.id === unitId && !u.dead);
+  if (!unit || unit.side !== state.side) return false;
+  if (unit.owner !== state.playerOwner) return false;
+  if (!unit.isHero && unit.kind !== "golem") return false;
+  state.playerUnitId = unit.id;
   return true;
 }
 
 export function applyCommand(state: GameState, command: Command): boolean {
   if (state.result) return false;
   const side = state.side;
+  const owner = state.playerOwner;
   switch (command.t) {
     case "move": {
-      const hero = playerHero(state);
-      if (!hero) return false;
-      setUnitDestination(state, hero, command.x, command.y);
-      return true;
-    }
-    case "stance": {
-      for (const unit of state.units) {
-        if (unit.side === side && !unit.isHero && !unit.dead) unit.stance = command.stance;
-      }
-      return true;
-    }
-    case "rally": {
-      state.rally[side] = { x: command.x, y: command.y };
+      const unit = playerUnit(state);
+      if (!unit || unit.dead) return false;
+      setUnitDestination(state, unit, command.x, command.y);
       return true;
     }
     case "build":
-      return tryBuild(state, side, command.kind, command.tx, command.ty);
+      return tryBuildFor(state, side, owner, command.kind, command.tx, command.ty);
     case "sell":
-      return sellBuilding(state, side, command.id);
-    case "skill":
-      return castSkill(state, side, command.skill, command.x, command.y);
+      return sellBuilding(state, command.id);
+    case "research":
+      return buyResearchFor(state, side, owner, command.kind);
     case "hire":
-      return tryHire(state, side, command.unit);
+      return tryHireFor(state, side, owner, command.unit);
+    case "skill":
+      return castSkill(state, command.skill, command.x, command.y);
+    case "buy":
+      return buyItemFor(state, side, owner, command.item);
     case "use":
-      return useItem(state, side, command.item);
-    case "upgrade":
-      return buyUpgrade(state, side, command.kind);
+      return useItemFor(state, side, owner, command.item);
+    case "detonate":
+      return detonateMine(state, command.id);
+    case "toggleWall":
+      return toggleWall(state, command.id);
+    case "control":
+      return controlUnit(state, command.unitId);
+    case "stance": {
+      for (const unit of state.units) {
+        if (unit.side === side && unit.owner === owner && !unit.isHero && !unit.dead) unit.stance = command.stance;
+      }
+      return true;
+    }
     default:
       return false;
   }
 }
 
-/** AI 与 UI 共用的个别操作别名 */
 export const SKILL_LIST = ALL_SKILLS;
 export const ITEM_LIST = ALL_ITEMS;
 
-export function skillReady(state: GameState, side: Side, skill: SkillId): boolean {
-  return state.skillCd[side][skill] <= 0;
+export function skillReady(state: GameState, unitId: string, skill: SkillId): boolean {
+  return skillCooldown(state, unitId, skill) <= 0;
 }
 
 type Serialized = Record<string, unknown>;
@@ -1337,7 +1659,7 @@ export function serializeGame(state: GameState): string {
 export function deserializeGame(raw: string): GameState | null {
   try {
     const parsed = JSON.parse(raw) as Serialized;
-    if (!parsed || parsed.version !== 1) return null;
+    if (!parsed || parsed.version !== 2) return null;
     const mapRaw = parsed.map as GameMap & { terrain: number[]; trees: number[] };
     const map: GameMap = {
       w: mapRaw.w,
@@ -1345,10 +1667,11 @@ export function deserializeGame(raw: string): GameState | null {
       seed: mapRaw.seed,
       terrain: Uint8Array.from(mapRaw.terrain),
       trees: Uint8Array.from(mapRaw.trees),
-      farmerCamp: mapRaw.farmerCamp,
+      farmerStarts: mapRaw.farmerStarts,
       hunterCamp: mapRaw.hunterCamp,
       groves: mapRaw.groves,
       patrol: mapRaw.patrol,
+      merchantSpots: mapRaw.merchantSpots,
     };
     const state = {
       ...(parsed as unknown as GameState),
@@ -1357,6 +1680,7 @@ export function deserializeGame(raw: string): GameState | null {
         farmer: new Uint8Array(map.w * map.h),
         hunter: new Uint8Array(map.w * map.h),
       },
+      cooldowns: (parsed.cooldowns as GameState["cooldowns"]) ?? {},
     } as GameState;
     updateVision(state);
     return state;
@@ -1376,3 +1700,27 @@ export function buffsOf(state: GameState, unit: Unit): { slow: boolean; poison: 
     regen: unit.regenUntil > state.time,
   };
 }
+
+export function playerSkillCooldown(state: GameState, skill: SkillId): number {
+  return skillCooldown(state, state.playerUnitId, skill);
+}
+
+export function terrainBlocked(state: GameState, tx: number, ty: number): boolean {
+  return isStaticBlocked(state.map, tx, ty) || terrainAtTile(state.map, tx, ty) === "water";
+}
+
+export function hunterLives(state: GameState): number {
+  let lives = 0;
+  for (const unit of state.units) {
+    if (unit.side !== "hunter" || !unit.isHero) continue;
+    lives += Math.max(0, unit.livesLeft);
+  }
+  return lives;
+}
+
+export function sideUnitCount(state: GameState, side: Side): number {
+  return state.units.filter((u) => u.side === side && !u.dead && !u.isHero).length;
+}
+
+export { ALL_ITEMS, ALL_SKILLS };
+export type { BuildingKind };

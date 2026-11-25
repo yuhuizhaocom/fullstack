@@ -137,7 +137,18 @@ const CLASS_ROLE: Record<ClassId, string> = {
   guardian: "近战 · 守护",
 };
 const UI_KEY = "tf_world_ui_v1";
-const MAX_CHARACTERS = 4;
+
+/** 界面元素显隐：底部按钮合并后，其余元素都可按需开关 */
+type HudSettings = {
+  targetCard: boolean;
+  skillBar: boolean;
+  hint: boolean;
+  quest: boolean;
+  potion: boolean;
+  recall: boolean;
+  switchChar: boolean;
+  target: boolean;
+};
 
 type UiSettings = {
   joystickSide: "left" | "right";
@@ -145,6 +156,18 @@ type UiSettings = {
   zoom: number;
   autoCastAll: boolean;
   autoSkills: Record<string, boolean>;
+  hud: HudSettings;
+};
+
+const DEFAULT_HUD: HudSettings = {
+  targetCard: true,
+  skillBar: true,
+  hint: true,
+  quest: true,
+  potion: true,
+  recall: true,
+  switchChar: true,
+  target: true,
 };
 
 const DEFAULT_UI: UiSettings = {
@@ -154,6 +177,7 @@ const DEFAULT_UI: UiSettings = {
   zoom: 0.68,
   autoCastAll: false,
   autoSkills: {},
+  hud: { ...DEFAULT_HUD },
 };
 
 function loadUi(): UiSettings {
@@ -167,12 +191,13 @@ function loadUi(): UiSettings {
         // 旧默认 0.75 是配旧体型用的，体型缩小后统一迁到新的默认视野
         zoom: parsed.zoom === 0.75 ? DEFAULT_UI.zoom : parsed.zoom ?? DEFAULT_UI.zoom,
         autoSkills: { ...(parsed.autoSkills ?? {}) },
+        hud: { ...DEFAULT_HUD, ...(parsed.hud ?? {}) },
       };
     }
   } catch {
     // 忽略损坏数据
   }
-  return { ...DEFAULT_UI, autoSkills: {} };
+  return { ...DEFAULT_UI, autoSkills: {}, hud: { ...DEFAULT_HUD } };
 }
 
 function saveUi(settings: UiSettings): void {
@@ -272,6 +297,8 @@ export function WorldGame() {
   const [npcDialog, setNpcDialog] = useState<NpcView | null>(null);
   const [questOpen, setQuestOpen] = useState(false);
   const [panel, setPanel] = useState<PanelKind | null>(null);
+  /** 合并后的角色菜单抽屉：角色/背包/技能/商店都从这里进 */
+  const [menuOpen, setMenuOpen] = useState(false);
   const [bgmOn, setBgmOn] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
   const [isTouch, setIsTouch] = useState(false);
@@ -830,8 +857,50 @@ export function WorldGame() {
       if (event.kind === "reward" && event.to !== myId) continue;
 
       if (event.from) swingsRef.current[event.from] = now;
+      // 远程普攻：补一道从施法者飞向目标的弹道，不再是原地放箭
+      if (event.kind === "swing" && event.from && event.monsterId) {
+        const casterPos =
+          event.from === myId
+            ? { x: meRef.current.x, y: meRef.current.y }
+            : snapshot.players.find((p) => p.id === event.from) ?? null;
+        const casterClass =
+          event.from === myId
+            ? saveRef.current?.classId
+            : snapshot.players.find((p) => p.id === event.from)?.classId;
+        const targetPos = snapshot.monsters.find((m) => m.id === event.monsterId);
+        if (casterPos && casterClass && targetPos) {
+          const dist = Math.hypot(targetPos.x - casterPos.x, targetPos.y - casterPos.y);
+          if (dist > 40) {
+            const kind =
+              casterClass === "ranger" ? "arrow" : casterClass === "mage" ? "bolt" : "holy";
+            const tone =
+              casterClass === "ranger"
+                ? 0x86efac
+                : casterClass === "mage"
+                  ? 0xc4b5fd
+                  : casterClass === "priest"
+                    ? 0xfde68a
+                    : null;
+            if (tone !== null) {
+              stageRef.current?.spawnProjectile({
+                x1: casterPos.x,
+                y1: casterPos.y,
+                x2: targetPos.x,
+                y2: targetPos.y,
+                kind,
+                color: tone,
+              });
+            }
+          }
+        }
+      }
       if (event.kind === "damage" && event.monsterId) {
         flashesRef.current[event.monsterId] = now;
+        // 远程命中给一点屏幕反馈，暴击更明显
+        const hitDist = Math.hypot(event.x - meRef.current.x, event.y - meRef.current.y);
+        if (hitDist < 520) {
+          stageRef.current?.shake(event.crit ? 0.34 : 0.14);
+        }
       }
       if (event.kind === "hurt" && event.to) {
         flashesRef.current[event.to] = now;
@@ -1710,10 +1779,25 @@ export function WorldGame() {
       const snapshot = snapshotRef.current;
       if (!snapshot) return;
       const me = meRef.current;
-      const inCombat = snapshot.monsters.some(
-        (monster) => Math.hypot(monster.x - me.x, monster.y - me.y) < 420
+      // 只统计存活且不远处的怪
+      const nearby = snapshot.monsters.filter(
+        (monster) => monster.hp > 0 && Math.hypot(monster.x - me.x, monster.y - me.y) < 560
       );
-      if (!inCombat) return;
+      if (nearby.length === 0) return;
+      const nearest = nearby.reduce(
+        (best, monster) =>
+          Math.hypot(monster.x - me.x, monster.y - me.y) < best.d
+            ? { d: Math.hypot(monster.x - me.x, monster.y - me.y) }
+            : best,
+        { d: Number.POSITIVE_INFINITY }
+      );
+      const lockedId = targetIdRef.current;
+      // 真正处于战斗中才自动施法：锁定目标、贴身、或已受伤的怪在附近
+      const engaged = nearby.some((monster) => {
+        const d = Math.hypot(monster.x - me.x, monster.y - me.y);
+        return monster.id === lockedId || d < 190 || (monster.hp < monster.maxHp && d < 460);
+      });
+      if (!engaged) return;
       const ids = CLASS_SKILLS[current.classId];
       const now = Date.now();
       for (let offset = 0; offset < ids.length; offset += 1) {
@@ -1724,6 +1808,13 @@ export function WorldGame() {
         if (current.level < skill.level) continue;
         if (now < (cdReadyRef.current[skillId] ?? 0)) continue;
         if (skill.kind === "heal" && selfNow.hp / selfNow.maxHp > 0.85) continue;
+        // 伤害/减速技能必须够得着最近的目标，范围技要有人在半径内，避免对着空气放
+        const reach = skill.range
+          ? skill.range + 30
+          : skill.radius
+            ? skill.radius + 50
+            : 0;
+        if (reach > 0 && nearest.d > reach) continue;
         autoCursorRef.current = (index + 1) % ids.length;
         void doSkill(index, true);
         break;
@@ -2110,7 +2201,7 @@ export function WorldGame() {
         <div>
           <h2 className="text-sm font-bold">创建角色进入开放世界</h2>
           <p className="mt-1 text-[10px] text-slate-500">
-            同一账号最多拥有 {MAX_CHARACTERS} 个角色 · 无需登录 · 与同服玩家实时组队
+            角色数量不限 · 无需登录 · 与同服玩家实时组队
           </p>
         </div>
         <input
@@ -2170,12 +2261,7 @@ export function WorldGame() {
           <button
             type="button"
             className={btnPrimary}
-            disabled={saves.length >= MAX_CHARACTERS}
             onClick={() => {
-              if (saves.length >= MAX_CHARACTERS) {
-                toast.error(`最多只能创建 ${MAX_CHARACTERS} 个角色`);
-                return;
-              }
               const next = createSave(createName, createClass);
               saveRef.current = next;
               setSave(next);
@@ -2270,20 +2356,18 @@ export function WorldGame() {
             );
           })}
 
-          {saves.length < MAX_CHARACTERS && (
-            <button
-              type="button"
-              className="flex min-h-[92px] flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-700 bg-slate-900/40 text-[11px] text-slate-400 transition-colors hover:border-amber-500/60 hover:text-amber-300"
-              onClick={() => {
-                setCreateName("");
-                setCreateClass(current?.classId ?? "warrior");
-                setPhase("create");
-              }}
-            >
-              <UserPlus className="size-5" />
-              新建角色（{saves.length}/{MAX_CHARACTERS}）
-            </button>
-          )}
+          <button
+            type="button"
+            className="flex min-h-[92px] flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-700 bg-slate-900/40 text-[11px] text-slate-400 transition-colors hover:border-amber-500/60 hover:text-amber-300"
+            onClick={() => {
+              setCreateName("");
+              setCreateClass(current?.classId ?? "warrior");
+              setPhase("create");
+            }}
+          >
+            <UserPlus className="size-5" />
+            新建角色
+          </button>
         </div>
 
         {current && (
@@ -2333,7 +2417,6 @@ export function WorldGame() {
               setCreateClass(current?.classId ?? "warrior");
               setPhase("create");
             }}
-            disabled={saves.length >= MAX_CHARACTERS}
           >
             新建角色
           </button>
@@ -2413,7 +2496,19 @@ export function WorldGame() {
         className="relative w-full touch-none select-none bg-black"
         style={{ height: fullscreen ? "100dvh" : isTouch ? 420 : 520 }}
       >
-        <canvas ref={canvasRef} className="block h-full w-full" />
+        <canvas
+          ref={canvasRef}
+          className="block h-full w-full [filter:saturate(1.14)_contrast(1.06)_brightness(1.03)]"
+        />
+
+        {/* 阳光与苔绿柔光斑，给平铺的地面补一层空气感 */}
+        <div
+          className="pointer-events-none absolute inset-0 z-[3] mix-blend-screen"
+          style={{
+            background:
+              "radial-gradient(circle at 26% 16%, rgba(253,230,138,0.14), transparent 44%), radial-gradient(circle at 76% 70%, rgba(134,239,172,0.10), transparent 50%), radial-gradient(circle at 52% 92%, rgba(125,211,252,0.08), transparent 46%)",
+          }}
+        />
 
         {/* 常驻暗角 + 顶部天光，把视线收拢到战场中心 */}
         <div
@@ -2561,7 +2656,7 @@ export function WorldGame() {
             ) : null}
           </div>
 
-          {targetView && (
+          {ui.hud.targetCard && targetView && (
             <div
               key={targetView.id}
               className="pointer-events-auto mt-1.5 flex w-[min(300px,78%)] animate-[target-slide_220ms_cubic-bezier(0.22,1,0.36,1)_both] items-center gap-2 rounded-md border border-slate-700/70 bg-slate-950/80 px-2 py-1 backdrop-blur-sm"
@@ -2703,7 +2798,12 @@ export function WorldGame() {
 
         {/* 底部技能栏与队伍，叠加在画面底部 */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 animate-[hud-rise_420ms_cubic-bezier(0.22,1,0.36,1)_both] bg-gradient-to-t from-slate-950/90 via-slate-950/55 to-transparent px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-10">
-          <div className="pointer-events-auto flex flex-wrap items-center gap-1">
+          <div
+            className={cn(
+              "pointer-events-auto flex flex-wrap items-center gap-1",
+              !ui.hud.skillBar && "hidden"
+            )}
+          >
             {skills.map((id, index) => {
               const skill = SKILLS[id];
               const locked = myLevel < skill.level;
@@ -2797,96 +2897,117 @@ export function WorldGame() {
             )}
           </div>
 
-          <div className="pointer-events-auto mt-1 grid grid-cols-5 gap-1 sm:flex sm:flex-wrap sm:items-center">
-            <button
-              type="button"
-              className={cn(btn, "bg-slate-900/85")}
-              onClick={() => setPanel("character")}
-            >
-              🧙 角色
-            </button>
-            <button
-              type="button"
-              className={cn(btn, "bg-slate-900/85")}
-              onClick={() => setPanel("bag")}
-            >
-              🎒 背包
-            </button>
-            <button
-              type="button"
-              className={cn(btn, "bg-slate-900/85")}
-              onClick={() => setPanel("skills")}
-            >
-              ⚡ 技能
-            </button>
-            <button
-              type="button"
-              className={cn(btn, "bg-slate-900/85")}
-              onClick={() => setPanel("shop")}
-            >
-              🛒 商店
-            </button>
-            <button
-              type="button"
-              className={cn(btn, "bg-slate-900/85")}
-              onClick={cycleTarget}
-              title="切换锁定目标（Tab）"
-            >
-              🎯 目标
-            </button>
+          <div className="pointer-events-auto mt-1 flex flex-wrap items-center gap-1">
             <button
               type="button"
               className={cn(
                 btn,
                 "bg-slate-900/85",
-                quests.length > 0 && "border-amber-500/60 text-amber-300"
+                menuOpen && "border-amber-500 bg-amber-500/20 text-amber-300"
               )}
-              onClick={() => setQuestOpen((open) => !open)}
+              onClick={() => setMenuOpen((open) => !open)}
+              title="角色 / 背包 / 技能 / 商店"
             >
-              📜 任务
+              ☰ 菜单
             </button>
-            <button
-              type="button"
-              className={cn(btn, "bg-slate-900/85")}
-              disabled={recallReadyAt > Date.now()}
-              onClick={doRecall}
-              title="回城（B），20 秒冷却"
-            >
-              🏠 回城
-            </button>
-            <button
-              type="button"
-              className={cn(
-                btn,
-                "bg-slate-900/85",
-                potionOpen && "border-amber-500 bg-amber-500/20 text-amber-300"
-              )}
-              disabled={potionItems.length === 0}
-              onClick={() => setPotionOpen((open) => !open)}
-              title="使用背包药水"
-            >
-              🧪 药水
-              {potionItems.length > 0 && (
-                <span className="ml-1 text-[10px] font-normal text-slate-400">
-                  {potionItems.reduce((sum, entry) => sum + entry.count, 0)}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              className={cn(btn, "bg-slate-900/85")}
-              onClick={() => {
-                leaveWorld();
-                toast.success("已退出世界，可在角色列表切换角色");
-              }}
-              title="退出世界并切换角色"
-            >
-              👥 换角色
-            </button>
-            <span className="ml-auto hidden text-[10px] text-slate-500 sm:inline">
-              自动攻击 · 长按技能开启自动施放 · Tab 目标 · F 交互 · B 回城
-            </span>
+            {ui.hud.target && (
+              <button
+                type="button"
+                className={cn(btn, "bg-slate-900/85")}
+                onClick={cycleTarget}
+                title="切换锁定目标（Tab）"
+              >
+                🎯 目标
+              </button>
+            )}
+            {ui.hud.quest && (
+              <button
+                type="button"
+                className={cn(
+                  btn,
+                  "bg-slate-900/85",
+                  quests.length > 0 && "border-amber-500/60 text-amber-300"
+                )}
+                onClick={() => setQuestOpen((open) => !open)}
+              >
+                📜 任务
+              </button>
+            )}
+            {ui.hud.recall && (
+              <button
+                type="button"
+                className={cn(btn, "bg-slate-900/85")}
+                disabled={recallReadyAt > Date.now()}
+                onClick={doRecall}
+                title="回城（B），20 秒冷却"
+              >
+                🏠 回城
+              </button>
+            )}
+            {ui.hud.potion && (
+              <button
+                type="button"
+                className={cn(
+                  btn,
+                  "bg-slate-900/85",
+                  potionOpen && "border-amber-500 bg-amber-500/20 text-amber-300"
+                )}
+                disabled={potionItems.length === 0}
+                onClick={() => setPotionOpen((open) => !open)}
+                title="使用背包药水"
+              >
+                🧪 药水
+                {potionItems.length > 0 && (
+                  <span className="ml-1 text-[10px] font-normal text-slate-400">
+                    {potionItems.reduce((sum, entry) => sum + entry.count, 0)}
+                  </span>
+                )}
+              </button>
+            )}
+            {ui.hud.switchChar && (
+              <button
+                type="button"
+                className={cn(btn, "bg-slate-900/85")}
+                onClick={() => {
+                  leaveWorld();
+                  toast.success("已退出世界，可在角色列表切换角色");
+                }}
+                title="退出世界并切换角色"
+              >
+                👥 换角色
+              </button>
+            )}
+            {ui.hud.hint && (
+              <span className="ml-auto hidden text-[10px] text-slate-500 sm:inline">
+                自动攻击 · 长按技能开启自动施放 · Tab 目标 · F 交互 · B 回城
+              </span>
+            )}
           </div>
+
+          {menuOpen && (
+            <div className="pointer-events-auto mt-1 flex flex-wrap items-center gap-1 rounded-lg border border-slate-700/80 bg-slate-950/90 p-1.5">
+              {(
+                [
+                  { key: "character" as PanelKind, icon: "🧙", label: "角色" },
+                  { key: "bag" as PanelKind, icon: "🎒", label: "背包" },
+                  { key: "skills" as PanelKind, icon: "⚡", label: "技能" },
+                  { key: "shop" as PanelKind, icon: "🛒", label: "商店" },
+                ]
+              ).map((entry) => (
+                <button
+                  key={entry.key}
+                  type="button"
+                  className={cn(btn, "bg-slate-900/85")}
+                  onClick={() => {
+                    setPanel(entry.key);
+                    setMenuOpen(false);
+                  }}
+                >
+                  {entry.icon} {entry.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {potionOpen && potionItems.length > 0 && (
             <div className="pointer-events-auto mt-1 flex flex-wrap items-center gap-1">
@@ -3045,6 +3166,45 @@ export function WorldGame() {
                         )}
                         onClick={() => updateUi({ zoom: entry.key })}
                       >
+                        {entry.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-bold text-slate-300">界面元素</p>
+                  <p className="text-[10px] text-slate-500">
+                    按需勾选常驻元素，隐藏后画面更清爽
+                  </p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {(
+                      [
+                        { key: "targetCard", label: "目标血条" },
+                        { key: "skillBar", label: "技能栏" },
+                        { key: "target", label: "目标按钮" },
+                        { key: "quest", label: "任务按钮" },
+                        { key: "potion", label: "药水按钮" },
+                        { key: "recall", label: "回城按钮" },
+                        { key: "switchChar", label: "换角色" },
+                        { key: "hint", label: "快捷键提示" },
+                      ] as { key: keyof HudSettings; label: string }[]
+                    ).map((entry) => (
+                      <button
+                        key={entry.key}
+                        type="button"
+                        className={cn(
+                          btn,
+                          ui.hud[entry.key] &&
+                            "border-amber-500 bg-amber-500/20 text-amber-300"
+                        )}
+                        onClick={() =>
+                          updateUi({
+                            hud: { ...ui.hud, [entry.key]: !ui.hud[entry.key] },
+                          })
+                        }
+                      >
+                        {ui.hud[entry.key] ? "✓ " : ""}
                         {entry.label}
                       </button>
                     ))}

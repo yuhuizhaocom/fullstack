@@ -1062,12 +1062,24 @@ function spawnDrops(monster: WorldMonster, now: number): void {
   }
 }
 
+/** 普通攻击射程：近战贴身，远程可以隔一段距离直接开火 */
+const ATTACK_RANGE: Record<ClassId, number> = {
+  warrior: 96,
+  assassin: 88,
+  guardian: 104,
+  ranger: 250,
+  mage: 215,
+  priest: 190,
+};
+
 /** 自动/手动共用的普通攻击：有目标才挥砍，并自动转向目标 */
 function performAttack(player: WorldPlayer, now: number): void {
   if (player.deadUntil > now) return;
   if (now - player.lastAttack < 420) return;
 
-  const range = 96;
+  const ranged =
+    player.classId === "ranger" || player.classId === "mage" || player.classId === "priest";
+  const range = ATTACK_RANGE[player.classId] ?? 96;
   const inRange = aliveMonstersInRoom(player.room).filter(
     (monster) =>
       Math.hypot(monster.x - player.x, monster.y - player.y) <=
@@ -1077,10 +1089,12 @@ function performAttack(player: WorldPlayer, now: number): void {
 
   player.lastAttack = now;
   const facing = player.dir >= 0 ? 1 : -1;
-  const inFront = inRange.filter(
-    (monster) =>
-      (monster.x - player.x - (monster.y - player.y)) * facing >= -24
-  );
+  const inFront = ranged
+    ? inRange
+    : inRange.filter(
+        (monster) =>
+          (monster.x - player.x - (monster.y - player.y)) * facing >= -24
+      );
   const target = (inFront.length > 0 ? inFront : inRange).sort(
     (a, b) =>
       Math.hypot(a.x - player.x, a.y - player.y) -
@@ -1092,7 +1106,14 @@ function performAttack(player: WorldPlayer, now: number): void {
   const screenDx = target.x - target.y - (player.x - player.y);
   if (Math.abs(screenDx) > 1) player.dir = screenDx > 0 ? 1 : -1;
 
-  pushEvent({ kind: "swing", room: player.room, from: player.id, x: player.x, y: player.y });
+  pushEvent({
+    kind: "swing",
+    room: player.room,
+    from: player.id,
+    x: player.x,
+    y: player.y,
+    monsterId: target.id,
+  });
 
   const buff = player.buffUntil > now ? 1.3 : 1;
   const hit = rollDamage(player.atk * buff, target.def, player.crit);

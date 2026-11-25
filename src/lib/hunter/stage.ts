@@ -2,7 +2,7 @@ import { Application, Container, Graphics, Sprite, Text, TextStyle, Texture } fr
 import { CompositeTilemap, settings as tilemapSettings } from "@pixi/tilemap";
 import { getHunterArt, type HunterArt } from "./art";
 import { BUILDINGS, SKILLS, TILE, UNITS } from "./config";
-import { isUnitVisibleTo, playerHero } from "./engine";
+import { isUnitVisibleTo, playerUnit } from "./engine";
 import { terrainAtTile, tileCenter } from "./map";
 import type { BuildingKind, GameState, Side, TilePos } from "./types";
 
@@ -84,6 +84,7 @@ class PixiHunterStage implements HunterStage {
   private readonly ghostSprite: Sprite;
   private readonly ghostOutline = new Graphics();
   private readonly heroRing = new Graphics();
+  private readonly merchantSprite: Sprite;
 
   private width: number;
   private height: number;
@@ -133,6 +134,11 @@ class PixiHunterStage implements HunterStage {
     this.ghostSprite.alpha = 0.65;
     this.ghostLayer.addChild(this.ghostOutline, this.ghostSprite);
     this.ghostLayer.visible = false;
+
+    this.merchantSprite = new Sprite(this.art.unit("mercenary"));
+    this.merchantSprite.anchor.set(0.5, 0.92);
+    this.merchantSprite.tint = 0xfbbf24;
+    this.entityLayer.addChild(this.merchantSprite);
 
     this.resize(width, height);
   }
@@ -248,12 +254,24 @@ class PixiHunterStage implements HunterStage {
       if (event.id <= this.lastEventId) continue;
       this.lastEventId = event.id;
       if (event.kind === "skill") {
-        const radius = event.text.includes("鹰眼") ? 120 : event.text.includes("裂地") ? 140 : 90;
+        const radius = event.text.includes("大地")
+          ? 180
+          : event.text.includes("散弹")
+            ? 140
+            : event.text.includes("粉碎")
+              ? 90
+              : 120;
         this.bursts.push({
           x: event.x,
           y: event.y,
           radius,
-          color: event.text.includes("裂地") ? 0xf97316 : 0x38bdf8,
+          color: event.text.includes("大地")
+            ? 0xf59e0b
+            : event.text.includes("散弹")
+              ? 0x22c55e
+              : event.text.includes("粉碎")
+                ? 0xef4444
+                : 0x38bdf8,
           born: state.time,
           life: 0.8,
         });
@@ -333,9 +351,9 @@ class PixiHunterStage implements HunterStage {
 
     if (this.zoom === 0) this.zoom = 0.75;
 
-    const hero = playerHero(state);
-    let focusX = hero?.x ?? state.map.farmerCamp.x;
-    let focusY = hero?.y ?? state.map.farmerCamp.y;
+    const hero = playerUnit(state);
+    let focusX = hero?.x ?? state.map.farmerStarts[0].x;
+    let focusY = hero?.y ?? state.map.farmerStarts[0].y;
     if (this.lookAt && this.lookAt.until > state.time) {
       focusX = this.lookAt.x;
       focusY = this.lookAt.y;
@@ -373,7 +391,7 @@ class PixiHunterStage implements HunterStage {
       if (unit.speed > 0) sprite.scale.x = unit.facing;
       sprite.zIndex = unit.x + unit.y + 1;
       sprite.tint = unit.hitFlashAt > state.time - 0.12 ? 0xffb4b4 : 0xffffff;
-      if (unit.kind === "eyeWard" || unit.kind === "owl") {
+      if (unit.kind === "eyeWard" || unit.kind === "mine") {
         sprite.alpha = 0.75 + Math.sin(state.time * 4 + unit.animSeed) * 0.2;
       } else {
         sprite.alpha = unit.hidden ? 0.55 : 1;
@@ -418,7 +436,7 @@ class PixiHunterStage implements HunterStage {
       const sx = isoX(unit.x, unit.y);
       const sy = isoY(unit.x, unit.y);
       const width = unit.isHero ? 34 : 20;
-      const y = sy - (unit.kind === "golem" ? 62 : unit.speed > 0 ? 46 : 24);
+      const y = sy - (unit.kind === "golem" ? 62 : unit.kind === "golemClone" ? 50 : unit.speed > 0 ? 46 : 24);
       const ratio = Math.max(0, unit.hp / unit.maxHp);
       this.bars.rect(sx - width / 2 - 1, y - 1, width + 2, 5).fill({ color: 0x0b0f14, alpha: 0.8 });
       this.bars
@@ -460,8 +478,17 @@ class PixiHunterStage implements HunterStage {
       });
     }
 
+    // 移动商人
+    const merchant = state.merchant;
+    this.merchantSprite.position.set(isoX(merchant.x, merchant.y), isoY(merchant.x, merchant.y));
+    this.merchantSprite.zIndex = merchant.x + merchant.y;
+    this.merchantSprite.alpha = 0.8 + Math.sin(state.time * 3) * 0.2;
+
     // 投射物
     this.fx.clear();
+    this.fx
+      .ellipse(isoX(merchant.x, merchant.y), isoY(merchant.x, merchant.y), 18, 9)
+      .stroke({ color: 0xfbbf24, width: 1.5, alpha: 0.7 });
     for (const projectile of state.projectiles) {
       const sx = isoX(projectile.x, projectile.y);
       const sy = isoY(projectile.x, projectile.y) - 14;

@@ -292,6 +292,11 @@ class HeroView {
     );
   }
 
+  /** 近战武器才画刀光弧，远程普攻改走弹道 */
+  get meleeWeapon(): boolean {
+    return this.weaponKind === "sword";
+  }
+
   configure(skin: Skin): void {
     this.armorTint = skin.armorTint;
     const key = `${skin.classId}:${skin.weapon}:${skin.armorTint}:${skin.weaponTint}:${skin.glowColor}`;
@@ -462,7 +467,7 @@ class HeroView {
     this.armBack.y = -36 - bob * 0.3;
 
     const swingElapsed = opts.swingAt ? opts.time - opts.swingAt : Number.POSITIVE_INFINITY;
-    const swing = swingElapsed >= 0 && swingElapsed < 300 ? swingElapsed / 300 : -1;
+    const swing = swingElapsed >= 0 && swingElapsed < 340 ? swingElapsed / 340 : -1;
     if (opts.swingAt && opts.swingAt !== this.lastSwingAt) {
       this.lastSwingAt = opts.swingAt;
       this.swingCount += 1;
@@ -472,10 +477,9 @@ class HeroView {
     const facing = opts.dir >= 0 ? 1 : -1;
     let bodyX = 0;
     let bodyY = 0;
-    if (this.weaponKind === "sword") bodyX = facing * atkP * 3.5 * HERO_H * 2;
-    else if (this.weaponKind === "bow") bodyX = -facing * atkP * 2.2 * HERO_H * 2;
-    else bodyY = -atkP * 2 * HERO_H * 2;
-    this.body.position.set(bodyX, bodyY);
+    if (this.weaponKind === "sword") bodyX = facing * atkP * 7;
+    else if (this.weaponKind === "bow") bodyX = -facing * atkP * 4.4;
+    else bodyY = -atkP * 4;
     if (swing >= 0) {
       if (this.weaponKind === "bow") {
         // 拉弓：前手前伸压住弓身，后手向后拉弦
@@ -525,7 +529,8 @@ class HeroView {
     let drift = 0;
     if (swing >= 0 && !opts.dead) drift += Math.sin(Math.PI * swing) * 4;
     if (hurt && !opts.dead) drift -= 2.6 * (1 - hurtElapsed / 160);
-    this.body.x = opts.dir >= 0 ? drift : -drift;
+    // 出招位移叠加受击后仰，两处都写 body.x，避免互相覆盖导致“没有动作”
+    this.body.x = bodyX + (opts.dir >= 0 ? drift : -drift);
 
     if (opts.dead) {
       if (!this.wasDead) {
@@ -535,12 +540,14 @@ class HeroView {
       const t = Math.min(1, Math.max(0, (opts.time - this.deadSince) / 320));
       const ease = 1 - Math.pow(1 - t, 3);
       this.body.rotation = (-Math.PI / 2) * ease;
-      this.body.y = 6 * ease;
+      this.body.y = bodyY + 6 * ease;
       this.root.alpha = 1 - 0.6 * ease;
     } else {
       this.wasDead = false;
-      this.body.rotation = 0;
-      this.body.y = 0;
+      // 出招时身体轻微前倾，动作幅度更明显
+      this.body.rotation =
+        swing >= 0 ? (opts.dir >= 0 ? 1 : -1) * 0.08 * Math.sin(Math.PI * swing) : 0;
+      this.body.y = bodyY;
       this.root.alpha = 1;
     }
 
@@ -955,10 +962,11 @@ class MonsterView {
     this.nameText.style.fill = opts.boss ? "#f0abfc" : opts.elite ? "#fde68a" : "#fca5a5";
     const top = -this.sprite.texture.height * SPRITE_SCALE * this.scale - 6;
     this.nameText.y = top;
-    this.nameText.visible = opts.showHealth;
+    // 名字常驻，只有血条按战斗状态显示
+    this.nameText.visible = !!label;
     this.hpBar.visible = opts.showHealth;
     this.namePlate.y = top;
-    this.namePlate.visible = opts.showHealth;
+    this.namePlate.visible = !!label;
     this.namePlate.alpha = 0.9;
     // 名字/血条抵消镜头缩放，拉远后依然能看清怪
     const inv = 1 / Math.max(0.1, opts.zoom);
@@ -1009,10 +1017,32 @@ type Spark = {
   size: number;
 };
 
+/** 远程普攻的飞行物：从施法者飞向目标点，命中时炸出冲击环 */
+type Projectile = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  start: number;
+  duration: number;
+  kind: "arrow" | "bolt" | "holy";
+  color: number;
+};
+
 export type WorldStage = {
   render(input: WorldRenderInput): void;
   resize(width: number, height: number): void;
   setZoom(zoom: number): void;
+  /** 外部触发的镜头震动（命中/暴击反馈） */
+  shake(amount: number): void;
+  spawnProjectile(opts: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    kind: "arrow" | "bolt" | "holy";
+    color?: number;
+  }): void;
   destroy(): void;
 };
 
@@ -1044,6 +1074,8 @@ class PixiWorldStage implements WorldStage {
   private readonly flowerTiles = new CompositeTilemap();
   private readonly entityLayer = new Container();
   private readonly fx = new Graphics();
+  /** 远程普通攻击的飞行弹道（箭矢/奥术弹/圣光弹） */
+  private readonly projectiles: Projectile[] = [];
   private readonly particleLayer = new Container();
   private readonly hud = new Container();
   private readonly ambient = new Graphics();
@@ -1184,6 +1216,32 @@ class PixiWorldStage implements WorldStage {
     this.zoomTarget = next;
   }
 
+  /** 外部触发的镜头震动（命中/暴击反馈） */
+  shake(amount: number): void {
+    this.addShake(amount);
+  }
+
+  /** 远程普攻：生成一发从施法者飞向目标的弹道 */
+  spawnProjectile(opts: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    kind: "arrow" | "bolt" | "holy";
+    color?: number;
+  }): void {
+    const dist = Math.hypot(opts.x2 - opts.x1, opts.y2 - opts.y1);
+    this.projectiles.push({
+      ...opts,
+      color: opts.color ?? 0xfde68a,
+      start: performance.now(),
+      duration: Math.max(150, Math.min(420, dist * 0.7)),
+    });
+    if (this.projectiles.length > 48) {
+      this.projectiles.splice(0, this.projectiles.length - 48);
+    }
+  }
+
   render(input: WorldRenderInput): void {
     if (input.room !== this.room) this.onRoom(input.room);
 
@@ -1240,6 +1298,7 @@ class PixiWorldStage implements WorldStage {
     this.renderHeroes(view, toScreen, visible);
     this.layoutNameplates();
     this.renderSkillEffects(view, toScreen);
+    this.renderProjectiles(view, toScreen);
     this.renderMeleeArc(view, toScreen);
     this.renderParticles(view, toScreen);
     this.renderAmbient(view);
@@ -1643,10 +1702,10 @@ class PixiWorldStage implements WorldStage {
         flash: flashAt > 0 && input.time - flashAt < 140,
         selected: input.targetId === monster.id,
         showHealth:
+          // BOSS 进入视野即显示；其余只在被锁定或 4 秒内交过手时显示
           monster.boss ||
-          !!monster.elite ||
-          monster.hp < monster.maxHp ||
-          distance < 260 / Math.max(0.6, this.zoom),
+          input.targetId === monster.id ||
+          (flashAt > 0 && input.time - flashAt < 4000),
         zoom: this.zoom,
         time: input.time,
         slow: monster.slow ?? false,
@@ -2004,6 +2063,7 @@ class PixiWorldStage implements WorldStage {
     toScreen: (x: number, y: number) => { x: number; y: number }
   ): void {
     if (!input.meSwingAt) return;
+    if (!this.heroView(input.meId).meleeWeapon) return;
     const age = input.time - input.meSwingAt;
     if (age < 0 || age > 260) return;
     const p = age / 260;
@@ -2027,6 +2087,73 @@ class PixiWorldStage implements WorldStage {
     const tipX = cx + Math.cos(a1) * radius;
     const tipY = cy + Math.sin(a1) * radius;
     this.fx.circle(tipX, tipY, 2.2).fill({ color: 0xfffbeb, alpha: Math.min(1, alpha * 1.2) });
+  }
+
+  /** 远程普攻弹道：拖尾 + 弹头 + 命中冲击环 */
+  private renderProjectiles(
+    input: WorldRenderInput,
+    toScreen: (x: number, y: number) => { x: number; y: number }
+  ): void {
+    for (let i = this.projectiles.length - 1; i >= 0; i -= 1) {
+      const p = this.projectiles[i];
+      const t = (input.time - p.start) / p.duration;
+      if (t > 1.35) {
+        this.projectiles.splice(i, 1);
+        continue;
+      }
+      const k = Math.min(1, Math.max(0, t));
+      const a = toScreen(p.x1, p.y1);
+      const b = toScreen(p.x2, p.y2);
+      const ax = a.x;
+      const ay = a.y - 26;
+      const bx = b.x;
+      const by = b.y - 20;
+      const px = ax + (bx - ax) * k;
+      const py = ay + (by - ay) * k - Math.sin(Math.PI * k) * 16;
+      const angle = Math.atan2(by - ay, bx - ax);
+      const alpha = t >= 1 ? Math.max(0, 1 - (t - 1) / 0.35) : 1;
+      const tail = p.kind === "bolt" ? 30 : 22;
+      const tx = px - Math.cos(angle) * tail;
+      const ty = py - Math.sin(angle) * tail;
+
+      // 拖尾与光晕
+      this.fx
+        .poly(lineQuad(tx, ty, px, py, p.kind === "bolt" ? 4.4 : 2.4))
+        .fill({ color: p.color, alpha: 0.4 * alpha });
+      this.fx
+        .circle(px, py, p.kind === "bolt" ? 7.5 : 4.2)
+        .fill({ color: p.color, alpha: 0.26 * alpha });
+      this.fx
+        .circle(px, py, p.kind === "bolt" ? 4.6 : 2.6)
+        .fill({ color: 0xffffff, alpha: 0.92 * alpha });
+
+      if (p.kind === "arrow") {
+        // 箭头指向飞行方向
+        const tipX = px + Math.cos(angle) * 6;
+        const tipY = py + Math.sin(angle) * 6;
+        const nx = -Math.sin(angle) * 2.4;
+        const ny = Math.cos(angle) * 2.4;
+        this.fx
+          .poly([tipX, tipY, px + nx, py + ny, px - nx, py - ny])
+          .fill({ color: 0xfef9c3, alpha });
+      } else if (p.kind === "holy") {
+        // 圣光弹：十字光芒
+        this.fx
+          .rect(px - 1, py - 7, 2, 14)
+          .fill({ color: 0xfef9c3, alpha: 0.85 * alpha });
+        this.fx
+          .rect(px - 7, py - 1, 14, 2)
+          .fill({ color: 0xfef9c3, alpha: 0.85 * alpha });
+      }
+
+      // 命中瞬间的冲击环
+      if (t >= 1 && t < 1.35) {
+        const hit = (t - 1) / 0.35;
+        this.fx
+          .poly(ringPoints(bx, by, 6 + hit * 22, 3 + hit * 11, 2 * (1 - hit) + 0.6))
+          .fill({ color: p.color, alpha: 0.65 * (1 - hit) });
+      }
+    }
   }
 
   private renderSkillEffects(

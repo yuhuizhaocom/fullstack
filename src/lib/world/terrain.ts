@@ -366,9 +366,9 @@ function computeTerrainAt(tx: number, ty: number, room: RoomId = "world"): Terra
 
   // 障碍整体稀疏化，让大地图更开阔、跑图更顺畅
   const h = hash2(tx, ty, cfg.seed);
-  if (h < 0.052) return "tree";
-  if (h < 0.082) return "rock";
-  if (h < 0.16) return "flower";
+  if (h < 0.012) return "tree";
+  if (h < 0.024) return "rock";
+  if (h < 0.12) return "flower";
   return "grass";
 }
 

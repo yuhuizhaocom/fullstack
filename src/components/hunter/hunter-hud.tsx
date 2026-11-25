@@ -2,42 +2,50 @@
 
 import { useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 
-import { BUILDINGS, PHASE_LABEL, SKILLS, costLabel } from "@/lib/hunter/config";
+import { BUILDINGS, PHASE_LABEL, SKILLS, buildingCost, costLabel } from "@/lib/hunter/config";
 import type {
   BuildingKind,
   HunterSettings,
-  ItemKind,
+  Mode,
   Phase,
+  ResearchKind,
   Side,
   SkillId,
-  Stance,
-  UpgradeKind,
+  UnitKind,
 } from "@/lib/hunter/types";
 
 import type { HireOption } from "./hunter-panels";
 
-export type GamePanel = "build" | "hire" | "shop" | "stance" | "settings" | null;
-export type HudAction = Exclude<GamePanel, null> | "rally";
+export type GamePanel = "build" | "hire" | "research" | "shop" | "settings" | null;
+export type HudAction = Exclude<GamePanel, null> | "control";
 
 export type HudSnapshot = {
+  side: Side;
+  mode: Mode;
   time: number;
   remaining: number;
   phase: Phase;
   gold: number;
-  wood: number;
-  popUsed: number;
-  popCap: number;
-  heroHp: number;
-  heroMaxHp: number;
-  heroDead: boolean;
+  animalTotal: number;
+  hunterLives: number;
+  unitName: string;
+  unitKind: UnitKind;
+  unitHp: number;
+  unitMaxHp: number;
+  unitDead: boolean;
   respawnIn: number;
   heroLives: number;
   speed: number;
+  skills: SkillId[];
   skillCd: Record<SkillId, number>;
-  stance: Stance;
-  stock: Record<ItemKind, number>;
-  upgrades: Record<UpgradeKind, boolean>;
+  canControlGolem: boolean;
+  controllingGolem: boolean;
   hireOptions: HireOption[];
+  merchantNear: boolean;
+  owned: { hammer: boolean; gloves: boolean; poison: boolean };
+  stock: { horns: number; mines: number; potions: number };
+  research: Record<ResearchKind, number>;
+  hasLab: boolean;
 };
 
 const PHASE_STYLE: Record<Phase, string> = {
@@ -143,7 +151,6 @@ export function HunterHud(props: {
   snapshot: HudSnapshot;
   settings: HunterSettings;
   panel: GamePanel;
-  rallyMode: boolean;
   ghost: { kind: BuildingKind; valid: boolean } | null;
   cast: SkillId | null;
   toast: { id: number; text: string } | null;
@@ -162,7 +169,7 @@ export function HunterHud(props: {
   const sizes = SCALE[props.settings.buttonScale];
   const snapshot = props.snapshot;
   const joystickRight = props.settings.joystickSide === "right";
-  const heroRatio = snapshot.heroMaxHp > 0 ? Math.max(0, snapshot.heroHp / snapshot.heroMaxHp) : 0;
+  const hpRatio = snapshot.unitMaxHp > 0 ? Math.max(0, snapshot.unitHp / snapshot.unitMaxHp) : 0;
   const joystickStyle = joystickRight
     ? { right: "max(env(safe-area-inset-right), 12px)", bottom: "max(env(safe-area-inset-bottom), 14px)" }
     : { left: "max(env(safe-area-inset-left), 12px)", bottom: "max(env(safe-area-inset-bottom), 14px)" };
@@ -170,20 +177,26 @@ export function HunterHud(props: {
     ? { left: "max(env(safe-area-inset-left), 12px)", bottom: "max(env(safe-area-inset-bottom), 14px)" }
     : { right: "max(env(safe-area-inset-right), 12px)", bottom: "max(env(safe-area-inset-bottom), 14px)" };
 
-  const actions: { key: HudAction; label: string; icon: string; active: boolean }[] =
+  const actions: { key: HudAction; label: string; icon: string; active: boolean; disabled?: boolean }[] =
     props.side === "hunter"
       ? [
-          { key: "build", label: "建造", icon: "🏗️", active: props.panel === "build" },
-          { key: "hire", label: "招募", icon: "🛡️", active: props.panel === "hire" },
           { key: "shop", label: "商店", icon: "🛒", active: props.panel === "shop" },
-          { key: "stance", label: "姿态", icon: "🎯", active: props.panel === "stance" },
+          { key: "hire", label: "雇佣", icon: "🛡️", active: props.panel === "hire" },
         ]
       : [
           { key: "build", label: "建造", icon: "🏗️", active: props.panel === "build" },
           { key: "hire", label: "招募", icon: "🛡️", active: props.panel === "hire" },
-          { key: "stance", label: "姿态", icon: "🎯", active: props.panel === "stance" },
-          { key: "rally", label: "集结", icon: "🚩", active: props.rallyMode },
+          { key: "research", label: "科技", icon: "📚", active: props.panel === "research" },
+          {
+            key: "control",
+            label: snapshot.controllingGolem ? "回英雄" : "傀儡",
+            icon: snapshot.controllingGolem ? "🧑‍🌾" : "🗿",
+            active: snapshot.controllingGolem,
+            disabled: !snapshot.canControlGolem,
+          },
         ];
+
+  const ghostCost = props.ghost ? buildingCost(props.ghost.kind, snapshot.mode) : 0;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 select-none">
@@ -213,8 +226,15 @@ export function HunterHud(props: {
         <div className="flex flex-col items-end gap-1">
           <div className="pointer-events-auto flex flex-wrap justify-end gap-1">
             <Chip icon="🪙" value={snapshot.gold} />
-            <Chip icon="🪵" value={snapshot.wood} />
-            <Chip icon="👥" value={`${snapshot.popUsed}/${snapshot.popCap}`} />
+            <Chip icon="🐔" value={`${snapshot.animalTotal}/300`} tone="text-amber-200/90" />
+            <Chip icon="❤️" value={snapshot.hunterLives} tone="text-rose-200" />
+            {props.side === "hunter" ? (
+              <Chip
+                icon="🛒"
+                value={snapshot.merchantNear ? "可买" : "远处"}
+                tone={snapshot.merchantNear ? "text-emerald-200" : "text-amber-200/50"}
+              />
+            ) : null}
           </div>
           <span className={`rounded-full border px-2 py-0.5 text-[10px] ${PHASE_STYLE[snapshot.phase]}`}>
             {PHASE_LABEL[snapshot.phase]}
@@ -222,7 +242,7 @@ export function HunterHud(props: {
         </div>
       </div>
 
-      {/* 英雄状态 */}
+      {/* 当前操控单位 */}
       <div
         className="absolute w-32"
         style={{
@@ -232,16 +252,26 @@ export function HunterHud(props: {
       >
         <div className="h-2 overflow-hidden rounded-full border border-black/60 bg-black/70">
           <div
-            className={`h-full ${heroRatio > 0.4 ? "bg-emerald-500" : "bg-rose-500"}`}
-            style={{ width: `${heroRatio * 100}%` }}
+            className={`h-full ${hpRatio > 0.4 ? "bg-emerald-500" : "bg-rose-500"}`}
+            style={{ width: `${hpRatio * 100}%` }}
           />
         </div>
         <p className="mt-0.5 font-mono text-[10px] text-amber-100/80">
-          {snapshot.heroDead
-            ? `复活倒计时 ${Math.ceil(snapshot.respawnIn)}s`
-            : `${Math.ceil(snapshot.heroHp)}/${snapshot.heroMaxHp}`}
+          {snapshot.unitDead
+            ? `复活 ${Math.ceil(snapshot.respawnIn)}s`
+            : `${snapshot.unitName} ${Math.ceil(snapshot.unitHp)}/${snapshot.unitMaxHp}`}
           {props.side === "hunter" ? ` · 命 ${snapshot.heroLives}` : ""}
         </p>
+        {props.side === "hunter" ? (
+          <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-amber-100/70">
+            {snapshot.owned.hammer ? <span>🔨</span> : null}
+            {snapshot.owned.gloves ? <span>🧤</span> : null}
+            {snapshot.owned.poison ? <span>☠️</span> : null}
+            {snapshot.stock.horns > 0 ? <span>📯{snapshot.stock.horns}</span> : null}
+            {snapshot.stock.mines > 0 ? <span>💣{snapshot.stock.mines}</span> : null}
+            {snapshot.stock.potions > 0 ? <span>🧪{snapshot.stock.potions}</span> : null}
+          </div>
+        ) : null}
       </div>
 
       {/* 小地图 */}
@@ -288,7 +318,8 @@ export function HunterHud(props: {
             <button
               key={action.key}
               onClick={() => props.onAction(action.key)}
-              className={`pointer-events-auto flex flex-col items-center justify-center rounded-lg border text-[9px] leading-none backdrop-blur ${
+              disabled={action.disabled}
+              className={`pointer-events-auto flex flex-col items-center justify-center rounded-lg border text-[9px] leading-none backdrop-blur disabled:opacity-35 ${
                 action.active
                   ? "border-amber-300 bg-amber-500/30 text-amber-100"
                   : "border-amber-900/60 bg-black/65 text-amber-200/85"
@@ -300,11 +331,11 @@ export function HunterHud(props: {
             </button>
           ))}
         </div>
-        {props.side === "hunter" ? (
+        {snapshot.skills.length > 0 ? (
           <div className="flex items-end gap-2">
-            {(["eye", "slam", "sentinel"] as SkillId[]).map((skill) => {
+            {snapshot.skills.map((skill) => {
               const spec = SKILLS[skill];
-              const cd = Math.ceil(snapshot.skillCd[skill]);
+              const cd = Math.ceil(snapshot.skillCd[skill] ?? 0);
               return (
                 <button
                   key={skill}
@@ -340,9 +371,7 @@ export function HunterHud(props: {
           style={{ bottom: "calc(max(env(safe-area-inset-bottom), 14px) + 96px)" }}
         >
           <span className="font-semibold">{BUILDINGS[props.ghost.kind].name}</span>
-          <span className="text-amber-300/70">
-            {costLabel(BUILDINGS[props.ghost.kind].costGold, BUILDINGS[props.ghost.kind].costWood)}
-          </span>
+          <span className="text-amber-300/70">{costLabel(ghostCost)}</span>
           <button
             disabled={!props.ghost.valid}
             onClick={props.onConfirmGhost}
