@@ -3,20 +3,27 @@
 import { useState } from "react";
 import { Backpack, Coins } from "lucide-react";
 
-import { CLASSES, CLASS_SKILLS, ITEMS, PETS, SHOP_ITEMS, SKILLS } from "@/lib/game/data";
+import { CLASSES, CLASS_SKILLS, ITEMS, PETS, RARITY_COLOR, RARITY_LABEL, SHOP_ITEMS, SKILLS } from "@/lib/game/data";
 import {
   addItem,
+  availableSkillPoints,
   canEquip,
+  clearSave,
   effectiveStats,
+  enhanceCap,
+  enhanceCost,
   expToNext,
+  MAX_ENHANCE,
   MAX_LEVEL,
   MAX_PET_LEVEL,
+  MAX_SKILL_RANK,
   petAttack,
   petExpToNext,
   removeItem,
   sellPrice,
+  skillRank,
 } from "@/lib/game/engine";
-import type { GameSave, ItemDef, ItemKind } from "@/lib/game/types";
+import type { EquipSlot, GameSave, ItemDef, ItemKind } from "@/lib/game/types";
 import { cn } from "@/lib/utils";
 
 export const pixelPanel =
@@ -38,16 +45,16 @@ export function itemStats(item: ItemDef): string {
   if (item.def) parts.push(`防御 +${item.def}`);
   if (item.spd) parts.push(`移速 +${item.spd}`);
   if (item.maxHp) parts.push(`生命 +${item.maxHp}`);
-  if (item.maxMp) parts.push(`法力 +${item.maxMp}`);
   if (item.crit) parts.push(`暴击 +${item.crit}%`);
   if (item.cdr) parts.push(`冷却缩减 +${item.cdr}%`);
   if (item.lifesteal) parts.push(`吸血 +${item.lifesteal}%`);
   if (item.hp) parts.push(`回复 ${item.hp} 生命`);
-  if (item.mp) parts.push(`回复 ${item.mp} 魔法`);
   return parts.join(" · ");
 }
 
-type EquipSlot = "weapon" | "armor" | "boots" | "accessory";
+export function itemNameColor(item: ItemDef): string | undefined {
+  return item.rarity ? RARITY_COLOR[item.rarity] : undefined;
+}
 
 const EQUIP_SLOTS: { key: EquipSlot; label: string; icon: string }[] = [
   { key: "weapon", label: "武器", icon: "🗡️" },
@@ -73,9 +80,40 @@ export function CharacterPanel({ save, onChange, notify }: PanelProps) {
   }
 
   function reset() {
-    if (!window.confirm("确定重置存档吗？当前角色与进度会全部丢失。")) return;
-    window.localStorage.removeItem("tf_rpg_save_v1");
+    if (!window.confirm("确定删除当前角色吗？该角色与进度会全部丢失。")) return;
+    clearSave();
     window.location.reload();
+  }
+
+  function enhance(slot: EquipSlot) {
+    const id = save.equipment[slot];
+    if (!id) return;
+    const current = save.enhancements?.[slot] ?? 0;
+    if (current >= MAX_ENHANCE) {
+      notify("该部位已强化至上限 +15");
+      return;
+    }
+    const cap = enhanceCap(save);
+    if (current >= cap) {
+      notify(`角色等级不足，Lv.${save.level} 最多强化到 +${cap}`);
+      return;
+    }
+    const cost = enhanceCost(slot, save);
+    if (save.gold < cost.gold) {
+      notify(`金币不足，需要 ${cost.gold} 金币`);
+      return;
+    }
+    if ((save.inventory.enhance_stone ?? 0) < cost.stone) {
+      notify(`强化石不足，需要 ${cost.stone} 个`);
+      return;
+    }
+    onChange({
+      ...save,
+      gold: save.gold - cost.gold,
+      inventory: removeItem(save.inventory, "enhance_stone", cost.stone),
+      enhancements: { ...save.enhancements, [slot]: current + 1 },
+    });
+    notify(`强化成功！${ITEMS[id]?.name ?? "装备"} +${current + 1}`);
   }
 
   return (
@@ -126,15 +164,14 @@ export function CharacterPanel({ save, onChange, notify }: PanelProps) {
         <div className="grid grid-cols-2 gap-1.5 text-[11px] sm:grid-cols-3">
           {[
             { label: "生命", value: `${Math.ceil(save.hp)} / ${Math.round(stats.maxHp)}` },
-            { label: "魔法", value: `${Math.ceil(save.mp)} / ${Math.round(stats.maxMp)}` },
             { label: "攻击", value: Math.round(stats.atk) },
             { label: "防御", value: Math.round(stats.def) },
             { label: "速度", value: Math.round(stats.spd) },
             { label: "暴击", value: `${Math.round(stats.crit)}%` },
             { label: "冷却缩减", value: `${Math.round(stats.cdr)}%` },
             { label: "吸血", value: `${Math.round(stats.lifesteal)}%` },
-            { label: "生命上限", value: Math.round(stats.maxHp) },
-            { label: "法力上限", value: Math.round(stats.maxMp) },
+            { label: "技能点", value: availableSkillPoints(save) },
+            { label: "强化上限", value: `+${enhanceCap(save)}` },
           ].map((row) => (
             <div
               key={row.label}
@@ -148,11 +185,19 @@ export function CharacterPanel({ save, onChange, notify }: PanelProps) {
       </div>
 
       <div className={pixelPanel}>
-        <p className="mb-2 text-[11px] font-bold text-slate-300">装备</p>
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-[11px] font-bold text-slate-300">装备与锻造</p>
+          <span className="text-[10px] text-slate-500">
+            强化石 ×{save.inventory.enhance_stone ?? 0}
+          </span>
+        </div>
         <div className="space-y-1.5">
           {EQUIP_SLOTS.map((slot) => {
             const id = save.equipment[slot.key];
             const item = id ? ITEMS[id] : null;
+            const level = save.enhancements?.[slot.key] ?? 0;
+            const cost = item ? enhanceCost(slot.key, save) : null;
+            const cap = enhanceCap(save);
             return (
               <div
                 key={slot.key}
@@ -161,22 +206,59 @@ export function CharacterPanel({ save, onChange, notify }: PanelProps) {
                 <span className="w-9 text-[10px] text-slate-500">{slot.label}</span>
                 <span className="text-lg">{item?.icon ?? slot.icon}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11px] font-bold text-slate-200">
-                    {item?.name ?? "空"}
+                  <p className="flex items-center gap-1 truncate text-[11px] font-bold">
+                    <span style={{ color: item ? itemNameColor(item) : undefined }}>
+                      {item?.name ?? "空"}
+                    </span>
+                    {item && level > 0 && (
+                      <span className="text-amber-300">+{level}</span>
+                    )}
+                    {item?.rarity && (
+                      <span
+                        className="rounded px-1 text-[9px] font-normal"
+                        style={{
+                          color: RARITY_COLOR[item.rarity],
+                          background: `${RARITY_COLOR[item.rarity]}22`,
+                        }}
+                      >
+                        {RARITY_LABEL[item.rarity]}
+                      </span>
+                    )}
                   </p>
                   <p className="truncate text-[10px] text-slate-500">
                     {item ? itemStats(item) : "未装备"}
+                    {item
+                      ? ` · 强化 +${level}/${Math.min(MAX_ENHANCE, cap)}`
+                      : ""}
                   </p>
                 </div>
                 {item && (
-                  <button type="button" className={pixelButton} onClick={() => unequip(slot.key)}>
-                    卸下
-                  </button>
+                  <div className="flex shrink-0 flex-col gap-1">
+                    <button type="button" className={pixelButton} onClick={() => unequip(slot.key)}>
+                      卸下
+                    </button>
+                    <button
+                      type="button"
+                      className={pixelButtonPrimary}
+                      disabled={level >= MAX_ENHANCE || level >= cap}
+                      onClick={() => enhance(slot.key)}
+                      title={
+                        level >= cap
+                          ? `角色 Lv.${save.level} 最高 +${cap}`
+                          : `消耗 ${cost?.gold} 金币 · ${cost?.stone} 强化石`
+                      }
+                    >
+                      强化 {cost?.gold ?? 0}G
+                    </button>
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
+        <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+          强化每级提升该部位装备 6% 属性，上限 +{MAX_ENHANCE}，且受角色等级限制（每 4 级解锁 1 级强化）。强化石可通过怪物掉落与商店获取。
+        </p>
       </div>
 
       <button type="button" className={pixelButton} onClick={reset}>
@@ -201,17 +283,18 @@ export function BagPanel({ save, onChange, notify }: PanelProps) {
   const entries = Object.entries(save.inventory)
     .filter(([, count]) => count > 0)
     .map(([id, count]) => ({ item: ITEMS[id], count }))
-    .filter((row) => row.item && (filter === "all" || row.item.kind === filter));
+    .filter((row) => row.item && (filter === "all" || row.item.kind === filter))
+    // 旧存档遗留的蓝药已无用途，不再展示
+    .filter((row) => !(row.item.kind === "consumable" && row.item.mp && !row.item.hp));
 
   function usePotion(item: ItemDef) {
     const stats = effectiveStats(save);
     const hp = Math.min(stats.maxHp, save.hp + (item.hp ?? 0));
-    const mp = Math.min(stats.maxMp, save.mp + (item.mp ?? 0));
-    if (hp === save.hp && mp === save.mp) {
-      notify("生命与魔法已满");
+    if (hp === save.hp) {
+      notify("生命已满");
       return;
     }
-    onChange({ ...save, hp, mp, inventory: removeItem(save.inventory, item.id) });
+    onChange({ ...save, hp, inventory: removeItem(save.inventory, item.id) });
     notify(`使用了 ${item.name}`);
   }
 
@@ -284,8 +367,8 @@ export function BagPanel({ save, onChange, notify }: PanelProps) {
                 >
                   <span className="text-lg">{item.icon}</span>
                   <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-1 text-[11px] font-bold text-slate-200">
-                      {item.name}
+                    <p className="flex items-center gap-1 text-[11px] font-bold">
+                      <span style={{ color: itemNameColor(item) }}>{item.name}</span>
                       <span className="text-[10px] font-normal text-slate-500">×{count}</span>
                       {item.level ? (
                         <span className="text-[10px] font-normal text-slate-500">
@@ -322,18 +405,49 @@ export function BagPanel({ save, onChange, notify }: PanelProps) {
   );
 }
 
-export function SkillsPanel({ save }: { save: GameSave }) {
+export function SkillsPanel({ save, onChange, notify }: PanelProps) {
   const skillIds = CLASS_SKILLS[save.classId];
+  const points = availableSkillPoints(save);
+
+  function levelUp(skillId: string) {
+    const current = skillRank(save, skillId);
+    if (current === 0) {
+      notify("技能尚未解锁");
+      return;
+    }
+    if (current >= MAX_SKILL_RANK) {
+      notify(`该技能已满级（${MAX_SKILL_RANK}）`);
+      return;
+    }
+    if (points <= 0) {
+      notify("技能点不足，升级角色可获得技能点");
+      return;
+    }
+    onChange({
+      ...save,
+      skillRanks: {
+        ...save.skillRanks,
+        [skillId]: current + 1,
+      },
+    });
+    notify(`${SKILLS[skillId].name} 提升至 ${current + 1} 级`);
+  }
 
   return (
     <div className="space-y-3">
-      <p className="text-[11px] text-slate-400">
-        技能随等级自动解锁，战斗中消耗魔法释放，冷却时间受冷却缩减影响。
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] text-slate-400">
+          技能每级 +10% 效果并降低冷却，每升 1 级角色获得 1 点技能点。
+        </p>
+        <span className="shrink-0 rounded border border-amber-500/50 bg-amber-500/10 px-2 py-0.5 text-[11px] font-bold text-amber-300">
+          技能点 {points}
+        </span>
+      </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {skillIds.map((id, index) => {
           const skill = SKILLS[id];
           const unlocked = save.level >= skill.level;
+          const rank = skillRank(save, id);
           const key = skill.key ?? ["Q", "W", "E", "R"][index] ?? "Q";
           return (
             <div
@@ -351,14 +465,33 @@ export function SkillsPanel({ save }: { save: GameSave }) {
                 </span>
                 <span className="text-xl">{skill.icon}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12px] font-bold text-slate-100">{skill.name}</p>
+                  <p className="text-[12px] font-bold text-slate-100">
+                    {skill.name}
+                    <span className="ml-1.5 text-[10px] font-normal text-amber-300">
+                      {rank > 0 ? `${rank}/${MAX_SKILL_RANK} 级` : ""}
+                    </span>
+                  </p>
                   <p className="text-[10px] text-slate-500">
-                    {unlocked ? "已解锁" : `Lv.${skill.level} 解锁`} · {skill.mp} 魔法
+                    {unlocked ? "已解锁" : `Lv.${skill.level} 解锁`}
                     {skill.cooldown ? ` · CD ${skill.cooldown}s` : ""}
                   </p>
                 </div>
+                <button
+                  type="button"
+                  className={pixelButtonPrimary}
+                  disabled={!unlocked || rank >= MAX_SKILL_RANK || points <= 0}
+                  onClick={() => levelUp(id)}
+                >
+                  +
+                </button>
               </div>
               <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{skill.desc}</p>
+              <div className="mt-1.5 h-1 overflow-hidden rounded bg-slate-800">
+                <div
+                  className="h-full rounded bg-amber-400"
+                  style={{ width: `${Math.min(100, (rank / MAX_SKILL_RANK) * 100)}%` }}
+                />
+              </div>
             </div>
           );
         })}
@@ -441,6 +574,10 @@ export function ShopPanel({ save, onChange, notify }: PanelProps) {
   const [tab, setTab] = useState<"item" | "pet">("item");
 
   function buy(item: ItemDef) {
+    if (item.level && item.level > save.level) {
+      notify(`需要 Lv.${item.level} 才能购买`);
+      return;
+    }
     if (save.gold < item.price) {
       notify("金币不足");
       return;
@@ -479,7 +616,11 @@ export function ShopPanel({ save, onChange, notify }: PanelProps) {
       return !item.classId || item.classId === save.classId;
     }
     return true;
-  });
+  }).sort(
+    (a, b) =>
+      (ITEMS[a].level ?? 1) - (ITEMS[b].level ?? 1) ||
+      ITEMS[a].price - ITEMS[b].price
+  );
 
   return (
     <div className="space-y-3">
@@ -513,6 +654,7 @@ export function ShopPanel({ save, onChange, notify }: PanelProps) {
           <ul className="space-y-1.5">
             {shopIds.map((id) => {
               const item = ITEMS[id];
+              const levelLocked = !!item.level && item.level > save.level;
               return (
                 <li
                   key={id}
@@ -520,13 +662,24 @@ export function ShopPanel({ save, onChange, notify }: PanelProps) {
                 >
                   <span className="text-lg">{item.icon}</span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-bold text-slate-200">
-                      {item.name}
+                    <p className="text-[11px] font-bold">
+                      <span style={{ color: itemNameColor(item) }}>{item.name}</span>
                       {item.level && item.level > 1 ? (
                         <span className="ml-1.5 text-[10px] font-normal text-slate-500">
                           Lv.{item.level}
                         </span>
                       ) : null}
+                      {item.rarity && (
+                        <span
+                          className="ml-1 rounded px-1 text-[9px] font-normal"
+                          style={{
+                            color: RARITY_COLOR[item.rarity],
+                            background: `${RARITY_COLOR[item.rarity]}22`,
+                          }}
+                        >
+                          {RARITY_LABEL[item.rarity]}
+                        </span>
+                      )}
                     </p>
                     <p className="truncate text-[10px] text-slate-500">
                       {itemStats(item) || item.desc}
@@ -535,10 +688,10 @@ export function ShopPanel({ save, onChange, notify }: PanelProps) {
                   <button
                     type="button"
                     className={pixelButtonPrimary}
-                    disabled={save.gold < item.price}
+                    disabled={save.gold < item.price || levelLocked}
                     onClick={() => buy(item)}
                   >
-                    {item.price} 金币
+                    {levelLocked ? `Lv.${item.level} 解锁` : `${item.price} 金币`}
                   </button>
                 </li>
               );

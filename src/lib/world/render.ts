@@ -17,6 +17,8 @@ export type RenderParticle = {
   size?: number;
   vx?: number;
   vy?: number;
+  /** text=飘字，spark=像素碎片 */
+  kind?: "text" | "spark";
 };
 
 export type SkillEffect = {
@@ -93,14 +95,16 @@ export type RenderSnapshot = {
 const ISO_HALF_W = 32;
 const ISO_HALF_H = 16;
 
-const CLASS_BODY: Record<string, string> = {
+export const CLASS_BODY: Record<string, string> = {
   warrior: "#f59e0b",
   mage: "#6366f1",
   ranger: "#10b981",
   priest: "#f472b6",
+  assassin: "#7c3aed",
+  guardian: "#0ea5e9",
 };
 
-const ARMOR_BODY: Record<string, string> = {
+export const ARMOR_BODY: Record<string, string> = {
   cloth_robe: "#94a3b8",
   leather_armor: "#a16207",
   chain_mail: "#8494a8",
@@ -112,10 +116,10 @@ const ARMOR_BODY: Record<string, string> = {
   warmog: "#f87171",
 };
 
-type WeaponKind = "sword" | "staff" | "bow" | "mace";
-type WeaponStyle = { kind: WeaponKind; color: string; glow?: string };
+export type WeaponKind = "sword" | "staff" | "bow" | "mace";
+export type WeaponStyle = { kind: WeaponKind; color: string; glow?: string };
 
-const WEAPON_STYLES: Record<string, WeaponStyle> = {
+export const WEAPON_STYLES: Record<string, WeaponStyle> = {
   wooden_sword: { kind: "sword", color: "#b45309" },
   iron_sword: { kind: "sword", color: "#cbd5e1" },
   flame_sword: { kind: "sword", color: "#fb923c", glow: "#f97316" },
@@ -131,10 +135,18 @@ const WEAPON_STYLES: Record<string, WeaponStyle> = {
   holy_mace: { kind: "mace", color: "#fde68a" },
   blessed_mace: { kind: "mace", color: "#fbbf24" },
   divine_mace: { kind: "mace", color: "#fef3c7", glow: "#facc15" },
+  rusty_dagger: { kind: "sword", color: "#94a3b8" },
+  shadow_dagger: { kind: "sword", color: "#c4b5fd", glow: "#7c3aed" },
+  nightblade: { kind: "sword", color: "#e9d5ff", glow: "#a855f7" },
+  wooden_hammer: { kind: "mace", color: "#a16207" },
+  iron_hammer: { kind: "mace", color: "#94a3b8" },
+  bastion_hammer: { kind: "mace", color: "#38bdf8", glow: "#0ea5e9" },
 };
 
-function weaponStyle(weapon: string | null, classId: string): WeaponStyle {
+export function weaponStyle(weapon: string | null, classId: string): WeaponStyle {
   if (weapon && WEAPON_STYLES[weapon]) return WEAPON_STYLES[weapon];
+  if (classId === "assassin") return { kind: "sword", color: "#c4b5fd" };
+  if (classId === "guardian") return { kind: "mace", color: "#93c5fd" };
   if (classId === "mage") return { kind: "staff", color: "#a78bfa" };
   if (classId === "ranger") return { kind: "bow", color: "#a3e635" };
   if (classId === "priest") return { kind: "mace", color: "#fde68a" };
@@ -145,19 +157,19 @@ function toScreen(wx: number, wy: number, camX: number, camY: number) {
   return { x: wx - wy - camX, y: (wx + wy) / 2 - camY };
 }
 
-function diamondPath(
-  ctx: CanvasRenderingContext2D,
+/** 把菱形加入 Path2D，用于地面批量填充 */
+function addDiamond(
+  path: Path2D,
   cx: number,
   cy: number,
   halfW: number,
   halfH: number
 ): void {
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - halfH);
-  ctx.lineTo(cx + halfW, cy);
-  ctx.lineTo(cx, cy + halfH);
-  ctx.lineTo(cx - halfW, cy);
-  ctx.closePath();
+  path.moveTo(cx, cy - halfH);
+  path.lineTo(cx + halfW, cy);
+  path.lineTo(cx, cy + halfH);
+  path.lineTo(cx - halfW, cy);
+  path.closePath();
 }
 
 const GROUND_PALETTES: Record<RoomTheme, string[]> = {
@@ -175,41 +187,6 @@ const GROUND_BG: Record<RoomTheme, string> = {
   ruins: "#0c0e12",
   volcano: "#170906",
 };
-
-function drawGroundTile(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  terrain: string,
-  tx: number,
-  ty: number,
-  time: number,
-  theme: RoomTheme
-): void {
-  const shade = (tx * 7 + ty * 13) % 3;
-  const palette = GROUND_PALETTES[theme];
-  const water =
-    theme === "volcano" ? "#7c2d12" : theme === "cave" ? "#13384d" : "#1b4a72";
-
-  diamondPath(ctx, x, y, ISO_HALF_W, ISO_HALF_H);
-  ctx.fillStyle = terrain === "water" ? water : palette[shade];
-  ctx.fill();
-
-  if (terrain === "flower") {
-    ctx.fillStyle = theme === "volcano" ? "#fb923c" : theme === "cave" ? "#67e8f9" : "#facc15";
-    ctx.fillRect(x - 7, y - 3, 2, 2);
-    ctx.fillRect(x + 6, y + 3, 2, 2);
-  } else if (terrain === "water") {
-    const wave = Math.sin(time / 600 + tx * 0.7 + ty * 0.4) * 4;
-    ctx.strokeStyle =
-      theme === "volcano" ? "rgba(251,146,60,0.5)" : "rgba(125,211,252,0.3)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x - 16, y + wave);
-    ctx.lineTo(x + 16, y + wave);
-    ctx.stroke();
-  }
-}
 
 function drawTree(
   ctx: CanvasRenderingContext2D,
@@ -426,7 +403,7 @@ function drawNpc(
 const MINIMAP_CACHE_SIZE = 128;
 const minimapCaches = new Map<RoomId, HTMLCanvasElement>();
 
-function getMinimapCache(room: RoomId): HTMLCanvasElement {
+export function getMinimapCache(room: RoomId): HTMLCanvasElement {
   const cached = minimapCaches.get(room);
   if (cached) return cached;
   const cfg = roomConfig(room);
@@ -739,6 +716,26 @@ function drawHero(
     ctx.closePath();
     ctx.fill();
     ctx.fillRect(x - 9, y - 44 + bob, 18, 4);
+  } else if (look.classId === "assassin") {
+    // 兜帽 + 面罩
+    ctx.fillStyle = "#312e81";
+    ctx.beginPath();
+    ctx.moveTo(x - 9, y - 42 + bob);
+    ctx.lineTo(x, y - 56 + bob);
+    ctx.lineTo(x + 9, y - 42 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(x - 7, y - 40 + bob, 14, 6);
+    ctx.fillStyle = "#a855f7";
+    ctx.fillRect(x + (dir > 0 ? 2 : -4), y - 39 + bob, 2, 2);
+  } else if (look.classId === "guardian") {
+    // 重甲头盔
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillRect(x - 8, y - 46 + bob, 16, 15);
+    ctx.fillStyle = "#0ea5e9";
+    ctx.fillRect(x - 1, y - 46 + bob, 2, 15);
+    ctx.fillRect(x - 7, y - 38 + bob, 14, 2);
   } else {
     ctx.strokeStyle = "#fde68a";
     ctx.lineWidth = 2;
@@ -813,7 +810,8 @@ function drawMonsterBody(
       break;
     }
     case "wolf":
-    case "wolfking": {
+    case "wolfking":
+    case "frost_wolf": {
       const king = kind === "wolfking";
       ctx.strokeStyle = king ? "#7f1d1d" : "#6b7280";
       ctx.lineWidth = 4;
@@ -897,7 +895,8 @@ function drawMonsterBody(
       ctx.stroke();
       break;
     }
-    case "skeleton": {
+    case "skeleton":
+    case "death_knight": {
       ctx.fillStyle = "#e5e7eb";
       ctx.beginPath();
       ctx.ellipse(0, -30, 7, 6.5, 0, 0, Math.PI * 2);
@@ -927,6 +926,7 @@ function drawMonsterBody(
       break;
     }
     case "fire":
+    case "lava_tyrant":
     case "lavabeast": {
       const flicker = Math.sin(time / 90) * 2;
       const big = kind === "lavabeast";
@@ -982,7 +982,9 @@ function drawMonsterBody(
       break;
     }
     case "bat":
-    case "ghost": {
+    case "ghost":
+    case "shadow_lord":
+    case "void_apostle": {
       const ghost = kind === "ghost";
       ctx.fillStyle = ghost ? "rgba(226,232,240,0.75)" : "#7c3aed";
       ctx.beginPath();
@@ -1035,16 +1037,17 @@ function drawMonsterBody(
     case "golem":
     case "gargoyle":
     case "cavegolem":
-    case "guardian": {
+    case "guardian":
+    case "frost_giant": {
       const boss = kind === "cavegolem" || kind === "guardian";
-      const color = boss ? "#475569" : "#6b7280";
+      const color = kind === "frost_giant" ? "#a5f3fc" : boss ? "#475569" : "#6b7280";
       ctx.fillStyle = color;
       ctx.fillRect(-13, -26, 26, 22);
-      ctx.fillStyle = boss ? "#94a3b8" : "#9ca3af";
+      ctx.fillStyle = kind === "frost_giant" ? "#cffafe" : boss ? "#94a3b8" : "#9ca3af";
       ctx.fillRect(-10, -36, 20, 12);
       ctx.fillStyle = "rgba(255,255,255,0.18)";
       ctx.fillRect(-13, -24, 26, 3);
-      ctx.fillStyle = boss ? "#38bdf8" : "#fbbf24";
+      ctx.fillStyle = kind === "frost_giant" ? "#0ea5e9" : boss ? "#38bdf8" : "#fbbf24";
       ctx.fillRect(-6, -31, 4, 4);
       ctx.fillRect(2, -31, 4, 4);
       if (kind === "gargoyle") {
@@ -1059,8 +1062,17 @@ function drawMonsterBody(
       }
       break;
     }
-    case "dragon": {
-      ctx.fillStyle = "#7f1d1d";
+    case "dragon":
+    case "abyss_dragon":
+    case "ancient_dragon": {
+      const abyss = kind === "abyss_dragon";
+      const ancient = kind === "ancient_dragon";
+      const wing = ancient ? "#a16207" : abyss ? "#1e3a8a" : "#7f1d1d";
+      const outline = ancient ? "#ca8a04" : abyss ? "#1d4ed8" : "#991b1b";
+      const body = ancient ? "#eab308" : abyss ? "#1e40af" : "#b91c1c";
+      const horn = ancient ? "#fef3c7" : abyss ? "#a5f3fc" : "#fde68a";
+      const eye = ancient ? "#fff7ed" : abyss ? "#67e8f9" : "#facc15";
+      ctx.fillStyle = wing;
       ctx.beginPath();
       ctx.moveTo(-4, -26);
       ctx.lineTo(-26, -38);
@@ -1074,14 +1086,14 @@ function drawMonsterBody(
       ctx.closePath();
       ctx.fill();
 
-      ctx.strokeStyle = "#991b1b";
+      ctx.strokeStyle = outline;
       ctx.lineWidth = 5;
       ctx.beginPath();
       ctx.moveTo(-10, -12);
       ctx.quadraticCurveTo(-24, -6, -26, -2);
       ctx.stroke();
 
-      ctx.fillStyle = "#b91c1c";
+      ctx.fillStyle = body;
       ctx.beginPath();
       ctx.ellipse(0, -14, 15, 12, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -1089,7 +1101,7 @@ function drawMonsterBody(
       ctx.ellipse(10, -30, 7, 8, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = "#fde68a";
+      ctx.strokeStyle = horn;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(8, -37);
@@ -1098,7 +1110,7 @@ function drawMonsterBody(
       ctx.lineTo(15, -43);
       ctx.stroke();
 
-      ctx.fillStyle = "#facc15";
+      ctx.fillStyle = eye;
       ctx.fillRect(11, -32, 3, 3);
       break;
     }
@@ -1191,19 +1203,28 @@ function drawMonster(
   ctx.fillRect(x - barWidth / 2, barY, barWidth * Math.max(0, monster.hp / monster.maxHp), 3);
 }
 
-const AOE_RADIUS: Record<string, number> = {
+export const AOE_RADIUS: Record<string, number> = {
   judgment: 115,
   tibbers: 150,
   incinerate: 125,
   volley: 135,
   equinox: 130,
+  earthshaker: 130,
 };
 
-const HEAL_SKILLS = new Set(["astral_infusion", "wish", "heal"]);
-const EXECUTE_SKILLS = new Set(["demacia_justice", "crystal_arrow"]);
-const DASH_SKILLS = new Set(["tumble"]);
-const GOLD_SKILLS = new Set(["decisive_strike", "judgment", "demacia_justice", "crystal_arrow"]);
-const FROST_SKILLS = new Set(["frost_shot", "equinox"]);
+export const HEAL_SKILLS = new Set(["astral_infusion", "wish", "heal", "immovable"]);
+export const EXECUTE_SKILLS = new Set(["demacia_justice", "crystal_arrow", "soul_reap"]);
+export const DASH_SKILLS = new Set(["tumble", "shadow_assault"]);
+export const GOLD_SKILLS = new Set([
+  "decisive_strike",
+  "judgment",
+  "demacia_justice",
+  "crystal_arrow",
+  "shield_bash",
+  "earthshaker",
+  "soul_reap",
+]);
+export const FROST_SKILLS = new Set(["frost_shot", "equinox", "venom_blade"]);
 
 function drawSkillEffect(
   ctx: CanvasRenderingContext2D,
@@ -1214,6 +1235,28 @@ function drawSkillEffect(
 ): void {
   const alpha = Math.max(0, 1 - progress);
   ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // Pixel FX：所有技能附带像素碎片飞散
+  const pixelColor = HEAL_SKILLS.has(skillId)
+    ? "#86efac"
+    : EXECUTE_SKILLS.has(skillId)
+      ? "#fde68a"
+      : FROST_SKILLS.has(skillId)
+        ? "#7dd3fc"
+        : AOE_RADIUS[skillId]
+          ? "#fbbf24"
+          : "#c4b5fd";
+  ctx.fillStyle = pixelColor;
+  for (let i = 0; i < 12; i += 1) {
+    const angle = (i / 12) * Math.PI * 2 + progress * 3 + (i % 2) * 0.6;
+    const dist = 10 + progress * 48;
+    const px = x + Math.cos(angle) * dist;
+    const py = y - 10 + Math.sin(angle) * dist * 0.55 - progress * 22;
+    const size = i % 3 === 0 ? 3.5 : 2;
+    ctx.globalAlpha = alpha * (0.95 - progress * 0.5);
+    ctx.fillRect(px, py, size, size);
+  }
   ctx.globalAlpha = alpha;
 
   if (skillId === "levelup") {
@@ -1333,34 +1376,36 @@ function drawSkillEffect(
   ctx.restore();
 }
 
+export type WorldRenderInput = {
+  width: number;
+  height: number;
+  room: RoomId;
+  meId: string;
+  meX: number;
+  meY: number;
+  meName: string;
+  meHp: number;
+  meMaxHp: number;
+  meLevel: number;
+  meDir: number;
+  meDead: boolean;
+  meMoving: boolean;
+  meSwingAt: number;
+  meHurtAt: number;
+  shake: boolean;
+  targetId?: string | null;
+  snapshot: RenderSnapshot | null;
+  swings: Record<string, number>;
+  flashes: Record<string, number>;
+  moving: Record<string, number>;
+  effects: SkillEffect[];
+  particles: RenderParticle[];
+  time: number;
+};
+
 export function drawWorld(
   canvas: HTMLCanvasElement,
-  input: {
-    width: number;
-    height: number;
-    room: RoomId;
-    meId: string;
-    meX: number;
-    meY: number;
-    meName: string;
-    meHp: number;
-    meMaxHp: number;
-    meLevel: number;
-    meDir: number;
-    meDead: boolean;
-    meMoving: boolean;
-    meSwingAt: number;
-    meHurtAt: number;
-    shake: boolean;
-    targetId?: string | null;
-    snapshot: RenderSnapshot | null;
-    swings: Record<string, number>;
-    flashes: Record<string, number>;
-    moving: Record<string, number>;
-    effects: SkillEffect[];
-    particles: RenderParticle[];
-    time: number;
-  }
+  input: WorldRenderInput
 ): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -1400,6 +1445,15 @@ export function drawWorld(
   type Entity = { depth: number; draw: () => void };
   const entities: Entity[] = [];
 
+  // 地面按“配色分组 + Path2D”批量填充，减少逐格 beginPath/fill 的开销
+  const palette = GROUND_PALETTES[cfg.theme];
+  const waterColor =
+    cfg.theme === "volcano" ? "#7c2d12" : cfg.theme === "cave" ? "#13384d" : "#1b4a72";
+  const groundPaths = [new Path2D(), new Path2D(), new Path2D()];
+  const waterPath = new Path2D();
+  const flowerPath = new Path2D();
+  const waterTiles: { x: number; y: number; tx: number; ty: number }[] = [];
+
   for (let ty = minTy; ty <= maxTy; ty += 1) {
     for (let tx = minTx; tx <= maxTx; tx += 1) {
       const wx = tx * TILE + TILE / 2;
@@ -1415,7 +1469,16 @@ export function drawWorld(
       }
 
       const terrain = terrainAt(tx, ty, input.room);
-      drawGroundTile(ctx, screen.x, screen.y, terrain, tx, ty, input.time, cfg.theme);
+      const shade = (tx * 7 + ty * 13) % 3;
+      const path = terrain === "water" ? waterPath : groundPaths[shade];
+      addDiamond(path, screen.x, screen.y, ISO_HALF_W, ISO_HALF_H);
+
+      if (terrain === "water") {
+        waterTiles.push({ x: screen.x, y: screen.y, tx, ty });
+      } else if (terrain === "flower") {
+        flowerPath.rect(screen.x - 7, screen.y - 3, 2, 2);
+        flowerPath.rect(screen.x + 6, screen.y + 3, 2, 2);
+      }
 
       if (terrain === "tree" || terrain === "rock") {
         entities.push({
@@ -1427,6 +1490,32 @@ export function drawWorld(
         });
       }
     }
+  }
+
+  for (let shade = 0; shade < 3; shade += 1) {
+    ctx.fillStyle = palette[shade];
+    ctx.fill(groundPaths[shade]);
+  }
+  ctx.fillStyle = waterColor;
+  ctx.fill(waterPath);
+
+  if (waterTiles.length > 0) {
+    ctx.strokeStyle =
+      cfg.theme === "volcano" ? "rgba(251,146,60,0.5)" : "rgba(125,211,252,0.3)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const tile of waterTiles) {
+      const wave = Math.sin(input.time / 600 + tile.tx * 0.7 + tile.ty * 0.4) * 4;
+      ctx.moveTo(tile.x - 16, tile.y + wave);
+      ctx.lineTo(tile.x + 16, tile.y + wave);
+    }
+    ctx.stroke();
+  }
+
+  if (flowerPath) {
+    ctx.fillStyle =
+      cfg.theme === "volcano" ? "#fb923c" : cfg.theme === "cave" ? "#67e8f9" : "#facc15";
+    ctx.fill(flowerPath);
   }
 
   const snapshot = input.snapshot;
@@ -1464,6 +1553,14 @@ export function drawWorld(
         depth: drop.x + drop.y,
         draw: () => {
           const bob = Math.sin(input.time / 300 + drop.x) * 3;
+          if (drop.kind === "item") {
+            // 装备掉落的像素光柱
+            const beamAlpha = 0.12 + Math.sin(input.time / 240 + drop.x) * 0.04;
+            ctx.fillStyle = `rgba(96,165,250,${beamAlpha})`;
+            ctx.fillRect(screen.x - 9, screen.y - 74, 18, 74);
+            ctx.fillStyle = `rgba(191,219,254,${beamAlpha + 0.08})`;
+            ctx.fillRect(screen.x - 3, screen.y - 74, 6, 74);
+          }
           ctx.fillStyle = "rgba(0,0,0,0.25)";
           ctx.beginPath();
           ctx.ellipse(screen.x, screen.y + 2, 10, 4.5, 0, 0, Math.PI * 2);
@@ -1615,6 +1712,13 @@ export function drawWorld(
   for (const particle of input.particles) {
     const screen = toScreen(particle.x, particle.y, camX, camY);
     ctx.globalAlpha = Math.max(0, particle.life / particle.maxLife);
+    if (particle.kind === "spark") {
+      const size = particle.size ?? 3;
+      ctx.fillStyle = particle.color;
+      ctx.fillRect(screen.x - size / 2, screen.y - size / 2, size, size);
+      ctx.globalAlpha = 1;
+      continue;
+    }
     const fontSize = particle.size ?? 13;
     ctx.font = `bold ${fontSize}px ui-monospace, Menlo, monospace`;
     ctx.textAlign = "center";

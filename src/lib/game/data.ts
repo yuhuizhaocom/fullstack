@@ -45,6 +45,24 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     growth: { maxHp: 11, maxMp: 7, atk: 2.3, def: 1.1, spd: 0.6, crit: 0.2, cdr: 0.4, lifesteal: 0 },
     weapon: "holy_mace",
   },
+  assassin: {
+    id: "assassin",
+    name: "刺客",
+    icon: "🗡️",
+    desc: "泰隆风格的影袭刺客，Q 影袭、W 毒刃、E 烟幕、R 斩魂",
+    base: { maxHp: 105, maxMp: 30, atk: 16, def: 4, spd: 14, crit: 18, cdr: 0, lifesteal: 3 },
+    growth: { maxHp: 9, maxMp: 3, atk: 3.2, def: 0.7, spd: 1.1, crit: 0.7, cdr: 0.15, lifesteal: 0.15 },
+    weapon: "rusty_dagger",
+  },
+  guardian: {
+    id: "guardian",
+    name: "守护",
+    icon: "🛡️",
+    desc: "布隆风格的守护者，Q 盾牌猛击、W 坚不可摧、E 大地震颤、R 不动如山",
+    base: { maxHp: 180, maxMp: 35, atk: 13, def: 11, spd: 5, crit: 3, cdr: 0, lifesteal: 0 },
+    growth: { maxHp: 20, maxMp: 4, atk: 2.2, def: 1.8, spd: 0.3, crit: 0.15, cdr: 0.12, lifesteal: 0.05 },
+    weapon: "wooden_hammer",
+  },
 };
 
 export const SKILLS: Record<string, SkillDef> = {
@@ -264,14 +282,134 @@ export const SKILLS: Record<string, SkillDef> = {
     cooldown: 60,
     healRatio: 0.6,
   },
+
+  // 刺客 · 泰隆风格
+  shadow_assault: {
+    id: "shadow_assault",
+    name: "影袭",
+    icon: "🌑",
+    desc: "Q：瞬步突进并造成 230% 攻击伤害",
+    mp: 0,
+    level: 1,
+    kind: "damage",
+    key: "Q",
+    cooldown: 5,
+    range: 165,
+    multiplier: 2.3,
+  },
+  venom_blade: {
+    id: "venom_blade",
+    name: "毒刃",
+    icon: "🟣",
+    desc: "W：淬毒飞刃造成 190% 攻击伤害并减速 2.5 秒",
+    mp: 0,
+    level: 2,
+    kind: "slow",
+    key: "W",
+    cooldown: 8,
+    range: 195,
+    multiplier: 1.9,
+    slowMs: 2500,
+  },
+  smoke_screen: {
+    id: "smoke_screen",
+    name: "烟幕",
+    icon: "💨",
+    desc: "E：向移动方向翻滚并进入烟幕，4 秒内减伤 45%",
+    mp: 0,
+    level: 4,
+    kind: "guard",
+    key: "E",
+    cooldown: 13,
+    reduction: 45,
+    buffTurns: 4,
+  },
+  soul_reap: {
+    id: "soul_reap",
+    name: "斩魂",
+    icon: "💀",
+    desc: "R：对生命值低于 40% 的目标造成 400% 攻击伤害",
+    mp: 0,
+    level: 6,
+    kind: "execute",
+    key: "R",
+    cooldown: 35,
+    range: 185,
+    multiplier: 4,
+  },
+
+  // 守护 · 布隆风格
+  shield_bash: {
+    id: "shield_bash",
+    name: "盾牌猛击",
+    icon: "🛡️",
+    desc: "Q：盾击造成 180% 攻击伤害并减速 2 秒",
+    mp: 0,
+    level: 1,
+    kind: "slow",
+    key: "Q",
+    cooldown: 6,
+    range: 150,
+    multiplier: 1.8,
+    slowMs: 2000,
+  },
+  unbreakable: {
+    id: "unbreakable",
+    name: "坚不可摧",
+    icon: "🧱",
+    desc: "W：举起巨盾，4 秒内受到的伤害降低 55%",
+    mp: 0,
+    level: 2,
+    kind: "guard",
+    key: "W",
+    cooldown: 15,
+    reduction: 55,
+    buffTurns: 4,
+  },
+  earthshaker: {
+    id: "earthshaker",
+    name: "大地震颤",
+    icon: "🌍",
+    desc: "E：震击周围敌人，造成 150% 攻击伤害",
+    mp: 0,
+    level: 4,
+    kind: "aoe",
+    key: "E",
+    cooldown: 11,
+    radius: 130,
+    multiplier: 1.5,
+  },
+  immovable: {
+    id: "immovable",
+    name: "不动如山",
+    icon: "🏔️",
+    desc: "R：回复 55% 最大生命，并在 5 秒内减伤 40%",
+    mp: 0,
+    level: 6,
+    kind: "heal",
+    key: "R",
+    cooldown: 55,
+    healRatio: 0.55,
+    reduction: 40,
+    buffTurns: 5,
+  },
 };
+
+/** 本版本移除蓝条：所有技能不再消耗法力 */
+for (const skill of Object.values(SKILLS)) {
+  skill.mp = 0;
+}
 
 export const CLASS_SKILLS: Record<ClassId, string[]> = {
   warrior: ["decisive_strike", "courage", "judgment", "demacia_justice"],
   mage: ["disintegrate", "incinerate", "molten_shield", "tibbers"],
   ranger: ["volley", "frost_shot", "tumble", "crystal_arrow"],
   priest: ["starlight", "astral_infusion", "equinox", "wish"],
+  assassin: ["shadow_assault", "venom_blade", "smoke_screen", "soul_reap"],
+  guardian: ["shield_bash", "unbreakable", "earthshaker", "immovable"],
 };
+
+export const CLASS_SKILL_IDS = CLASS_SKILLS;
 
 /** 英雄联盟风格装备 */
 export const LOL_ITEMS: Record<string, ItemDef> = {
@@ -744,12 +882,242 @@ export const ITEMS: Record<string, ItemDef> = {
   },
 };
 
+// 将英雄联盟风格装备并入统一物品表
+Object.assign(ITEMS, LOL_ITEMS);
+
+
+/* ===== 长线成长装备（参考英雄联盟装备曲线，等级 20-55 逐步解锁） ===== */
+
+export const RARITY_LABEL: Record<string, string> = {
+  common: "普通",
+  magic: "魔法",
+  rare: "稀有",
+  epic: "史诗",
+  legendary: "传说",
+};
+
+export const RARITY_COLOR: Record<string, string> = {
+  common: "#9ca3af",
+  magic: "#4f9cf9",
+  rare: "#3ddc97",
+  epic: "#b072f5",
+  legendary: "#ffb020",
+};
+
+type GearTier = { level: number; rarity: "magic" | "rare" | "epic" | "legendary" };
+const GEAR_TIERS: GearTier[] = [
+  { level: 20, rarity: "magic" },
+  { level: 30, rarity: "rare" },
+  { level: 40, rarity: "epic" },
+  { level: 50, rarity: "epic" },
+  { level: 55, rarity: "legendary" },
+];
+
+const WEAPON_LINES: Record<ClassId, { icon: string; names: string[] }> = {
+  warrior: { icon: "⚔️", names: ["暴风大剑", "三相之力", "斯特拉克的挑战护手", "贪欲九头蛇", "破败王者之刃"] },
+  mage: { icon: "🔮", names: ["虚空之杖", "莫雷洛秘典", "兰德里的折磨", "瑞莱的冰晶节杖", "大天使之杖"] },
+  ranger: { icon: "🏹", names: ["疾射火炮", "岚切", "狂风之力", "收集者", "多米尼克领主的致意"] },
+  priest: { icon: "✨", names: ["炽热香炉", "救赎", "米凯尔的祝福", "舒瑞娅的战歌", "月石再生器"] },
+  assassin: { icon: "🗡️", names: ["锯齿短匕", "德拉克萨的暮刃", "幽梦之灵", "暗行者之爪", "无尽恨意"] },
+  guardian: { icon: "🛡️", names: ["军团圣盾", "骑士之誓", "石像鬼石板甲", "亡者的板甲", "不朽盾弓"] },
+};
+
+for (const [classId, line] of Object.entries(WEAPON_LINES)) {
+  GEAR_TIERS.forEach((tier, index) => {
+    const id = `${classId}_w${tier.level}`;
+    const atk = Math.round(12 + tier.level * 1.5);
+    ITEMS[id] = {
+      id,
+      name: line.names[index],
+      icon: line.icon,
+      kind: "weapon",
+      desc: `攻击 +${atk}${tier.level >= 40 ? "，附带英雄级词条" : ""}`,
+      price: Math.round(2600 * Math.pow(1.62, index) + tier.level * 60),
+      atk,
+      crit: classId === "ranger" || classId === "assassin" ? 6 + index * 4 : undefined,
+      lifesteal: classId === "warrior" || classId === "assassin" ? 3 + index * 2 : undefined,
+      cdr: classId === "mage" || classId === "priest" ? 4 + index * 2 : undefined,
+      classId: classId as ClassId,
+      level: tier.level,
+      rarity: tier.rarity,
+    };
+  });
+}
+
+const ARMOR_LINE = ["精铁重甲", "秘银战甲", "泰坦战甲", "龙鳞圣铠", "不朽王者之铠"];
+const BOOTS_LINE = ["铁履", "秘银战靴", "疾风之靴", "守护者战靴", "诸神黄昏之靴"];
+const ACCESSORY_LINE = ["黑曜石护符", "深渊之戒", "死亡之舞", "无尽宝珠", "永恒王冠"];
+
+GEAR_TIERS.forEach((tier, index) => {
+  const armorId = `armor_f${tier.level}`;
+  const def = Math.round(8 + tier.level * 0.85);
+  const hp = Math.round(100 + tier.level * 15);
+  ITEMS[armorId] = {
+    id: armorId,
+    name: ARMOR_LINE[index],
+    icon: "🛡️",
+    kind: "armor",
+    desc: `防御 +${def}，生命 +${hp}`,
+    price: Math.round(2200 * Math.pow(1.6, index) + tier.level * 55),
+    def,
+    maxHp: hp,
+    level: tier.level,
+    rarity: tier.rarity,
+  };
+
+  const bootsId = `boots_f${tier.level}`;
+  ITEMS[bootsId] = {
+    id: bootsId,
+    name: BOOTS_LINE[index],
+    icon: "👟",
+    kind: "boots",
+    desc: `速度 +${4 + index * 2}，防御 +${3 + index * 2}`,
+    price: Math.round(1600 * Math.pow(1.55, index) + tier.level * 40),
+    spd: 4 + index * 2,
+    def: 3 + index * 2,
+    cdr: 4 + index * 2,
+    level: tier.level,
+    rarity: tier.rarity,
+  };
+
+  const accId = `accessory_f${tier.level}`;
+  ITEMS[accId] = {
+    id: accId,
+    name: ACCESSORY_LINE[index],
+    icon: "💍",
+    kind: "accessory",
+    desc: `攻击 +${Math.round(6 + tier.level * 0.6)}，暴击 +${4 + index * 4}%`,
+    price: Math.round(2400 * Math.pow(1.6, index) + tier.level * 50),
+    atk: Math.round(6 + tier.level * 0.6),
+    crit: 4 + index * 4,
+    cdr: index * 2,
+    level: tier.level,
+    rarity: tier.rarity,
+  };
+});
+
+// 刺客 / 守护 的低等级武器线
+Object.assign(ITEMS, {
+  rusty_dagger: {
+    id: "rusty_dagger",
+    name: "锈刃匕首",
+    icon: "🔪",
+    kind: "weapon",
+    desc: "刺客的入门短匕",
+    price: 42,
+    atk: 4,
+    crit: 4,
+    classId: "assassin",
+    level: 1,
+  },
+  shadow_dagger: {
+    id: "shadow_dagger",
+    name: "暗影双匕",
+    icon: "🗡️",
+    kind: "weapon",
+    desc: "藏在袖中的暗影双匕",
+    price: 210,
+    atk: 9,
+    crit: 6,
+    classId: "assassin",
+    level: 6,
+  },
+  nightblade: {
+    id: "nightblade",
+    name: "夜刃",
+    icon: "🌘",
+    kind: "weapon",
+    desc: "取走无数性命的暗杀之刃",
+    price: 660,
+    atk: 17,
+    crit: 8,
+    classId: "assassin",
+    level: 13,
+  },
+  wooden_hammer: {
+    id: "wooden_hammer",
+    name: "木槌",
+    icon: "🔨",
+    kind: "weapon",
+    desc: "守护者的训练木槌",
+    price: 45,
+    atk: 3,
+    def: 2,
+    classId: "guardian",
+    level: 1,
+  },
+  iron_hammer: {
+    id: "iron_hammer",
+    name: "铁卫战锤",
+    icon: "⚒️",
+    kind: "weapon",
+    desc: "厚重可靠的铁卫战锤",
+    price: 220,
+    atk: 8,
+    def: 4,
+    classId: "guardian",
+    level: 6,
+  },
+  bastion_hammer: {
+    id: "bastion_hammer",
+    name: "堡垒之锤",
+    icon: "🏰",
+    kind: "weapon",
+    desc: "守卫城塞的巨锤",
+    price: 680,
+    atk: 14,
+    def: 7,
+    classId: "guardian",
+    level: 13,
+  },
+  // 强化材料
+  enhance_stone: {
+    id: "enhance_stone",
+    name: "强化石",
+    icon: "🔷",
+    kind: "material",
+    desc: "锻造强化装备所需的基础材料，可收购",
+    price: 260,
+  },
+  mythril: {
+    id: "mythril",
+    name: "秘银锭",
+    icon: "🔩",
+    kind: "material",
+    desc: "高级强化材料，从精英怪物身上掉落",
+    price: 1200,
+  },
+  dragon_soul: {
+    id: "dragon_soul",
+    name: "龙魂结晶",
+    icon: "🔶",
+    kind: "material",
+    desc: "传说级强化材料，只有巨龙与深渊生物才拥有",
+    price: 5200,
+  },
+  frost_core: {
+    id: "frost_core",
+    name: "寒霜核心",
+    icon: "❄️",
+    kind: "material",
+    desc: "冰霜巨人遗留的核心，可高价出售",
+    price: 2600,
+  },
+  void_shard: {
+    id: "void_shard",
+    name: "虚空碎片",
+    icon: "🌌",
+    kind: "material",
+    desc: "来自虚空的碎片，蕴含危险的力量",
+    price: 6800,
+  },
+} as Record<string, ItemDef>);
+
 export const SHOP_ITEMS: string[] = [
   "potion_small_hp",
   "potion_mid_hp",
   "potion_big_hp",
-  "potion_small_mp",
-  "potion_mid_mp",
+  "enhance_stone",
   "cloth_robe",
   "leather_armor",
   "power_ring",
@@ -764,6 +1132,12 @@ export const SHOP_ITEMS: string[] = [
   "hunter_bow",
   "holy_mace",
   "blessed_mace",
+  "rusty_dagger",
+  "shadow_dagger",
+  "nightblade",
+  "wooden_hammer",
+  "iron_hammer",
+  "bastion_hammer",
   "doran_blade",
   "mercury_treads",
   "sorc_shoes",
@@ -776,10 +1150,9 @@ export const SHOP_ITEMS: string[] = [
   "bloodthirster",
   "guardian_angel",
   "warmog",
+  // 长线装备：按等级解锁
+  ...Object.keys(ITEMS).filter((id) => /_(w|f)\d+$/.test(id)),
 ];
-
-// 将英雄联盟风格装备并入统一物品表
-Object.assign(ITEMS, LOL_ITEMS);
 
 export const PETS: Record<string, PetDef> = {
   firefox: {
@@ -1177,6 +1550,151 @@ export const ENEMIES: Record<string, EnemyDef> = {
       { itemId: "infinity_edge", chance: 1 },
       { itemId: "warmog", chance: 1 },
       { itemId: "dragon_scale", chance: 1 },
+    ],
+  },
+  // ===== 高等级区域怪物（长线成长） =====
+  death_knight: {
+    id: "death_knight",
+    name: "亡灵骑士",
+    icon: "🏇",
+    hp: 680,
+    atk: 44,
+    def: 24,
+    spd: 10,
+    exp: 280,
+    gold: 190,
+    skills: [{ name: "亡灵冲锋", multiplier: 1.6, chance: 0.35 }],
+    drops: [
+      { itemId: "enhance_stone", chance: 0.5 },
+      { itemId: "magic_core", chance: 0.4 },
+    ],
+  },
+  frost_wolf: {
+    id: "frost_wolf",
+    name: "霜狼",
+    icon: "🐺",
+    hp: 820,
+    atk: 49,
+    def: 26,
+    spd: 13,
+    exp: 360,
+    gold: 230,
+    skills: [{ name: "霜牙撕咬", multiplier: 1.5, chance: 0.35 }],
+    drops: [
+      { itemId: "enhance_stone", chance: 0.7 },
+      { itemId: "wolf_pelt", chance: 0.6 },
+    ],
+  },
+  frost_giant: {
+    id: "frost_giant",
+    name: "冰霜巨人",
+    icon: "🧊",
+    hp: 1200,
+    atk: 56,
+    def: 30,
+    spd: 6,
+    exp: 560,
+    gold: 340,
+    skills: [{ name: "极寒重拳", multiplier: 1.7, chance: 0.4 }],
+    drops: [
+      { itemId: "frost_core", chance: 0.55 },
+      { itemId: "enhance_stone", chance: 0.9 },
+      { itemId: "armor_f20", chance: 0.12 },
+    ],
+  },
+  shadow_lord: {
+    id: "shadow_lord",
+    name: "暗影领主",
+    icon: "🕯️",
+    hp: 1900,
+    atk: 68,
+    def: 32,
+    spd: 11,
+    exp: 900,
+    gold: 540,
+    skills: [{ name: "暗影噬咬", multiplier: 1.8, chance: 0.45 }],
+    drops: [
+      { itemId: "mythril", chance: 0.4 },
+      { itemId: "enhance_stone", chance: 1 },
+      { itemId: "boots_f20", chance: 0.12 },
+    ],
+  },
+  void_apostle: {
+    id: "void_apostle",
+    name: "虚空使徒",
+    icon: "🌌",
+    hp: 3000,
+    atk: 82,
+    def: 36,
+    spd: 12,
+    exp: 1450,
+    gold: 820,
+    skills: [{ name: "虚空裂隙", multiplier: 1.9, chance: 0.5 }],
+    drops: [
+      { itemId: "void_shard", chance: 0.28 },
+      { itemId: "mythril", chance: 0.55 },
+      { itemId: "accessory_f30", chance: 0.12 },
+    ],
+  },
+  lava_tyrant: {
+    id: "lava_tyrant",
+    name: "熔岩暴君",
+    icon: "🌋",
+    hp: 4600,
+    atk: 96,
+    def: 42,
+    spd: 9,
+    exp: 2200,
+    gold: 1250,
+    skills: [{ name: "熔岩崩裂", multiplier: 2, chance: 0.5 }],
+    drops: [
+      { itemId: "dragon_soul", chance: 0.22 },
+      { itemId: "mythril", chance: 0.8 },
+      { itemId: "armor_f40", chance: 0.1 },
+    ],
+  },
+  abyss_dragon: {
+    id: "abyss_dragon",
+    name: "深渊巨龙",
+    icon: "🐲",
+    hp: 7200,
+    atk: 112,
+    def: 50,
+    spd: 13,
+    exp: 3300,
+    gold: 2100,
+    skills: [
+      { name: "深渊吐息", multiplier: 2.1, chance: 0.5 },
+      { name: "虚空甩尾", multiplier: 1.5, chance: 0.25 },
+    ],
+    drops: [
+      { itemId: "dragon_soul", chance: 0.45 },
+      { itemId: "void_shard", chance: 0.55 },
+      { itemId: "accessory_f50", chance: 0.1 },
+    ],
+  },
+  ancient_dragon: {
+    id: "ancient_dragon",
+    name: "远古龙王",
+    icon: "👑",
+    hp: 24000,
+    atk: 145,
+    def: 62,
+    spd: 14,
+    exp: 12000,
+    gold: 9000,
+    skills: [
+      { name: "灭世龙息", multiplier: 2.3, chance: 0.5 },
+      { name: "龙王天威", multiplier: 1.8, chance: 0.3 },
+    ],
+    drops: [
+      { itemId: "dragon_soul", chance: 1 },
+      { itemId: "warrior_w55", chance: 1 },
+      { itemId: "mage_w55", chance: 1 },
+      { itemId: "ranger_w55", chance: 1 },
+      { itemId: "priest_w55", chance: 1 },
+      { itemId: "assassin_w55", chance: 1 },
+      { itemId: "guardian_w55", chance: 1 },
     ],
   },
 };

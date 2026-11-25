@@ -78,7 +78,7 @@ export function CloudSync({
         toast.error("云端暂无存档");
         return;
       }
-      const next = data.save as GameSave;
+      const next = { ...(data.save as GameSave), id: save.id };
       onRestore(next);
       persistSave(next);
       toast.success("已从云端恢复");

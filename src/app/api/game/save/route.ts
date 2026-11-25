@@ -14,7 +14,7 @@ function isValidSave(value: unknown): value is Record<string, unknown> {
   const save = value as Record<string, unknown>;
   if (save.version !== 1) return false;
   if (typeof save.classId !== "string" || !(save.classId in CLASSES)) return false;
-  if (typeof save.level !== "number" || save.level < 1 || save.level > 30) {
+  if (typeof save.level !== "number" || save.level < 1 || save.level > 60) {
     return false;
   }
   if (typeof save.name !== "string" || save.name.length > 20) return false;

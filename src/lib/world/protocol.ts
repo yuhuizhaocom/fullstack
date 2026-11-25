@@ -17,6 +17,7 @@ export type PlayerSyncPayload = {
   weapon: string | null;
   armor: string | null;
   potions: Record<string, number>;
+  skills?: Record<string, number>;
   quests?: Record<string, { progress: number; status: string }>;
   room?: string;
 };

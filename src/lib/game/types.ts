@@ -1,4 +1,4 @@
-export type ClassId = "warrior" | "mage" | "ranger" | "priest";
+export type ClassId = "warrior" | "mage" | "ranger" | "priest" | "assassin" | "guardian";
 
 export type Stats = {
   maxHp: number;
@@ -80,12 +80,18 @@ export type ItemKind =
   | "boots"
   | "accessory";
 
+export type ItemRarity = "common" | "magic" | "rare" | "epic" | "legendary";
+
+export type EquipSlot = "weapon" | "armor" | "boots" | "accessory";
+
 export type ItemDef = {
   id: string;
   name: string;
   icon: string;
   kind: ItemKind;
   desc: string;
+  /** 稀有度，仅装备使用 */
+  rarity?: ItemRarity;
   /** 商店买价；材料为出售价 */
   price: number;
   hp?: number;
@@ -167,6 +173,8 @@ export type QuestSaveEntry = {
 
 export type GameSave = {
   version: 1;
+  /** 角色唯一 ID（支持同账号多角色） */
+  id?: string;
   name: string;
   classId: ClassId;
   level: number;
@@ -186,6 +194,10 @@ export type GameSave = {
   createdAt: number;
   /** 任务进度（可选，兼容旧存档） */
   quests?: Record<string, QuestSaveEntry>;
+  /** 锻造强化等级：按部位累计（可选，兼容旧存档） */
+  enhancements?: Partial<Record<EquipSlot, number>>;
+  /** 技能加点：技能 ID -> 等级（可选，兼容旧存档） */
+  skillRanks?: Record<string, number>;
 };
 
 export type BattleState = {

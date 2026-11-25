@@ -53,6 +53,8 @@ export type WorldPlayer = {
   buffUntil: number;
   guardUntil: number;
   skillReady: Record<string, number>;
+  /** 技能加点等级：技能 ID -> 等级 */
+  skills: Record<string, number>;
   quests: Record<string, { progress: number; status: QuestStatus }>;
   lastMpRegen: number;
   invulnerableUntil: number;
@@ -258,6 +260,28 @@ const MONSTER_DEFS: Record<string, MonsterDef> = {
   ghost: { kind: "ghost", name: "幽魂", icon: "👻", hp: 220, atk: 32, def: 8, exp: 60, gold: 34, speed: 55, aggro: 250, level: 8 },
   gargoyle: { kind: "gargoyle", name: "石像鬼", icon: "🗿", hp: 300, atk: 34, def: 20, exp: 80, gold: 46, speed: 40, aggro: 220, level: 9 },
   lavabeast: { kind: "lavabeast", name: "熔岩兽", icon: "🌋", hp: 420, atk: 44, def: 22, exp: 110, gold: 60, speed: 45, aggro: 230, level: 11 },
+  death_knight: { kind: "death_knight", name: "亡灵骑士", icon: "🏇", hp: 620, atk: 54, def: 26, exp: 240, gold: 120, speed: 70, aggro: 280, level: 14 },
+  frost_wolf: { kind: "frost_wolf", name: "霜狼", icon: "🐺", hp: 780, atk: 62, def: 28, exp: 320, gold: 150, speed: 82, aggro: 300, level: 16 },
+  frost_giant: { kind: "frost_giant", name: "冰霜巨人", icon: "🧊", hp: 1300, atk: 72, def: 34, exp: 560, gold: 240, speed: 40, aggro: 300, level: 18 },
+  shadow_lord: { kind: "shadow_lord", name: "暗影领主", icon: "🕯️", hp: 2000, atk: 88, def: 40, exp: 900, gold: 380, speed: 60, aggro: 320, level: 24 },
+  void_apostle: { kind: "void_apostle", name: "虚空使徒", icon: "🌌", hp: 3200, atk: 104, def: 46, exp: 1500, gold: 620, speed: 62, aggro: 340, level: 32 },
+  lava_tyrant: { kind: "lava_tyrant", name: "熔岩暴君", icon: "🌋", hp: 4800, atk: 122, def: 54, exp: 2300, gold: 950, speed: 52, aggro: 360, level: 40 },
+  abyss_dragon: { kind: "abyss_dragon", name: "深渊巨龙", icon: "🐲", hp: 7600, atk: 142, def: 62, exp: 3500, gold: 1500, speed: 62, aggro: 380, level: 50 },
+  ancient_dragon: {
+    kind: "ancient_dragon",
+    name: "远古龙王",
+    icon: "👑",
+    hp: 48000,
+    atk: 200,
+    def: 95,
+    exp: 16000,
+    gold: 12000,
+    speed: 66,
+    aggro: 420,
+    level: 60,
+    boss: true,
+    loot: ["dragon_soul", "armor_f55", "boots_f55", "accessory_f55"],
+  },
 
   wolfking: {
     kind: "wolfking", name: "森林巨狼王", icon: "👑", hp: 2800, atk: 34, def: 16, exp: 800, gold: 500,
@@ -285,13 +309,14 @@ const LOOT_TIERS: { maxLevel: number; items: string[] }[] = [
       "slime_gel",
       "wolf_pelt",
       "potion_small_hp",
-      "potion_small_mp",
       "cloth_robe",
       "power_ring",
       "wooden_sword",
       "oak_staff",
       "short_bow",
       "holy_mace",
+      "rusty_dagger",
+      "wooden_hammer",
     ],
   },
   {
@@ -301,13 +326,15 @@ const LOOT_TIERS: { maxLevel: number; items: string[] }[] = [
       "magic_core",
       "potion_small_hp",
       "potion_mid_hp",
-      "potion_mid_mp",
+      "enhance_stone",
       "leather_armor",
       "guard_amulet",
       "iron_sword",
       "hunter_bow",
       "crystal_staff",
       "blessed_mace",
+      "shadow_dagger",
+      "iron_hammer",
     ],
   },
   {
@@ -315,6 +342,7 @@ const LOOT_TIERS: { maxLevel: number; items: string[] }[] = [
     items: [
       "magic_core",
       "potion_mid_hp",
+      "enhance_stone",
       "chain_mail",
       "mercury_treads",
       "sorc_shoes",
@@ -323,13 +351,17 @@ const LOOT_TIERS: { maxLevel: number; items: string[] }[] = [
       "randuin",
       "thornmail",
       "ludens",
+      "flame_sword",
+      "storm_bow",
     ],
   },
   {
-    maxLevel: 99,
+    maxLevel: 19,
     items: [
       "dragon_scale",
       "potion_big_hp",
+      "enhance_stone",
+      "mythril",
       "plate_armor",
       "dragon_armor",
       "guardian_angel",
@@ -337,6 +369,57 @@ const LOOT_TIERS: { maxLevel: number; items: string[] }[] = [
       "deathcap",
       "infinity_edge",
       "bloodthirster",
+    ],
+  },
+  {
+    maxLevel: 25,
+    items: [
+      "enhance_stone",
+      "mythril",
+      "frost_core",
+      "potion_big_hp",
+      "armor_f20",
+      "boots_f20",
+      "accessory_f20",
+    ],
+  },
+  {
+    maxLevel: 34,
+    items: [
+      "mythril",
+      "enhance_stone",
+      "frost_core",
+      "potion_big_hp",
+      "armor_f30",
+      "boots_f30",
+      "accessory_f30",
+    ],
+  },
+  {
+    maxLevel: 44,
+    items: [
+      "mythril",
+      "dragon_soul",
+      "void_shard",
+      "potion_big_hp",
+      "armor_f40",
+      "boots_f40",
+      "accessory_f40",
+    ],
+  },
+  {
+    maxLevel: 99,
+    items: [
+      "dragon_soul",
+      "void_shard",
+      "mythril",
+      "potion_big_hp",
+      "armor_f50",
+      "boots_f50",
+      "accessory_f50",
+      "armor_f55",
+      "boots_f55",
+      "accessory_f55",
     ],
   },
 ];
@@ -442,10 +525,12 @@ function chooseKind(cfg: (typeof ROOMS)[RoomId], point: { x: number; y: number }
   }
   const spawn = roomSpawn("world");
   const distance = Math.hypot(point.x - spawn.x, point.y - spawn.y);
-  const ratio = Math.min(0.999, distance / 4200);
-  const index = Math.min(
-    kinds.length - 1,
-    Math.floor((ratio + Math.random() * 0.3) * kinds.length)
+  const ratio = Math.min(1, distance / 3600);
+  // 距离越远怪物等级越高，附近只会有 ±1~2 档的波动
+  const base = ratio * (kinds.length - 1);
+  const index = Math.max(
+    0,
+    Math.min(kinds.length - 1, Math.floor(base + (Math.random() - 0.5) * 2.6))
   );
   return kinds[index];
 }
@@ -538,6 +623,7 @@ export type JoinInput = {
   weapon?: string | null;
   armor?: string | null;
   potions?: Record<string, number>;
+  skills?: Record<string, number>;
   quests?: JoinQuestInput;
   room?: string;
 };
@@ -569,7 +655,7 @@ export function joinWorld(input: JoinInput) {
 
   const name = String(input.name || "冒险者").slice(0, 16);
   const classId: ClassId = input.classId in CLASS_SKILLS ? input.classId : "warrior";
-  const level = Math.round(clampNumber(input.level, 1, 30));
+  const level = Math.round(clampNumber(input.level, 1, 60));
   const maxHp = Math.round(clampNumber(input.maxHp, 1, 200000));
   const maxMp = Math.round(clampNumber(input.maxMp, 0, 100000));
   const atk = Math.round(clampNumber(input.atk, 1, 100000));
@@ -588,6 +674,17 @@ export function joinWorld(input: JoinInput) {
       const amount = Math.floor(Number(count));
       if (Number.isFinite(amount) && amount > 0 && amount <= 99) {
         potions[id] = amount;
+      }
+    }
+  }
+
+  // 技能加点：只接受本职业技能，等级限制在 1-15
+  const skills: Record<string, number> = {};
+  if (input.skills && typeof input.skills === "object") {
+    for (const skillId of CLASS_SKILLS[classId]) {
+      const rank = Math.floor(Number(input.skills[skillId]));
+      if (Number.isFinite(rank) && rank > 1) {
+        skills[skillId] = Math.min(15, rank);
       }
     }
   }
@@ -629,6 +726,7 @@ export function joinWorld(input: JoinInput) {
       buffUntil: 0,
       guardUntil: 0,
       skillReady: {},
+      skills,
       quests: normalizeQuests(input.quests),
       lastMpRegen: now,
       invulnerableUntil: now + 2000,
@@ -656,6 +754,7 @@ export function joinWorld(input: JoinInput) {
       weapon,
       armor,
       potions,
+      skills,
       lastSeen: now,
     });
     // 服务器已有任务进度时以服务器为准，否则从存档恢复
@@ -1021,7 +1120,10 @@ export function castSkill(
   const skill = SKILLS[skillId];
   if (!skill) return { ok: false, message: "技能不存在" };
   if (player.level < skill.level) return { ok: false, message: `需要 ${skill.level} 级` };
-  if (player.mp < skill.mp) return { ok: false, message: "法力不足" };
+
+  // 技能加点：每级 +10% 效果，并小幅降低冷却
+  const rank = Math.max(1, Math.min(15, player.skills[skillId] ?? 1));
+  const rankScale = 1 + (rank - 1) * 0.1;
 
   const readyAt = player.skillReady[skillId] ?? 0;
   if (now < readyAt) {
@@ -1029,8 +1131,11 @@ export function castSkill(
   }
   if (now - player.lastSkill < 450) return { ok: false, message: "施法过快" };
 
-  const cooldown = (skill.cooldown ?? 5) * (1 - player.cdr / 100);
-  player.mp -= skill.mp;
+  const cooldown =
+    (skill.cooldown ?? 5) *
+    (1 - player.cdr / 100) *
+    Math.max(0.55, 1 - (rank - 1) * 0.015);
+  player.mp = Math.max(0, player.mp - skill.mp);
   player.lastSkill = now;
   player.lastSeen = now;
   player.skillReady[skillId] = now + cooldown * 1000;
@@ -1057,7 +1162,9 @@ export function castSkill(
   };
 
   if (skill.kind === "heal") {
-    const heal = Math.round(player.maxHp * (skill.healRatio ?? 0.3));
+    const heal = Math.round(
+      player.maxHp * Math.min(0.95, (skill.healRatio ?? 0.3) * rankScale)
+    );
     player.hp = Math.min(player.maxHp, player.hp + heal);
     pushEvent({
       kind: "heal",
@@ -1125,7 +1232,7 @@ export function castSkill(
         player.atk * buff,
         monster.def,
         player.crit,
-        skill.multiplier ?? 1
+        (skill.multiplier ?? 1) * rankScale
       );
       damageMonster(monster, player, hit.damage, hit.crit, now);
     }
@@ -1155,9 +1262,9 @@ export function castSkill(
         player.atk * buff,
         monster.def,
         player.crit,
-        skill.multiplier ?? 1
+        (skill.multiplier ?? 1) * rankScale
       );
-      monster.slowUntil = now + (skill.slowMs ?? 2000);
+      monster.slowUntil = now + (skill.slowMs ?? 2000) + (rank - 1) * 100;
       damageMonster(monster, player, hit.damage, hit.crit, now);
     }
     announce();
@@ -1169,7 +1276,7 @@ export function castSkill(
     Math.hypot(locked.x - player.x, locked.y - player.y) <= range
       ? locked
       : candidates[0];
-  let multiplier = skill.multiplier ?? 1;
+  let multiplier = (skill.multiplier ?? 1) * rankScale;
   if (skill.kind === "execute") {
     const missing = 1 - target.hp / target.maxHp;
     multiplier *= 1 + Math.max(0, missing) * 0.8;
@@ -1183,7 +1290,7 @@ export function castSkill(
       skill.alwaysCrit ? 100 : player.crit,
       multiplier
     );
-    if (skill.slowMs) target.slowUntil = now + skill.slowMs;
+    if (skill.slowMs) target.slowUntil = now + skill.slowMs + (rank - 1) * 100;
     damageMonster(target, player, hit.damage, hit.crit, now);
   }
   announce();

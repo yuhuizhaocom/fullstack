@@ -1,3 +1,6 @@
+import { Howl, Howler } from "howler";
+import { sfxr } from "jsfxr";
+
 type SfxKind =
   | "attack"
   | "hurt"
@@ -12,7 +15,6 @@ type SfxKind =
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let musicGain: GainNode | null = null;
-let sfxGain: GainNode | null = null;
 
 let bgmTimer: number | null = null;
 let bgmStep = 0;
@@ -42,10 +44,6 @@ function ensureAudio(): AudioContext | null {
     musicGain = ctx.createGain();
     musicGain.gain.value = 0;
     musicGain.connect(master);
-
-    sfxGain = ctx.createGain();
-    sfxGain.gain.value = 1;
-    sfxGain.connect(master);
 
     // 一个柔和的高频噪声缓冲，用于镲片/打击感
     const length = Math.floor(ctx.sampleRate * 0.2);
@@ -124,67 +122,63 @@ function hat(start: number, level: number): void {
   source.stop(start + 0.08);
 }
 
-function beep(
-  freq: number,
-  duration: number,
-  type: OscillatorType,
-  volume: number,
-  slideTo?: number
-): void {
-  const audio = ctx;
-  if (!audio || !sfxGain) return;
-  const now = audio.currentTime;
-  const osc = audio.createOscillator();
-  const gain = audio.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, now);
-  if (slideTo) {
-    osc.frequency.exponentialRampToValueAtTime(Math.max(30, slideTo), now + duration);
+/**
+ * jsfxr 程序化生成 8-bit 音效，再由 Howler 播放。
+ * 不依赖任何外部音频文件，同时保留真实的复古芯片音色。
+ */
+const SFX_PRESETS: Record<
+  SfxKind,
+  { preset: "pickupCoin" | "laserShoot" | "explosion" | "powerUp" | "hitHurt" | "jump" | "blipSelect"; volume: number; rate: number }
+> = {
+  attack: { preset: "laserShoot", volume: 0.16, rate: 1.35 },
+  hurt: { preset: "hitHurt", volume: 0.26, rate: 1.1 },
+  kill: { preset: "explosion", volume: 0.2, rate: 1.2 },
+  skill: { preset: "powerUp", volume: 0.18, rate: 1.1 },
+  heal: { preset: "jump", volume: 0.18, rate: 1.25 },
+  levelup: { preset: "powerUp", volume: 0.28, rate: 0.85 },
+  death: { preset: "explosion", volume: 0.26, rate: 0.6 },
+  pickup: { preset: "pickupCoin", volume: 0.24, rate: 1.1 },
+  quest: { preset: "blipSelect", volume: 0.24, rate: 1 },
+};
+
+const sfxCache = new Map<SfxKind, Howl>();
+const sfxLastPlayed = new Map<SfxKind, number>();
+let howlerReady = false;
+
+function ensureHowler(): void {
+  if (howlerReady) return;
+  howlerReady = true;
+  Howler.volume(0.7);
+}
+
+function sfxSound(kind: SfxKind): Howl | null {
+  const cached = sfxCache.get(kind);
+  if (cached) return cached;
+  const config = SFX_PRESETS[kind];
+  try {
+    const wave = sfxr.toWave(sfxr.generate(config.preset));
+    const sound = new Howl({
+      src: [wave.dataURI],
+      format: ["wav"],
+      volume: config.volume,
+      rate: config.rate,
+      preload: true,
+    });
+    sfxCache.set(kind, sound);
+    return sound;
+  } catch {
+    return null;
   }
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.linearRampToValueAtTime(volume, now + 0.008);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-  osc.connect(gain).connect(sfxGain);
-  osc.start(now);
-  osc.stop(now + duration + 0.02);
 }
 
 export function playSfx(kind: SfxKind): void {
   if (!initAudio()) return;
-  switch (kind) {
-    case "attack":
-      beep(360, 0.07, "square", 0.14, 150);
-      break;
-    case "hurt":
-      beep(180, 0.14, "sawtooth", 0.16, 80);
-      break;
-    case "kill":
-      beep(540, 0.1, "square", 0.16);
-      setTimeout(() => beep(820, 0.15, "square", 0.14), 75);
-      break;
-    case "skill":
-      beep(420, 0.22, "triangle", 0.18, 940);
-      break;
-    case "heal":
-      beep(680, 0.18, "sine", 0.2, 1020);
-      break;
-    case "levelup":
-      [523, 659, 784, 1046].forEach((freq, index) =>
-        setTimeout(() => beep(freq, 0.16, "square", 0.15), index * 90)
-      );
-      break;
-    case "death":
-      beep(220, 0.5, "sawtooth", 0.18, 55);
-      break;
-    case "pickup":
-      beep(900, 0.07, "square", 0.12);
-      break;
-    case "quest":
-      [660, 880, 1100].forEach((freq, index) =>
-        setTimeout(() => beep(freq, 0.14, "triangle", 0.14), index * 100)
-      );
-      break;
-  }
+  ensureHowler();
+  if (Howler.ctx && Howler.ctx.state === "suspended") void Howler.ctx.resume();
+  const now = performance.now();
+  if (now - (sfxLastPlayed.get(kind) ?? 0) < 55) return;
+  sfxLastPlayed.set(kind, now);
+  sfxSound(kind)?.play();
 }
 
 const CHORDS = [

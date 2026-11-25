@@ -776,7 +776,7 @@ export function PixelRpg() {
         {tab === "bag" && (
           <BagPanel save={save} onChange={setSave} notify={notify} />
         )}
-        {tab === "skills" && <SkillsPanel save={save} />}
+        {tab === "skills" && <SkillsPanel save={save} onChange={setSave} notify={notify} />}
         {tab === "pet" && (
           <PetPanel save={save} onChange={setSave} notify={notify} />
         )}

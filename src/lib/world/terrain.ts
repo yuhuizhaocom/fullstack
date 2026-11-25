@@ -69,7 +69,29 @@ export const ROOMS: Record<RoomId, RoomConfig> = {
     portalTx: 101,
     portalTy: 76,
     monsterCount: 200,
-    monsterKinds: ["slime", "wolf", "goblin", "skeleton", "fire", "demon"],
+    bossKind: "ancient_dragon",
+    bossTx: 185,
+    bossTy: 24,
+    monsterKinds: [
+      "slime",
+      "wolf",
+      "goblin",
+      "spider",
+      "bat",
+      "skeleton",
+      "golem",
+      "ghost",
+      "gargoyle",
+      "death_knight",
+      "frost_wolf",
+      "frost_giant",
+      "lavabeast",
+      "demon",
+      "shadow_lord",
+      "void_apostle",
+      "lava_tyrant",
+      "abyss_dragon",
+    ],
   },
   forest: {
     id: "forest",
@@ -261,13 +283,13 @@ function hash2(x: number, y: number, seed: number): number {
   return n - Math.floor(n);
 }
 
-/** 开放世界湖泊按比例分布，保证每个世界一致 */
+/** 开放世界湖泊按比例分布，保证每个世界一致（已整体缩小，减少通行阻碍） */
 const LAKES = [
-  { fx: 0.22, fy: 0.28, r: 10 },
-  { fx: 0.7, fy: 0.3, r: 13 },
-  { fx: 0.34, fy: 0.72, r: 11 },
-  { fx: 0.79, fy: 0.75, r: 9 },
-  { fx: 0.5, fy: 0.16, r: 7 },
+  { fx: 0.22, fy: 0.28, r: 7 },
+  { fx: 0.7, fy: 0.3, r: 9 },
+  { fx: 0.34, fy: 0.72, r: 8 },
+  { fx: 0.79, fy: 0.75, r: 6 },
+  { fx: 0.5, fy: 0.16, r: 5 },
 ];
 
 function nearVillage(tx: number, ty: number): boolean {
@@ -288,7 +310,7 @@ function nearWorldLandmark(tx: number, ty: number, radius: number): boolean {
   return false;
 }
 
-export function terrainAt(tx: number, ty: number, room: RoomId = "world"): Terrain {
+function computeTerrainAt(tx: number, ty: number, room: RoomId = "world"): Terrain {
   const cfg = roomConfig(room);
 
   if (tx < 1 || ty < 1 || tx >= cfg.w - 1 || ty >= cfg.h - 1) return "tree";
@@ -305,25 +327,25 @@ export function terrainAt(tx: number, ty: number, room: RoomId = "world"): Terra
 
     const h = hash2(tx, ty, cfg.seed);
     if (cfg.theme === "forest") {
-      if (h < 0.16) return "tree";
-      if (h < 0.19) return "rock";
-      if (h < 0.32) return "flower";
+      if (h < 0.1) return "tree";
+      if (h < 0.13) return "rock";
+      if (h < 0.26) return "flower";
       return "grass";
     }
     if (cfg.theme === "cave") {
-      if (h < 0.15) return "rock";
-      if (h < 0.18) return "water";
+      if (h < 0.09) return "rock";
+      if (h < 0.12) return "water";
       return "grass";
     }
     if (cfg.theme === "volcano") {
-      if (h < 0.17) return "rock";
-      if (h < 0.22) return "water";
+      if (h < 0.1) return "rock";
+      if (h < 0.14) return "water";
       return "grass";
     }
     // ruins
-    if (h < 0.14) return "rock";
-    if (h < 0.17) return "tree";
-    if (h < 0.26) return "flower";
+    if (h < 0.09) return "rock";
+    if (h < 0.11) return "tree";
+    if (h < 0.2) return "flower";
     return "grass";
   }
 
@@ -342,11 +364,44 @@ export function terrainAt(tx: number, ty: number, room: RoomId = "world"): Terra
     if (Math.hypot(tx - lx, ty - ly) < lake.r) return "water";
   }
 
+  // 障碍整体稀疏化，让大地图更开阔、跑图更顺畅
   const h = hash2(tx, ty, cfg.seed);
-  if (h < 0.1) return "tree";
-  if (h < 0.14) return "rock";
-  if (h < 0.26) return "flower";
+  if (h < 0.052) return "tree";
+  if (h < 0.082) return "rock";
+  if (h < 0.2) return "flower";
   return "grass";
+}
+
+const TERRAIN_CODES: Terrain[] = ["grass", "tree", "water", "rock", "flower"];
+const TERRAIN_INDEX: Record<Terrain, number> = {
+  grass: 0,
+  tree: 1,
+  water: 2,
+  rock: 3,
+  flower: 4,
+};
+
+/** 地形网格缓存：每个房间只计算一次，避免逐帧/逐次碰撞重复计算噪声 */
+const TERRAIN_GRIDS = new Map<RoomId, Uint8Array>();
+
+function terrainGrid(room: RoomId): Uint8Array {
+  let grid = TERRAIN_GRIDS.get(room);
+  if (grid) return grid;
+  const cfg = roomConfig(room);
+  grid = new Uint8Array(cfg.w * cfg.h);
+  for (let ty = 0; ty < cfg.h; ty += 1) {
+    for (let tx = 0; tx < cfg.w; tx += 1) {
+      grid[ty * cfg.w + tx] = TERRAIN_INDEX[computeTerrainAt(tx, ty, room)];
+    }
+  }
+  TERRAIN_GRIDS.set(room, grid);
+  return grid;
+}
+
+export function terrainAt(tx: number, ty: number, room: RoomId = "world"): Terrain {
+  const cfg = roomConfig(room);
+  if (tx < 0 || ty < 0 || tx >= cfg.w || ty >= cfg.h) return "tree";
+  return TERRAIN_CODES[terrainGrid(room)[ty * cfg.w + tx]] ?? "grass";
 }
 
 export function isBlockedTile(tx: number, ty: number, room: RoomId = "world"): boolean {

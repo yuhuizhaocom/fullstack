@@ -109,6 +109,7 @@ function handleJoin(session: Session, message: Extract<ClientMessage, { t: "join
     weapon: message.weapon,
     armor: message.armor,
     potions: message.potions,
+    skills: message.skills,
     quests: message.quests,
     room: message.room,
   });
@@ -233,6 +234,7 @@ function handleMessage(ws: WebSocket, session: Session, data: RawData): void {
           weapon: player.weapon,
           armor: player.armor,
           potions: player.potions,
+          skills: player.skills,
           quests: player.quests,
           room: player.room,
         });

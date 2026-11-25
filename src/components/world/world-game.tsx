@@ -2,12 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import gsap from "gsap";
 import {
   Coins,
   LogOut,
   Maximize2,
   Minimize2,
   Music2,
+  Settings2,
+  Trash2,
+  UserPlus,
   Users,
   Volume2,
   VolumeX,
@@ -24,14 +28,19 @@ import {
 import { CLASSES, CLASS_SKILLS, ITEMS, SKILLS } from "@/lib/game/data";
 import {
   addItem,
+  availableSkillPoints,
   createSave,
+  deleteSave,
   effectiveStats,
+  enhanceCap,
   expToNext,
   gainExp,
   loadSave,
+  loadSaves,
   MAX_LEVEL,
   persistSave,
   removeItem,
+  setActiveSave,
 } from "@/lib/game/engine";
 import type { ClassId, GameSave, QuestSaveEntry } from "@/lib/game/types";
 import { initAudio, playSfx, startBgm, stopBgm } from "@/lib/world/audio";
@@ -55,6 +64,7 @@ import {
   type RenderSnapshot,
   type SkillEffect,
 } from "@/lib/world/render";
+import type { WorldStage } from "@/lib/world/pixi-stage";
 import type { NpcView, PortalView, WorldSnapshot } from "@/lib/world/state";
 import {
   isBlockedAt,
@@ -92,6 +102,47 @@ const SKILL_KEY_MAP: Record<string, number> = {
   r: 3,
 };
 const SKILL_KEYS = ["Q", "W", "E", "R"];
+const UI_KEY = "tf_world_ui_v1";
+const MAX_CHARACTERS = 4;
+
+type UiSettings = {
+  joystickSide: "left" | "right";
+  scale: "compact" | "normal" | "large";
+  autoCastAll: boolean;
+  autoSkills: Record<string, boolean>;
+};
+
+const DEFAULT_UI: UiSettings = {
+  joystickSide: "right",
+  scale: "normal",
+  autoCastAll: false,
+  autoSkills: {},
+};
+
+function loadUi(): UiSettings {
+  try {
+    const raw = localStorage.getItem(UI_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<UiSettings>;
+      return {
+        ...DEFAULT_UI,
+        ...parsed,
+        autoSkills: { ...(parsed.autoSkills ?? {}) },
+      };
+    }
+  } catch {
+    // 忽略损坏数据
+  }
+  return { ...DEFAULT_UI, autoSkills: {} };
+}
+
+function saveUi(settings: UiSettings): void {
+  try {
+    localStorage.setItem(UI_KEY, JSON.stringify(settings));
+  } catch {
+    // 隐私模式忽略
+  }
+}
 
 const btn =
   "rounded border-2 border-slate-600 bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-slate-100 transition-colors hover:bg-slate-700 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40";
@@ -104,8 +155,6 @@ type Self = {
   level: number;
   hp: number;
   maxHp: number;
-  mp: number;
-  maxMp: number;
   dead: boolean;
   kills: number;
 };
@@ -201,6 +250,15 @@ export function WorldGame() {
 
   const [createName, setCreateName] = useState("");
   const [createClass, setCreateClass] = useState<ClassId>("warrior");
+  const [saves, setSaves] = useState<GameSave[]>([]);
+  const [ui, setUi] = useState<UiSettings>(DEFAULT_UI);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+  const panelRef = usePopIn<HTMLDivElement>(panel);
+  const settingsRef = usePopIn<HTMLDivElement>(settingsOpen);
+  const npcRef = usePopIn<HTMLDivElement>(npcDialog);
+  const questRef = usePopIn<HTMLDivElement>(questOpen);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -256,20 +314,50 @@ export function WorldGame() {
   const streakRef = useRef(0);
   const lastKillAtRef = useRef(0);
   const streakUntilRef = useRef(0);
+  const uiRef = useRef<UiSettings>(DEFAULT_UI);
+  const longPressRef = useRef<number | null>(null);
+  const suppressClickRef = useRef(false);
+  const autoCursorRef = useRef(0);
+  const lastDustRef = useRef(0);
+  const persistTimerRef = useRef<number | null>(null);
+  const stageRef = useRef<WorldStage | null>(null);
+  const stageFailedRef = useRef(false);
 
   const fullscreen = nativeFullscreen || pseudoFullscreen;
 
   useEffect(() => {
     const stored = loadSave();
+    const list = loadSaves();
     saveRef.current = stored;
     setSave(stored);
+    setSaves(list);
     setPhase(stored ? "lobby" : "create");
-    setCreateName(stored?.name ?? "");
+    setCreateName("");
     setCreateClass(stored?.classId ?? "warrior");
+    const settings = loadUi();
+    uiRef.current = settings;
+    setUi(settings);
     setIsTouch(window.matchMedia("(pointer: coarse)").matches);
     const progress = loadDaily();
     dailyRef.current = progress;
     setDaily(progress);
+  }, []);
+
+  // 界面设置持久化
+  useEffect(() => {
+    uiRef.current = ui;
+    saveUi(ui);
+  }, [ui]);
+
+  // 卸载时把合并中的存档立即落盘
+  useEffect(() => {
+    return () => {
+      if (persistTimerRef.current !== null) {
+        window.clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+        if (saveRef.current) persistSave(saveRef.current);
+      }
+    };
   }, []);
 
   // 全屏状态同步
@@ -281,8 +369,8 @@ export function WorldGame() {
 
   // 面板/对话打开时屏蔽快捷键
   useEffect(() => {
-    uiOpenRef.current = !!(panel || npcDialog || questOpen);
-  }, [panel, npcDialog, questOpen]);
+    uiOpenRef.current = !!(panel || npcDialog || questOpen || settingsOpen);
+  }, [panel, npcDialog, questOpen, settingsOpen]);
 
   // 冷却与倒计时刷新
   useEffect(() => {
@@ -407,17 +495,73 @@ export function WorldGame() {
       weapon: current.equipment.weapon,
       armor: current.equipment.armor,
       potions: potionStock(current),
+      skills: current.skillRanks ?? {},
       quests: current.quests,
       room: roomRef.current,
     };
   }
 
   /** 本地存档变更（装备/背包/商店）后持久化并同步到服务器 */
+  /** 高频奖励写入做 800ms 合并，避免连续击杀时 localStorage 同步写造成卡顿 */
+  function persistSoon() {
+    if (persistTimerRef.current !== null) return;
+    persistTimerRef.current = window.setTimeout(() => {
+      persistTimerRef.current = null;
+      const current = saveRef.current;
+      if (!current) return;
+      persistSave(current);
+      setSaves(loadSaves());
+    }, 800);
+  }
+
   function applySave(next: GameSave) {
     saveRef.current = next;
     setSave(next);
     persistSave(next);
+    setSaves(loadSaves());
     post({ t: "sync", player: joinPayload(next) });
+  }
+
+  /** 切换当前角色（仅在未进入世界时使用） */
+  function switchSave(id: string) {
+    if (id === saveRef.current?.id) return;
+    setActiveSave(id);
+    const next = loadSave();
+    saveRef.current = next;
+    setSave(next);
+    setCreateName("");
+    setCreateClass(next?.classId ?? "warrior");
+    if (next) toast.success(`已切换到 ${next.name}`);
+  }
+
+  function removeSave(id: string) {
+    deleteSave(id);
+    const list = loadSaves();
+    setSaves(list);
+    if (saveRef.current?.id === id) {
+      const next = loadSave();
+      saveRef.current = next;
+      setSave(next);
+      if (!next) setPhase("create");
+    }
+    setDeleteTarget(null);
+  }
+
+  function updateUi(patch: Partial<UiSettings>) {
+    setUi((prev) => ({ ...prev, ...patch }));
+  }
+
+  function toggleAutoSkill(skillId: string) {
+    setUi((prev) => {
+      const active = !prev.autoSkills[skillId];
+      toast.success(
+        active ? `已开启 ${SKILLS[skillId]?.name ?? "技能"} 自动施放` : `已关闭自动施放`
+      );
+      return {
+        ...prev,
+        autoSkills: { ...prev.autoSkills, [skillId]: active },
+      };
+    });
   }
 
   function applyReward(
@@ -450,7 +594,7 @@ export function WorldGame() {
     next = result.save;
     saveRef.current = next;
     setSave(next);
-    persistSave(next);
+    persistSoon();
 
     if (gained.length > 0) {
       toast.success(`🎁 获得 ${gained.join("、")}`);
@@ -467,6 +611,7 @@ export function WorldGame() {
         skillId: "levelup",
         at: performance.now(),
       });
+      spawnSparks(meRef.current.x, meRef.current.y, "#fde68a", 18, 1.5);
       post({
         t: "sync",
         player: joinPayload(next),
@@ -499,7 +644,7 @@ export function WorldGame() {
     const next: GameSave = { ...current, quests: map };
     saveRef.current = next;
     setSave(next);
-    persistSave(next);
+    persistSoon();
   }
 
   function recordKill() {
@@ -528,6 +673,35 @@ export function WorldGame() {
     dailyRef.current = next;
     setDaily(next);
     saveDaily(next);
+  }
+
+  /** Pixel FX：像素碎片飞散 */
+  function spawnSparks(
+    x: number,
+    y: number,
+    color: string,
+    count = 5,
+    power = 1
+  ) {
+    for (let i = 0; i < count; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = (0.8 + Math.random() * 1.6) * power;
+      particlesRef.current.push({
+        kind: "spark",
+        x,
+        y,
+        text: "",
+        color,
+        size: 2 + Math.random() * 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed * 0.55 - 0.4,
+        life: 320 + Math.random() * 220,
+        maxLife: 540,
+      });
+    }
+    if (particlesRef.current.length > 110) {
+      particlesRef.current.splice(0, particlesRef.current.length - 110);
+    }
   }
 
   function handleSnapshot(snapshot: WorldSnapshot) {
@@ -631,6 +805,17 @@ export function WorldGame() {
           maxLife: 900,
         });
         if (particlesRef.current.length > 40) particlesRef.current.shift();
+        if (event.kind === "damage" || event.kind === "hurt") {
+          spawnSparks(
+            event.x,
+            event.y,
+            event.crit ? "#fde68a" : event.kind === "hurt" ? "#f87171" : "#fda4af",
+            event.crit ? 8 : 4,
+            event.crit ? 1.35 : 1
+          );
+        } else if (event.kind === "heal") {
+          spawnSparks(event.x, event.y, "#86efac", 3, 0.7);
+        }
       }
 
       switch (event.kind) {
@@ -671,6 +856,13 @@ export function WorldGame() {
               maxLife: 650,
             });
           }
+          spawnSparks(
+            event.x,
+            event.y,
+            event.boss ? "#f0abfc" : event.elite ? "#fde68a" : "#94a3b8",
+            event.boss ? 16 : event.elite ? 10 : 7,
+            event.boss ? 1.6 : 1.1
+          );
           break;
         }
         case "skill":
@@ -773,8 +965,6 @@ export function WorldGame() {
           level: me.level,
           hp: me.hp,
           maxHp: me.maxHp,
-          mp: me.mp,
-          maxMp: me.maxMp,
           dead: me.dead,
           kills: me.kills,
         };
@@ -965,8 +1155,6 @@ export function WorldGame() {
       level: current?.level ?? 1,
       hp: message.player.hp,
       maxHp: message.player.maxHp,
-      mp: message.player.mp,
-      maxMp: message.player.maxMp,
       dead: false,
       kills: selfRef.current?.kills ?? 0,
     };
@@ -1073,6 +1261,17 @@ export function WorldGame() {
         const screenDx = ix - iy;
         if (Math.abs(screenDx) > 0.01) me.dir = screenDx > 0 ? 1 : -1;
         meMovingRef.current = now;
+        // Pixel FX：跑动扬尘
+        if (now - lastDustRef.current > 170) {
+          lastDustRef.current = now;
+          spawnSparks(
+            me.x - me.dir * 5,
+            me.y - 1,
+            cfg.theme === "volcano" ? "#7c2d12" : cfg.theme === "cave" ? "#475569" : "#4b7355",
+            1,
+            0.45
+          );
+        }
       }
 
       if (now - lastSendRef.current > 90) {
@@ -1153,7 +1352,7 @@ export function WorldGame() {
           };
         }
 
-        drawWorld(canvas, {
+        const frameInput = {
           width,
           height,
           room: currentRoom,
@@ -1178,7 +1377,13 @@ export function WorldGame() {
           effects: effectsRef.current,
           particles,
           time: now,
-        });
+        };
+
+        if (stageRef.current) {
+          stageRef.current.render(frameInput);
+        } else if (stageFailedRef.current) {
+          drawWorld(canvas, frameInput);
+        }
       }
 
       rafRef.current = requestAnimationFrame(loop);
@@ -1199,7 +1404,12 @@ export function WorldGame() {
       const width = Math.max(320, wrap.clientWidth);
       const height = Math.max(240, wrap.clientHeight);
       sizeRef.current = { width, height };
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      if (stageRef.current) {
+        stageRef.current.resize(width, height);
+        return;
+      }
+      if (!stageFailedRef.current) return;
+      const dpr = Math.min(isTouch ? 1.5 : 2, window.devicePixelRatio || 1);
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
       canvas.style.width = `${width}px`;
@@ -1212,7 +1422,50 @@ export function WorldGame() {
     return () => observer.disconnect();
   }, [phase, fullscreen, isTouch]);
 
-  async function doSkill(index: number) {
+  // PixiJS 渲染层（动态加载，避免 SSR 与首屏体积）
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let cancelled = false;
+    stageFailedRef.current = false;
+
+    void (async () => {
+      try {
+        const mod = await import("@/lib/world/pixi-stage");
+        if (cancelled) return;
+        const stage = await mod.createWorldStage(canvas, {
+          width: sizeRef.current.width,
+          height: sizeRef.current.height,
+          room: roomRef.current,
+          isTouch,
+        });
+        if (cancelled) {
+          stage.destroy();
+          return;
+        }
+        stageRef.current = stage;
+        stage.resize(sizeRef.current.width, sizeRef.current.height);
+      } catch (error) {
+        console.error("PixiJS 初始化失败，回退到 Canvas 2D 渲染", error);
+        stageFailedRef.current = true;
+        const { width, height } = sizeRef.current;
+        const dpr = Math.min(isTouch ? 1.5 : 2, window.devicePixelRatio || 1);
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      stageRef.current?.destroy();
+      stageRef.current = null;
+    };
+  }, [phase, isTouch]);
+
+  async function doSkill(index: number, silent = false) {
     const current = saveRef.current;
     const selfNow = selfRef.current;
     if (!current || !selfNow) return;
@@ -1220,19 +1473,23 @@ export function WorldGame() {
     if (!skillId) return;
     const skill = SKILLS[skillId];
     if (current.level < skill.level) {
-      toast.error(`Lv.${skill.level} 解锁该技能`);
+      if (!silent) toast.error(`Lv.${skill.level} 解锁该技能`);
       return;
     }
     if (selfNow.dead) return;
-    if (selfNow.mp < skill.mp) {
-      toast.error("法力不足");
-      return;
-    }
+    if (silent && skill.kind === "heal" && selfNow.hp / selfNow.maxHp > 0.85) return;
     const now = Date.now();
     if (now < (cdReadyRef.current[skillId] ?? 0)) return;
 
+    const stats = effectiveStats(current);
+    const rank = Math.max(1, Math.min(15, current.skillRanks?.[skillId] ?? 1));
+    const cooldown =
+      (skill.cooldown ?? 5) *
+      (1 - stats.cdr / 100) *
+      Math.max(0.55, 1 - (rank - 1) * 0.015);
+
     // 乐观冷却，服务端返回失败时回滚
-    cdReadyRef.current[skillId] = now + (skill.cooldown ?? 5) * 1000;
+    cdReadyRef.current[skillId] = now + cooldown * 1000;
     setNowTick(now);
     swingsRef.current[myIdRef.current] = performance.now();
     sfx("skill");
@@ -1257,9 +1514,43 @@ export function WorldGame() {
     if (result.ok === false) {
       cdReadyRef.current[skillId] = 0;
       setNowTick(Date.now());
-      if (result.message) toast.error(result.message);
+      if (result.message && !silent) toast.error(result.message);
     }
   }
+
+  // 自动施放：战斗中按技能顺序轮流释放已开启自动的技能
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const timer = window.setInterval(() => {
+      const current = saveRef.current;
+      const selfNow = selfRef.current;
+      if (!current || !selfNow || selfNow.dead || uiOpenRef.current) return;
+      const settings = uiRef.current;
+      const snapshot = snapshotRef.current;
+      if (!snapshot) return;
+      const me = meRef.current;
+      const inCombat = snapshot.monsters.some(
+        (monster) => Math.hypot(monster.x - me.x, monster.y - me.y) < 420
+      );
+      if (!inCombat) return;
+      const ids = CLASS_SKILLS[current.classId];
+      const now = Date.now();
+      for (let offset = 0; offset < ids.length; offset += 1) {
+        const index = (autoCursorRef.current + offset) % ids.length;
+        const skillId = ids[index];
+        if (!settings.autoCastAll && !settings.autoSkills[skillId]) continue;
+        const skill = SKILLS[skillId];
+        if (current.level < skill.level) continue;
+        if (now < (cdReadyRef.current[skillId] ?? 0)) continue;
+        if (skill.kind === "heal" && selfNow.hp / selfNow.maxHp > 0.85) continue;
+        autoCursorRef.current = (index + 1) % ids.length;
+        void doSkill(index, true);
+        break;
+      }
+    }, 280);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   function applyTravel(result: ActResponse | null) {
     if (!result) {
@@ -1409,7 +1700,6 @@ export function WorldGame() {
       const next: GameSave = {
         ...current,
         hp: Math.round(selfNow.hp),
-        mp: Math.round(selfNow.mp),
       };
       saveRef.current = next;
       setSave(next);
@@ -1497,6 +1787,24 @@ export function WorldGame() {
     setKnob({ x: 0, y: 0 });
   }
 
+  /** 长按技能 500ms 切换自动施放 */
+  function startSkillLongPress(skillId: string) {
+    cancelSkillLongPress();
+    suppressClickRef.current = false;
+    longPressRef.current = window.setTimeout(() => {
+      longPressRef.current = null;
+      suppressClickRef.current = true;
+      toggleAutoSkill(skillId);
+    }, 500);
+  }
+
+  function cancelSkillLongPress() {
+    if (longPressRef.current) {
+      window.clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
+  }
+
   function doRecall() {
     const now = Date.now();
     if (now < recallReadyRef.current) {
@@ -1529,12 +1837,8 @@ export function WorldGame() {
     const selfNow = selfRef.current;
     if (!current || !item || !selfNow) return;
     if ((current.inventory[itemId] ?? 0) <= 0) return;
-    if (item.hp && !item.mp && selfNow.hp >= selfNow.maxHp) {
+    if (item.hp && selfNow.hp >= selfNow.maxHp) {
       toast.error("生命已满");
-      return;
-    }
-    if (item.mp && !item.hp && selfNow.mp >= selfNow.maxMp) {
-      toast.error("魔法已满");
       return;
     }
     const next: GameSave = {
@@ -1625,16 +1929,16 @@ export function WorldGame() {
         <div>
           <h2 className="text-sm font-bold">创建角色进入开放世界</h2>
           <p className="mt-1 text-[10px] text-slate-500">
-            共享像素冒险存档 · 无需登录 · 与同服玩家实时组队
+            同一账号最多拥有 {MAX_CHARACTERS} 个角色 · 无需登录 · 与同服玩家实时组队
           </p>
         </div>
         <input
           value={createName}
           onChange={(event) => setCreateName(event.target.value.slice(0, 12))}
-          placeholder="冒险者"
+          placeholder={`冒险者${saves.length + 1}`}
           className="w-full rounded border-2 border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-amber-500"
         />
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-3">
           {(Object.keys(CLASSES) as ClassId[]).map((id) => {
             const item = CLASSES[id];
             const active = createClass === id;
@@ -1660,17 +1964,38 @@ export function WorldGame() {
           })}
         </div>
         <div className="flex items-center justify-between gap-2">
-          <Link href="/" className="text-[10px] text-slate-500 hover:text-slate-300">
-            返回首页
-          </Link>
+          {saves.length > 0 ? (
+            <button
+              type="button"
+              className={btn}
+              onClick={() => {
+                setCreateName("");
+                setPhase("lobby");
+              }}
+            >
+              返回角色列表
+            </button>
+          ) : (
+            <Link href="/" className="text-[10px] text-slate-500 hover:text-slate-300">
+              返回首页
+            </Link>
+          )}
           <button
             type="button"
             className={btnPrimary}
+            disabled={saves.length >= MAX_CHARACTERS}
             onClick={() => {
+              if (saves.length >= MAX_CHARACTERS) {
+                toast.error(`最多只能创建 ${MAX_CHARACTERS} 个角色`);
+                return;
+              }
               const next = createSave(createName, createClass);
               saveRef.current = next;
               setSave(next);
               persistSave(next);
+              setSaves(loadSaves());
+              setCreateName("");
+              toast.success(`已创建角色 ${next.name}`);
               setPhase("lobby");
             }}
           >
@@ -1689,7 +2014,7 @@ export function WorldGame() {
           <div>
             <h2 className="text-sm font-bold">翡翠大陆 · 实时开放世界</h2>
             <p className="mt-1 text-[10px] text-slate-500">
-              开放世界与副本共用同一套实时战斗，副本从世界中的传送门进入
+              选择角色进入世界 · 开放世界与副本共用同一套实时战斗
             </p>
           </div>
           <Link href="/" className="shrink-0 text-[10px] text-slate-500 hover:text-slate-300">
@@ -1697,19 +2022,96 @@ export function WorldGame() {
           </Link>
         </div>
 
+        <div className="grid gap-2 sm:grid-cols-2">
+          {saves.map((entry) => {
+            const active = entry.id === saveRef.current?.id;
+            const cls = CLASSES[entry.classId];
+            return (
+              <div
+                key={entry.id}
+                className={cn(
+                  "rounded-lg border-2 p-2.5 transition-colors",
+                  active
+                    ? "border-amber-500 bg-amber-500/10"
+                    : "border-slate-800 bg-slate-900/60 hover:border-slate-600"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl">{cls.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold">
+                      {entry.name}
+                      <span className="ml-1.5 text-amber-300">Lv.{entry.level}</span>
+                      <span className="ml-1.5 text-[10px] font-normal text-slate-500">
+                        {cls.name}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-2 text-[10px] text-slate-500">
+                      <span className="flex items-center gap-0.5 text-amber-300">
+                        <Coins className="size-3" />
+                        {entry.gold}
+                      </span>
+                      <span>通关 {entry.cleared.length}</span>
+                      <span>胜场 {entry.wins}</span>
+                    </p>
+                  </div>
+                  {active && (
+                    <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-bold text-amber-300">
+                      当前
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2 flex gap-1">
+                  <button
+                    type="button"
+                    className={cn(btn, "flex-1", !active && "border-amber-500/60 text-amber-300")}
+                    disabled={active}
+                    onClick={() => switchSave(entry.id!)}
+                  >
+                    {active ? "已选择" : "选择该角色"}
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(btn, "text-rose-300 hover:bg-rose-500/15")}
+                    title="删除角色"
+                    onClick={() => setDeleteTarget(entry.id!)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {saves.length < MAX_CHARACTERS && (
+            <button
+              type="button"
+              className="flex min-h-[92px] flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-700 bg-slate-900/40 text-[11px] text-slate-400 transition-colors hover:border-amber-500/60 hover:text-amber-300"
+              onClick={() => {
+                setCreateName("");
+                setCreateClass(current?.classId ?? "warrior");
+                setPhase("create");
+              }}
+            >
+              <UserPlus className="size-5" />
+              新建角色（{saves.length}/{MAX_CHARACTERS}）
+            </button>
+          )}
+        </div>
+
         {current && (
           <div className="flex items-center gap-3 rounded-lg border border-slate-700 bg-slate-900/70 p-3">
             <span className="text-3xl">{CLASSES[current.classId].icon}</span>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold">
-                {current.name}
+                即将使用 {current.name}
                 <span className="ml-1.5 text-amber-300">Lv.{current.level}</span>
                 <span className="ml-1.5 text-[10px] font-normal text-slate-500">
                   {CLASSES[current.classId].name}
                 </span>
               </p>
               <p className="mt-0.5 text-[10px] text-slate-500">
-                已通关 {current.cleared.length} 个副本 · 胜场 {current.wins}
+                技能点 {availableSkillPoints(current)} · 装备强化上限 +{enhanceCap(current)}
               </p>
             </div>
             <span className="flex items-center gap-1 text-[11px] font-bold text-amber-300">
@@ -1720,33 +2122,65 @@ export function WorldGame() {
         )}
 
         <ul className="space-y-1 text-[11px] leading-relaxed text-slate-400">
-          <li>· 移动：WASD / 方向键，移动端使用左下角虚拟摇杆</li>
+          <li>· 移动：WASD / 方向键，移动端使用右下角虚拟摇杆（可在设置中改到左侧）</li>
           <li>· 战斗：靠近怪物自动攻击，QWER 技能栏（键盘 1-4 / Q E R）</li>
+          <li>· 自动施放：长按技能按钮切换自动，战斗中有敌人时自动释放</li>
           <li>· 交互：靠近 NPC 或传送门后按 F，进入副本、接取任务、买卖装备</li>
-          <li>· 背包、装备、技能、商店都可在游戏内直接打开，无需切换页面</li>
-          <li>· 弱网环境下会自动断线重连，关键操作会重试以避免丢失</li>
+          <li>· 成长：60 级上限、装备强化 +15、技能 15 级加点，支持同账号多角色</li>
         </ul>
 
         <div className="flex flex-wrap gap-2">
-          <button type="button" className={btnPrimary} onClick={() => void enterWorld()}>
+          <button
+            type="button"
+            className={btnPrimary}
+            disabled={!current}
+            onClick={() => void enterWorld()}
+          >
             {status === "connecting" ? "连接中…" : "进入世界"}
           </button>
-          {current && (
-            <button
-              type="button"
-              className={btn}
-              onClick={() => {
-                const next = createSave(createName || current.name, createClass);
-                saveRef.current = next;
-                setSave(next);
-                persistSave(next);
-                toast.success("已创建新角色");
-              }}
-            >
-              新建角色
-            </button>
-          )}
+          <button
+            type="button"
+            className={btn}
+            onClick={() => {
+              setCreateName("");
+              setCreateClass(current?.classId ?? "warrior");
+              setPhase("create");
+            }}
+            disabled={saves.length >= MAX_CHARACTERS}
+          >
+            新建角色
+          </button>
         </div>
+
+        {deleteTarget && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            onClick={() => setDeleteTarget(null)}
+          >
+            <div
+              className="w-full max-w-xs rounded-xl border-2 border-rose-500/60 bg-slate-950 p-4"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <p className="text-sm font-bold text-rose-300">删除角色</p>
+              <p className="mt-1 text-[11px] text-slate-400">
+                确定删除「{saves.find((entry) => entry.id === deleteTarget)?.name ?? "该角色"}」吗？
+                该角色的等级、装备与进度会永久丢失。
+              </p>
+              <div className="mt-3 flex justify-end gap-2">
+                <button type="button" className={btn} onClick={() => setDeleteTarget(null)}>
+                  取消
+                </button>
+                <button
+                  type="button"
+                  className={cn(btn, "border-rose-500 bg-rose-500/20 text-rose-200")}
+                  onClick={() => removeSave(deleteTarget)}
+                >
+                  确认删除
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -1756,9 +2190,9 @@ export function WorldGame() {
     ? Object.entries(save.inventory)
         .filter(([id, count]) => count > 0 && ITEMS[id]?.kind === "consumable")
         .map(([id, count]) => ({ id, count, item: ITEMS[id] }))
+        .filter((entry) => !(entry.item.mp && !entry.item.hp))
     : [];
   const hpPercent = self ? Math.max(0, (self.hp / self.maxHp) * 100) : 100;
-  const mpPercent = self ? Math.max(0, (self.mp / self.maxMp) * 100) : 100;
   const expNeed = save ? expToNext(save.level) : 1;
   const expPercent = save
     ? save.level >= MAX_LEVEL
@@ -1767,6 +2201,15 @@ export function WorldGame() {
     : 0;
   const roomName = ROOMS[room].name;
   const myLevel = self?.level ?? save?.level ?? 1;
+  const joystickPosition = ui.joystickSide === "right" ? "right-4" : "left-4";
+  const joystickSize =
+    ui.scale === "compact" ? "size-20" : ui.scale === "large" ? "size-28" : "size-24";
+  const skillButtonSize =
+    ui.scale === "compact"
+      ? "px-1.5 py-0.5 text-[10px]"
+      : ui.scale === "large"
+        ? "px-3 py-1.5 text-[12px]"
+        : "";
 
   return (
     <div
@@ -1827,6 +2270,14 @@ export function WorldGame() {
                 <Coins className="size-3" />
                 {save?.gold ?? 0}
               </span>
+              <button
+                type="button"
+                className={btn}
+                title="界面与操作设置"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <Settings2 className="size-3.5" />
+              </button>
               <button type="button" className={btn} title="背景音乐" onClick={toggleBgm}>
                 <Music2 className={cn("size-3.5", bgmOn ? "text-emerald-400" : "text-slate-500")} />
               </button>
@@ -1847,34 +2298,18 @@ export function WorldGame() {
             </div>
           </div>
 
-          <div className="mt-1.5 grid grid-cols-2 gap-2">
-            <div>
-              <div className="flex items-center justify-between text-[10px] text-slate-300">
-                <span>HP</span>
-                <span>
-                  {self?.hp ?? 0} / {self?.maxHp ?? 0}
-                </span>
-              </div>
-              <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-slate-800/80">
-                <div
-                  className="h-full rounded bg-gradient-to-r from-red-500 to-rose-400"
-                  style={{ width: `${hpPercent}%` }}
-                />
-              </div>
+          <div className="mt-1.5">
+            <div className="flex items-center justify-between text-[10px] text-slate-300">
+              <span>HP</span>
+              <span>
+                {self?.hp ?? 0} / {self?.maxHp ?? 0}
+              </span>
             </div>
-            <div>
-              <div className="flex items-center justify-between text-[10px] text-slate-300">
-                <span>MP</span>
-                <span>
-                  {self?.mp ?? 0} / {self?.maxMp ?? 0}
-                </span>
-              </div>
-              <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-slate-800/80">
-                <div
-                  className="h-full rounded bg-gradient-to-r from-sky-500 to-cyan-400"
-                  style={{ width: `${mpPercent}%` }}
-                />
-              </div>
+            <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-slate-800/80">
+              <div
+                className="h-full rounded bg-gradient-to-r from-red-500 to-rose-400"
+                style={{ width: `${hpPercent}%` }}
+              />
             </div>
           </div>
 
@@ -1950,11 +2385,15 @@ export function WorldGame() {
           </div>
         )}
 
-        {/* 移动端虚拟摇杆，叠加在画面上 */}
+        {/* 移动端虚拟摇杆，位置与大小可在设置中自定义 */}
         {isTouch && (
           <div
             data-testid="joystick"
-            className="absolute bottom-32 left-4 z-20 size-24 touch-none rounded-full border-2 border-white/20 bg-slate-950/40 backdrop-blur-sm"
+            className={cn(
+              "absolute bottom-32 z-20 touch-none rounded-full border-2 border-white/20 bg-slate-950/40 backdrop-blur-sm",
+              joystickPosition,
+              joystickSize
+            )}
             onPointerDown={(event) => {
               event.preventDefault();
               event.currentTarget.setPointerCapture(event.pointerId);
@@ -1968,9 +2407,9 @@ export function WorldGame() {
             onPointerUp={endJoystick}
             onPointerCancel={endJoystick}
           >
-            <span className="pointer-events-none absolute left-1/2 top-1/2 size-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10" />
+            <span className="pointer-events-none absolute left-1/2 top-1/2 size-[66%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10" />
             <span
-              className="pointer-events-none absolute left-1/2 top-1/2 size-10 rounded-full border-2 border-amber-300/70 bg-amber-300/30"
+              className="pointer-events-none absolute left-1/2 top-1/2 size-[40%] rounded-full border-2 border-amber-300/70 bg-amber-300/30"
               style={{
                 transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))`,
               }}
@@ -1984,17 +2423,35 @@ export function WorldGame() {
             {skills.map((id, index) => {
               const skill = SKILLS[id];
               const locked = myLevel < skill.level;
-              const noMp = (self?.mp ?? 0) < skill.mp;
               const remaining = Math.max(0, (cdReadyRef.current[id] ?? 0) - nowTick);
               const cooling = remaining > 0;
+              const autoOn = ui.autoCastAll || !!ui.autoSkills[id];
               return (
                 <button
                   key={id}
                   type="button"
-                  className={cn(btn, "relative overflow-hidden bg-slate-900/85")}
-                  disabled={locked || noMp || cooling || !!self?.dead}
-                  onClick={() => void doSkill(index)}
-                  title={skill.desc}
+                  className={cn(
+                    btn,
+                    "relative select-none overflow-hidden bg-slate-900/85",
+                    skillButtonSize,
+                    autoOn &&
+                      "border-amber-400 bg-amber-500/20 text-amber-200 shadow-[0_0_0_1px_rgba(251,191,36,0.45)]",
+                    (locked || cooling) && "opacity-60"
+                  )}
+                  onPointerDown={() => startSkillLongPress(id)}
+                  onPointerUp={cancelSkillLongPress}
+                  onPointerLeave={cancelSkillLongPress}
+                  onPointerCancel={cancelSkillLongPress}
+                  onContextMenu={(event) => event.preventDefault()}
+                  onClick={() => {
+                    if (suppressClickRef.current) {
+                      suppressClickRef.current = false;
+                      return;
+                    }
+                    if (self?.dead) return;
+                    void doSkill(index);
+                  }}
+                  title={`${skill.desc}（长按切换自动施放）`}
                 >
                   <span className="mr-1 inline-flex size-4 items-center justify-center rounded border border-slate-500 text-[9px] font-black text-amber-300">
                     {skill.key ?? SKILL_KEYS[index]}
@@ -2006,8 +2463,13 @@ export function WorldGame() {
                       ? `Lv.${skill.level}`
                       : cooling
                         ? `${Math.ceil(remaining / 1000)}s`
-                        : `${skill.mp}MP`}
+                        : "就绪"}
                   </span>
+                  {autoOn && (
+                    <span className="absolute right-0 top-0 rounded-bl bg-amber-400 px-1 text-[8px] font-black text-slate-950">
+                      A
+                    </span>
+                  )}
                   {cooling && (
                     <span
                       className="pointer-events-none absolute inset-0 bg-slate-950/60"
@@ -2130,8 +2592,19 @@ export function WorldGame() {
                 </span>
               )}
             </button>
+            <button
+              type="button"
+              className={cn(btn, "bg-slate-900/85")}
+              onClick={() => {
+                leaveWorld();
+                toast.success("已退出世界，可在角色列表切换角色");
+              }}
+              title="退出世界并切换角色"
+            >
+              👥 换角色
+            </button>
             <span className="ml-auto hidden text-[10px] text-slate-500 sm:inline">
-              自动攻击 · QWER 技能 · Tab 目标 · F 交互 · B 回城
+              自动攻击 · 长按技能开启自动施放 · Tab 目标 · F 交互 · B 回城
             </span>
           </div>
 
@@ -2188,6 +2661,118 @@ export function WorldGame() {
           </div>
         </div>
 
+        {/* 界面与操作设置 */}
+        {settingsOpen && (
+          <div
+            className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 p-3"
+            onClick={() => setSettingsOpen(false)}
+          >
+            <div
+              ref={settingsRef}
+              className="max-h-[85%] w-full max-w-sm overflow-y-auto rounded-xl border-2 border-slate-600 bg-slate-950 p-3 text-slate-100 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold">界面与操作设置</p>
+                <button type="button" className={btn} onClick={() => setSettingsOpen(false)}>
+                  <X className="size-3.5" />
+                </button>
+              </div>
+
+              <div className="mt-3 space-y-3">
+                <div>
+                  <p className="text-[11px] font-bold text-slate-300">移动摇杆位置</p>
+                  <div className="mt-1 grid grid-cols-2 gap-1">
+                    {(
+                      [
+                        { key: "left" as const, label: "左侧" },
+                        { key: "right" as const, label: "右侧" },
+                      ]
+                    ).map((entry) => (
+                      <button
+                        key={entry.key}
+                        type="button"
+                        className={cn(
+                          btn,
+                          ui.joystickSide === entry.key &&
+                            "border-amber-500 bg-amber-500/20 text-amber-300"
+                        )}
+                        onClick={() => updateUi({ joystickSide: entry.key })}
+                      >
+                        {entry.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-bold text-slate-300">按钮大小</p>
+                  <div className="mt-1 grid grid-cols-3 gap-1">
+                    {(
+                      [
+                        { key: "compact" as const, label: "紧凑" },
+                        { key: "normal" as const, label: "标准" },
+                        { key: "large" as const, label: "大" },
+                      ]
+                    ).map((entry) => (
+                      <button
+                        key={entry.key}
+                        type="button"
+                        className={cn(
+                          btn,
+                          ui.scale === entry.key &&
+                            "border-amber-500 bg-amber-500/20 text-amber-300"
+                        )}
+                        onClick={() => updateUi({ scale: entry.key })}
+                      >
+                        {entry.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-bold text-slate-300">技能自动施放</p>
+                    <button
+                      type="button"
+                      className={cn(
+                        btn,
+                        ui.autoCastAll && "border-amber-500 bg-amber-500/20 text-amber-300"
+                      )}
+                      onClick={() => updateUi({ autoCastAll: !ui.autoCastAll })}
+                    >
+                      {ui.autoCastAll ? "全部自动：开" : "全部自动：关"}
+                    </button>
+                  </div>
+                  <div className="mt-1 grid grid-cols-2 gap-1">
+                    {skills.map((id, index) => {
+                      const skill = SKILLS[id];
+                      const on = !!ui.autoSkills[id];
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          className={cn(
+                            btn,
+                            on && "border-amber-500 bg-amber-500/20 text-amber-300"
+                          )}
+                          onClick={() => toggleAutoSkill(id)}
+                        >
+                          {skill.icon} {skill.key ?? SKILL_KEYS[index]} · {on ? "自动" : "手动"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
+                    自动施放只在附近有敌人时生效；也可以长按战斗界面的技能按钮快速切换。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* NPC 对话 / 任务 */}
         {npcDialog && (
           <div
@@ -2195,6 +2780,7 @@ export function WorldGame() {
             onClick={() => setNpcDialog(null)}
           >
             <div
+              ref={npcRef}
               className="max-h-[80%] w-full max-w-sm overflow-y-auto rounded-xl border-2 border-slate-600 bg-slate-950 p-4 text-slate-100 shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
@@ -2359,6 +2945,7 @@ export function WorldGame() {
             onClick={() => setQuestOpen(false)}
           >
             <div
+              ref={questRef}
               className="max-h-[80%] w-full max-w-sm overflow-y-auto rounded-xl border-2 border-slate-600 bg-slate-950 p-4 text-slate-100 shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
@@ -2431,6 +3018,7 @@ export function WorldGame() {
             onClick={() => setPanel(null)}
           >
             <div
+              ref={panelRef}
               className="max-h-[88%] w-full max-w-lg overflow-y-auto rounded-xl border-2 border-slate-600 bg-slate-950 p-3 text-slate-100 shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
@@ -2468,7 +3056,9 @@ export function WorldGame() {
               {panel === "bag" && (
                 <BagPanel save={save} onChange={applySave} notify={toastNotify} />
               )}
-              {panel === "skills" && <SkillsPanel save={save} />}
+              {panel === "skills" && (
+                <SkillsPanel save={save} onChange={applySave} notify={toastNotify} />
+              )}
               {panel === "shop" && (
                 <ShopPanel save={save} onChange={applySave} notify={toastNotify} />
               )}
@@ -2488,4 +3078,20 @@ export function WorldGame() {
 
 function toastNotify(message: string) {
   toast(message);
+}
+
+/** 弹窗打开（或切换页签）时的缩放 + 透明度缓动 */
+function usePopIn<T extends HTMLElement>(trigger: unknown) {
+  const ref = useRef<T | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    gsap.killTweensOf(el);
+    gsap.fromTo(
+      el,
+      { opacity: 0, scale: 0.94, y: 12 },
+      { opacity: 1, scale: 1, y: 0, duration: 0.26, ease: "back.out(1.6)" }
+    );
+  }, [trigger]);
+  return ref;
 }
