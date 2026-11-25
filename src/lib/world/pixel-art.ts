@@ -46,6 +46,14 @@ function parseColor(color: string): RGBA {
   return result;
 }
 
+function mixHex(a: string, b: string, amount: number): string {
+  const ca = parseColor(a);
+  const cb = parseColor(b);
+  const channel = (i: number) => Math.round(ca[i] + (cb[i] - ca[i]) * amount);
+  const hex = (n: number) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, "0");
+  return `#${hex(channel(0))}${hex(channel(1))}${hex(channel(2))}`;
+}
+
 /**
  * 一个最小像素画布：所有图形都按整数像素栅格化，再由 Pixi 以 nearest 采样放大，
  * 得到真正的像素美术而不是平滑矢量。
@@ -224,6 +232,7 @@ export type HeroParts = {
   head: Texture;
   torso: Texture;
   limb: Texture;
+  arm: Texture;
   weapon: Texture;
   glow: Texture;
 };
@@ -244,7 +253,6 @@ function heroHead(classId: ClassId): Texture {
   if (classId === "warrior") {
     b.rect(3, 2, 8, 5, STEEL);
     b.rect(3, 3, 8, 1, "#f1f5f9");
-    b.rect(4, 7, 6, 3, SKIN);
     b.rect(3, 7, 1, 5, STEEL_DARK);
     b.rect(10, 7, 1, 5, STEEL_DARK);
     b.rect(6, 0, 2, 3, "#dc2626");
@@ -365,25 +373,45 @@ function heroLimb(): Texture {
   return bufferTexture(b);
 }
 
+/**
+ * 手臂：肩甲 → 袖子 → 护腕 → 手，长度约为躯干的 0.8，
+ * 让手臂自然垂到腰侧，而不是像块浮在胸前的方板。
+ */
+function heroArm(): Texture {
+  const b = new PixelBuffer(4, 10);
+  b.rect(1, 0, 2, 3, "#cbd5e1");
+  b.rect(1, 0, 1, 2, "#f1f5f9");
+  b.rect(1, 3, 2, 5, "#e2e8f0");
+  b.rect(1, 3, 1, 4, "#f8fafc");
+  b.rect(1, 8, 2, 2, SKIN);
+  b.outline(OUTLINE);
+  return bufferTexture(b);
+}
+
 function weaponArt(kind: WeaponKind): Texture {
-  const b = new PixelBuffer(12, 26);
   if (kind === "sword") {
+    // 剑身收窄到 4px（含高光），整体 21px 长，避免像木板一样盖住头和胸
+    const b = new PixelBuffer(8, 21);
     b.polygon(
       [
-        [6, 0],
-        [8, 3],
-        [8, 16],
-        [6, 19],
-        [4, 16],
-        [4, 3],
+        [4, 0],
+        [6, 2],
+        [6, 13],
+        [4, 15],
+        [2, 13],
+        [2, 2],
       ],
       "#f1f5f9"
     );
-    b.rect(5, 3, 1, 13, "#e2e8f0");
-    b.rect(3, 16, 6, 2, "#cbd5e1");
-    b.rect(5, 18, 2, 5, "#475569");
-    b.rect(4, 23, 4, 2, "#cbd5e1");
-  } else if (kind === "staff") {
+    b.rect(3, 2, 1, 12, "#e2e8f0");
+    b.rect(1, 15, 6, 2, "#cbd5e1");
+    b.rect(3, 17, 2, 3, "#475569");
+    b.rect(2, 20, 4, 1, "#cbd5e1");
+    b.outline(OUTLINE);
+    return bufferTexture(b);
+  }
+  const b = new PixelBuffer(12, 26);
+  if (kind === "staff") {
     b.rect(5, 7, 2, 18, "#94a3b8");
     b.ellipse(6, 4, 3.5, 3.5, "#f8fafc");
     b.rect(4, 3, 1, 1, "#ffffff");
@@ -396,12 +424,26 @@ function weaponArt(kind: WeaponKind): Texture {
     b.line(7, 13, 4, 22, "#94a3b8");
     b.rect(6, 12, 3, 1, "#f8fafc");
   } else {
-    b.rect(5, 9, 2, 16, "#94a3b8");
-    b.rect(2, 1, 8, 8, "#f1f5f9");
-    b.rect(3, 2, 6, 6, "#cbd5e1");
-    b.rect(1, 3, 1, 2, "#94a3b8");
-    b.rect(10, 3, 1, 2, "#94a3b8");
-    b.rect(4, 23, 4, 2, "#64748b");
+    // 斧：木柄 + 带高光/刃口的宽刃，避免整块同色像一根木板
+    b.rect(5, 8, 2, 17, "#8a5a3b");
+    b.rect(5, 8, 1, 17, "#a9714a");
+    b.polygon(
+      [
+        [2, 1],
+        [10, 1],
+        [10, 4],
+        [9, 7],
+        [3, 7],
+        [2, 4],
+      ],
+      "#cbd5e1"
+    );
+    b.rect(3, 2, 6, 1, "#f8fafc");
+    b.rect(3, 3, 2, 3, "#e2e8f0");
+    b.rect(2, 4, 1, 3, "#94a3b8");
+    b.rect(10, 4, 1, 3, "#94a3b8");
+    b.rect(3, 7, 6, 1, "#64748b");
+    b.rect(4, 24, 4, 2, "#64748b");
   }
   b.outline(OUTLINE);
   return bufferTexture(b);
@@ -417,6 +459,7 @@ export function heroParts(classId: ClassId, weapon: WeaponKind): HeroParts {
     head: heroHead(classId),
     torso: heroTorso(classId),
     limb: heroLimb(),
+    arm: heroArm(),
     weapon: weaponArt(weapon),
     glow: glowTexture(),
   };
@@ -1006,15 +1049,24 @@ function groundTile(theme: RoomTheme, shade: number): Texture {
     const half = y <= 8 ? (y + 1) * 2 : (16 - y) * 2;
     b.rect(16 - half, y, half * 2, 1, color);
   }
-  // 顶部高光与底部阴影，形成清晰的等距格子
+  // 顶部高光与底部阴影，形成等距格子；混入地面色让网格不再抢眼
+  const edge = mixHex(color, palette.groundEdge, 0.45);
   for (let x = 0; x < 32; x += 1) {
     const topY = Math.abs(x - 15.5) / 2;
-    b.set(x, Math.floor(topY), palette.groundEdge);
+    b.set(x, Math.floor(topY), edge);
   }
   for (let i = 0; i < 10; i += 1) {
     const x = (shade * 7 + i * 11) % 28;
     const y = 3 + ((shade * 5 + i * 7) % 9);
     b.set(x + 2, y, shade === 1 ? palette.ground[0] : palette.ground[2]);
+  }
+  // 几簇 1px 草叶，给大片草地一点颗粒感
+  for (let i = 0; i < 3; i += 1) {
+    const x = 4 + ((shade * 9 + i * 13) % 24);
+    const y = 5 + ((shade * 4 + i * 5) % 7);
+    b.set(x, y, edge);
+    b.set(x, y - 1, edge);
+    b.set(x + 1, y, mixHex(color, "#000000", 0.25));
   }
   return bufferTexture(b);
 }

@@ -5,6 +5,7 @@ import {
   ListTodo,
   MessageSquare,
   Paperclip,
+  Swords,
 } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -61,6 +62,22 @@ export default async function PublicLayout({
             >
               <Gamepad2 className="size-3.5" />
               <span className="hidden sm:inline">开放世界</span>
+            </Link>
+            <Link
+              href="/hunter"
+              title="猎人与农民"
+              className="flex items-center gap-1 hover:text-foreground"
+            >
+              <Swords className="size-3.5" />
+              <span className="hidden sm:inline">猎人与农民</span>
+            </Link>
+            <Link
+              href="/tve"
+              title="巨魔VS精灵"
+              className="flex items-center gap-1 hover:text-foreground"
+            >
+              <Swords className="size-3.5" />
+              <span className="hidden sm:inline">巨魔VS精灵</span>
             </Link>
             <span className="h-3 w-px bg-border" />
             {user ? (

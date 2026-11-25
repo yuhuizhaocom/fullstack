@@ -23,8 +23,18 @@ import {
   sellPrice,
   skillRank,
 } from "@/lib/game/engine";
-import type { EquipSlot, GameSave, ItemDef, ItemKind } from "@/lib/game/types";
+import type { ClassId, EquipSlot, GameSave, ItemDef, ItemKind } from "@/lib/game/types";
 import { cn } from "@/lib/utils";
+
+/** 职业定位：面板上一眼看出这个角色该站前排还是后排 */
+const CLASS_ROLE: Record<ClassId, string> = {
+  warrior: "近战 · 坦克",
+  mage: "远程 · 法术",
+  ranger: "远程 · 物理",
+  priest: "辅助 · 治疗",
+  assassin: "近战 · 爆发",
+  guardian: "近战 · 守护",
+};
 
 export const pixelPanel =
   "rounded-lg border-2 border-slate-700 bg-slate-900/80 p-3";
@@ -127,8 +137,17 @@ export function CharacterPanel({ save, onChange, notify }: PanelProps) {
               <span className="ml-2 text-[11px] font-normal text-amber-300">
                 Lv.{save.level} {cls.name}
               </span>
+              <span className="ml-1.5 rounded bg-slate-700/60 px-1 py-0.5 align-middle text-[9px] font-normal text-slate-300">
+                {CLASS_ROLE[save.classId]}
+              </span>
             </p>
             <p className="mt-0.5 text-[11px] text-slate-400">{cls.desc}</p>
+            <p className="mt-1 flex items-center gap-1 text-[10px] text-sky-300">
+              <span className="rounded bg-sky-500/15 px-1 py-0.5 font-bold">
+                被动 · {cls.passive.name}
+              </span>
+              <span className="truncate text-slate-500">{cls.passive.desc}</span>
+            </p>
           </div>
           <div className="text-right">
             <p className="flex items-center justify-end gap-1 text-xs font-bold text-amber-300">
@@ -191,7 +210,7 @@ export function CharacterPanel({ save, onChange, notify }: PanelProps) {
             强化石 ×{save.inventory.enhance_stone ?? 0}
           </span>
         </div>
-        <div className="space-y-1.5">
+        <div className="grid gap-1.5 sm:grid-cols-2">
           {EQUIP_SLOTS.map((slot) => {
             const id = save.equipment[slot.key];
             const item = id ? ITEMS[id] : null;
@@ -360,10 +379,20 @@ export function BagPanel({ save, onChange, notify }: PanelProps) {
           <ul className="space-y-1.5">
             {entries.map(({ item, count }) => {
               const equippable = ["weapon", "armor", "boots", "accessory"].includes(item.kind);
+              const legal = equippable && canEquip(item, save);
+              const blockReason =
+                equippable && !legal
+                  ? !item.classId || item.classId === save.classId
+                    ? "等级不足"
+                    : "职业不符"
+                  : "";
               return (
                 <li
                   key={item.id}
-                  className="flex items-center gap-2 rounded border border-slate-800 bg-slate-950/60 px-2 py-1.5"
+                  className={cn(
+                    "flex items-center gap-2 rounded border border-slate-800 bg-slate-950/60 px-2 py-1.5",
+                    equippable && !legal && "opacity-70"
+                  )}
                 >
                   <span className="text-lg">{item.icon}</span>
                   <div className="min-w-0 flex-1">
@@ -373,6 +402,16 @@ export function BagPanel({ save, onChange, notify }: PanelProps) {
                       {item.level ? (
                         <span className="text-[10px] font-normal text-slate-500">
                           Lv.{item.level}
+                        </span>
+                      ) : null}
+                      {item.classId ? (
+                        <span className="rounded bg-slate-700/50 px-1 text-[9px] font-normal text-slate-300">
+                          {CLASSES[item.classId].icon} {CLASSES[item.classId].name}专属
+                        </span>
+                      ) : null}
+                      {blockReason ? (
+                        <span className="rounded bg-rose-500/10 px-1 text-[9px] font-normal text-rose-300">
+                          {blockReason}
                         </span>
                       ) : null}
                     </p>
@@ -387,7 +426,12 @@ export function BagPanel({ save, onChange, notify }: PanelProps) {
                       </button>
                     )}
                     {equippable && (
-                      <button type="button" className={pixelButtonPrimary} onClick={() => equip(item)}>
+                      <button
+                        type="button"
+                        className={pixelButtonPrimary}
+                        disabled={!legal}
+                        onClick={() => equip(item)}
+                      >
                         装备
                       </button>
                     )}
@@ -404,6 +448,33 @@ export function BagPanel({ save, onChange, notify }: PanelProps) {
     </div>
   );
 }
+
+const ELEMENT_STYLE: Record<string, { label: string; className: string }> = {
+  fire: { label: "火焰", className: "bg-orange-500/15 text-orange-300" },
+  frost: { label: "冰霜", className: "bg-sky-500/15 text-sky-300" },
+  holy: { label: "圣光", className: "bg-amber-400/15 text-amber-300" },
+  shadow: { label: "暗影", className: "bg-rose-500/15 text-rose-300" },
+  physical: { label: "物理", className: "bg-slate-500/20 text-slate-300" },
+};
+const SKILL_ELEMENT: Record<string, keyof typeof ELEMENT_STYLE> = {
+  disintegrate: "fire",
+  incinerate: "fire",
+  tibbers: "fire",
+  molten_shield: "fire",
+  frost_shot: "frost",
+  crystal_arrow: "frost",
+  crystal_rain: "frost",
+  starlight: "holy",
+  astral_infusion: "holy",
+  equinox: "holy",
+  wish: "holy",
+  demacia_justice: "holy",
+  courage: "holy",
+  shadow_assault: "shadow",
+  venom_blade: "shadow",
+  smoke_screen: "shadow",
+  soul_reap: "shadow",
+};
 
 export function SkillsPanel({ save, onChange, notify }: PanelProps) {
   const skillIds = CLASS_SKILLS[save.classId];
@@ -472,6 +543,14 @@ export function SkillsPanel({ save, onChange, notify }: PanelProps) {
                     </span>
                   </p>
                   <p className="text-[10px] text-slate-500">
+                    <span
+                      className={cn(
+                        "mr-1 rounded px-1 py-0.5 text-[9px] font-bold",
+                        ELEMENT_STYLE[SKILL_ELEMENT[id] ?? "physical"].className
+                      )}
+                    >
+                      {ELEMENT_STYLE[SKILL_ELEMENT[id] ?? "physical"].label}
+                    </span>
                     {unlocked ? "已解锁" : `Lv.${skill.level} 解锁`}
                     {skill.cooldown ? ` · CD ${skill.cooldown}s` : ""}
                   </p>
@@ -486,6 +565,18 @@ export function SkillsPanel({ save, onChange, notify }: PanelProps) {
                 </button>
               </div>
               <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{skill.desc}</p>
+              <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-slate-500">
+                <span>耗蓝 {skill.mp}</span>
+                {skill.range ? <span>射程 {skill.range}</span> : null}
+                {skill.radius ? <span>半径 {skill.radius}</span> : null}
+                {skill.dashDistance ? <span>位移 {skill.dashDistance}</span> : null}
+                {skill.slowMs ? <span>减速 {(skill.slowMs / 1000).toFixed(1)}s</span> : null}
+                {skill.multiplier ? <span>倍率 {Math.round(skill.multiplier * 100)}%</span> : null}
+                {skill.hits && skill.hits > 1 ? <span>{skill.hits} 段</span> : null}
+                {skill.healRatio ? <span>治疗 {Math.round(skill.healRatio * 100)}%</span> : null}
+                {skill.buffAtk ? <span>攻击 +{skill.buffAtk}%</span> : null}
+                {skill.buffTurns ? <span>持续 {skill.buffTurns}s</span> : null}
+              </div>
               <div className="mt-1.5 h-1 overflow-hidden rounded bg-slate-800">
                 <div
                   className="h-full rounded bg-amber-400"

@@ -17,6 +17,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     base: { maxHp: 150, maxMp: 30, atk: 15, def: 8, spd: 6, crit: 5, cdr: 0, lifesteal: 0 },
     growth: { maxHp: 16, maxMp: 4, atk: 2.6, def: 1.4, spd: 0.4, crit: 0.2, cdr: 0.12, lifesteal: 0.05 },
     weapon: "wooden_sword",
+    passive: { name: "重甲壁垒", desc: "防御 +15%，正面硬吃伤害也不虚", def: 15 },
   },
   mage: {
     id: "mage",
@@ -26,6 +27,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     base: { maxHp: 95, maxMp: 65, atk: 12, def: 4, spd: 7, crit: 5, cdr: 5, lifesteal: 0 },
     growth: { maxHp: 8, maxMp: 10, atk: 3.4, def: 0.7, spd: 0.5, crit: 0.2, cdr: 0.4, lifesteal: 0 },
     weapon: "oak_staff",
+    passive: { name: "奥术共鸣", desc: "攻击 +10%、冷却缩减 +5%，技能转得更快", atk: 10, cdr: 5 },
   },
   ranger: {
     id: "ranger",
@@ -35,6 +37,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     base: { maxHp: 110, maxMp: 40, atk: 14, def: 5, spd: 12, crit: 15, cdr: 0, lifesteal: 2 },
     growth: { maxHp: 10, maxMp: 5, atk: 2.8, def: 0.9, spd: 1, crit: 0.6, cdr: 0.12, lifesteal: 0.12 },
     weapon: "short_bow",
+    passive: { name: "鹰眼", desc: "暴击 +8%，远程风筝时更容易打出高伤", crit: 8 },
   },
   priest: {
     id: "priest",
@@ -44,6 +47,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     base: { maxHp: 115, maxMp: 55, atk: 11, def: 6, spd: 8, crit: 3, cdr: 5, lifesteal: 0 },
     growth: { maxHp: 11, maxMp: 7, atk: 2.3, def: 1.1, spd: 0.6, crit: 0.2, cdr: 0.4, lifesteal: 0 },
     weapon: "holy_mace",
+    passive: { name: "圣光庇佑", desc: "冷却缩减 +6%、吸血 +4%，续航更持久", cdr: 6, lifesteal: 4 },
   },
   assassin: {
     id: "assassin",
@@ -53,6 +57,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     base: { maxHp: 105, maxMp: 30, atk: 16, def: 4, spd: 14, crit: 18, cdr: 0, lifesteal: 3 },
     growth: { maxHp: 9, maxMp: 3, atk: 3.2, def: 0.7, spd: 1.1, crit: 0.7, cdr: 0.15, lifesteal: 0.15 },
     weapon: "rusty_dagger",
+    passive: { name: "致命突袭", desc: "暴击 +10%、攻击 +6%，一套爆发更狠", crit: 10, atk: 6 },
   },
   guardian: {
     id: "guardian",
@@ -62,6 +67,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     base: { maxHp: 180, maxMp: 35, atk: 13, def: 11, spd: 5, crit: 3, cdr: 0, lifesteal: 0 },
     growth: { maxHp: 20, maxMp: 4, atk: 2.2, def: 1.8, spd: 0.3, crit: 0.15, cdr: 0.12, lifesteal: 0.05 },
     weapon: "wooden_hammer",
+    passive: { name: "不屈壁垒", desc: "防御 +20%、吸血 +2%，站桩抗线核心", def: 20, lifesteal: 2 },
   },
 };
 

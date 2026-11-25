@@ -3,9 +3,13 @@ import { sfxr } from "jsfxr";
 
 type SfxKind =
   | "attack"
+  | "attack_bow"
+  | "attack_staff"
   | "hurt"
   | "kill"
   | "skill"
+  | "skill_fire"
+  | "skill_frost"
   | "heal"
   | "levelup"
   | "death"
@@ -131,9 +135,15 @@ const SFX_PRESETS: Record<
   { preset: "pickupCoin" | "laserShoot" | "explosion" | "powerUp" | "hitHurt" | "jump" | "blipSelect"; volume: number; rate: number }
 > = {
   attack: { preset: "laserShoot", volume: 0.16, rate: 1.35 },
+  // 弓箭拉弦更尖更短，法杖施法更低更闷，三种武器一听就能分辨
+  attack_bow: { preset: "laserShoot", volume: 0.14, rate: 1.95 },
+  attack_staff: { preset: "powerUp", volume: 0.15, rate: 1.55 },
   hurt: { preset: "hitHurt", volume: 0.26, rate: 1.1 },
   kill: { preset: "explosion", volume: 0.2, rate: 1.2 },
   skill: { preset: "powerUp", volume: 0.18, rate: 1.1 },
+  // 火焰技能低沉的爆裂声、冰霜技能清冷的高音，区分元素手感
+  skill_fire: { preset: "explosion", volume: 0.16, rate: 1.55 },
+  skill_frost: { preset: "blipSelect", volume: 0.2, rate: 1.75 },
   heal: { preset: "jump", volume: 0.18, rate: 1.25 },
   levelup: { preset: "powerUp", volume: 0.28, rate: 0.85 },
   death: { preset: "explosion", volume: 0.26, rate: 0.6 },

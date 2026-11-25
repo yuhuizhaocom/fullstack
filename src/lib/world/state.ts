@@ -199,6 +199,10 @@ export type WorldSnapshot = {
     kills: number;
     weapon: string | null;
     armor: string | null;
+    /** 守护/减伤状态（护盾泡） */
+    guard?: boolean;
+    /** 增益状态（攻击强化光环） */
+    buff?: boolean;
   }[];
   monsters: {
     id: string;
@@ -213,6 +217,8 @@ export type WorldSnapshot = {
     y: number;
     hp: number;
     maxHp: number;
+    /** 被冰霜减速 */
+    slow?: boolean;
   }[];
   drops: {
     id: string;
@@ -557,7 +563,7 @@ function createWorld(): World {
       let guard = 0;
       while (
         room === "world" &&
-        Math.hypot(point.x - worldSpawn.x, point.y - worldSpawn.y) < 340 &&
+        Math.hypot(point.x - worldSpawn.x, point.y - worldSpawn.y) < 240 &&
         guard < 25
       ) {
         point = randomOpenPoint(room);
@@ -1406,7 +1412,8 @@ function step(now: number): void {
   world.lastTick = now;
 
   for (const player of world.players.values()) {
-    if (now - player.lastSeen > 15_000) {
+    // 必须大于心跳间隔(20s)：否则站着不动会被误判离线，造成反复断线重连
+    if (now - player.lastSeen > 45_000) {
       world.players.delete(player.id);
       continue;
     }
@@ -1710,6 +1717,8 @@ function makeSnapshot(now: number, player: WorldPlayer | null): WorldSnapshot {
       kills: entry.kills,
       weapon: entry.weapon,
       armor: entry.armor,
+      guard: entry.guardUntil > now,
+      buff: entry.buffUntil > now,
     })),
     monsters: monsters.map((monster) => ({
       id: monster.id,
@@ -1724,6 +1733,7 @@ function makeSnapshot(now: number, player: WorldPlayer | null): WorldSnapshot {
       y: Math.round(monster.y),
       hp: Math.round(monster.hp),
       maxHp: monster.maxHp,
+      slow: monster.slowUntil > now,
     })),
     drops: drops.map((drop) => ({
       id: drop.id,

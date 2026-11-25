@@ -28,6 +28,9 @@ export type SkillEffect = {
   skillId: string;
   at: number;
   radius?: number;
+  /** 施法起点：远程技能用来画一道施法轨迹 */
+  fx?: number;
+  fy?: number;
 };
 
 export type RenderSnapshot = {
@@ -44,6 +47,8 @@ export type RenderSnapshot = {
     dead: boolean;
     weapon: string | null;
     armor: string | null;
+    guard?: boolean;
+    buff?: boolean;
   }[];
   monsters: {
     id: string;
@@ -58,6 +63,7 @@ export type RenderSnapshot = {
     y: number;
     hp: number;
     maxHp: number;
+    slow?: boolean;
   }[];
   drops: {
     id: string;
@@ -416,17 +422,45 @@ export function getMinimapCache(room: RoomId): HTMLCanvasElement {
     ctx.fillRect(0, 0, MINIMAP_CACHE_SIZE, MINIMAP_CACHE_SIZE);
     const sx = MINIMAP_CACHE_SIZE / cfg.w;
     const sy = MINIMAP_CACHE_SIZE / cfg.h;
-    for (let ty = 0; ty < cfg.h; ty += 1) {
-      for (let tx = 0; tx < cfg.w; tx += 1) {
-        const terrain = terrainAt(tx, ty, room);
-        if (terrain === "tree") ctx.fillStyle = "rgba(34,90,50,0.9)";
-        else if (terrain === "rock") ctx.fillStyle = "rgba(100,116,139,0.85)";
-        else if (terrain === "water")
-          ctx.fillStyle = cfg.theme === "volcano" ? "rgba(194,65,12,0.9)" : "rgba(30,90,140,0.9)";
-        else continue;
-        ctx.fillRect(tx * sx, ty * sy, Math.ceil(sx), Math.ceil(sy));
+    // 2x2 地块聚合成一个色块，避免小地图出现彩色噪点
+    for (let ty = 0; ty < cfg.h; ty += 2) {
+      for (let tx = 0; tx < cfg.w; tx += 2) {
+        let tree = false;
+        let rock = false;
+        let water = false;
+        for (let dy = 0; dy < 2 && ty + dy < cfg.h; dy += 1) {
+          for (let dx = 0; dx < 2 && tx + dx < cfg.w; dx += 1) {
+            const terrain = terrainAt(tx + dx, ty + dy, room);
+            if (terrain === "tree") tree = true;
+            else if (terrain === "rock") rock = true;
+            else if (terrain === "water") water = true;
+          }
+        }
+        if (water) {
+          ctx.fillStyle =
+            cfg.theme === "volcano" ? "rgba(154,52,18,0.75)" : "rgba(38,84,124,0.75)";
+        } else if (tree) {
+          ctx.fillStyle = "rgba(32,74,46,0.72)";
+        } else if (rock) {
+          ctx.fillStyle = "rgba(84,96,110,0.6)";
+        } else {
+          continue;
+        }
+        ctx.fillRect(tx * sx, ty * sy, Math.ceil(2 * sx) + 0.5, Math.ceil(2 * sy) + 0.5);
       }
     }
+    const vignette = ctx.createRadialGradient(
+      MINIMAP_CACHE_SIZE / 2,
+      MINIMAP_CACHE_SIZE / 2,
+      MINIMAP_CACHE_SIZE * 0.2,
+      MINIMAP_CACHE_SIZE / 2,
+      MINIMAP_CACHE_SIZE / 2,
+      MINIMAP_CACHE_SIZE * 0.72
+    );
+    vignette.addColorStop(0, "rgba(0,0,0,0)");
+    vignette.addColorStop(1, "rgba(0,0,0,0.45)");
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, MINIMAP_CACHE_SIZE, MINIMAP_CACHE_SIZE);
   }
   minimapCaches.set(room, canvas);
   return canvas;
@@ -1225,6 +1259,8 @@ export const GOLD_SKILLS = new Set([
   "soul_reap",
 ]);
 export const FROST_SKILLS = new Set(["frost_shot", "equinox", "venom_blade"]);
+/** 火焰系技能：施法轨迹与特效偏橙红 */
+export const FIRE_SKILLS = new Set(["disintegrate", "incinerate", "tibbers"]);
 
 function drawSkillEffect(
   ctx: CanvasRenderingContext2D,

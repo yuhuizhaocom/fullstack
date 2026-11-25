@@ -223,6 +223,19 @@ export function effectiveStats(save: GameSave): Stats {
     stats.cdr += item.cdr ?? 0;
     stats.lifesteal += item.lifesteal ?? 0;
   }
+  // 职业被动：攻击/防御为百分比乘算，暴击/冷却/吸血为固定点数
+  const passive = CLASSES[save.classId]?.passive;
+  if (passive) {
+    if (passive.atk) {
+      stats.atk = Math.round(stats.atk * (1 + passive.atk / 100) * 10) / 10;
+    }
+    if (passive.def) {
+      stats.def = Math.round(stats.def * (1 + passive.def / 100) * 10) / 10;
+    }
+    stats.crit += passive.crit ?? 0;
+    stats.cdr += passive.cdr ?? 0;
+    stats.lifesteal += passive.lifesteal ?? 0;
+  }
   stats.cdr = Math.max(0, Math.min(50, stats.cdr));
   stats.lifesteal = Math.max(0, Math.min(60, stats.lifesteal));
   return stats;

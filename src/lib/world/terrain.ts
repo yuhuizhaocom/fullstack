@@ -368,7 +368,7 @@ function computeTerrainAt(tx: number, ty: number, room: RoomId = "world"): Terra
   const h = hash2(tx, ty, cfg.seed);
   if (h < 0.052) return "tree";
   if (h < 0.082) return "rock";
-  if (h < 0.2) return "flower";
+  if (h < 0.16) return "flower";
   return "grass";
 }
 

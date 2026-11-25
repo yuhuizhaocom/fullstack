@@ -23,6 +23,16 @@ export type ClassDef = {
   growth: Stats;
   /** 初始武器 */
   weapon: string;
+  /** 职业被动：名称 + 说明 + 实际生效的加成 */
+  passive: {
+    name: string;
+    desc: string;
+    atk?: number;
+    def?: number;
+    crit?: number;
+    cdr?: number;
+    lifesteal?: number;
+  };
 };
 
 export type SkillKey = "Q" | "W" | "E" | "R";

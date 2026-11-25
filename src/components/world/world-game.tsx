@@ -60,6 +60,9 @@ import {
 import { QUESTS, questGoal, questStatusLabel, type QuestView } from "@/lib/world/quests";
 import {
   drawWorld,
+  FROST_SKILLS,
+  GOLD_SKILLS,
+  HEAL_SKILLS,
   type RenderParticle,
   type RenderSnapshot,
   type SkillEffect,
@@ -102,12 +105,44 @@ const SKILL_KEY_MAP: Record<string, number> = {
   r: 3,
 };
 const SKILL_KEYS = ["Q", "W", "E", "R"];
+/** 火焰系技能：施法音效走低沉的爆裂声 */
+const FIRE_SKILLS = new Set(["disintegrate", "incinerate", "tibbers"]);
+/** 暗影系技能：刺客一系的紫红刀光 */
+const SHADOW_SKILLS = new Set(["shadow_assault", "venom_blade", "smoke_screen", "soul_reap"]);
+/** 技能键帽颜色 = 元素色，扫一眼就知道这套技能是什么流派 */
+function skillTone(skillId: string): string {
+  if (FROST_SKILLS.has(skillId)) return "#7dd3fc";
+  if (FIRE_SKILLS.has(skillId)) return "#fb923c";
+  if (HEAL_SKILLS.has(skillId)) return "#86efac";
+  if (SHADOW_SKILLS.has(skillId)) return "#fb7185";
+  if (GOLD_SKILLS.has(skillId)) return "#fde68a";
+  return "#cbd5e1";
+}
+/** 职业主题色，与场景里的脚下光环保持一致 */
+const CLASS_ACCENT: Record<ClassId, string> = {
+  warrior: "#fbbf24",
+  mage: "#a78bfa",
+  ranger: "#4ade80",
+  priest: "#f5d0fe",
+  assassin: "#f87171",
+  guardian: "#60a5fa",
+};
+/** 职业定位，创建角色时帮助玩家判断前后排 */
+const CLASS_ROLE: Record<ClassId, string> = {
+  warrior: "近战 · 坦克",
+  mage: "远程 · 法术",
+  ranger: "远程 · 物理",
+  priest: "辅助 · 治疗",
+  assassin: "近战 · 爆发",
+  guardian: "近战 · 守护",
+};
 const UI_KEY = "tf_world_ui_v1";
 const MAX_CHARACTERS = 4;
 
 type UiSettings = {
   joystickSide: "left" | "right";
   scale: "compact" | "normal" | "large";
+  zoom: number;
   autoCastAll: boolean;
   autoSkills: Record<string, boolean>;
 };
@@ -115,6 +150,7 @@ type UiSettings = {
 const DEFAULT_UI: UiSettings = {
   joystickSide: "right",
   scale: "normal",
+  zoom: 0.75,
   autoCastAll: false,
   autoSkills: {},
 };
@@ -145,7 +181,7 @@ function saveUi(settings: UiSettings): void {
 }
 
 const btn =
-  "rounded border-2 border-slate-600 bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-slate-100 transition-colors hover:bg-slate-700 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md border border-slate-600/70 bg-slate-900/80 px-2.5 py-1 text-[11px] font-bold text-slate-200 shadow-[0_2px_0_rgba(2,6,23,0.55)] transition-[color,background-color,border-color,box-shadow,transform] duration-150 hover:border-amber-500/50 hover:bg-slate-800/90 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40";
 const btnPrimary =
   "rounded border-2 border-amber-500 bg-amber-500/20 px-3 py-1.5 text-[11px] font-bold text-amber-300 transition-colors hover:bg-amber-500/30 active:translate-y-px";
 
@@ -157,6 +193,8 @@ type Self = {
   maxHp: number;
   dead: boolean;
   kills: number;
+  guard: boolean;
+  buff: boolean;
 };
 
 type PanelKind = "character" | "bag" | "skills" | "shop";
@@ -282,6 +320,7 @@ export function WorldGame() {
   const ridSeqRef = useRef(0);
   const wantConnectedRef = useRef(false);
   const joinedRef = useRef(false);
+  const introShownRef = useRef(false);
   const reconnectRef = useRef<number | null>(null);
   const retryRef = useRef(0);
   const rafRef = useRef(0);
@@ -319,9 +358,17 @@ export function WorldGame() {
   const suppressClickRef = useRef(false);
   const autoCursorRef = useRef(0);
   const lastDustRef = useRef(0);
+  const skillPrevCdRef = useRef<Record<string, boolean>>({});
+  const skillReadyRef = useRef<Record<string, number>>({});
   const persistTimerRef = useRef<number | null>(null);
   const stageRef = useRef<WorldStage | null>(null);
   const stageFailedRef = useRef(false);
+  const zoomRef = useRef(ui.zoom);
+
+  useEffect(() => {
+    zoomRef.current = ui.zoom;
+    stageRef.current?.setZoom(ui.zoom);
+  }, [ui.zoom]);
 
   const fullscreen = nativeFullscreen || pseudoFullscreen;
 
@@ -379,6 +426,18 @@ export function WorldGame() {
     return () => window.clearInterval(timer);
   }, [phase]);
 
+  // 冷却结束的瞬间记一次时间戳，让技能键闪一下，避免“突然就能按了”
+  useEffect(() => {
+    if (phase !== "playing" || !save) return;
+    const now = Date.now();
+    for (const id of CLASS_SKILLS[save.classId]) {
+      const cooling = (cdReadyRef.current[id] ?? 0) > now;
+      const wasCooling = skillPrevCdRef.current[id] ?? false;
+      if (wasCooling && !cooling) skillReadyRef.current[id] = now;
+      skillPrevCdRef.current[id] = cooling;
+    }
+  }, [nowTick, phase, save]);
+
   // 应用层心跳：刷新服务端活跃时间，配合连接层 ping 探测半开连接
   useEffect(() => {
     if (phase !== "playing") return;
@@ -425,6 +484,26 @@ export function WorldGame() {
         vy: Math.sin(angle) * 0.9 - 0.6,
         life: 800,
         maxLife: 800,
+      });
+    }
+  }
+
+  /** 技能元素爆点：火焰/冰霜/圣光/奥术各自一簇火花 */
+  function sparkBurst(x: number, y: number, color: string, count = 10) {
+    if (particlesRef.current.length > 140) return;
+    for (let i = 0; i < count; i += 1) {
+      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+      const speed = 0.8 + Math.random() * 1.3;
+      particlesRef.current.push({
+        x: x + (Math.random() - 0.5) * 10,
+        y: y - 12 + (Math.random() - 0.5) * 10,
+        text: i % 3 === 0 ? "✦" : "·",
+        color,
+        size: i % 3 === 0 ? 13 : 9,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed * 0.6 - 0.55,
+        life: 760,
+        maxLife: 760,
       });
     }
   }
@@ -756,14 +835,41 @@ export function WorldGame() {
       }
       if (event.kind === "skill") {
         effectSeqRef.current += 1;
+        // 若是远程技能，记录施法起点，画一条飞向落点的施法轨迹
+        const casterPos =
+          event.from === myId
+            ? { x: meRef.current.x, y: meRef.current.y }
+            : event.from
+              ? snapshotRef.current?.players.find((p) => p.id === event.from)
+              : null;
+        const farCast =
+          casterPos && Math.hypot(casterPos.x - event.x, casterPos.y - event.y) > 40;
         effectsRef.current.push({
           id: effectSeqRef.current,
           x: event.x,
           y: event.y,
           skillId: event.skillId ?? "",
           at: now,
+          fx: farCast ? casterPos.x : undefined,
+          fy: farCast ? casterPos.y : undefined,
         });
         if (effectsRef.current.length > 24) effectsRef.current.shift();
+        // 元素爆点：让技能落点有对应的火花颜色
+        if (
+          Math.hypot(event.x - meRef.current.x, event.y - meRef.current.y) < 520
+        ) {
+          const id = event.skillId ?? "";
+          const tone = FROST_SKILLS.has(id)
+            ? "#a5f3fc"
+            : FIRE_SKILLS.has(id)
+              ? "#fdba74"
+              : HEAL_SKILLS.has(id)
+                ? id === "wish"
+                  ? "#f9a8d4"
+                  : "#86efac"
+                : "#c4b5fd";
+          sparkBurst(event.x, event.y, tone, id === "tibbers" ? 16 : 10);
+        }
       }
       if (event.kind === "boss-aoe") {
         effectSeqRef.current += 1;
@@ -788,8 +894,23 @@ export function WorldGame() {
           event.kind === "hurt" ||
           event.kind === "heal")
       ) {
+        const skillColor = event.skillId ? skillTone(event.skillId) : null;
+        // 普通攻击火花按出手者职业着色，一眼分得清是谁在打
+        const attacker =
+          event.from && event.from !== myId
+            ? snapshotRef.current?.players.find((p) => p.id === event.from)
+            : null;
+        const classColor = skillColor
+          ? null
+          : event.from === myId
+            ? saveRef.current
+              ? CLASS_ACCENT[saveRef.current.classId]
+              : null
+            : attacker
+              ? CLASS_ACCENT[attacker.classId] ?? null
+              : null;
         particlesRef.current.push({
-          x: event.x,
+          x: event.x + (event.kind === "damage" ? (Math.random() - 0.5) * 14 : 0),
           y: event.y,
           text: event.kind === "heal" ? `+${event.value}` : `-${event.value}`,
           color:
@@ -799,8 +920,13 @@ export function WorldGame() {
                 ? "#f87171"
                 : event.crit
                   ? "#facc15"
-                  : "#fda4af",
-          size: event.kind === "damage" && event.crit ? 18 : 13,
+                  : (skillColor ?? classColor ?? "#ffe4e6"),
+          size:
+            event.kind === "damage" && event.crit
+              ? 18
+              : skillColor
+                ? 16
+                : 14,
           life: 900,
           maxLife: 900,
         });
@@ -809,7 +935,11 @@ export function WorldGame() {
           spawnSparks(
             event.x,
             event.y,
-            event.crit ? "#fde68a" : event.kind === "hurt" ? "#f87171" : "#fda4af",
+            event.crit
+              ? "#fde68a"
+              : event.kind === "hurt"
+                ? "#f87171"
+                : (skillColor ?? classColor ?? "#fda4af"),
             event.crit ? 8 : 4,
             event.crit ? 1.35 : 1
           );
@@ -820,8 +950,17 @@ export function WorldGame() {
 
       switch (event.kind) {
         case "damage":
-          // 只播放自己造成的攻击音效，避免多人混战噪音
-          if (event.from === myId) sfx("attack");
+          // 只播放自己造成的攻击音效，避免多人混战噪音；武器不同音色不同
+          if (event.from === myId) {
+            const classId = saveRef.current?.classId;
+            sfx(
+              classId === "ranger"
+                ? "attack_bow"
+                : classId === "mage" || classId === "priest"
+                  ? "attack_staff"
+                  : "attack"
+            );
+          }
           break;
         case "hurt":
           if (event.to === myId) {
@@ -873,7 +1012,16 @@ export function WorldGame() {
               event.y - meRef.current.y
             ) < 280
           ) {
-            sfx("skill");
+            const id = event.skillId ?? "";
+            sfx(
+              FROST_SKILLS.has(id)
+                ? "skill_frost"
+                : FIRE_SKILLS.has(id)
+                  ? "skill_fire"
+                  : HEAL_SKILLS.has(id)
+                    ? "heal"
+                    : "skill"
+            );
           }
           break;
         case "heal":
@@ -967,6 +1115,8 @@ export function WorldGame() {
           maxHp: me.maxHp,
           dead: me.dead,
           kills: me.kills,
+          guard: !!me.guard,
+          buff: !!me.buff,
         };
         selfRef.current = nextSelf;
         setSelf(nextSelf);
@@ -1157,11 +1307,24 @@ export function WorldGame() {
       maxHp: message.player.maxHp,
       dead: false,
       kills: selfRef.current?.kills ?? 0,
+      guard: false,
+      buff: false,
     };
     selfRef.current = nextSelf;
     setSelf(nextSelf);
     setStatus("online");
     setPhase("playing");
+    // 首次进入世界时提示本职业被动，新玩家不用翻面板也知道自己擅长什么
+    if (!introShownRef.current && current) {
+      introShownRef.current = true;
+      const clsDef = CLASSES[current.classId];
+      if (clsDef) {
+        toast(
+          `${clsDef.icon} ${clsDef.name} · ${clsDef.passive.name}：${clsDef.passive.desc}`,
+          { duration: 3600 }
+        );
+      }
+    }
   }
 
   function handleServerMessage(message: ServerMessage) {
@@ -1261,15 +1424,29 @@ export function WorldGame() {
         const screenDx = ix - iy;
         if (Math.abs(screenDx) > 0.01) me.dir = screenDx > 0 ? 1 : -1;
         meMovingRef.current = now;
-        // Pixel FX：跑动扬尘
+        // Pixel FX：跑动扬尘（法系扬奥术微光，重甲职业脚步更沉）
         if (now - lastDustRef.current > 170) {
           lastDustRef.current = now;
+          const clsId = saveRef.current?.classId;
+          const heavy = clsId === "warrior" || clsId === "guardian";
+          const dustColor =
+            clsId === "mage"
+              ? "#a78bfa"
+              : clsId === "priest"
+                ? "#f5d0fe"
+                : clsId === "ranger"
+                  ? "#86efac"
+                  : cfg.theme === "volcano"
+                    ? "#7c2d12"
+                    : cfg.theme === "cave"
+                      ? "#475569"
+                      : "#4b7355";
           spawnSparks(
             me.x - me.dir * 5,
             me.y - 1,
-            cfg.theme === "volcano" ? "#7c2d12" : cfg.theme === "cave" ? "#475569" : "#4b7355",
-            1,
-            0.45
+            dustColor,
+            heavy ? 2 : 1,
+            heavy ? 0.55 : 0.4
           );
         }
       }
@@ -1445,6 +1622,7 @@ export function WorldGame() {
           return;
         }
         stageRef.current = stage;
+        stage.setZoom(zoomRef.current);
         stage.resize(sizeRef.current.width, sizeRef.current.height);
       } catch (error) {
         console.error("PixiJS 初始化失败，回退到 Canvas 2D 渲染", error);
@@ -1957,8 +2135,14 @@ export function WorldGame() {
                 <p className="flex items-center gap-2 text-sm font-bold">
                   <span className="text-2xl">{item.icon}</span>
                   {item.name}
+                  <span className="rounded bg-slate-800 px-1 py-0.5 text-[9px] font-normal text-slate-300">
+                    {CLASS_ROLE[id]}
+                  </span>
                 </p>
                 <p className="mt-1 text-[11px] text-slate-400">{item.desc}</p>
+                <p className="mt-1 rounded bg-sky-500/10 px-1.5 py-0.5 text-[10px] text-sky-300">
+                  被动 · {item.passive.name}：{item.passive.desc}
+                </p>
               </button>
             );
           })}
@@ -2224,27 +2408,42 @@ export function WorldGame() {
       <div
         ref={wrapRef}
         className="relative w-full touch-none select-none bg-black"
-        style={{ height: fullscreen ? "100dvh" : isTouch ? 420 : 480 }}
+        style={{ height: fullscreen ? "100dvh" : isTouch ? 420 : 520 }}
       >
         <canvas ref={canvasRef} className="block h-full w-full" />
 
-        {/* 低血量红色边缘警示 */}
+        {/* 常驻暗角 + 顶部天光，把视线收拢到战场中心 */}
+        <div
+          className="pointer-events-none absolute inset-0 z-[4]"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, rgba(0,0,0,0) 54%, rgba(3,10,6,0.4) 100%), linear-gradient(180deg, rgba(125,211,252,0.10) 0%, rgba(2,6,23,0) 26%, rgba(2,6,23,0.22) 100%)",
+          }}
+        />
+
+        {/* 低血量红色边缘警示，随心跳脉冲 */}
         <div
           className={cn(
-            "pointer-events-none absolute inset-0 z-[5] transition-opacity duration-500",
-            self && self.hp > 0 && self.hp / self.maxHp < 0.3
-              ? "opacity-100"
-              : "opacity-0"
+            "pointer-events-none absolute inset-0 z-[5]",
+            self && self.hp > 0 && self.hp / self.maxHp < 0.35
+              ? "animate-[hp-danger_1.5s_ease-in-out_infinite]"
+              : "opacity-0 transition-opacity duration-700"
           )}
-          style={{ boxShadow: "inset 0 0 60px 18px rgba(239,68,68,0.45)" }}
+          style={{ boxShadow: "inset 0 0 64px 20px rgba(239,68,68,0.5)" }}
         />
 
         {/* 顶部 HUD 浮层 */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-slate-950/90 via-slate-950/60 to-transparent px-2 pb-10 pt-[max(0.5rem,env(safe-area-inset-top))]">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 animate-[hud-drop_360ms_cubic-bezier(0.22,1,0.36,1)_both] bg-gradient-to-b from-slate-950/90 via-slate-950/60 to-transparent px-2 pb-10 pt-[max(0.5rem,env(safe-area-inset-top))]">
           <div className="pointer-events-auto flex items-center justify-between gap-2">
             <button
               type="button"
-              className="flex min-w-0 items-center gap-2 text-left"
+              className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-950/55 px-2 py-1 text-left backdrop-blur-sm"
+              style={{
+                borderColor: save ? `${CLASS_ACCENT[save.classId]}88` : undefined,
+                boxShadow: save
+                  ? `inset 0 0 12px ${CLASS_ACCENT[save.classId]}22`
+                  : undefined,
+              }}
               onClick={() => setPanel("character")}
               title="查看角色与装备"
             >
@@ -2253,15 +2452,24 @@ export function WorldGame() {
                 <p className="truncate text-[11px] font-bold">
                   {save?.name ?? "冒险者"}
                   <span className="ml-1.5 text-amber-300">Lv.{myLevel}</span>
+                  {save ? (
+                    <span
+                      className="ml-1.5 text-[10px] font-normal"
+                      style={{ color: CLASS_ACCENT[save.classId] }}
+                    >
+                      {CLASSES[save.classId].name}
+                    </span>
+                  ) : null}
                 </p>
-                <p className="flex items-center gap-1 text-[10px] text-slate-400">
+                <p className="flex items-center gap-1 whitespace-nowrap text-[10px] text-slate-400">
                   <span
                     className={cn(
-                      "size-1.5 rounded-full",
+                      "size-1.5 shrink-0 rounded-full",
                       status === "online" ? "bg-emerald-400" : "bg-amber-400"
                     )}
                   />
-                  {roomName} · 在线 {online} 人 · 击杀 {self?.kills ?? 0}
+                  <span className="truncate">{roomName} · 在线 {online} 人</span>
+                  <span className="hidden shrink-0 sm:inline">· 击杀 {self?.kills ?? 0}</span>
                 </p>
               </div>
             </button>
@@ -2272,56 +2480,89 @@ export function WorldGame() {
               </span>
               <button
                 type="button"
-                className={btn}
+                className={cn(btn, "size-7 px-0")}
                 title="界面与操作设置"
                 onClick={() => setSettingsOpen(true)}
               >
                 <Settings2 className="size-3.5" />
               </button>
-              <button type="button" className={btn} title="背景音乐" onClick={toggleBgm}>
+              <button type="button" className={cn(btn, "size-7 px-0")} title="背景音乐" onClick={toggleBgm}>
                 <Music2 className={cn("size-3.5", bgmOn ? "text-emerald-400" : "text-slate-500")} />
               </button>
-              <button type="button" className={btn} title="音效" onClick={toggleSound}>
+              <button type="button" className={cn(btn, "size-7 px-0")} title="音效" onClick={toggleSound}>
                 {soundOn ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5 text-slate-500" />}
               </button>
               <button
                 type="button"
-                className={btn}
+                className={cn(btn, "size-7 px-0")}
                 title={fullscreen ? "退出全屏" : "全屏"}
                 onClick={() => void toggleFullscreen()}
               >
                 {fullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
               </button>
-              <button type="button" className={btn} title="离开世界" onClick={leaveWorld}>
+              <button type="button" className={cn(btn, "size-7 px-0")} title="离开世界" onClick={leaveWorld}>
                 <LogOut className="size-3.5" />
               </button>
             </div>
           </div>
 
-          <div className="mt-1.5">
-            <div className="flex items-center justify-between text-[10px] text-slate-300">
-              <span>HP</span>
-              <span>
+          <div className="mt-1.5 w-[min(280px,72%)]">
+            <div className="flex items-center justify-between text-[9px] font-bold tracking-wide text-slate-400">
+              <span className={hpPercent < 35 ? "text-rose-300" : "text-red-300/90"}>HP</span>
+              <span
+                className={cn(
+                  "tabular-nums transition-colors",
+                  hpPercent < 35 ? "text-rose-300" : "text-slate-300"
+                )}
+              >
                 {self?.hp ?? 0} / {self?.maxHp ?? 0}
               </span>
             </div>
-            <div className="mt-0.5 h-1.5 overflow-hidden rounded bg-slate-800/80">
+            <div
+              className={cn(
+                "relative mt-0.5 h-2 overflow-hidden rounded-full bg-slate-900/80 ring-1 ring-slate-700/60",
+                hpPercent < 35 && "animate-pulse ring-2 ring-rose-500/70"
+              )}
+            >
+              {/* 掉血残影：慢速回落，读伤害更直观 */}
               <div
-                className="h-full rounded bg-gradient-to-r from-red-500 to-rose-400"
+                className="absolute inset-y-0 left-0 rounded-full bg-amber-300/70 transition-[width] duration-700 ease-out"
                 style={{ width: `${hpPercent}%` }}
               />
+              <div
+                className="relative h-full rounded-full bg-gradient-to-r from-red-600 via-red-500 to-rose-400 shadow-[0_0_6px_rgba(248,113,113,0.55)] transition-[width] duration-200 ease-out"
+                style={{ width: `${hpPercent}%` }}
+              >
+                <span className="absolute inset-x-0 top-0 h-[2px] rounded-full bg-white/25" />
+              </div>
             </div>
-          </div>
-
-          <div className="mt-1.5 h-1 overflow-hidden rounded bg-slate-800/70">
-            <div
-              className="h-full rounded bg-violet-400"
-              style={{ width: `${expPercent}%` }}
-            />
+            <div className="mt-1 h-[3px] overflow-hidden rounded-full bg-slate-900/70" title="经验">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400 transition-[width] duration-300 ease-out"
+                style={{ width: `${expPercent}%` }}
+              />
+            </div>
+            {self && (self.guard || self.buff) ? (
+              <div className="mt-1 flex items-center gap-1 text-[9px] font-bold">
+                {self.guard ? (
+                  <span className="rounded bg-sky-500/20 px-1.5 py-px text-sky-300 ring-1 ring-sky-400/40">
+                    🛡 护盾
+                  </span>
+                ) : null}
+                {self.buff ? (
+                  <span className="rounded bg-amber-500/20 px-1.5 py-px text-amber-300 ring-1 ring-amber-400/40">
+                    ⚔ 强化
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           {targetView && (
-            <div className="pointer-events-auto mt-1.5 flex items-center gap-2 rounded border border-amber-500/30 bg-slate-950/75 px-2 py-1">
+            <div
+              key={targetView.id}
+              className="pointer-events-auto mt-1.5 flex w-[min(300px,78%)] animate-[target-slide_220ms_cubic-bezier(0.22,1,0.36,1)_both] items-center gap-2 rounded-md border border-slate-700/70 bg-slate-950/80 px-2 py-1 backdrop-blur-sm"
+            >
               <span className="text-base">{targetView.icon}</span>
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1 text-[10px] font-bold">
@@ -2341,29 +2582,37 @@ export function WorldGame() {
                       精英
                     </span>
                   )}
+                  {targetView.slow && (
+                    <span className="rounded bg-sky-500/20 px-1 text-[9px] text-sky-300">
+                      ❄ 减速
+                    </span>
+                  )}
                   {targetView.boss && (
                     <span className="rounded bg-fuchsia-500/20 px-1 text-[9px] text-fuchsia-300">
                       BOSS
                     </span>
                   )}
                   <span className="ml-auto text-[9px] font-normal text-slate-500">
-                    {Math.round(
-                      Math.hypot(
-                        targetView.x - meRef.current.x,
-                        targetView.y - meRef.current.y
+                    {Math.max(
+                      1,
+                      Math.round(
+                        Math.hypot(
+                          targetView.x - meRef.current.x,
+                          targetView.y - meRef.current.y
+                        ) / 32
                       )
                     )}
-                    px
+                    格
                   </span>
                 </p>
                 <div className="mt-0.5 h-1 overflow-hidden rounded bg-slate-800">
                   <div
                     className={
                       targetView.elite
-                        ? "h-full rounded bg-amber-400"
+                        ? "h-full rounded bg-amber-400 transition-[width] duration-200 ease-out"
                         : targetView.boss
-                          ? "h-full rounded bg-fuchsia-400"
-                          : "h-full rounded bg-red-500"
+                          ? "h-full rounded bg-fuchsia-400 transition-[width] duration-200 ease-out"
+                          : "h-full rounded bg-red-500 transition-[width] duration-200 ease-out"
                     }
                     style={{
                       width: `${Math.min(
@@ -2373,6 +2622,15 @@ export function WorldGame() {
                     }}
                   />
                 </div>
+                <p className="mt-0.5 flex justify-between text-[9px] text-slate-500">
+                  <span>
+                    HP {Math.max(0, Math.round(targetView.hp))}/{targetView.maxHp}
+                  </span>
+                  <span>
+                    {Math.round((Math.max(0, targetView.hp) / Math.max(1, targetView.maxHp)) * 100)}
+                    %
+                  </span>
+                </p>
               </div>
             </div>
           )}
@@ -2380,7 +2638,7 @@ export function WorldGame() {
 
         {/* 弱网提示 */}
         {status !== "online" && (
-          <div className="pointer-events-none absolute left-1/2 top-28 z-20 -translate-x-1/2 rounded-full border border-amber-500/50 bg-slate-950/90 px-3 py-1 text-[10px] font-bold text-amber-300">
+          <div className="pointer-events-none absolute left-1/2 top-2 z-20 -translate-x-1/2 rounded-full border border-amber-500/50 bg-slate-950/90 px-3 py-1 text-[10px] font-bold text-amber-300">
             网络不稳定，正在自动重连…
           </div>
         )}
@@ -2417,8 +2675,31 @@ export function WorldGame() {
           </div>
         )}
 
+        {/* 靠近可交互对象时的浮动提示 */}
+        {(nearNpc || nearPortal) && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-[178px] z-20 flex justify-center px-3 sm:bottom-[146px]">
+            <button
+              type="button"
+              className="pointer-events-auto flex animate-[prompt-breathe_1.5s_ease-in-out_infinite] items-center gap-2 rounded-full border-2 border-amber-400/70 bg-slate-950/90 px-3 py-1.5 text-[11px] font-bold text-amber-200 shadow-[0_0_20px_rgba(251,191,36,0.28)] active:scale-95"
+              onClick={() => {
+                if (nearNpc) openNpc(nearNpc);
+                else if (nearPortal) void enterPortal(nearPortal);
+              }}
+            >
+              <span className="flex size-5 items-center justify-center rounded border border-amber-300/80 bg-amber-400/20 text-[10px] font-black text-amber-200">
+                {isTouch ? "点" : "F"}
+              </span>
+              {nearNpc
+                ? `与 ${nearNpc.name} 对话`
+                : nearPortal?.target === "world"
+                  ? "离开副本"
+                  : `进入 ${nearPortal?.label ?? "副本"}`}
+            </button>
+          </div>
+        )}
+
         {/* 底部技能栏与队伍，叠加在画面底部 */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-slate-950/90 via-slate-950/55 to-transparent px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-10">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 animate-[hud-rise_420ms_cubic-bezier(0.22,1,0.36,1)_both] bg-gradient-to-t from-slate-950/90 via-slate-950/55 to-transparent px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-10">
           <div className="pointer-events-auto flex flex-wrap items-center gap-1">
             {skills.map((id, index) => {
               const skill = SKILLS[id];
@@ -2426,17 +2707,21 @@ export function WorldGame() {
               const remaining = Math.max(0, (cdReadyRef.current[id] ?? 0) - nowTick);
               const cooling = remaining > 0;
               const autoOn = ui.autoCastAll || !!ui.autoSkills[id];
+              const readyFlashing =
+                !cooling && !locked && nowTick - (skillReadyRef.current[id] ?? 0) < 650;
               return (
                 <button
                   key={id}
                   type="button"
                   className={cn(
                     btn,
-                    "relative select-none overflow-hidden bg-slate-900/85",
+                    "relative w-[78px] select-none justify-center overflow-hidden bg-slate-900/85 focus:outline-none focus-visible:ring-1 focus-visible:ring-sky-400/60 sm:w-[124px]",
                     skillButtonSize,
                     autoOn &&
                       "border-amber-400 bg-amber-500/20 text-amber-200 shadow-[0_0_0_1px_rgba(251,191,36,0.45)]",
-                    (locked || cooling) && "opacity-60"
+                    (locked || cooling) && "opacity-60",
+                    readyFlashing && "animate-[skill-ready_650ms_ease-out] border-sky-400/90",
+                    !locked && !cooling && "hover:border-sky-400/60 active:scale-[0.96]"
                   )}
                   onPointerDown={() => startSkillLongPress(id)}
                   onPointerUp={cancelSkillLongPress}
@@ -2453,59 +2738,51 @@ export function WorldGame() {
                   }}
                   title={`${skill.desc}（长按切换自动施放）`}
                 >
-                  <span className="mr-1 inline-flex size-4 items-center justify-center rounded border border-slate-500 text-[9px] font-black text-amber-300">
+                  <span
+                    className="inline-flex size-4 shrink-0 items-center justify-center rounded border text-[9px] font-black"
+                    style={{
+                      color: skillTone(id),
+                      borderColor: `${skillTone(id)}99`,
+                      backgroundColor: `${skillTone(id)}18`,
+                    }}
+                  >
                     {skill.key ?? SKILL_KEYS[index]}
                   </span>
-                  <span className="mr-0.5">{skill.icon}</span>
-                  <span className="hidden sm:inline">{skill.name}</span>
-                  <span className="ml-1 text-[10px] font-normal text-slate-400">
-                    {locked
-                      ? `Lv.${skill.level}`
-                      : cooling
-                        ? `${Math.ceil(remaining / 1000)}s`
-                        : "就绪"}
-                  </span>
+                  <span>{skill.icon}</span>
+                  {locked ? (
+                    <span className="hidden text-[10px] font-normal text-slate-400 sm:inline">
+                      Lv.{skill.level}
+                    </span>
+                  ) : (
+                    <span className="hidden min-w-0 truncate sm:inline">{skill.name}</span>
+                  )}
                   {autoOn && (
                     <span className="absolute right-0 top-0 rounded-bl bg-amber-400 px-1 text-[8px] font-black text-slate-950">
                       A
                     </span>
                   )}
                   {cooling && (
-                    <span
-                      className="pointer-events-none absolute inset-0 bg-slate-950/60"
-                      style={{
-                        opacity: Math.min(
-                          0.25,
-                          0.25 * (remaining / ((skill.cooldown ?? 5) * 1000))
-                        ),
-                      }}
-                    />
+                    <>
+                      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/55 text-[11px] font-black tabular-nums text-sky-200">
+                        {Math.ceil(remaining / 1000)}
+                      </span>
+                      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-slate-950/60">
+                        <span
+                          className="block h-full bg-sky-400/80 transition-[width] duration-100 ease-linear"
+                          style={{
+                            width: `${Math.max(
+                              0,
+                              100 - (remaining / ((skill.cooldown ?? 5) * 1000)) * 100
+                            )}%`,
+                          }}
+                        />
+                      </span>
+                    </>
                   )}
                 </button>
               );
             })}
 
-            {/* 交互按钮 */}
-            {nearPortal && (
-              <button
-                type="button"
-                className={cn(btn, "border-sky-500/70 bg-sky-500/15 text-sky-200")}
-                onClick={() => void enterPortal(nearPortal)}
-              >
-                {nearPortal.target === "world"
-                  ? "🚪 离开副本"
-                  : `🌀 进入${nearPortal.label}`}
-              </button>
-            )}
-            {nearNpc && (
-              <button
-                type="button"
-                className={cn(btn, "border-amber-500/70 bg-amber-500/15 text-amber-200")}
-                onClick={() => openNpc(nearNpc)}
-              >
-                💬 {nearNpc.name}
-              </button>
-            )}
             {room !== "world" && (
               <button
                 type="button"
@@ -2517,7 +2794,7 @@ export function WorldGame() {
             )}
           </div>
 
-          <div className="pointer-events-auto mt-1 flex flex-wrap items-center gap-1">
+          <div className="pointer-events-auto mt-1 grid grid-cols-5 gap-1 sm:flex sm:flex-wrap sm:items-center">
             <button
               type="button"
               className={cn(btn, "bg-slate-900/85")}
@@ -2630,7 +2907,14 @@ export function WorldGame() {
           <div className="pointer-events-auto mt-1 flex items-center gap-1 overflow-x-auto text-[10px] text-slate-400">
             <Users className="size-3.5 shrink-0" />
             <span className="shrink-0">在线 {online} 人</span>
-            <span className="shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-amber-300">
+            <span
+              className={cn(
+                "shrink-0 rounded border px-1.5 py-0.5",
+                daily.claimed
+                  ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+              )}
+            >
               🎯 每日击杀 {Math.min(daily.kills, DAILY_GOAL)}/{DAILY_GOAL}
               {daily.claimed ? " ✓" : ""}
             </span>
@@ -2647,7 +2931,14 @@ export function WorldGame() {
                 {CLASSES[player.classId].icon} {player.name} Lv.{player.level}
                 <span className="h-1 w-10 overflow-hidden rounded bg-slate-700">
                   <span
-                    className="block h-full rounded bg-red-500"
+                    className={cn(
+                      "block h-full rounded transition-[width] duration-300 ease-out",
+                      player.hp / player.maxHp < 0.35
+                        ? "bg-rose-500"
+                        : player.hp / player.maxHp < 0.65
+                          ? "bg-amber-400"
+                          : "bg-emerald-500"
+                    )}
                     style={{
                       width: `${Math.max(0, (player.hp / player.maxHp) * 100)}%`,
                     }}
@@ -2656,7 +2947,7 @@ export function WorldGame() {
               </span>
             ))}
             {party.length === 0 && (
-              <span className="shrink-0 text-slate-600">暂无其他玩家，邀请好友一起打怪</span>
+              <span className="hidden shrink-0 text-slate-600 sm:inline">暂无其他玩家，邀请好友一起打怪</span>
             )}
           </div>
         </div>
@@ -2724,6 +3015,32 @@ export function WorldGame() {
                             "border-amber-500 bg-amber-500/20 text-amber-300"
                         )}
                         onClick={() => updateUi({ scale: entry.key })}
+                      >
+                        {entry.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-bold text-slate-300">视野缩放</p>
+                  <div className="mt-1 grid grid-cols-3 gap-1">
+                    {(
+                      [
+                        { key: 0.9, label: "近" },
+                        { key: 0.75, label: "标准" },
+                        { key: 0.62, label: "远" },
+                      ]
+                    ).map((entry) => (
+                      <button
+                        key={entry.key}
+                        type="button"
+                        className={cn(
+                          btn,
+                          Math.abs(ui.zoom - entry.key) < 0.01 &&
+                            "border-amber-500 bg-amber-500/20 text-amber-300"
+                        )}
+                        onClick={() => updateUi({ zoom: entry.key })}
                       >
                         {entry.label}
                       </button>
@@ -2934,6 +3251,7 @@ export function WorldGame() {
                   )}
                 </div>
               )}
+              <div className="pointer-events-none sticky inset-x-0 -bottom-4 -mx-4 -mb-4 h-7 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
             </div>
           </div>
         )}
@@ -3007,6 +3325,7 @@ export function WorldGame() {
                   })}
                 </ul>
               )}
+              <div className="pointer-events-none sticky inset-x-0 -bottom-4 -mx-4 -mb-4 h-7 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
             </div>
           </div>
         )}
@@ -3019,7 +3338,7 @@ export function WorldGame() {
           >
             <div
               ref={panelRef}
-              className="max-h-[88%] w-full max-w-lg overflow-y-auto rounded-xl border-2 border-slate-600 bg-slate-950 p-3 text-slate-100 shadow-2xl"
+              className="max-h-[88%] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl border-2 border-slate-600 bg-slate-950 p-3 text-slate-100 shadow-2xl sm:max-w-2xl"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="mb-2 flex items-center justify-between gap-1">
@@ -3062,13 +3381,17 @@ export function WorldGame() {
               {panel === "shop" && (
                 <ShopPanel save={save} onChange={applySave} notify={toastNotify} />
               )}
+              <div className="pointer-events-none sticky inset-x-0 -bottom-3 -mx-3 -mb-3 h-6 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
             </div>
           </div>
         )}
 
         {self?.dead && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 text-sm font-bold text-red-300">
-            你被击败了，3 秒后复活…
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-2 bg-black/60">
+            <span className="text-2xl">💀</span>
+            <span className="animate-pulse text-sm font-bold text-red-300">
+              你被击败了，3 秒后复活…
+            </span>
           </div>
         )}
       </div>
