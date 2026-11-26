@@ -308,7 +308,7 @@ class Tve4Scene extends Phaser.Scene {
       const width = height * (FRAME_W / FRAME_H);
       const alpha = !h.alive
         ? Phaser.Math.Clamp(h.deathTimer / 1.5, 0, 1)
-        : h.buffs.windwalk > 0 && !state.sharedVision
+        : h.buffs.windwalk > 0 && !state.sharedVision && h.buffs.revealed <= 0
           ? 0.38
           : 1;
       sprite
@@ -321,6 +321,7 @@ class Tve4Scene extends Phaser.Scene {
         .setFlipX(Math.cos(h.facing) < -0.08)
         .clearTint();
       if (h.flash > 0) sprite.setTint(0xff9c9c);
+      else if (h.isWolf) sprite.setTint(0xc9c2b0);
       else if (h.buffs.windwalk > 0) sprite.setTint(0xbfe9ff);
       else if (h.buffs.berserk > 0) sprite.setTint(0xffb0a0);
       const sw = h.faction === "troll" ? 50 : 32;

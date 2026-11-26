@@ -97,7 +97,8 @@ BIG_SNOW_LAND、BIG_FOREST、SMALL_FOREST、SOLO_AREA、DEFEND_AREA、MIDDLE_FOR
 
 - `ItemData.slk` / `ItemFunc.txt` 已解包，具体物品 ID 与属性尚未逐项映射（UNKNOWN）。
 - 网页草案 8 件装备（剑/手套/靴/护符/项链/指环）及其数值为 PROPOSED。
-- 商店购买、金币消耗、属性加成逻辑见 `engine.ts`（PROPOSED）。
+- 商店购买、金币消耗、属性加成逻辑见 `engine.ts`（PROPOSED）。网页 tve4 规定巨魔必须回到出生点附近才能购买装备，给精灵发育时间；装备价格与属性由 `data/game/game-rules.json` 的 `equipmentShop` 提供。
+- 精灵主动拆除建筑（PROPOSED）：仅可拆除 HP ≥ 90% 且巨魔不在附近的建筑；拆除帐篷返还全部升级花费。条件由 `elfDemolish` 规则文件字段读取。
 
 ## 12. 技能系统
 

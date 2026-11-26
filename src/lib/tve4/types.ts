@@ -2,7 +2,34 @@
 
 export type Faction = "elf" | "troll";
 
-export type BuildKind = "wall" | "tower" | "mine" | "tent";
+export type BuildKind =
+  | "wall"
+  | "tower"
+  | "mine"
+  | "tent"
+  | "farm"
+  | "market"
+  | "reveal"
+  | "trollHouse";
+
+export type Rule =
+  | "SINGLE"
+  | "DOUBLE"
+  | "FIX"
+  | "RACE"
+  | "DEFEND"
+  | "SOLO"
+  | "DUET"
+  | "SURVIVE"
+  | "REVIVE";
+
+export type Mode = "OLD" | "BALANCE" | "FAST" | "MIDDLE";
+
+export interface GameOptions {
+  mode?: Mode;
+  rule?: Rule;
+  testMode?: boolean;
+}
 
 export type SkillKey =
   | "blink"
@@ -19,12 +46,14 @@ export interface Buffs {
   berserk: number;
   root: number;
   silence: number;
+  revealed: number;
 }
 
 export interface Hero {
   id: number;
   faction: Faction;
   isPlayer: boolean;
+  isWolf: boolean;
   alive: boolean;
   lives: number;
   x: number;
@@ -45,6 +74,9 @@ export interface Hero {
   deathTimer: number;
   gold: number;
   wood: number;
+  items: string[];
+  bonusIncome: number;
+  bonusLifesteal: number;
   cooldowns: Record<SkillKey, number>;
   buffs: Buffs;
 }
@@ -110,6 +142,8 @@ export interface InputState {
 }
 
 export interface GameState {
+  mode: Mode;
+  rule: Rule;
   testMode: boolean;
   sharedVision: boolean;
   time: number;

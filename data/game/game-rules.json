@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "confidence": "PROPOSED",
   "basedOn": "data/original/game-rules.json",
   "note": "网页 tve4 当前生效配置镜像。数值来源见 docs/research/**；VERIFIED 不覆盖，PROPOSED 为网页实现。",
@@ -8,7 +8,7 @@
   "startGold": { "elf": 30, "troll": 70 },
   "startWood": 0,
   "trollAppearSeconds": 30,
-  "trollAppearNote": "VERIFIED：SINGLE/DOUBLE/RACE/SOLO/DUET/DEFEND/REVIVE=30 秒，FIX/SURVIVE=45 秒（网页暂未实现）",
+  "trollAppearNote": "VERIFIED：SINGLE/DOUBLE/RACE/SOLO/DUET/DEFEND/REVIVE=30 秒，FIX/SURVIVE=45 秒（网页已实现）",
   "heroes": {
     "elf": { "hp": 10, "speed": 125, "attack": 7, "range": 112, "interval": 2.2, "radius": 14 },
     "troll": { "hp": 750, "speed": 175, "attack": 7, "range": 90, "interval": 1.5, "radius": 22 }
@@ -37,26 +37,53 @@
     "buildingDamageGoldImplemented": true
   },
   "victory": {
-    "rule": "SINGLE",
+    "implementedRules": ["SINGLE", "DOUBLE", "FIX", "RACE", "DEFEND", "SOLO", "DUET", "SURVIVE", "REVIVE"],
     "forceClearedLoses": true,
-    "timeLimitAutoWin": false,
-    "sharedVisionAtSeconds": 300
+    "surviveChecksElfOnly": true,
+    "timeLimitAutoWin": "SURVIVE only",
+    "sharedVisionAtSeconds": 300,
+    "doubleTrollBecomesWolf": true,
+    "reviveElfLives": 3
   },
   "buildings": {
     "wall": [4, 120, 128, 144],
     "tower": [4, 16, 64],
     "mine": [90, 100, 200, 800],
     "tent": [0, 50, 150],
-    "tentLimitPerElf": 1
+    "farm": [100, 200],
+    "market": [64],
+    "reveal": [{ "wood": 256 }],
+    "trollHouse": [200, 300, 450],
+    "tentLimitPerElf": 1,
+    "trollHouseHealPerSecond": 0.12,
+    "trollHouseIncome": 3
   },
-  "implementedModes": ["OLD-SINGLE"],
+  "market": { "step": 5, "buy": 155, "sell": 150, "max": 495 },
+  "elfDemolish": {
+    "minHpRatio": 0.9,
+    "trollAvoidRadius": 240,
+    "refundTentUpgrades": true,
+    "note": "PROPOSED：精灵可拆除血量 >=90% 且巨魔不在附近的建筑；帐篷返还全部升级花费"
+  },
+  "equipmentShop": {
+    "trollSpawnRadius": 160,
+    "note": "PROPOSED：巨魔必须回到出生点附近才能购买装备，给精灵发育时间",
+    "items": [
+      { "key": "sword", "label": "铁剑", "cost": 100, "damage": 3 },
+      { "key": "gloves", "label": "手套", "cost": 100, "attackSpeed": 0.15 },
+      { "key": "boots", "label": "靴子", "cost": 100, "speed": 25 },
+      { "key": "amulet", "label": "护符", "cost": 120, "maxHp": 100 },
+      { "key": "necklace", "label": "项链", "cost": 150, "income": 2 },
+      { "key": "ring", "label": "指环", "cost": 150, "lifesteal": 0.08 }
+    ]
+  },
+  "implementedModes": ["OLD", "BALANCE", "FAST", "MIDDLE"],
   "missingOriginalSystems": [
-    "sharedVision",
     "exposeVision",
-    "wolfAndAngelRoles",
+    "angelRoles",
     "skins",
-    "revive",
-    "double/fix/race/defend/solo/duet/survive rules",
-    "market trading"
+    "raceTwoTeamScoring",
+    "unitTraining",
+    "itemShop"
   ]
 }

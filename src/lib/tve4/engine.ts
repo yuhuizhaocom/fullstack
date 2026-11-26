@@ -6,37 +6,48 @@ import {
   BUILDINGS,
   ELF_START,
   GAME_LIMIT,
+  HOUSE_HEAL,
+  HOUSE_RANGE,
   LIFESTEAL,
   GRID_H,
   GRID_W,
   HERO_STATS,
   LIVES,
-  PREP_SECONDS,
+  REVEAL_RANGE,
   RESPAWN,
+  RULE_PREP,
   SKILLS,
   START_GOLD,
   START_WOOD,
   TILE,
   TROLL_START,
+  WOOD_BUY,
+  WOOD_MAX,
+  WOOD_SELL,
+  WOOD_STEP,
   WORLD_H,
   WORLD_W,
 } from "./config";
+import { DEMOLISH_RULE, EQUIPMENT_RULE } from "./rules";
 import type {
   Buffs,
   BuildKind,
   Building,
   Faction,
   FloatText,
+  GameOptions,
   GameState,
   Hero,
   InputState,
+  Mode,
+  Rule,
   SkillKey,
 } from "./types";
 
 // ---------------------------------------------------------------- 工具
 
 function emptyBuffs(): Buffs {
-  return { haste: 0, windwalk: 0, berserk: 0, root: 0, silence: 0 };
+  return { haste: 0, windwalk: 0, berserk: 0, root: 0, silence: 0, revealed: 0 };
 }
 
 function emptyCooldowns(): Record<SkillKey, number> {
@@ -52,10 +63,6 @@ function gridToWorld(gx: number, gy: number) {
 function cellBlocked(state: GameState, gx: number, gy: number): boolean {
   if (gx < 0 || gy < 0 || gx >= GRID_W || gy >= GRID_H) return true;
   return state.blocked[gy * GRID_W + gx] === 1;
-}
-
-function pointBlocked(state: GameState, x: number, y: number): boolean {
-  return cellBlocked(state, Math.floor(x / TILE), Math.floor(y / TILE));
 }
 
 export function setBlocked(state: GameState, data: Uint8Array): void {
@@ -91,8 +98,13 @@ function setHint(state: GameState, text: string): void {
 
 // ---------------------------------------------------------------- 创建 / 复活
 
-export function createGame(testMode = false): GameState {
+export function createGame(options: GameOptions = {}): GameState {
+  const mode: Mode = options.mode ?? "OLD";
+  const rule: Rule = options.rule ?? "SINGLE";
+  const testMode = options.testMode ?? false;
   const state: GameState = {
+    mode,
+    rule,
     testMode,
     sharedVision: false,
     time: 0,
@@ -128,8 +140,9 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
     id: state.nextId++,
     faction,
     isPlayer,
+    isWolf: false,
     alive: true,
-    lives: LIVES,
+    lives: faction === "elf" && state.rule === "REVIVE" ? 3 : LIVES,
     x,
     y,
     vx: 0,
@@ -148,6 +161,9 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
     deathTimer: 0,
     gold: START_GOLD[faction],
     wood: START_WOOD,
+    items: [],
+    bonusIncome: 0,
+    bonusLifesteal: 0,
     cooldowns: emptyCooldowns(),
     buffs: emptyBuffs(),
   };
@@ -164,10 +180,17 @@ function spawnTroll(state: GameState): void {
 
 function respawnHero(state: GameState, h: Hero): void {
   const s = HERO_STATS[h.faction];
+  // DOUBLE 规则：巨魔首次死亡转为狼（VERIFIED）
+  if (h.faction === "troll" && state.rule === "DOUBLE" && !h.isWolf) {
+    h.isWolf = true;
+    h.maxHp = Math.round(s.hp * 0.55);
+    h.speed = s.speed * 1.18;
+    h.damage = Math.round(s.damage * 0.8);
+  }
   const point = h.faction === "elf" ? ELF_START : TROLL_START;
   const p = gridToWorld(point.gx, point.gy);
   h.alive = true;
-  h.hp = s.hp;
+  h.hp = h.maxHp;
   h.x = p.x;
   h.y = p.y;
   h.cd = 0;
@@ -194,10 +217,16 @@ function occupiedByBuilding(state: GameState, x: number, y: number, r: number): 
 
 function positionFree(state: GameState, x: number, y: number, r: number): boolean {
   if (x < r || y < r || x > WORLD_W - r || y > WORLD_H - r) return false;
-  const pts = [
-    [x - r, y - r], [x + r, y - r], [x - r, y + r], [x + r, y + r], [x, y],
-  ];
-  for (const [px, py] of pts) if (pointBlocked(state, px, py)) return false;
+  // 按角色占据的全部格子检测（AABB），避免半径大于墙厚时采样点跨过薄墙
+  const minGX = Math.floor((x - r) / TILE);
+  const maxGX = Math.floor((x + r) / TILE);
+  const minGY = Math.floor((y - r) / TILE);
+  const maxGY = Math.floor((y + r) / TILE);
+  for (let gy = minGY; gy <= maxGY; gy += 1) {
+    for (let gx = minGX; gx <= maxGX; gx += 1) {
+      if (cellBlocked(state, gx, gy)) return false;
+    }
+  }
   if (occupiedByBuilding(state, x, y, r)) return false;
   return true;
 }
@@ -244,26 +273,28 @@ export function canBuild(
     return { ok: false, reason: "每个精灵只能有一座帐篷" };
   }
   const hero = faction === "elf" ? getPlayer(state) : state.heroes.find((h) => h.faction === "troll");
-  const cost = def.levels[0].cost;
-  if (hero && hero.gold < cost) return { ok: false, reason: "金币不足" };
+  const level = def.levels[0];
+  if (hero && hero.gold < level.cost) return { ok: false, reason: "金币不足" };
+  if (hero && hero.wood < (level.woodCost ?? 0)) return { ok: false, reason: "木材不足" };
   return { ok: true, reason: "" };
 }
 
-export function tryBuild(state: GameState, kind: BuildKind, gx: number, gy: number): boolean {
-  const check = canBuild(state, kind, gx, gy, "elf");
+export function tryBuild(state: GameState, kind: BuildKind, gx: number, gy: number, faction: Faction = "elf"): boolean {
+  const check = canBuild(state, kind, gx, gy, faction);
   if (!check.ok) {
     setHint(state, check.reason);
     return false;
   }
   const def = BUILDINGS[kind];
-  const hero = getPlayer(state);
+  const hero = faction === "elf" ? getPlayer(state) : state.heroes.find((h) => h.faction === "troll");
   if (!hero) return false;
   hero.gold -= def.levels[0].cost;
+  hero.wood -= def.levels[0].woodCost ?? 0;
   const p = gridToWorld(gx + def.size / 2, gy + def.size / 2);
   const b: Building = {
     id: state.nextId++,
     kind,
-    faction: "elf",
+    faction,
     x: p.x,
     y: p.y,
     gx0: gx,
@@ -290,13 +321,18 @@ export function tryUpgrade(state: GameState, id: number): boolean {
     setHint(state, "已达最高等级");
     return false;
   }
-  const cost = def.levels[b.level].cost;
-  const hero = getPlayer(state);
-  if (!hero || hero.gold < cost) {
+  const spec = def.levels[b.level];
+  const hero = b.faction === "elf" ? getPlayer(state) : state.heroes.find((h) => h.faction === b.faction);
+  if (!hero || hero.gold < spec.cost) {
     setHint(state, "金币不足");
     return false;
   }
-  hero.gold -= cost;
+  if (hero.wood < (spec.woodCost ?? 0)) {
+    setHint(state, "木材不足");
+    return false;
+  }
+  hero.gold -= spec.cost;
+  hero.wood -= spec.woodCost ?? 0;
   b.level += 1;
   b.maxHp = def.levels[b.level - 1].hp;
   b.hp = b.maxHp;
@@ -365,7 +401,7 @@ function dealDamage(state: GameState, attacker: Hero, target: DamageTarget, raw:
   addFloat(state, attacker.x, attacker.y - 20, `+${amount}`, "#ffd86b", 11);
   // VERIFIED：OLD 巨魔偷血技能，回复 0.22 * damage
   if (attacker.faction === "troll") {
-    const heal = Math.round(amount * LIFESTEAL);
+    const heal = Math.round(amount * (LIFESTEAL + attacker.bonusLifesteal));
     if (heal > 0) {
       attacker.hp = Math.min(attacker.maxHp, attacker.hp + heal);
       addFloat(state, attacker.x, attacker.y - 34, `+${heal}`, "#7ee08a", 11);
@@ -398,6 +434,8 @@ function killHero(state: GameState, h: Hero, attacker: Hero): void {
   h.hp = 0;
   h.deathTimer = RESPAWN;
   h.lives -= 1;
+  // DOUBLE 规则：巨魔首次死亡转狼，额外获得一条命（VERIFIED 存在转狼）
+  if (h.faction === "troll" && state.rule === "DOUBLE" && !h.isWolf) h.lives += 1;
   state.stats.kills += 1;
   addEffect(state, h.x, h.y, h.faction === "troll" ? 120 : 70, "#ff6b6b");
   addFloat(state, h.x, h.y - 24, "倒下", "#ff8a8a", 16);
@@ -420,8 +458,15 @@ function updateTimers(state: GameState, dt: number): void {
       }
       continue;
     }
+    const nearHouse = h.faction === "troll" && state.buildings.some(
+      (b) => b.alive && b.kind === "trollHouse" && b.buildTimer <= 0
+        && Math.hypot(h.x - b.x, h.y - b.y) <= HOUSE_RANGE,
+    );
     h.cd = Math.max(0, h.cd - dt);
-    for (const k of ALL_SKILL_KEYS) h.cooldowns[k] = Math.max(0, h.cooldowns[k] - dt);
+    for (const k of ALL_SKILL_KEYS) h.cooldowns[k] = Math.max(0, h.cooldowns[k] - dt * (nearHouse ? 1.5 : 1));
+    if (nearHouse) {
+      h.hp = Math.min(h.maxHp, h.hp + h.maxHp * HOUSE_HEAL * dt);
+    }
     for (const k of Object.keys(h.buffs) as (keyof Buffs)[]) h.buffs[k] = Math.max(0, h.buffs[k] - dt);
     if (h.channelTime > 0) {
       h.channelTime -= dt;
@@ -459,7 +504,7 @@ function updateIncome(state: GameState, dt: number): void {
     }
     for (const h of state.heroes) {
       if (!h.alive) continue;
-      const gain = h.faction === "elf" ? elfIncome : trollIncome;
+      const gain = (h.faction === "elf" ? elfIncome : trollIncome) + h.bonusIncome;
       if (gain > 0) {
         h.gold += gain;
         state.stats.goldEarned += gain;
@@ -510,6 +555,13 @@ function updateBuildings(state: GameState, dt: number): void {
   for (const b of state.buildings) {
     if (!b.alive) continue;
     b.cd = Math.max(0, b.cd - dt);
+    if (b.kind === "reveal" && b.buildTimer <= 0) {
+      for (const h of state.heroes) {
+        if (h.alive && h.faction === "troll" && Math.hypot(h.x - b.x, h.y - b.y) <= REVEAL_RANGE) {
+          h.buffs.revealed = 1;
+        }
+      }
+    }
     if (b.kind !== "tower" || b.buildTimer > 0) continue;
     if (b.cd > 0) continue;
     const spec = BUILDINGS[b.kind].levels[b.level - 1];
@@ -573,9 +625,31 @@ function updateProjectiles(state: GameState, dt: number): void {
   state.projectiles = keep;
 }
 
+function tryTrollHouse(state: GameState, troll: Hero): void {
+  if (state.buildings.some((b) => b.alive && b.kind === "trollHouse")) return;
+  if (troll.gold < BUILDINGS.trollHouse.levels[0].cost) return;
+  for (let r = 3; r <= 10; r += 1) {
+    for (let a = 0; a < 16; a += 1) {
+      const ang = (a / 16) * Math.PI * 2;
+      const gx = Math.round(TROLL_START.gx + Math.cos(ang) * r);
+      const gy = Math.round(TROLL_START.gy + Math.sin(ang) * r);
+      if (canBuild(state, "trollHouse", gx, gy, "troll").ok) {
+        tryBuild(state, "trollHouse", gx, gy, "troll");
+        return;
+      }
+    }
+  }
+}
+
 function updateAI(state: GameState, dt: number): void {
   const troll = state.heroes.find((h) => h.faction === "troll");
   if (!troll || !troll.alive) return;
+  tryTrollHouse(state, troll);
+  const spawn = gridToWorld(TROLL_START.gx, TROLL_START.gy);
+  const nextItem = EQUIPMENT_RULE.items.find((i) => !troll.items.includes(i.key));
+  if (nextItem && Math.hypot(troll.x - spawn.x, troll.y - spawn.y) <= EQUIPMENT_RULE.trollSpawnRadius) {
+    buyEquipment(state, nextItem.key);
+  }
   state.aiTimer -= dt;
   if (state.aiTimer <= 0) {
     state.aiTimer = 3 + Math.random() * 2;
@@ -583,9 +657,17 @@ function updateAI(state: GameState, dt: number): void {
     else if (troll.cooldowns.windwalk <= 0) castSkillFor(state, troll, "windwalk");
   }
   const elf = state.heroes.find((h) => h.faction === "elf" && h.alive);
+  const house = state.buildings.find((b) => b.alive && b.kind === "trollHouse");
   let tx: number;
   let ty: number;
-  if (elf) {
+  if (nextItem && troll.gold >= nextItem.cost && troll.hp > troll.maxHp * 0.5) {
+    // 攒够金币且状态良好时回出生点买装备，给精灵发育时间
+    tx = spawn.x;
+    ty = spawn.y;
+  } else if (house && troll.hp < troll.maxHp * 0.35) {
+    tx = house.x;
+    ty = house.y;
+  } else if (elf) {
     tx = elf.x;
     ty = elf.y;
   } else {
@@ -624,14 +706,28 @@ function checkResult(state: GameState): void {
     state.sharedVision = true;
     setHint(state, "共享视野开启：巨魔已暴露");
   }
-  // SINGLE 规则：force 清空即判负，不使用 300 秒自动胜利（VERIFIED）
-  if (troll && troll.lives <= 0 && !troll.alive) {
+  const trollOut = !!troll && troll.lives <= 0 && !troll.alive;
+  const elfOut = !!elf && elf.lives <= 0 && !elf.alive;
+  // SURVIVE 只检查精灵 force（VERIFIED）；其余规则任一方 force 清空即结算
+  if (state.rule === "SURVIVE") {
+    if (elfOut) {
+      state.result = "lose";
+      state.phase = "over";
+      setHint(state, "精灵倒下了，失败");
+    } else if (state.time >= GAME_LIMIT) {
+      state.result = "win";
+      state.phase = "over";
+      setHint(state, "坚持到时间结束，胜利！");
+    }
+    return;
+  }
+  if (trollOut) {
     state.result = "win";
     state.phase = "over";
     setHint(state, "巨魔已被消灭，胜利！");
     return;
   }
-  if (elf && elf.lives <= 0 && !elf.alive) {
+  if (elfOut) {
     state.result = "lose";
     state.phase = "over";
     setHint(state, "精灵倒下了，失败");
@@ -641,7 +737,7 @@ function checkResult(state: GameState): void {
 export function stepGame(state: GameState, dt: number, input: InputState): void {
   if (state.result) return;
   state.time += dt;
-  if (!state.trollSpawned && state.time >= PREP_SECONDS) spawnTroll(state);
+  if (!state.trollSpawned && state.time >= RULE_PREP[state.rule]) spawnTroll(state);
   updateTimers(state, dt);
   updateIncome(state, dt);
   updateHeroes(state, dt, input);
@@ -721,6 +817,109 @@ function castSkillFor(state: GameState, hero: Hero, key: SkillKey, aim?: { x: nu
   }
   hero.cooldowns[key] = spec.cd;
   addFloat(state, hero.x, hero.y - 26, spec.label, "#bfe9ff", 12);
+  return true;
+}
+
+export function canDemolish(state: GameState, id: number): { ok: boolean; reason: string } {
+  const b = state.buildings.find((x) => x.id === id && x.alive);
+  if (!b || b.faction !== "elf") return { ok: false, reason: "只能拆除自己的建筑" };
+  if (b.hp / b.maxHp < DEMOLISH_RULE.minHpRatio) {
+    return { ok: false, reason: `血量需 ≥ ${Math.round(DEMOLISH_RULE.minHpRatio * 100)}%` };
+  }
+  const troll = state.heroes.find((h) => h.faction === "troll" && h.alive);
+  if (troll && Math.hypot(troll.x - b.x, troll.y - b.y) <= DEMOLISH_RULE.trollAvoidRadius) {
+    return { ok: false, reason: "巨魔在附近，无法拆除" };
+  }
+  return { ok: true, reason: "" };
+}
+
+/** 精灵主动拆除建筑；帐篷返还全部升级花费（金额来自规则文件）。 */
+export function demolishBuilding(state: GameState, id: number): boolean {
+  const check = canDemolish(state, id);
+  if (!check.ok) {
+    setHint(state, check.reason);
+    return false;
+  }
+  const b = state.buildings.find((x) => x.id === id)!;
+  const hero = getPlayer(state);
+  if (!hero) return false;
+  let refund = 0;
+  if (b.kind === "tent" && DEMOLISH_RULE.refundTentUpgrades) {
+    for (let i = 1; i < b.level; i += 1) refund += BUILDINGS.tent.levels[i].cost;
+  }
+  hero.gold += refund;
+  b.alive = false;
+  b.hp = 0;
+  addEffect(state, b.x, b.y, b.size * TILE, "#9be7ff");
+  if (refund > 0) addFloat(state, b.x, b.y - 20, `+${refund} 金`, "#ffd86b", 14);
+  setHint(state, `已拆除${BUILDINGS[b.kind].label}${refund > 0 ? `，返还 ${refund} 金` : ""}`);
+  return true;
+}
+
+export function canBuyEquipment(state: GameState, key: string): boolean {
+  const troll = state.heroes.find((h) => h.faction === "troll" && h.alive);
+  const item = EQUIPMENT_RULE.items.find((i) => i.key === key);
+  if (!troll || !item || troll.items.includes(key)) return false;
+  const spawn = gridToWorld(TROLL_START.gx, TROLL_START.gy);
+  if (Math.hypot(troll.x - spawn.x, troll.y - spawn.y) > EQUIPMENT_RULE.trollSpawnRadius) return false;
+  return troll.gold >= item.cost;
+}
+
+/** 巨魔回出生点附近购买装备（规则文件定义位置与价格）。 */
+export function buyEquipment(state: GameState, key: string): boolean {
+  if (!canBuyEquipment(state, key)) {
+    setHint(state, "需回到巨魔出生点附近且金币足够");
+    return false;
+  }
+  const item = EQUIPMENT_RULE.items.find((i) => i.key === key)!;
+  const troll = state.heroes.find((h) => h.faction === "troll" && h.alive)!;
+  troll.gold -= item.cost;
+  troll.items.push(key);
+  if (item.damage) troll.damage += item.damage;
+  if (item.attackSpeed) troll.interval *= 1 - item.attackSpeed;
+  if (item.speed) troll.speed += item.speed;
+  if (item.maxHp) {
+    troll.maxHp += item.maxHp;
+    troll.hp += item.maxHp;
+  }
+  if (item.income) troll.bonusIncome += item.income;
+  if (item.lifesteal) troll.bonusLifesteal += item.lifesteal;
+  addEffect(state, troll.x, troll.y, 48, "#ffd86b");
+  addFloat(state, troll.x, troll.y - 30, item.label, "#ffd86b", 13);
+  setHint(state, `巨魔购买 ${item.label}`);
+  return true;
+}
+
+function hasMarket(state: GameState, faction: Faction): boolean {
+  return state.buildings.some(
+    (b) => b.alive && b.kind === "market" && b.faction === faction && b.buildTimer <= 0,
+  );
+}
+
+/** 市场交易：固定步长（PROPOSED，文档记录 5/155/150）。 */
+export function tradeWood(state: GameState, buy: boolean): boolean {
+  const hero = getPlayer(state);
+  if (!hero || !hasMarket(state, "elf")) {
+    setHint(state, "需要先建造市场");
+    return false;
+  }
+  if (buy) {
+    if (hero.gold < WOOD_BUY || hero.wood + WOOD_STEP > WOOD_MAX) {
+      setHint(state, "金币不足或木材已达上限");
+      return false;
+    }
+    hero.gold -= WOOD_BUY;
+    hero.wood += WOOD_STEP;
+    addFloat(state, hero.x, hero.y - 30, `+${WOOD_STEP} 木`, "#bfe9ff", 12);
+  } else {
+    if (hero.wood < WOOD_STEP) {
+      setHint(state, "木材不足");
+      return false;
+    }
+    hero.wood -= WOOD_STEP;
+    hero.gold += WOOD_SELL;
+    addFloat(state, hero.x, hero.y - 30, `+${WOOD_SELL} 金`, "#ffd86b", 12);
+  }
   return true;
 }
 
