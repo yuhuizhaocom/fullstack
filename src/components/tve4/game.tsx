@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { BUILDINGS, BUILD_KINDS, GRID_H, GRID_W, PREP_SECONDS, SKILLS, TILE } from "@/lib/tve4/config";
 import { canBuild, castSkill, createGame, getPlayer, setBlocked, stepGame, tryBuild, tryUpgrade } from "@/lib/tve4/engine";
+import { buildBlocked } from "@/lib/tve4/map";
 import type { BuildKind, GameState, Interaction, SkillKey } from "@/lib/tve4/types";
 
 import type { Stage4 } from "./stage";
@@ -101,12 +102,7 @@ export function Tve4Game() {
         const testMode = new URLSearchParams(window.location.search).get("test") === "1";
         testModeRef.current = testMode;
         const state = createGame(testMode);
-        try {
-          const res = await fetch("/tve4/blocked.bin");
-          if (res.ok) setBlocked(state, new Uint8Array(await res.arrayBuffer()));
-        } catch {
-          // 加载失败则使用开放地图
-        }
+        setBlocked(state, buildBlocked());
         stateRef.current = state;
         setLoading(false);
         sync();

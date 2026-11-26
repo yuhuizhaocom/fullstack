@@ -32,6 +32,15 @@
 - `server.ts`：新增 `/ws-tve` 端点，与既有 `/ws` 世界链路完全隔离；关闭时一并清理。
 - `scripts/tve/check_ws.ts`：双客户端加入、状态广播、玩家移动与准备期巨魔静止的联机断言。
 
+## tve4 当前实现（2026-11-26 更新）
+
+旧三套渲染器与 `tve-classic` 已删除，当前唯一实现为 `/tve4`（Phaser 4 + React HUD）：
+
+- 地图为显式元素（`src/lib/tve4/map.ts`）：26 个编号房间、巨魔出生点无墙、房间唯一 3 格入口、沿途 1~4 个窄口；无建筑时全图开放格连通。
+- 规则按 `docs/research/**` 对齐：OLD 初始 30/70 金、30 秒准备期、伤害转等量金币、22% 偷血、赏金 `floor(金*0.5)+木*8`、force 清空判负、300 秒共享视野。
+- 资源全部自绘（`public/tve4/`），不依赖原版 MPQ 烘焙资源。
+- 自检：`npm run check:tve4`。
+
 ## 明确不做
 
 - 不初始化 Monorepo / pnpm workspace / Turborepo。

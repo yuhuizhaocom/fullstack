@@ -41,6 +41,7 @@ export interface Hero {
   speed: number;
   radius: number;
   cd: number;
+  channelTime: number;
   deathTimer: number;
   gold: number;
   wood: number;
@@ -110,6 +111,7 @@ export interface InputState {
 
 export interface GameState {
   testMode: boolean;
+  sharedVision: boolean;
   time: number;
   phase: "prep" | "battle" | "over";
   result: "win" | "lose" | null;

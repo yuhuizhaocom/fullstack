@@ -144,14 +144,14 @@ BIG_SNOW_LAND、BIG_FOREST、SMALL_FOREST、SOLO_AREA、DEFEND_AREA、MIDDLE_FOR
 ## 18. 数值系统
 
 - 原版配置保留在 `docs/research/` 与 `tools/map-parser/` 输出（VERIFIED）。
-- 网页配置集中在 `src/lib/tve-classic/data.ts`（PROPOSED/VERIFIED 混合）。
+- 网页配置集中在 `src/lib/tve4/config.ts` 与 `src/lib/tve4/map.ts`（PROPOSED/VERIFIED 混合），镜像为 `data/game/game-rules.json`。旧 `tve-classic` 实现已删除。
 - M1 起建立 `data/original/`（原版 VERIFIED，不可覆盖）与 `data/game/`（网页 PROPOSED，带版本号与来源标记）（工程目标）。
 
 ## 19. UI 系统
 
 - 原版 UI 资源（BLP 图标、载入画面等）见 `texture-analysis.md`。
-- 网页 HUD 由 React `hud.tsx` 实现，状态通过 `ClassicSnapshot` 传递（PROPOSED）。
-- 网页 Phaser 已接入动画序列帧：`public/tve-original/animations/manifest.json` 导出 MDX SEQS 真实动画名，`hero_*_sheet.png` 提供 idle/walk/attack/death 四组帧（骨骼级关键帧解析仍待后续）。
+- 网页 HUD 由 React `src/components/tve4/game.tsx` 实现，状态通过 `Snapshot` 传递（PROPOSED）。
+- 当前 tve4 使用自绘角色序列帧 `public/tve4/hero_elf.png`、`hero_troll.png`（原创素材，idle/walk/attack/death 四组帧），不依赖已删除的原版烘焙资源。
 
 ## 20. 多人游戏规则（技术决策更新）
 

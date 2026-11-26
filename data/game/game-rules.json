@@ -1,25 +1,25 @@
 {
-  "version": 1,
+  "version": 2,
   "confidence": "PROPOSED",
   "basedOn": "data/original/game-rules.json",
-  "note": "网页端当前生效配置（src/lib/tve-classic/data.ts / engine.ts 的镜像）。不覆盖原版数据。",
+  "note": "网页 tve4 当前生效配置镜像。数值来源见 docs/research/**；VERIFIED 不覆盖，PROPOSED 为网页实现。",
   "mode": "OLD",
   "rule": "SINGLE",
   "startGold": { "elf": 30, "troll": 70 },
   "startWood": 0,
   "trollAppearSeconds": 30,
-  "trollAppearNote": "已按原版 SINGLE 准备期对齐为 30 秒；原版 FIX/SURVIVE 为 45 秒（网页暂未实现）",
+  "trollAppearNote": "VERIFIED：SINGLE/DOUBLE/RACE/SOLO/DUET/DEFEND/REVIVE=30 秒，FIX/SURVIVE=45 秒（网页暂未实现）",
   "heroes": {
     "elf": { "hp": 10, "speed": 125, "attack": 7, "range": 112, "interval": 2.2, "radius": 14 },
     "troll": { "hp": 750, "speed": 175, "attack": 7, "range": 90, "interval": 1.5, "radius": 22 }
   },
   "skills": {
-    "blink": { "cooldown": 25, "range": 750 },
-    "haste": { "cooldown": 30, "duration": 15 },
-    "entangle": { "cooldown": 45, "duration": 3, "range": 230 },
-    "silence": { "cooldown": 60, "duration": 5, "range": 300 },
+    "blink": { "cooldown": 25, "rangeTiles": 12 },
+    "haste": { "cooldown": 30, "duration": 15, "speedBonus": 1.1 },
+    "entangle": { "cooldown": 3, "duration": 3 },
+    "silence": { "cooldown": 60, "duration": 5 },
     "windwalk": { "cooldown": 30, "duration": 20 },
-    "berserk": { "cooldown": 120, "duration": 10 },
+    "berserk": { "cooldown": 120, "duration": 10, "attackSpeedBonus": 0.5, "damageTakenBonus": 0.5 },
     "teleport": { "cooldown": 45, "channel": 2 }
   },
   "bounty": {
@@ -31,19 +31,32 @@
   },
   "damage": {
     "goldPerDamage": 1,
+    "lifesteal": 0.22,
     "instantElfKillImplemented": false,
-    "lifestealImplemented": false,
     "heroDamageGoldImplemented": true,
     "buildingDamageGoldImplemented": true
   },
+  "victory": {
+    "rule": "SINGLE",
+    "forceClearedLoses": true,
+    "timeLimitAutoWin": false,
+    "sharedVisionAtSeconds": 300
+  },
+  "buildings": {
+    "wall": [4, 120, 128, 144],
+    "tower": [4, 16, 64],
+    "mine": [90, 100, 200, 800],
+    "tent": [0, 50, 150],
+    "tentLimitPerElf": 1
+  },
   "implementedModes": ["OLD-SINGLE"],
   "missingOriginalSystems": [
-    "trollAppearDelay",
     "sharedVision",
     "exposeVision",
     "wolfAndAngelRoles",
     "skins",
     "revive",
-    "double/fix/race/defend/solo/duet/survive rules"
+    "double/fix/race/defend/solo/duet/survive rules",
+    "market trading"
   ]
 }

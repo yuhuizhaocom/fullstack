@@ -2,9 +2,11 @@
 
 import {
   ALL_SKILL_KEYS,
+  BOUNTY_MAX,
   BUILDINGS,
   ELF_START,
   GAME_LIMIT,
+  LIFESTEAL,
   GRID_H,
   GRID_W,
   HERO_STATS,
@@ -92,6 +94,7 @@ function setHint(state: GameState, text: string): void {
 export function createGame(testMode = false): GameState {
   const state: GameState = {
     testMode,
+    sharedVision: false,
     time: 0,
     phase: "prep",
     result: null,
@@ -141,9 +144,10 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
     speed: s.speed,
     radius: s.radius,
     cd: 0,
+    channelTime: 0,
     deathTimer: 0,
-    gold: isPlayer ? START_GOLD : 0,
-    wood: isPlayer ? START_WOOD : 0,
+    gold: START_GOLD[faction],
+    wood: START_WOOD,
     cooldowns: emptyCooldowns(),
     buffs: emptyBuffs(),
   };
@@ -235,6 +239,10 @@ export function canBuild(
   const size = def.size;
   if (gx < 0 || gy < 0 || gx + size > GRID_W || gy + size > GRID_H) return { ok: false, reason: "超出地图" };
   if (!cellsFreeForBuilding(state, gx, gy, size)) return { ok: false, reason: "地块不可用" };
+  // u00Y 帐篷：每个精灵只能建造一座（VERIFIED）
+  if (kind === "tent" && state.buildings.some((b) => b.alive && b.kind === "tent" && b.faction === faction)) {
+    return { ok: false, reason: "每个精灵只能有一座帐篷" };
+  }
   const hero = faction === "elf" ? getPlayer(state) : state.heroes.find((h) => h.faction === "troll");
   const cost = def.levels[0].cost;
   if (hero && hero.gold < cost) return { ok: false, reason: "金币不足" };
@@ -345,19 +353,23 @@ function dealDamage(state: GameState, attacker: Hero, target: DamageTarget, raw:
     addFloat(state, attacker.x, attacker.y - 28, "现身!", "#bfe9ff", 12);
   }
   let amount = raw;
-  if (attacker.buffs.berserk > 0) amount *= 1.5;
+  // 狂战士：受伤 +50%（skills.md，PROPOSED）
+  if (target.kind === "hero" && (target.ref as Hero).buffs.berserk > 0) amount *= 1.5;
   amount = Math.round(amount);
   target.ref.hp -= amount;
   state.stats.damage += amount;
   addFloat(state, target.x, target.y - 12, `-${amount}`, attacker.faction === "elf" ? "#ffe08a" : "#ff9c7a");
+  // VERIFIED：对所有非友军伤害，攻击者获得 floor(damage) 金币
+  attacker.gold += amount;
+  state.stats.goldEarned += amount;
+  addFloat(state, attacker.x, attacker.y - 20, `+${amount}`, "#ffd86b", 11);
+  // VERIFIED：OLD 巨魔偷血技能，回复 0.22 * damage
   if (attacker.faction === "troll") {
-    const gold = Math.max(1, Math.floor(amount * 0.6));
-    attacker.gold += gold;
-    state.stats.goldEarned += gold;
-  } else {
-    const gold = Math.max(1, Math.floor(amount * 0.3));
-    attacker.gold += gold;
-    state.stats.goldEarned += gold;
+    const heal = Math.round(amount * LIFESTEAL);
+    if (heal > 0) {
+      attacker.hp = Math.min(attacker.maxHp, attacker.hp + heal);
+      addFloat(state, attacker.x, attacker.y - 34, `+${heal}`, "#7ee08a", 11);
+    }
   }
   if (target.kind === "building") {
     target.ref.flash = 0.16;
@@ -389,7 +401,11 @@ function killHero(state: GameState, h: Hero, attacker: Hero): void {
   state.stats.kills += 1;
   addEffect(state, h.x, h.y, h.faction === "troll" ? 120 : 70, "#ff6b6b");
   addFloat(state, h.x, h.y - 24, "倒下", "#ff8a8a", 16);
-  if (attacker.faction === "troll") attacker.gold += 80;
+  // VERIFIED：floor(死者金币*0.5) + 木材*8，上限 1,000,000
+  const bounty = Math.max(0, Math.min(BOUNTY_MAX, Math.floor(h.gold * 0.5) + h.wood * 8));
+  attacker.gold += bounty;
+  state.stats.goldEarned += bounty;
+  addFloat(state, h.x, h.y - 42, `+${bounty}`, "#ffd86b", 14);
   setHint(state, h.isPlayer ? `你被击败，剩余 ${Math.max(0, h.lives)} 条命` : `巨魔被击败，剩余 ${Math.max(0, h.lives)} 条命`);
 }
 
@@ -407,6 +423,17 @@ function updateTimers(state: GameState, dt: number): void {
     h.cd = Math.max(0, h.cd - dt);
     for (const k of ALL_SKILL_KEYS) h.cooldowns[k] = Math.max(0, h.cooldowns[k] - dt);
     for (const k of Object.keys(h.buffs) as (keyof Buffs)[]) h.buffs[k] = Math.max(0, h.buffs[k] - dt);
+    if (h.channelTime > 0) {
+      h.channelTime -= dt;
+      if (h.channelTime <= 0) {
+        h.channelTime = 0;
+        const p = gridToWorld(TROLL_START.gx, TROLL_START.gy);
+        addEffect(state, h.x, h.y, 40, "#bfe9ff");
+        h.x = p.x;
+        h.y = p.y;
+        addEffect(state, h.x, h.y, 60, "#bfe9ff");
+      }
+    }
     h.flash = Math.max(0, h.flash - dt);
   }
   for (const b of state.buildings) {
@@ -453,13 +480,13 @@ function updateHeroes(state: GameState, dt: number, input: InputState): void {
         my /= Math.max(1, mag);
       }
       let speed = h.speed;
-      if (h.buffs.haste > 0) speed *= 1.5;
-      if (h.buffs.windwalk > 0) speed *= 1.35;
+      if (h.buffs.haste > 0) speed *= 2.1;   // A067 VERIFIED：+110%
+      if (h.buffs.windwalk > 0) speed *= 1.5; // PROPOSED
       if (h.buffs.root > 0) speed = 0;
       h.vx = mx * speed;
       h.vy = my * speed;
     }
-    if (h.buffs.root > 0) {
+    if (h.buffs.root > 0 || h.channelTime > 0) {
       h.vx = 0;
       h.vy = 0;
     }
@@ -472,7 +499,7 @@ function updateHeroes(state: GameState, dt: number, input: InputState): void {
       if (target) {
         dealDamage(state, h, target, h.damage);
         h.facing = Math.atan2(target.y - h.y, target.x - h.x);
-        h.cd = h.interval;
+        h.cd = h.buffs.berserk > 0 ? h.interval * 0.5 : h.interval; // 狂战士 +50% 攻速
         addEffect(state, target.x, target.y, 18, h.faction === "elf" ? "#ffe08a" : "#ff8a5c");
       }
     }
@@ -577,8 +604,8 @@ function updateAI(state: GameState, dt: number): void {
   const dist = Math.hypot(dx, dy);
   if (dist > troll.range + 6) {
     let speed = troll.speed;
-    if (troll.buffs.haste > 0) speed *= 1.5;
-    if (troll.buffs.windwalk > 0) speed *= 1.35;
+    if (troll.buffs.haste > 0) speed *= 2.1;
+    if (troll.buffs.windwalk > 0) speed *= 1.5;
     if (troll.buffs.root > 0) speed = 0;
     troll.vx = (dx / dist) * speed;
     troll.vy = (dy / dist) * speed;
@@ -592,12 +619,12 @@ function checkResult(state: GameState): void {
   if (state.result) return;
   const elf = getPlayer(state);
   const troll = state.heroes.find((h) => h.faction === "troll");
-  if (state.time >= GAME_LIMIT) {
-    state.result = "win";
-    state.phase = "over";
-    setHint(state, "守住了阵地，胜利！");
-    return;
+  // 300 秒开启共享/暴露视野：疾风步不再隐藏（VERIFIED 参数，表现为 PROPOSED）
+  if (state.time >= GAME_LIMIT && !state.sharedVision) {
+    state.sharedVision = true;
+    setHint(state, "共享视野开启：巨魔已暴露");
   }
+  // SINGLE 规则：force 清空即判负，不使用 300 秒自动胜利（VERIFIED）
   if (troll && troll.lives <= 0 && !troll.alive) {
     state.result = "win";
     state.phase = "over";
@@ -642,8 +669,9 @@ function findOpenNear(state: GameState, x: number, y: number): { x: number; y: n
 }
 
 function skillDistance(key: SkillKey): number {
-  if (key === "blink") return TILE * 5;
-  if (key === "teleport") return TILE * 6;
+  // A066 闪烁 750（按 TILE 64→16 缩放为 12 格）
+  if (key === "blink") return TILE * 12;
+  // 传送改为 2 秒读条回出生点，不做位移
   return 0;
 }
 
@@ -674,14 +702,20 @@ function castSkillFor(state: GameState, hero: Hero, key: SkillKey, aim?: { x: nu
     hero.y = to.y;
     addEffect(state, hero.x, hero.y, 50, "#bfe9ff");
   }
-  if (key === "haste") hero.buffs.haste = 6;
-  if (key === "windwalk") hero.buffs.windwalk = 5;
-  if (key === "berserk") hero.buffs.berserk = 6;
+  if (key === "haste") hero.buffs.haste = 15;      // A067 VERIFIED 持续 15 秒
+  if (key === "windwalk") hero.buffs.windwalk = 20; // PROPOSED
+  if (key === "berserk") hero.buffs.berserk = 10;   // PROPOSED
+  if (key === "teleport") {
+    hero.channelTime = 2;                           // PROPOSED 读条 2 秒返回出生点
+    hero.vx = 0;
+    hero.vy = 0;
+    addEffect(state, hero.x, hero.y, 36, "#bfe9ff");
+  }
   if (key === "entangle" || key === "silence") {
     const troll = state.heroes.find((h) => h.faction === "troll" && h.alive);
     if (troll) {
-      if (key === "entangle") troll.buffs.root = 3;
-      else troll.buffs.silence = 4;
+      if (key === "entangle") troll.buffs.root = 3;  // A06M VERIFIED 持续 3 秒
+      else troll.buffs.silence = 5;                  // PROPOSED
       addEffect(state, troll.x, troll.y, 34, "#9be7ff");
     }
   }

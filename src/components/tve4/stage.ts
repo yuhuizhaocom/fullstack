@@ -3,6 +3,7 @@
 import * as Phaser from "phaser";
 
 import { BUILDINGS, GRID_H, GRID_W, TILE, WORLD_H, WORLD_W } from "@/lib/tve4/config";
+import { CHOKEPOINTS, insideAnyRoom, ROOM_ELEMENTS, roomCenterWorld, gateCells } from "@/lib/tve4/map";
 import type { GameState, Interaction } from "@/lib/tve4/types";
 
 export interface Stage4 {
@@ -34,6 +35,7 @@ class Tve4Scene extends Phaser.Scene {
   private heroSprites = new Map<number, Phaser.GameObjects.Image>();
   private heroAnim = new Map<number, HeroAnim>();
   private projectileSprites: Phaser.GameObjects.Image[] = [];
+  private walls!: Phaser.GameObjects.Graphics;
   private ground!: Phaser.GameObjects.Graphics;
   private shadows!: Phaser.GameObjects.Graphics;
   private effects!: Phaser.GameObjects.Graphics;
@@ -57,7 +59,7 @@ class Tve4Scene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image("arena", "/tve4/arena.png");
+    this.load.image("snow", "/tve4/snow.png");
     this.load.image("b_wall", "/tve4/b_wall.png");
     this.load.image("b_tower", "/tve4/b_tower.png");
     this.load.image("b_mine", "/tve4/b_mine.png");
@@ -68,7 +70,8 @@ class Tve4Scene extends Phaser.Scene {
   }
 
   create(): void {
-    this.add.image(0, 0, "arena").setOrigin(0).setDisplaySize(WORLD_W, WORLD_H).setDepth(0);
+    this.add.image(0, 0, "snow").setOrigin(0).setDisplaySize(WORLD_W, WORLD_H).setDepth(0);
+    this.drawMapElements();
 
     this.ground = this.add.graphics().setDepth(2);
     this.shadows = this.add.graphics().setDepth(4);
@@ -122,6 +125,74 @@ class Tve4Scene extends Phaser.Scene {
   setZoomBy(factor: number): void {
     this.zoomTarget = Phaser.Math.Clamp(this.zoomTarget * factor, 0.08, 2.5);
     this.fullMap = false;
+  }
+
+  private drawMapElements(): void {
+    const g = this.add.graphics().setDepth(1);
+    const paint = (gx: number, gy: number): void => {
+      const x = gx * TILE;
+      const y = gy * TILE;
+      g.fillStyle(0x46545e, 1);
+      g.fillRect(x, y, TILE, TILE);
+      g.fillStyle(0x788894, 1);
+      g.fillRect(x + 1, y + 1, TILE - 2, TILE * 0.42);
+      g.fillStyle(0xeaf4f8, 0.85);
+      g.fillRect(x, y, TILE, 3);
+    };
+
+    for (const room of ROOM_ELEMENTS) {
+      const skip = new Set(gateCells(room).map(([x, y]) => `${x},${y}`));
+      for (let x = room.x0; x <= room.x1; x += 1) {
+        for (const y of [room.y0, room.y1]) {
+          if (!skip.has(`${x},${y}`)) paint(x, y);
+        }
+      }
+      for (let y = room.y0; y <= room.y1; y += 1) {
+        for (const x of [room.x0, room.x1]) {
+          if (!skip.has(`${x},${y}`)) paint(x, y);
+        }
+      }
+    }
+
+    for (const seg of CHOKEPOINTS) {
+      const dx = Math.sign(seg.x2 - seg.x1);
+      const dy = Math.sign(seg.y2 - seg.y1);
+      const steps = Math.max(Math.abs(seg.x2 - seg.x1), Math.abs(seg.y2 - seg.y1));
+      for (let i = 0; i <= steps; i += 1) {
+        const x = seg.x1 + dx * i;
+        const y = seg.y1 + dy * i;
+        if (!insideAnyRoom(x, y)) paint(x, y);
+      }
+    }
+
+    for (const room of ROOM_ELEMENTS) {
+      const p = roomCenterWorld(room);
+      g.lineStyle(2, 0xde3838, 0.9);
+      g.strokeCircle(p.x, p.y, 16);
+      this.add
+        .text(p.x, p.y, String(room.label), {
+          fontFamily: "system-ui, sans-serif",
+          fontSize: "15px",
+          color: "#de3838",
+        })
+        .setOrigin(0.5)
+        .setDepth(3);
+    }
+    // 巨魔出生点：无墙标记
+    const tx = (64 + 0.5) * TILE;
+    const ty = (42 + 0.5) * TILE;
+    g.lineStyle(2, 0xff7a5c, 0.95);
+    g.strokeCircle(tx, ty, 18);
+    this.add
+      .text(tx, ty - 26, "巨魔出生点", {
+        fontFamily: "system-ui, sans-serif",
+        fontSize: "13px",
+        color: "#ff7a5c",
+        stroke: "#050d0a",
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5)
+      .setDepth(3);
   }
 
   apply(state: GameState): void {
@@ -237,7 +308,7 @@ class Tve4Scene extends Phaser.Scene {
       const width = height * (FRAME_W / FRAME_H);
       const alpha = !h.alive
         ? Phaser.Math.Clamp(h.deathTimer / 1.5, 0, 1)
-        : h.buffs.windwalk > 0
+        : h.buffs.windwalk > 0 && !state.sharedVision
           ? 0.38
           : 1;
       sprite

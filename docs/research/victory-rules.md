@@ -57,11 +57,10 @@ if trollCount == 0 or elveCount == 0:
 
 ## 当前网页实现（PROPOSED）
 
-`src/lib/tve-classic/engine.ts`：
+`src/lib/tve4/engine.ts`（旧 `tve-classic` 已删除）：
 
-- 玩家精灵死亡 → 立即 `lose`（仅 SINGLE 规则）。
-- 巨魔死亡且玩家为精灵 → `win`。
-- 所有精灵死亡且玩家为巨魔 → `win`。
-- 所有巨魔死亡且玩家为精灵 → `win`。
+- SINGLE 规则：巨魔 force 清空 → `win`；精灵 force 清空 → `lose`（LIVES=1，无 300 秒自动胜利）。
+- 300 秒仅开启共享/暴露视野（VERIFIED 参数），疾风步不再隐身。
+- 测试模式（`?test=1`）跳过准备期，巨魔立即出现。
 
 未实现 REVIVE（原版存在 `gg_trg_ReviveElveDie`）、SURVIVE、RACE、DEFEND、SOLO、DUET、FIX 等模式规则。
