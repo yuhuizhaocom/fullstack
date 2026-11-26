@@ -76,6 +76,11 @@ export interface RuleFile {
     elfShareAtSeconds: number;
     exposeAtSeconds: number;
   };
+  repair: {
+    timeRatios: number[];
+    baseHpPerSecond: number;
+    delayAfterHit: number;
+  };
   scenarios: {
     elf: {
       ultimateTowerCount: number;
@@ -108,3 +113,4 @@ export const COMBAT_RULE = RULES.combat;
 export const VISION_RULE = RULES.vision;
 export const RESPAWN_RULE = RULES.respawn;
 export const SCENARIO_RULE = RULES.scenarios;
+export const REPAIR_RULE = RULES.repair;

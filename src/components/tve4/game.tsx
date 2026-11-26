@@ -17,6 +17,7 @@ import {
   buyEquipment,
   buyStrengthBook,
   canBuild,
+  canUpgradeKind,
   canDemolish,
   canSummonMage,
   castSkill,
@@ -24,10 +25,11 @@ import {
   demolishBuilding,
   getPlayer,
   relocateElf,
+  repairWall,
   setBlocked,
   stepGame,
-  summonArchmage,
   toggleMobileDev,
+  upgradeKind,
   tradeWood,
   tryBuild,
   tryUpgrade,
@@ -52,6 +54,8 @@ interface Snapshot {
   mobileDev: boolean;
   trollStrength: number;
   relocateCd: number;
+  wallUpgrade: { ok: boolean; reason: string; cost: number; wood: number; level: number };
+  houseUpgrade: { ok: boolean; reason: string; cost: number; wood: number; level: number };
   hasMarket: boolean;
   woodPriceIn: number;
   woodPriceOut: number;
@@ -129,6 +133,8 @@ export function Tve4Game() {
       mobileDev: s.mobileDev,
       trollStrength: s.trollStrength,
       relocateCd: s.relocateCd,
+      wallUpgrade: canUpgradeKind(s, "wall"),
+      houseUpgrade: canUpgradeKind(s, "tent"),
       hasMarket: s.buildings.some((b) => b.alive && b.kind === "market" && b.faction === "elf"),
       woodPriceIn: s.woodPriceIn,
       woodPriceOut: s.woodPriceOut,
@@ -310,13 +316,13 @@ export function Tve4Game() {
     };
   }, []);
 
-  const updateJoystick = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const updateJoystickXY = useCallback((clientX: number, clientY: number) => {
     const el = joystickRef.current;
     const knob = joystickKnobRef.current;
     if (!el || !knob) return;
     const rect = el.getBoundingClientRect();
-    const dx = e.clientX - (rect.left + rect.width / 2);
-    const dy = e.clientY - (rect.top + rect.height / 2);
+    const dx = clientX - (rect.left + rect.width / 2);
+    const dy = clientY - (rect.top + rect.height / 2);
     const max = rect.width * 0.36;
     const mag = Math.hypot(dx, dy);
     const k = mag > max ? max / mag : 1;
@@ -327,12 +333,12 @@ export function Tve4Game() {
   const startJoystick = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     joystickActiveRef.current = true;
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 合成事件可能无有效 pointerId */ }
-    updateJoystick(e);
-  }, [updateJoystick]);
+    updateJoystickXY(e.clientX, e.clientY);
+  }, [updateJoystickXY]);
 
   const moveJoystick = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (joystickActiveRef.current) updateJoystick(e);
-  }, [updateJoystick]);
+    if (joystickActiveRef.current) updateJoystickXY(e.clientX, e.clientY);
+  }, [updateJoystickXY]);
 
   const endJoystick = useCallback(() => {
     joystickActiveRef.current = false;
@@ -504,11 +510,21 @@ export function Tve4Game() {
         <>
           <div
             ref={joystickRef}
-            className="pointer-events-auto absolute bottom-5 left-4 z-30 h-28 w-28 rounded-full border border-white/20 bg-black/40"
+            className="pointer-events-auto absolute bottom-5 left-4 z-30 h-28 w-28 touch-none select-none rounded-full border border-white/20 bg-black/40"
             onPointerDown={startJoystick}
             onPointerMove={moveJoystick}
             onPointerUp={endJoystick}
             onPointerCancel={endJoystick}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              joystickActiveRef.current = true;
+              if (e.touches[0]) updateJoystickXY(e.touches[0].clientX, e.touches[0].clientY);
+            }}
+            onTouchMove={(e) => {
+              e.preventDefault();
+              if (joystickActiveRef.current && e.touches[0]) updateJoystickXY(e.touches[0].clientX, e.touches[0].clientY);
+            }}
+            onTouchEnd={endJoystick}
           >
             <div
               ref={joystickKnobRef}
@@ -543,21 +559,52 @@ export function Tve4Game() {
             <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => toggleSheet(snapshot.faction === "elf" ? "build" : "shop")}>
               {snapshot.faction === "elf" ? "建造" : "商店"}
             </button>
-            <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => toggleSheet("skill")}>技能</button>
+            {SKILLS[snapshot.faction].map((spec) => (
+              <button
+                key={spec.key}
+                className="pointer-events-auto rounded-lg bg-black/70 px-2 py-3 text-[11px] text-white disabled:opacity-40"
+                disabled={(snapshot.cooldowns[spec.key] ?? 0) > 0}
+                title={`${spec.label}：${spec.desc}`}
+                onClick={() => {
+                  const s = stateRef.current;
+                  if (s) { castSkill(s, spec.key, hoverRef.current); sync(); }
+                }}
+              >
+                {spec.label}
+                {(snapshot.cooldowns[spec.key] ?? 0) > 0 ? ` ${Math.ceil(snapshot.cooldowns[spec.key])}s` : ""}
+              </button>
+            ))}
             {snapshot.faction === "elf" ? (
               <>
                 <button
-                  className="pointer-events-auto rounded-lg bg-amber-800 px-3 py-3 text-xs text-white disabled:opacity-40"
-                  disabled={!snapshot.selected?.canUpgrade}
-                  onClick={() => {
-                    const s = stateRef.current;
-                    if (s && selectedRef.current !== null) { tryUpgrade(s, selectedRef.current); sync(); }
-                  }}
+                  className="pointer-events-auto rounded-lg bg-amber-800 px-2 py-3 text-[11px] text-white disabled:opacity-40"
+                  disabled={!snapshot.wallUpgrade.ok}
+                  title={snapshot.wallUpgrade.ok
+                    ? `升墙 Lv${snapshot.wallUpgrade.level + 1}：${snapshot.wallUpgrade.cost} 金${snapshot.wallUpgrade.wood ? ` · ${snapshot.wallUpgrade.wood} 木` : ""}`
+                    : snapshot.wallUpgrade.reason}
+                  onClick={() => { const s = stateRef.current; if (s) { upgradeKind(s, "wall"); sync(); } }}
                 >
-                  升级
+                  升墙{snapshot.wallUpgrade.ok ? ` ${snapshot.wallUpgrade.cost}` : ""}
                 </button>
                 <button
-                  className="pointer-events-auto rounded-lg bg-rose-800 px-3 py-3 text-xs text-white disabled:opacity-40"
+                  className="pointer-events-auto rounded-lg bg-amber-800 px-2 py-3 text-[11px] text-white disabled:opacity-40"
+                  disabled={!snapshot.houseUpgrade.ok}
+                  title={snapshot.houseUpgrade.ok
+                    ? `升房 Lv${snapshot.houseUpgrade.level + 1}：${snapshot.houseUpgrade.cost} 金${snapshot.houseUpgrade.wood ? ` · ${snapshot.houseUpgrade.wood} 木` : ""}`
+                    : snapshot.houseUpgrade.reason}
+                  onClick={() => { const s = stateRef.current; if (s) { upgradeKind(s, "tent"); sync(); } }}
+                >
+                  升房{snapshot.houseUpgrade.ok ? ` ${snapshot.houseUpgrade.cost}` : ""}
+                </button>
+                <button
+                  className="pointer-events-auto rounded-lg bg-emerald-800 px-2 py-3 text-[11px] text-white"
+                  title="免费维修墙/建筑（原版修理不消耗资源）"
+                  onClick={() => { const s = stateRef.current; if (s) { repairWall(s, "wall"); sync(); } }}
+                >
+                  维修
+                </button>
+                <button
+                  className="pointer-events-auto rounded-lg bg-rose-800 px-2 py-3 text-[11px] text-white disabled:opacity-40"
                   disabled={!snapshot.demolish?.ok}
                   onClick={() => {
                     const s = stateRef.current;
@@ -567,19 +614,12 @@ export function Tve4Game() {
                   拆除
                 </button>
                 <button
-                  className="pointer-events-auto rounded-lg bg-sky-800 px-3 py-3 text-xs text-white disabled:opacity-40"
-                  disabled={!snapshot.canSummon}
-                  onClick={() => { const s = stateRef.current; if (s) { summonArchmage(s); sync(); } }}
-                >
-                  召唤
-                </button>
-                <button
-                  className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white"
+                  className="pointer-events-auto rounded-lg bg-black/70 px-2 py-3 text-[11px] text-white"
                   onClick={() => { const s = stateRef.current; if (s) { toggleMobileDev(s); sync(); } }}
                 >
                   游走{snapshot.mobileDev ? "开" : "关"}
                 </button>
-                <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => { migrateRef.current = true; }}>迁移</button>
+                <button className="pointer-events-auto rounded-lg bg-black/70 px-2 py-3 text-[11px] text-white" onClick={() => { migrateRef.current = true; }}>迁移</button>
               </>
             ) : null}
             <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => setShowMore(!showMore)}>更多</button>

@@ -272,6 +272,7 @@ check("双倍规则：巨魔死亡转狼，20 秒后复活，无属性倍率", (
   openMap(s);
   const troll = s.heroes.find((h) => h.faction === "troll")!;
   const p = getPlayer(s)!;
+  s.buildings = []; // 移除商店，避免挡住近战视线
   troll.hp = 1;
   troll.invuln = 0;
   p.x = troll.x + 20;
@@ -545,9 +546,9 @@ check("巨魔是近战：隔墙不能攻击", () => {
   p.y = troll.y;
   p.hp = 1000;
   p.maxHp = 1000;
-  for (let y = 20; y <= 40; y += 1) s.blocked[y * GRID_W + 31] = 1;
+  for (let y = 10; y <= 70; y += 1) s.blocked[y * GRID_W + 31] = 1;
   const before = p.hp;
-  run(s, 0.5);
+  run(s, 0.2);
   assert.equal(p.hp, before, "巨魔不能隔着墙打到精灵");
 });
 
@@ -589,6 +590,60 @@ check("巨魔优先拆墙：有墙挡路时先攻击墙", () => {
   const beforeHp = wall.hp;
   run(s, 4);
   assert.ok(wall.hp < beforeHp, `巨魔应先拆墙，墙 HP ${wall.hp}/${beforeHp}`);
+});
+
+check("维修：墙被攻击后随时间免费回血", () => {
+  const s = createGame();
+  openMap(s);
+  const p = getPlayer(s)!;
+  p.gold = 1000;
+  tryBuild(s, "wall", 40, 40);
+  const wall = s.buildings.find((b) => b.kind === "wall")!;
+  wall.buildTimer = 0;
+  wall.hp = 20;
+  wall.noHitTimer = 0;
+  run(s, 4);
+  assert.ok(wall.hp > 20, `墙应免费修复，hp=${wall.hp}`);
+});
+
+check("大法师：66 座塔后自动召唤，无需按钮", () => {
+  const s = createGame({ testMode: true });
+  openMap(s);
+  for (let i = 0; i < SCENARIO_RULE.elf.ultimateTowerCount; i += 1) {
+    s.buildings.push({
+      id: s.nextId++, kind: "tower", faction: "elf",
+      x: (5 + (i % 20) * 8) * TILE, y: (5 + Math.floor(i / 20) * 8) * TILE,
+      gx0: 5 + (i % 20) * 8, gy0: 5 + Math.floor(i / 20) * 8, size: 2,
+      level: 7, hp: 200, maxHp: 200, alive: true, buildTimer: 0,
+      demolishTimer: 0, eyeMarked: 0, noHitTimer: 0, flash: 0, cd: 0,
+    });
+  }
+  assert.equal(s.mageSummoned, false);
+  run(s, 0.1);
+  assert.equal(s.mageSummoned, true);
+  assert.equal(s.heroes.filter((h) => h.isAlly).length, 1);
+});
+
+check("视线：建筑同样阻挡近战，不能隔房攻击", () => {
+  const s = createGame({ testMode: true });
+  openMap(s);
+  const troll = s.heroes.find((h) => h.faction === "troll")!;
+  const p = getPlayer(s)!;
+  p.gold = 1000;
+  troll.invuln = 0;
+  troll.x = 20 * TILE + 8;
+  troll.y = 40 * TILE + 8;
+  p.x = 24 * TILE + 8;
+  p.y = troll.y;
+  p.hp = 100000;
+  p.maxHp = 100000;
+  s.blocked.fill(0);
+  tryBuild(s, "wall", 22, 39);
+  const wall = s.buildings.find((b) => b.kind === "wall")!;
+  wall.buildTimer = 0;
+  const before = p.hp;
+  run(s, 0.2);
+  assert.equal(p.hp, before, "墙体应阻挡视线");
 });
 
 console.log(`\n${passed} checks passed`);

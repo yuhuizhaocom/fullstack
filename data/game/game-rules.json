@@ -149,6 +149,13 @@
     "duetElf": 60,
     "reviveTrollVote": [5, 10, 5]
   },
+  "repair": {
+    "source": "Units/AbilityData.slk A02R-A02W + CampaignAbilityStrings.txt:14971",
+    "note": "VERIFIED：修理建筑无需消耗资源，修理时间比率 4/2.5/1.5/1/0.5/0.25",
+    "timeRatios": [4, 2.5, 1.5, 1, 0.5, 0.25],
+    "baseHpPerSecond": 20,
+    "delayAfterHit": 3
+  },
   "scenarios": {
     "note": "PROPOSED：按用户描述的两条核心玩法线",
     "elf": {

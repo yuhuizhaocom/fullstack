@@ -101,6 +101,7 @@ export interface Building {
   buildTimer: number;
   demolishTimer: number;
   eyeMarked: number;
+  noHitTimer: number;
   flash: number;
   cd: number;
 }
@@ -159,6 +160,9 @@ export interface GameState {
   aiPath: Array<{ x: number; y: number }>;
   aiPathIdx: number;
   pathTimer: number;
+  stuckX: number;
+  stuckY: number;
+  stuckTimer: number;
   elfShared: boolean;
   elfExposed: boolean;
   woodPriceIn: number;

@@ -89,6 +89,7 @@ BIG_SNOW_LAND、BIG_FOREST、SMALL_FOREST、SOLO_AREA、DEFEND_AREA、MIDDLE_FOR
 
 - 帐篷 u00Y、金矿 e00H、房屋 u03D、精灵墙 u04B、岩石墙 u01X、水泥墙 u030、箭塔 h000 等的 HP/费用/收入见 `buildings.md`（VERIFIED 抽样）。
 - 帐篷“每精灵仅一座”来自 Ubertip（VERIFIED）。
+- 维修（VERIFIED，原版 `A02R-A02W`）：修理建筑无需消耗资源，时间比率 4/2.5/1.5/1/0.5/0.25；网页实现为受击 3 秒后免费缓慢回血，并提供手动"维修"按钮。
 - 建造合法性：网格占用 + 地形阻挡 + VERIFIED 的前置科技链（`Requires`/`DependencyOr`：农场需墙、作坊需墙/城镇、真视塔需猎手大厅；网页用墙等级与城镇/市场等级近似）。区域建造限制 UNKNOWN。
 - 网页已对齐：**基础墙（u01F，4 金起）可直接建造**；精灵墙/岩石墙/水泥墙不再直接建造，而是基础墙的升级链（10/10 断言通过）。
 - 建造进度、升级链、修理：原版存在相关处理器（VERIFIED 存在，细则 UNKNOWN）。
