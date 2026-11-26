@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { GRID_H, GRID_W, RULE_PREP, TILE } from "../../src/lib/tve4/config";
 import {
   buyEquipment,
+  buyStrengthBook,
   canBuyEquipment,
   canBuild,
   canDemolish,
@@ -12,14 +13,17 @@ import {
   createGame,
   demolishBuilding,
   getPlayer,
+  relocateElf,
   setBlocked,
   stepGame,
+  summonArchmage,
+  toggleMobileDev,
   tradeWood,
   tryBuild,
   tryUpgrade,
 } from "../../src/lib/tve4/engine";
 import { buildBlocked, gateCells, ROOM_ELEMENTS, SPAWNS } from "../../src/lib/tve4/map";
-import { EQUIPMENT_RULE, MARKET_RULE, RULES } from "../../src/lib/tve4/rules";
+import { EQUIPMENT_RULE, MARKET_RULE, RULES, SCENARIO_RULE } from "../../src/lib/tve4/rules";
 import type { GameState } from "../../src/lib/tve4/types";
 
 const FIXED = 1 / 30;
@@ -38,6 +42,14 @@ function run(state: GameState, seconds: number, mx = 0, my = 0) {
 
 function openMap(state: GameState) {
   state.blocked.fill(0);
+}
+
+function upgradeNow(state: GameState, id: number) {
+  const b = state.buildings.find((x) => x.id === id);
+  if (b) b.buildTimer = 0;
+  const ok = tryUpgrade(state, id);
+  if (b) b.buildTimer = 0;
+  return ok;
 }
 
 console.log("tve4 rule checks");
@@ -85,7 +97,7 @@ check("升级：墙 10 级链按规则文件扣费", () => {
   tryBuild(s, "wall", 40, 40);
   const b = s.buildings[0];
   assert.equal(b.level, 1);
-  assert.equal(tryUpgrade(s, b.id), true);
+  assert.equal(upgradeNow(s, b.id), true);
   assert.equal(b.level, 2);
   assert.equal(p.gold, 988);
 });
@@ -293,9 +305,11 @@ check("显影塔：256 木，反隐范围内巨魔现形", () => {
   const s = createGame({ testMode: true });
   openMap(s);
   const p = getPlayer(s)!;
-  p.gold = 1000;
+  p.gold = 2000;
   p.wood = 300;
-  assert.equal(tryBuild(s, "reveal", 40, 40), true);
+  assert.equal(tryBuild(s, "market", 55, 55), true);
+  upgradeNow(s, s.buildings.find((b) => b.kind === "market" && b.faction === "elf")!.id);
+  assert.equal(tryBuild(s, "reveal", 40, 40), true, canBuild(s, "reveal", 40, 40).reason);
   assert.equal(p.wood, 44);
   const reveal = s.buildings.find((b) => b.kind === "reveal")!;
   reveal.buildTimer = 0;
@@ -312,16 +326,14 @@ check("市场：买卖 10 木，全局价格每次 ±5", () => {
   const p = getPlayer(s)!;
   p.gold = 1000;
   assert.equal(tradeWood(s, true), false);
-  s.buildings.push({
-    id: s.nextId++, kind: "market", faction: "elf",
-    x: p.x, y: p.y, gx0: 0, gy0: 0, size: 2,
-    level: 1, hp: 50, maxHp: 50, alive: true, buildTimer: 0, demolishTimer: 0, flash: 0, cd: 0,
-  });
+  assert.equal(tryBuild(s, "market", 40, 40), true);
+  const market = s.buildings.find((b) => b.kind === "market")!;
+  market.buildTimer = 0;
   const inPrice = s.woodPriceIn;
   const outPrice = s.woodPriceOut;
   assert.equal(tradeWood(s, true), true);
   assert.equal(p.wood, MARKET_RULE.tradeAmount);
-  assert.equal(p.gold, 1000 - inPrice);
+  assert.equal(p.gold, 1000 - 64 - inPrice);
   assert.equal(s.woodPriceIn, inPrice + MARKET_RULE.priceStep);
   assert.equal(s.woodPriceOut, outPrice - MARKET_RULE.priceStep);
   assert.equal(tradeWood(s, false), true);
@@ -333,9 +345,12 @@ check("拆除：95% 血量、敌方英雄距离、作坊返全部升级花费", 
   openMap(s);
   const p = getPlayer(s)!;
   p.gold = 100000;
+  tryBuild(s, "wall", 45, 45);
+  const wall = s.buildings[0];
+  for (let i = 0; i < 3; i += 1) upgradeNow(s, wall.id); // 提供墙 L4 前置
   tryBuild(s, "tent", 60, 60);
-  const tent = s.buildings[0];
-  for (let i = 0; i < 3; i += 1) tryUpgrade(s, tent.id);
+  const tent = s.buildings.find((b) => b.kind === "tent")!;
+  for (let i = 0; i < 3; i += 1) upgradeNow(s, tent.id);
   tent.hp = tent.maxHp;
   const before = p.gold;
   let expectedRefund = 0;
@@ -374,6 +389,206 @@ check("碰撞格尺寸正确", () => {
   assert.equal(s.blocked.length, GRID_W * GRID_H);
   setBlocked(s, new Uint8Array(GRID_W * GRID_H).fill(1));
   assert.equal(s.blocked[0], 1);
+});
+
+check("巨魔之眼：标记建筑后禁止拆除，反隐塔不会误标记", () => {
+  const s = createGame({ testMode: true });
+  openMap(s);
+  const p = getPlayer(s)!;
+  p.gold = 1000;
+  tryBuild(s, "wall", 50, 50);
+  const wall = s.buildings.find((b) => b.kind === "wall")!;
+  wall.buildTimer = 0;
+  wall.hp = wall.maxHp;
+  const troll = s.heroes.find((h) => h.faction === "troll")!;
+  troll.x = wall.x + 30;
+  troll.y = wall.y;
+  troll.cooldowns.farSight = 0;
+  troll.cooldowns.windwalk = 30;
+  s.aiTimer = 0;
+  run(s, 0.1);
+  assert.ok(wall.eyeMarked > 0);
+  troll.x = wall.x + 1000;
+  assert.equal(canDemolish(s, wall.id).ok, false);
+  assert.ok(wall.eyeMarked > 0);
+});
+
+check("前置链：作坊 Lv2 需基础墙（不是商店），显影塔需城镇 Lv2", () => {
+  const s = createGame();
+  openMap(s);
+  const p = getPlayer(s)!;
+  p.gold = 5000;
+  p.wood = 500;
+  tryBuild(s, "tent", 60, 60);
+  const tent = s.buildings.find((b) => b.kind === "tent")!;
+  assert.equal(upgradeNow(s, tent.id), false);
+  tryBuild(s, "wall", 45, 45);
+  s.buildings.find((b) => b.kind === "wall")!.buildTimer = 0;
+  assert.equal(upgradeNow(s, tent.id), true);
+  assert.equal(canBuild(s, "reveal", 40, 40).ok, false); // 缺城镇 Lv2
+  tryBuild(s, "market", 55, 55);
+  upgradeNow(s, s.buildings.find((b) => b.kind === "market")!.id);
+  assert.equal(canBuild(s, "reveal", 40, 40).ok, true);
+});
+
+check("阵营选择：玩家可选巨魔，AI 控制精灵", () => {
+  const s = createGame({ playerFaction: "troll", testMode: true });
+  const player = getPlayer(s)!;
+  assert.equal(player.faction, "troll");
+  assert.equal(s.heroes.find((h) => h.faction === "elf" && !h.isPlayer)?.alive, true);
+  assert.ok(s.buildings.some((b) => b.kind === "trollHouse"));
+});
+
+check("巨魔玩法：力量达 16 万即获胜", () => {
+  const s = createGame({ playerFaction: "troll", testMode: true });
+  s.trollStrength = SCENARIO_RULE.troll.strengthWin;
+  run(s, 0.1);
+  assert.equal(s.result, "win");
+  const e = createGame({ testMode: true });
+  e.trollStrength = SCENARIO_RULE.troll.strengthWin;
+  run(e, 0.1);
+  assert.equal(e.result, "lose");
+});
+
+check("巨魔玩法：力量之书按规则文件增加力量", () => {
+  const s = createGame({ playerFaction: "troll", testMode: true });
+  const troll = getPlayer(s)!;
+  troll.gold = 100000;
+  const book = SCENARIO_RULE.troll.strengthBooks[0];
+  assert.equal(buyStrengthBook(s, book.key), true);
+  assert.equal(s.trollStrength, book.strength);
+  assert.equal(troll.gold, 100000 - book.gold);
+});
+
+check("精灵玩法：66 座塔召唤大法师", () => {
+  const s = createGame({ testMode: true });
+  openMap(s);
+  for (let i = 0; i < SCENARIO_RULE.elf.ultimateTowerCount; i += 1) {
+    const gx = 5 + (i % 20) * 8;
+    const gy = 5 + Math.floor(i / 20) * 8;
+    s.buildings.push({
+      id: s.nextId++, kind: "tower", faction: "elf",
+      x: gx * TILE, y: gy * TILE, gx0: gx, gy0: gy, size: 2,
+      level: 7, hp: 200, maxHp: 200, alive: true, buildTimer: 0,
+      demolishTimer: 0, eyeMarked: 0, flash: 0, cd: 0,
+    });
+  }
+  assert.equal(summonArchmage(s), true);
+  assert.equal(s.heroes.filter((h) => h.isAlly).length, 1);
+  assert.equal(summonArchmage(s), false);
+});
+
+check("精灵玩法：迁移保留作坊等级并有冷却", () => {
+  const s = createGame();
+  openMap(s);
+  const p = getPlayer(s)!;
+  p.gold = 100000;
+  tryBuild(s, "wall", 45, 45);
+  s.buildings.find((b) => b.kind === "wall")!.buildTimer = 0;
+  tryBuild(s, "tent", 60, 60);
+  const tent = s.buildings.find((b) => b.kind === "tent")!;
+  upgradeNow(s, tent.id);
+  const level = tent.level;
+  assert.equal(relocateElf(s, 100, 70), true);
+  const moved = s.buildings.find((b) => b.alive && b.kind === "tent")!;
+  assert.equal(moved.level, level);
+  assert.equal(relocateElf(s, 110, 70), false);
+});
+
+check("精灵玩法：游走发育降低巨魔打钱", () => {
+  const s = createGame({ testMode: true });
+  openMap(s);
+  toggleMobileDev(s);
+  assert.equal(s.mobileDev, true);
+  const troll = s.heroes.find((h) => h.faction === "troll")!;
+  const p = getPlayer(s)!;
+  p.hp = 1000;
+  p.maxHp = 1000;
+  p.x = troll.x + 20;
+  p.y = troll.y;
+  troll.invuln = 0;
+  troll.gold = 0;
+  run(s, 1.6); // 巨魔间隔 1.5 秒，约命中 1 次（7 伤害）
+  assert.ok(troll.gold < 12, `游走发育应减半打钱，实际 ${troll.gold}`);
+});
+
+check("人机巨魔会移动进攻（不会被商店围死）", () => {
+  const s = createGame({ testMode: true });
+  openMap(s);
+  const troll = s.heroes.find((h) => h.faction === "troll")!;
+  const start = { x: troll.x, y: troll.y };
+  troll.invuln = 0;
+  run(s, 4);
+  assert.ok(Math.hypot(troll.x - start.x, troll.y - start.y) > 40, "巨魔应离开出生点进攻");
+});
+
+check("房屋收入有跳字", () => {
+  const s = createGame();
+  openMap(s);
+  const p = getPlayer(s)!;
+  p.gold = 200;
+  tryBuild(s, "tent", 60, 60);
+  s.buildings.find((b) => b.kind === "tent")!.buildTimer = 0;
+  run(s, 2.2);
+  assert.ok(s.floats.some((f) => f.text.includes("金")), "收入应产生跳字");
+});
+
+check("巨魔是近战：隔墙不能攻击", () => {
+  const s = createGame({ testMode: true });
+  openMap(s);
+  const troll = s.heroes.find((h) => h.faction === "troll")!;
+  const p = getPlayer(s)!;
+  troll.invuln = 0;
+  troll.x = 30 * TILE + 8;
+  troll.y = 30 * TILE + 8;
+  p.x = 33 * TILE + 8;
+  p.y = troll.y;
+  p.hp = 1000;
+  p.maxHp = 1000;
+  for (let y = 20; y <= 40; y += 1) s.blocked[y * GRID_W + 31] = 1;
+  const before = p.hp;
+  run(s, 0.5);
+  assert.equal(p.hp, before, "巨魔不能隔着墙打到精灵");
+});
+
+check("巨魔寻路：隔墙时绕行而非卡住", () => {
+  const s = createGame({ testMode: true });
+  openMap(s);
+  const troll = s.heroes.find((h) => h.faction === "troll")!;
+  const p = getPlayer(s)!;
+  troll.invuln = 0;
+  troll.x = 20 * TILE + 8;
+  troll.y = 40 * TILE + 8;
+  p.x = 26 * TILE + 8;
+  p.y = troll.y;
+  p.hp = 100000;
+  p.maxHp = 100000;
+  // 竖直墙，只有底部 y>44 有缺口
+  for (let y = 20; y <= 44; y += 1) s.blocked[y * GRID_W + 23] = 1;
+  run(s, 12);
+  assert.ok(troll.x > 23 * TILE, `巨魔应绕过墙到另一侧，x=${troll.x}`);
+});
+
+check("巨魔优先拆墙：有墙挡路时先攻击墙", () => {
+  const s = createGame({ testMode: true });
+  openMap(s);
+  const troll = s.heroes.find((h) => h.faction === "troll")!;
+  const p = getPlayer(s)!;
+  p.gold = 1000;
+  troll.invuln = 0;
+  troll.x = 20 * TILE + 8;
+  troll.y = 40 * TILE + 8;
+  p.x = 26 * TILE + 8;
+  p.y = troll.y;
+  p.hp = 100000;
+  p.maxHp = 100000;
+  // 紧挨巨魔放一面墙，先挡住视线
+  tryBuild(s, "wall", 22, 40);
+  const wall = s.buildings.find((b) => b.kind === "wall")!;
+  wall.buildTimer = 0;
+  const beforeHp = wall.hp;
+  run(s, 4);
+  assert.ok(wall.hp < beforeHp, `巨魔应先拆墙，墙 HP ${wall.hp}/${beforeHp}`);
 });
 
 console.log(`\n${passed} checks passed`);

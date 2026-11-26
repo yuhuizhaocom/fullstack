@@ -2,7 +2,7 @@
 // 规则文件已从原版解包文件核对（见 data/game/game-rules.json）。
 
 import { BUILDING_RULES } from "./rules";
-import type { Mode, Rule } from "./types";
+import type { BuildKind, Mode, Rule } from "./types";
 
 export const GRID_W = 168;
 export const GRID_H = 96;
@@ -94,8 +94,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     levels: levels("tent"),
   },
   market: {
-    label: "市场", desc: "u018 城镇，金币与木材交易", size: 2, texture: "b_tent", buildTime: 2,
-    levels: [{ cost: 64, hp: 50 }],
+    label: "城镇/市场", desc: "u018 城镇，交易并解锁高级建筑", size: 2, texture: "b_tent", buildTime: 2,
+    levels: [
+      { cost: 64, hp: 50 },
+      { cost: 256, hp: 100 },
+      { cost: 1024, hp: 200 },
+    ],
   },
   reveal: {
     label: "真视之塔", desc: "u01E 反隐塔", size: 2, texture: "b_tower", buildTime: 2,
@@ -112,14 +116,42 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
 };
 
-export const ELF_BUILD_KINDS = ["wall", "tower", "mine", "tent", "reveal"] as const;
+// 原版 Requires/DependencyOr 前置链：用墙等级代表低级/中级墙科技，用市场等级代表城镇 1/2/3。
+export interface Requirement {
+  kind: BuildKind;
+  level: number;
+}
+export const REQUIREMENTS: Partial<Record<BuildKind, Array<{ level: number; need: Requirement }>>> = {
+  // 作坊升级有前置：2 级只需基础墙，不要求商店/城镇；高级才需要城镇等级
+  tent: [
+    { level: 2, need: { kind: "wall", level: 1 } },
+    { level: 3, need: { kind: "wall", level: 4 } },
+    { level: 4, need: { kind: "market", level: 1 } },
+    { level: 5, need: { kind: "wall", level: 1 } },
+    { level: 6, need: { kind: "market", level: 2 } },
+    { level: 7, need: { kind: "wall", level: 4 } },
+    { level: 8, need: { kind: "market", level: 2 } },
+    { level: 9, need: { kind: "market", level: 3 } },
+    { level: 10, need: { kind: "market", level: 3 } },
+  ],
+  tower: [
+    { level: 3, need: { kind: "market", level: 1 } },
+    { level: 4, need: { kind: "market", level: 1 } },
+    { level: 5, need: { kind: "market", level: 2 } },
+    { level: 6, need: { kind: "market", level: 2 } },
+    { level: 7, need: { kind: "market", level: 3 } },
+  ],
+  reveal: [{ level: 1, need: { kind: "market", level: 2 } }],
+};
+
+export const ELF_BUILD_KINDS = ["wall", "tower", "mine", "tent", "market", "reveal"] as const;
 export const BUILD_KINDS = ELF_BUILD_KINDS;
 
 import type { SkillKey } from "./types";
 
 export const HERO_STATS = {
-  elf: { hp: 10, damage: 7, interval: 2.2, range: 112, speed: 125, radius: 14 },
-  troll: { hp: 750, damage: 7, interval: 1.5, range: 90, speed: 175, radius: 22 },
+  elf: { hp: 10, damage: 7, interval: 2.2, range: 32, speed: 125, radius: 14 },
+  troll: { hp: 750, damage: 7, interval: 1.5, range: 34, speed: 175, radius: 22 },
 } as const;
 
 export interface SkillKeyInfo {
@@ -140,9 +172,10 @@ export const SKILLS: Record<"elf" | "troll", SkillKeyInfo[]> = {
     { key: "windwalk", label: "疾风步", cd: 30, desc: "隐身 20 秒，移速 +50%" },
     { key: "berserk", label: "狂战士", cd: 120, desc: "10 秒 +100% 攻速、+50% 移速，受伤 +50%" },
     { key: "teleport", label: "传送", cd: 45, desc: "2 秒读条，返回巨魔小屋或商店" },
+    { key: "farSight", label: "巨魔之眼", cd: 25, desc: "标记一处精灵建筑 15 秒，期间无法拆除" },
   ],
 };
 
 export const ALL_SKILL_KEYS: SkillKey[] = [
-  "blink", "haste", "entangle", "silence", "windwalk", "berserk", "teleport",
+  "blink", "haste", "entangle", "silence", "windwalk", "berserk", "teleport", "farSight",
 ];

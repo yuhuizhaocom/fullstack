@@ -29,6 +29,7 @@ export interface GameOptions {
   mode?: Mode;
   rule?: Rule;
   testMode?: boolean;
+  playerFaction?: Faction;
 }
 
 export type SkillKey =
@@ -38,7 +39,8 @@ export type SkillKey =
   | "silence"
   | "windwalk"
   | "berserk"
-  | "teleport";
+  | "teleport"
+  | "farSight";
 
 export interface Buffs {
   haste: number;
@@ -54,6 +56,7 @@ export interface Hero {
   faction: Faction;
   isPlayer: boolean;
   isWolf: boolean;
+  isAlly: boolean;
   alive: boolean;
   lives: number;
   x: number;
@@ -97,6 +100,7 @@ export interface Building {
   alive: boolean;
   buildTimer: number;
   demolishTimer: number;
+  eyeMarked: number;
   flash: number;
   cd: number;
 }
@@ -146,7 +150,15 @@ export interface InputState {
 export interface GameState {
   mode: Mode;
   rule: Rule;
+  playerFaction: Faction;
   testMode: boolean;
+  trollStrength: number;
+  mobileDev: boolean;
+  mageSummoned: boolean;
+  relocateCd: number;
+  aiPath: Array<{ x: number; y: number }>;
+  aiPathIdx: number;
+  pathTimer: number;
   elfShared: boolean;
   elfExposed: boolean;
   woodPriceIn: number;

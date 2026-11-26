@@ -14,33 +14,44 @@ import {
   TILE,
 } from "@/lib/tve4/config";
 import {
+  buyEquipment,
+  buyStrengthBook,
   canBuild,
   canDemolish,
+  canSummonMage,
   castSkill,
   createGame,
   demolishBuilding,
   getPlayer,
+  relocateElf,
   setBlocked,
   stepGame,
+  summonArchmage,
+  toggleMobileDev,
   tradeWood,
   tryBuild,
   tryUpgrade,
 } from "@/lib/tve4/engine";
 import { buildBlocked } from "@/lib/tve4/map";
-import { MARKET_RULE, RULES } from "@/lib/tve4/rules";
-import type { BuildKind, GameState, Interaction, Mode, Rule, SkillKey } from "@/lib/tve4/types";
+import { EQUIPMENT_RULE, MARKET_RULE, RULES, SCENARIO_RULE } from "@/lib/tve4/rules";
+import type { BuildKind, Faction, GameState, Interaction, Mode, Rule, SkillKey } from "@/lib/tve4/types";
 
 import type { Stage4 } from "./stage";
 
 const FIXED = 1 / 30;
-type Sheet = "build" | "skill" | null;
+type Sheet = "build" | "skill" | "shop" | null;
 
 interface Snapshot {
   time: number;
   phase: string;
   mode: Mode;
   rule: Rule;
+  faction: Faction;
   testMode: boolean;
+  canSummon: boolean;
+  mobileDev: boolean;
+  trollStrength: number;
+  relocateCd: number;
   hasMarket: boolean;
   woodPriceIn: number;
   woodPriceOut: number;
@@ -66,10 +77,16 @@ export function Tve4Game() {
   const stageRef = useRef<Stage4 | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const keysRef = useRef(new Set<string>());
+  const joystickRef = useRef<HTMLDivElement>(null);
+  const joystickKnobRef = useRef<HTMLDivElement>(null);
+  const joystickActiveRef = useRef(false);
+  const touchMoveRef = useRef({ mx: 0, my: 0 });
   const hoverRef = useRef<{ x: number; y: number } | null>(null);
   const placingRef = useRef<BuildKind | null>(null);
   const moveTargetRef = useRef<{ x: number; y: number } | null>(null);
   const pendingSkillRef = useRef<SkillKey | null>(null);
+  const migrateRef = useRef(false);
+  const dragRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const testModeRef = useRef(false);
   const modeRef = useRef<Mode>("OLD");
   const ruleRef = useRef<Rule>("SINGLE");
@@ -79,7 +96,18 @@ export function Tve4Game() {
   const [sheet, setSheet] = useState<Sheet>(null);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
+  const [startFaction, setStartFaction] = useState<Faction | null>(null);
+  const [preMode, setPreMode] = useState<Mode>("OLD");
+  const [preRule, setPreRule] = useState<Rule>("SINGLE");
+  const [preTest, setPreTest] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [showMore, setShowMore] = useState(false);
+
+  const setHintLocal = useCallback((text: string) => {
+    setToast(text);
+    window.setTimeout(() => setToast(null), 2200);
+  }, []);
 
   const sync = useCallback(() => {
     const s = stateRef.current;
@@ -95,7 +123,12 @@ export function Tve4Game() {
       phase: s.phase,
       mode: s.mode,
       rule: s.rule,
+      faction: s.playerFaction,
       testMode: s.testMode,
+      canSummon: canSummonMage(s),
+      mobileDev: s.mobileDev,
+      trollStrength: s.trollStrength,
+      relocateCd: s.relocateCd,
       hasMarket: s.buildings.some((b) => b.alive && b.kind === "market" && b.faction === "elf"),
       woodPriceIn: s.woodPriceIn,
       woodPriceOut: s.woodPriceOut,
@@ -129,8 +162,31 @@ export function Tve4Game() {
 
   useEffect(() => {
     const box = boxRef.current;
+    if (!box) return;
+    const observer = new ResizeObserver(() => {
+      stageRef.current?.resize(box.clientWidth, box.clientHeight);
+    });
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get("test") === "1";
+    const m = (params.get("mode") as Mode | null) ?? "OLD";
+    const r = (params.get("rule") as Rule | null) ?? "SINGLE";
+    setPreTest(t);
+    setPreMode(m);
+    setPreRule(r);
+    testModeRef.current = t;
+    modeRef.current = m;
+    ruleRef.current = r;
+  }, []);
+
+  useEffect(() => {
+    const box = boxRef.current;
     const canvas = canvasRef.current;
-    if (!box || !canvas) return;
+    if (!box || !canvas || !startFaction) return;
     let cancelled = false;
     (async () => {
       try {
@@ -141,14 +197,10 @@ export function Tve4Game() {
           return;
         }
         stageRef.current = stage;
-        const params = new URLSearchParams(window.location.search);
-        const testMode = params.get("test") === "1";
-        const mode = (params.get("mode") as Mode | null) ?? "OLD";
-        const rule = (params.get("rule") as Rule | null) ?? "SINGLE";
-        testModeRef.current = testMode;
-        modeRef.current = mode;
-        ruleRef.current = rule;
-        const state = createGame({ testMode, mode, rule });
+        const testMode = testModeRef.current;
+        const mode = modeRef.current;
+        const rule = ruleRef.current;
+        const state = createGame({ testMode, mode, rule, playerFaction: startFaction });
         setBlocked(state, buildBlocked());
         stateRef.current = state;
         setLoading(false);
@@ -163,7 +215,7 @@ export function Tve4Game() {
       stageRef.current?.destroy();
       stageRef.current = null;
     };
-  }, [sync]);
+  }, [sync, startFaction]);
 
   useEffect(() => {
     let last = performance.now();
@@ -183,6 +235,8 @@ export function Tve4Game() {
       if (keys.has("s") || keys.has("arrowdown")) my += 1;
       if (keys.has("a") || keys.has("arrowleft")) mx -= 1;
       if (keys.has("d") || keys.has("arrowright")) mx += 1;
+      mx += touchMoveRef.current.mx;
+      my += touchMoveRef.current.my;
       const mag = Math.hypot(mx, my);
       if (mag > 0) {
         mx /= mag;
@@ -256,15 +310,79 @@ export function Tve4Game() {
     };
   }, []);
 
-  const onPointer = useCallback(
-    (e: React.PointerEvent<HTMLCanvasElement>, click: boolean) => {
-      const stage = stageRef.current;
-      const state = stateRef.current;
-      if (!stage || !state) return;
-      const world = stage.screenToWorld(e.clientX, e.clientY);
-      if (!world) return;
-      hoverRef.current = world;
-      if (!click) return;
+  const updateJoystick = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const el = joystickRef.current;
+    const knob = joystickKnobRef.current;
+    if (!el || !knob) return;
+    const rect = el.getBoundingClientRect();
+    const dx = e.clientX - (rect.left + rect.width / 2);
+    const dy = e.clientY - (rect.top + rect.height / 2);
+    const max = rect.width * 0.36;
+    const mag = Math.hypot(dx, dy);
+    const k = mag > max ? max / mag : 1;
+    touchMoveRef.current = { mx: (dx * k) / max, my: (dy * k) / max };
+    knob.style.transform = `translate(calc(-50% + ${dx * k}px), calc(-50% + ${dy * k}px))`;
+  }, []);
+
+  const startJoystick = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    joystickActiveRef.current = true;
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* 合成事件可能无有效 pointerId */ }
+    updateJoystick(e);
+  }, [updateJoystick]);
+
+  const moveJoystick = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (joystickActiveRef.current) updateJoystick(e);
+  }, [updateJoystick]);
+
+  const endJoystick = useCallback(() => {
+    joystickActiveRef.current = false;
+    touchMoveRef.current = { mx: 0, my: 0 };
+    if (joystickKnobRef.current) joystickKnobRef.current.style.transform = "translate(-50%, -50%)";
+  }, []);
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    dragRef.current = { x: e.clientX, y: e.clientY, moved: false };
+    const stage = stageRef.current;
+    if (!stage) return;
+    hoverRef.current = stage.screenToWorld(e.clientX, e.clientY);
+  }, []);
+
+  const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    hoverRef.current = stage.screenToWorld(e.clientX, e.clientY);
+    const drag = dragRef.current;
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    if (Math.hypot(dx, dy) < 8) return;
+    drag.moved = true;
+    stage.setPanning(true);
+    const zoom = Math.max(0.1, stage.getZoom());
+    stage.panBy(-dx / zoom, -dy / zoom);
+    drag.x = e.clientX;
+    drag.y = e.clientY;
+  }, []);
+
+  const onPointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    stageRef.current?.setPanning(false);
+    if (!drag || drag.moved) return;
+    const stage = stageRef.current;
+    const state = stateRef.current;
+    if (!stage || !state) return;
+    const world = stage.screenToWorld(e.clientX, e.clientY);
+    if (!world) return;
+    hoverRef.current = world;
+    if (migrateRef.current) {
+        const gx = Math.floor(world.x / TILE);
+        const gy = Math.floor(world.y / TILE);
+        migrateRef.current = false;
+        relocateElf(state, gx, gy);
+        sync();
+        return;
+      }
       if (pendingSkillRef.current) {
         castSkill(state, pendingSkillRef.current, world);
         pendingSkillRef.current = null;
@@ -290,12 +408,9 @@ export function Tve4Game() {
           Math.abs(world.x - x.x) <= (x.size * TILE) / 2 &&
           Math.abs(world.y - x.y) <= (x.size * TILE) / 2,
       );
-      selectedRef.current = b?.id ?? null;
-      if (!b) moveTargetRef.current = world;
-      sync();
-    },
-    [sync],
-  );
+    selectedRef.current = b?.id ?? null;
+    sync();
+  }, [sync]);
 
   const toggleSheet = useCallback((next: Sheet) => {
     const v = sheetRef.current === next ? null : next;
@@ -308,7 +423,7 @@ export function Tve4Game() {
     testModeRef.current = testMode;
     modeRef.current = mode;
     ruleRef.current = rule;
-    const next = createGame({ testMode, mode, rule });
+    const next = createGame({ testMode, mode, rule, playerFaction: stateRef.current?.playerFaction ?? startFaction ?? "elf" });
     setBlocked(next, buildBlocked());
     stateRef.current = next;
     selectedRef.current = null;
@@ -325,50 +440,149 @@ export function Tve4Game() {
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full touch-none"
-        onPointerMove={(e) => onPointer(e, false)}
-        onPointerDown={(e) => onPointer(e, true)}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
       />
-      {loading ? <div className="absolute inset-0 flex items-center justify-center bg-black/70 text-sm text-white">加载中...</div> : null}
+      {!startFaction ? (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-6 bg-[#07100b] px-6 text-white">
+          <div className="text-center">
+            <div className="text-3xl font-bold">巨魔 VS 精灵</div>
+            <div className="mt-2 text-sm text-white/60">选择阵营开始对局</div>
+          </div>
+          <div className="flex gap-2 text-xs">
+            <select className="rounded-lg bg-white/10 px-3 py-2" value={preMode} onChange={(e) => setPreMode(e.target.value as Mode)}>
+              {(Object.keys(MODE_LABEL) as Mode[]).map((m) => <option key={m} value={m}>{MODE_LABEL[m]}</option>)}
+            </select>
+            <select className="rounded-lg bg-white/10 px-3 py-2" value={preRule} onChange={(e) => setPreRule(e.target.value as Rule)}>
+              {(Object.keys(RULE_LABEL) as Rule[]).map((r) => <option key={r} value={r}>{RULE_LABEL[r]}</option>)}
+            </select>
+            <button className={`rounded-lg px-3 py-2 ${preTest ? "bg-amber-700" : "bg-white/10"}`} onClick={() => setPreTest(!preTest)}>
+              {preTest ? "测试模式" : "常规模式"}
+            </button>
+          </div>
+          <div className="flex w-full max-w-md flex-col gap-3">
+            <button
+              className="rounded-xl border border-emerald-500/50 bg-emerald-900/40 p-4 text-left"
+              onClick={() => {
+                modeRef.current = preMode;
+                ruleRef.current = preRule;
+                testModeRef.current = preTest;
+                setLoading(true);
+                setStartFaction("elf");
+              }}
+            >
+              <div className="text-lg font-semibold text-emerald-300">精灵阵营</div>
+              <div className="mt-1 text-xs text-white/60">前期全力发育，中期起塔压制，后期 66 座终极塔召唤大法师；可搬家逃跑或游走发育</div>
+            </button>
+            <button
+              className="rounded-xl border border-orange-500/50 bg-orange-900/40 p-4 text-left"
+              onClick={() => {
+                modeRef.current = preMode;
+                ruleRef.current = preRule;
+                testModeRef.current = preTest;
+                setLoading(true);
+                setStartFaction("troll");
+              }}
+            >
+              <div className="text-lg font-semibold text-orange-300">巨魔阵营</div>
+              <div className="mt-1 text-xs text-white/60">前期快速打钱投入攻击攻速，精灵反抗时补护甲血量；杀光精灵或堆到 16 万力量获胜</div>
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {startFaction && loading ? <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/70 text-sm text-white">加载中...</div> : null}
+      {toast ? (
+        <div className="pointer-events-none absolute left-1/2 top-28 z-30 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-xs text-amber-200">
+          {toast}
+        </div>
+      ) : null}
       {error ? <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/85 text-sm text-rose-200">{error}</div> : null}
 
       {snapshot ? (
         <>
-          <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2">
-            <button className="pointer-events-auto rounded-lg bg-black/60 px-3 py-2 text-xs text-white" onClick={() => toggleSheet("build")}>建造</button>
-            <button className="pointer-events-auto rounded-lg bg-black/60 px-3 py-2 text-xs text-white" onClick={() => toggleSheet("skill")}>技能</button>
-            <button
-              className={`pointer-events-auto rounded-lg px-3 py-2 text-xs ${snapshot.testMode ? "bg-amber-700 text-white" : "bg-black/60 text-white"}`}
-              onClick={() => restart(!snapshot.testMode)}
-              title="测试模式跳过 30 秒准备期"
-            >
-              {snapshot.testMode ? "测试模式" : "常规模式"}
-            </button>
-            <select
-              className="pointer-events-auto rounded-lg bg-black/60 px-2 py-2 text-xs text-white"
-              value={snapshot.mode}
-              onChange={(e) => restart(snapshot.testMode, e.target.value as Mode, snapshot.rule)}
-            >
-              {(Object.keys(MODE_LABEL) as Mode[]).map((m) => <option key={m} value={m}>{MODE_LABEL[m]}</option>)}
-            </select>
-            <select
-              className="pointer-events-auto rounded-lg bg-black/60 px-2 py-2 text-xs text-white"
-              value={snapshot.rule}
-              onChange={(e) => restart(snapshot.testMode, snapshot.mode, e.target.value as Rule)}
-            >
-              {(Object.keys(RULE_LABEL) as Rule[]).map((r) => <option key={r} value={r}>{RULE_LABEL[r]}</option>)}
-            </select>
-            <button className="pointer-events-auto rounded-lg bg-black/60 px-3 py-2 text-xs text-white" onClick={() => stageRef.current?.zoomBy(1.25)}>＋</button>
-            <button className="pointer-events-auto rounded-lg bg-black/60 px-3 py-2 text-xs text-white" onClick={() => stageRef.current?.zoomBy(0.8)}>－</button>
-            <div className="pointer-events-none flex flex-col rounded-lg bg-black/60 px-3 py-1 text-xs text-white">
-              <span>
-                {snapshot.phase === "prep"
-                  ? `准备 ${Math.max(0, RULE_PREP[snapshot.rule] - snapshot.time).toFixed(0)}s`
-                  : `${snapshot.time.toFixed(0)}s`}
-              </span>
-              <span className="text-[10px] text-white/60">
-                {MODE_LABEL[snapshot.mode]} · {RULE_LABEL[snapshot.rule]}
-              </span>
+          <div
+            ref={joystickRef}
+            className="pointer-events-auto absolute bottom-5 left-4 z-30 h-28 w-28 rounded-full border border-white/20 bg-black/40"
+            onPointerDown={startJoystick}
+            onPointerMove={moveJoystick}
+            onPointerUp={endJoystick}
+            onPointerCancel={endJoystick}
+          >
+            <div
+              ref={joystickKnobRef}
+              className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400/70"
+            />
+          </div>
+          <div className="pointer-events-none absolute left-3 top-3 rounded-lg bg-black/50 px-2 py-1 text-xs text-white">
+            {snapshot.phase === "prep"
+              ? `准备 ${Math.max(0, RULE_PREP[snapshot.rule] - snapshot.time).toFixed(0)}s`
+              : `${snapshot.time.toFixed(0)}s`}
+            <span className="ml-2 text-[10px] text-white/60">{MODE_LABEL[snapshot.mode]} · {RULE_LABEL[snapshot.rule]}</span>
+          </div>
+          {showMore ? (
+            <div className="pointer-events-none absolute bottom-24 right-3 z-30 flex w-56 flex-col gap-2 rounded-xl border border-white/10 bg-neutral-900/95 p-2 text-xs text-white">
+              <button className="pointer-events-auto rounded-lg bg-white/10 px-2 py-2" onClick={() => restart(!snapshot.testMode)}>
+                {snapshot.testMode ? "测试模式" : "常规模式"}
+              </button>
+              <select className="pointer-events-auto rounded-lg bg-white/10 px-2 py-2" value={snapshot.mode} onChange={(e) => restart(snapshot.testMode, e.target.value as Mode, snapshot.rule)}>
+                {(Object.keys(MODE_LABEL) as Mode[]).map((m) => <option key={m} value={m}>{MODE_LABEL[m]}</option>)}
+              </select>
+              <select className="pointer-events-auto rounded-lg bg-white/10 px-2 py-2" value={snapshot.rule} onChange={(e) => restart(snapshot.testMode, snapshot.mode, e.target.value as Rule)}>
+                {(Object.keys(RULE_LABEL) as Rule[]).map((r) => <option key={r} value={r}>{RULE_LABEL[r]}</option>)}
+              </select>
+              <div className="flex gap-2">
+                <button className="pointer-events-auto flex-1 rounded-lg bg-white/10 px-2 py-2" onClick={() => stageRef.current?.zoomBy(1.25)}>＋</button>
+                <button className="pointer-events-auto flex-1 rounded-lg bg-white/10 px-2 py-2" onClick={() => stageRef.current?.zoomBy(0.8)}>－</button>
+                <button className="pointer-events-auto flex-1 rounded-lg bg-white/10 px-2 py-2" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void document.documentElement.requestFullscreen?.(); }}>全屏</button>
+              </div>
             </div>
+          ) : null}
+          <div className="pointer-events-none absolute bottom-5 left-36 right-3 z-30 flex flex-wrap justify-end gap-2">
+            <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => toggleSheet(snapshot.faction === "elf" ? "build" : "shop")}>
+              {snapshot.faction === "elf" ? "建造" : "商店"}
+            </button>
+            <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => toggleSheet("skill")}>技能</button>
+            {snapshot.faction === "elf" ? (
+              <>
+                <button
+                  className="pointer-events-auto rounded-lg bg-amber-800 px-3 py-3 text-xs text-white disabled:opacity-40"
+                  disabled={!snapshot.selected?.canUpgrade}
+                  onClick={() => {
+                    const s = stateRef.current;
+                    if (s && selectedRef.current !== null) { tryUpgrade(s, selectedRef.current); sync(); }
+                  }}
+                >
+                  升级
+                </button>
+                <button
+                  className="pointer-events-auto rounded-lg bg-rose-800 px-3 py-3 text-xs text-white disabled:opacity-40"
+                  disabled={!snapshot.demolish?.ok}
+                  onClick={() => {
+                    const s = stateRef.current;
+                    if (s && selectedRef.current !== null) { demolishBuilding(s, selectedRef.current); selectedRef.current = null; sync(); }
+                  }}
+                >
+                  拆除
+                </button>
+                <button
+                  className="pointer-events-auto rounded-lg bg-sky-800 px-3 py-3 text-xs text-white disabled:opacity-40"
+                  disabled={!snapshot.canSummon}
+                  onClick={() => { const s = stateRef.current; if (s) { summonArchmage(s); sync(); } }}
+                >
+                  召唤
+                </button>
+                <button
+                  className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white"
+                  onClick={() => { const s = stateRef.current; if (s) { toggleMobileDev(s); sync(); } }}
+                >
+                  游走{snapshot.mobileDev ? "开" : "关"}
+                </button>
+                <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => { migrateRef.current = true; }}>迁移</button>
+              </>
+            ) : null}
+            <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => setShowMore(!showMore)}>更多</button>
           </div>
           <div className="pointer-events-none absolute right-3 top-3 rounded-lg bg-black/60 px-3 py-2 text-right text-xs text-white">
             <div>金币 {Math.floor(snapshot.gold)} · 木材 {Math.floor(snapshot.wood)}</div>
@@ -376,6 +590,11 @@ export function Tve4Game() {
             <div className="text-white/60">击杀 {snapshot.stats.kills} · 摧毁 {snapshot.stats.destroyed}</div>
             {snapshot.trollItems.length ? (
               <div className="text-[10px] text-amber-200/70">巨魔装备 {snapshot.trollItems.length}/{RULES.equipmentShop.items.length}</div>
+            ) : null}
+            {snapshot.faction === "troll" ? (
+              <div className="text-[10px] text-orange-200/80">
+                力量 {snapshot.trollStrength}/{SCENARIO_RULE.troll.strengthWin}
+              </div>
             ) : null}
           </div>
           {snapshot.hasMarket ? (
@@ -413,7 +632,7 @@ export function Tve4Game() {
             </div>
           ) : null}
           {sheet ? (
-            <div className="absolute bottom-16 left-1/2 z-20 max-w-[95vw] -translate-x-1/2 overflow-x-auto rounded-xl border border-white/10 bg-neutral-900/95 p-3 text-white">
+            <div className="absolute bottom-24 left-1/2 z-20 max-w-[95vw] -translate-x-1/2 overflow-x-auto rounded-xl border border-white/10 bg-neutral-900/95 p-3 text-white">
               {sheet === "build" ? (
                 <div className="flex gap-2">
                   {BUILD_KINDS.map((kind) => {
@@ -436,9 +655,47 @@ export function Tve4Game() {
                     );
                   })}
                 </div>
+              ) : sheet === "shop" ? (
+                <div className="flex max-w-[90vw] flex-wrap gap-2">
+                  {EQUIPMENT_RULE.items.map((item) => (
+                    <button
+                      key={item.key}
+                      className="min-w-[92px] rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs"
+                      disabled={snapshot.trollItems.includes(item.key)}
+                      onClick={() => {
+                        const s = stateRef.current;
+                        if (s) {
+                          const ok = buyEquipment(s, item.key);
+                          if (!ok) setHintLocal("需回到巨魔商店附近且金币足够");
+                          sync();
+                        }
+                      }}
+                    >
+                      <div className="font-semibold">{item.label}</div>
+                      <div className="text-white/60">{item.gold} 金</div>
+                    </button>
+                  ))}
+                  {SCENARIO_RULE.troll.strengthBooks.map((book) => (
+                    <button
+                      key={book.key}
+                      className="min-w-[92px] rounded-lg border border-orange-400/40 bg-orange-900/30 px-2 py-2 text-xs"
+                      onClick={() => {
+                        const s = stateRef.current;
+                        if (s) {
+                          const ok = buyStrengthBook(s, book.key);
+                          if (!ok) setHintLocal("需回到巨魔商店附近且金币足够");
+                          sync();
+                        }
+                      }}
+                    >
+                      <div className="font-semibold">{book.label}</div>
+                      <div className="text-white/60">{book.gold} 金</div>
+                    </button>
+                  ))}
+                </div>
               ) : (
                 <div className="flex gap-2">
-                  {SKILLS.elf.map((spec) => (
+                  {SKILLS[snapshot.faction].map((spec) => (
                     <button
                       key={spec.key}
                       className={`min-w-[84px] rounded-lg border px-3 py-2 text-xs ${snapshot.pendingSkill === spec.key ? "border-sky-400 bg-sky-900" : "border-white/10 bg-white/5"}`}
@@ -464,52 +721,19 @@ export function Tve4Game() {
             </div>
           ) : null}
           {snapshot.selected ? (
-            <div className="absolute bottom-16 right-3 z-20 rounded-xl border border-white/10 bg-neutral-900/95 p-3 text-xs text-white">
+            <div className="absolute bottom-24 right-3 z-20 rounded-xl border border-white/10 bg-neutral-900/95 p-3 text-xs text-white">
               <div className="font-semibold">{snapshot.selected.label} Lv{snapshot.selected.level}</div>
               <div>HP {Math.max(0, snapshot.selected.hp).toFixed(0)}/{snapshot.selected.maxHp}</div>
-              {snapshot.selected.canUpgrade ? (
-                <button
-                  className="mt-2 rounded-lg bg-amber-700 px-3 py-1 text-xs"
-                  onClick={() => {
-                    const s = stateRef.current;
-                    if (s && selectedRef.current !== null) {
-                      tryUpgrade(s, selectedRef.current);
-                      sync();
-                    }
-                  }}
-                >
-                  升级 · {snapshot.selected.cost} 金{snapshot.selected.woodCost ? ` · ${snapshot.selected.woodCost} 木` : ""}
-                </button>
-              ) : (
-                <div className="mt-2 text-white/50">已满级</div>
-              )}
-              <div className="mt-2 border-t border-white/10 pt-2">
-                <button
-                  className="rounded-lg bg-rose-800 px-3 py-1 text-xs disabled:opacity-40"
-                  disabled={!snapshot.demolish?.ok}
-                  title={snapshot.demolish?.ok
-                    ? `拆除（血量 ≥${Math.round(RULES.elfDemolish.minHpRatio * 100)}% 且巨魔不在附近）`
-                    : snapshot.demolish?.reason}
-                  onClick={() => {
-                    const s = stateRef.current;
-                    if (s && selectedRef.current !== null) {
-                      demolishBuilding(s, selectedRef.current);
-                      selectedRef.current = null;
-                      sync();
-                    }
-                  }}
-                >
-                  拆除
-                </button>
-                {snapshot.demolish && !snapshot.demolish.ok ? (
-                  <div className="mt-1 text-[10px] text-rose-300/70">{snapshot.demolish.reason}</div>
-                ) : null}
+              <div className="mt-1 text-white/60">
+                {snapshot.selected.canUpgrade
+                  ? `升级需 ${snapshot.selected.cost} 金${snapshot.selected.woodCost ? ` · ${snapshot.selected.woodCost} 木` : ""}`
+                  : "已满级"}
               </div>
+              {snapshot.demolish && !snapshot.demolish.ok ? (
+                <div className="mt-1 text-[10px] text-rose-300/70">{snapshot.demolish.reason}</div>
+              ) : null}
             </div>
           ) : null}
-          <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-[10px] text-white/50">
-            WASD / 点击地面移动 · 点击建造或选中建筑 · M 全图 · K 攻击 · B 建造 · Esc 取消
-          </div>
         </>
       ) : null}
     </div>

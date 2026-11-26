@@ -76,6 +76,18 @@ export interface RuleFile {
     elfShareAtSeconds: number;
     exposeAtSeconds: number;
   };
+  scenarios: {
+    elf: {
+      ultimateTowerCount: number;
+      archmage: { hp: number; damage: number; range: number; interval: number };
+      relocateCooldown: number;
+      mobileDevGoldPenalty: number;
+    };
+    troll: {
+      strengthWin: number;
+      strengthBooks: Array<{ key: string; label: string; gold: number; strength: number }>;
+    };
+  };
   respawn: {
     elfCleanup: number;
     wolf: number;
@@ -95,3 +107,4 @@ export const BOUNTY_RULE = RULES.bounty;
 export const COMBAT_RULE = RULES.combat;
 export const VISION_RULE = RULES.vision;
 export const RESPAWN_RULE = RULES.respawn;
+export const SCENARIO_RULE = RULES.scenarios;

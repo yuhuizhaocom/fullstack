@@ -8,6 +8,7 @@ import {
   GRID_W,
   HERO_STATS,
   LIVES,
+  REQUIREMENTS,
   RULE_PREP,
   SKILLS,
   START_GOLD,
@@ -26,6 +27,7 @@ import {
   MARKET_RULE,
   RESPAWN_RULE,
   RULES,
+  SCENARIO_RULE,
   VISION_RULE,
 } from "./rules";
 import type {
@@ -102,10 +104,19 @@ export function createGame(options: GameOptions = {}): GameState {
   const mode: Mode = options.mode ?? "OLD";
   const rule: Rule = options.rule ?? "SINGLE";
   const testMode = options.testMode ?? false;
+  const playerFaction: Faction = options.playerFaction ?? "elf";
   const state: GameState = {
     mode,
     rule,
+    playerFaction,
     testMode,
+    trollStrength: 0,
+    mobileDev: false,
+    mageSummoned: false,
+    relocateCd: 0,
+    aiPath: [],
+    aiPathIdx: 0,
+    pathTimer: 0,
     elfShared: false,
     elfExposed: false,
     woodPriceIn: MARKET_RULE.buyPrice,
@@ -126,13 +137,15 @@ export function createGame(options: GameOptions = {}): GameState {
     nextId: 1,
     stats: { kills: 0, destroyed: 0, goldEarned: 0, damage: 0 },
   };
-  const p = gridToWorld(ELF_START.gx, ELF_START.gy);
-  state.heroes.push(makeHero(state, "elf", true, p.x, p.y));
+  const playerPoint = playerFaction === "elf" ? ELF_START : TROLL_START;
+  const pp = gridToWorld(playerPoint.gx, playerPoint.gy);
+  state.heroes.push(makeHero(state, playerFaction, true, pp.x, pp.y));
+  if (playerFaction === "troll") createTrollInfrastructure(state);
   if (testMode) {
     spawnTroll(state);
-    setHint(state, "测试模式：巨魔已出现");
+    setHint(state, "测试模式：对手已出现");
   } else {
-    setHint(state, "准备阶段：建造防线，巨魔即将出现");
+    setHint(state, "准备阶段：发育期");
   }
   return state;
 }
@@ -144,6 +157,7 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
     faction,
     isPlayer,
     isWolf: false,
+    isAlly: false,
     alive: true,
     lives: faction === "elf" && state.rule === "REVIVE" ? 3 : LIVES,
     x, y, vx: 0, vy: 0, facing: 0,
@@ -158,22 +172,34 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
   };
 }
 
-function spawnTroll(state: GameState): void {
-  const p = gridToWorld(TROLL_START.gx, TROLL_START.gy);
-  const troll = makeHero(state, "troll", false, p.x, p.y);
-  troll.invuln = RULES.trollInvulnerableSeconds;
-  state.heroes.push(troll);
+function createTrollInfrastructure(state: GameState): void {
   // u03D 原版由系统创建，玩家不能自建
   state.buildings.push(makeBuilding(state, "trollHouse", "troll", TROLL_START.gx - 1, TROLL_START.gy - 1, 0));
   for (const [ox, oy] of EQUIPMENT_RULE.shopOffsets) {
     state.buildings.push(makeBuilding(
       state, "market", "troll",
-      TROLL_START.gx + Math.round(ox / 16), TROLL_START.gy + Math.round(oy / 16), 0,
+      TROLL_START.gx + Math.round(ox * 0.5), TROLL_START.gy + Math.round(oy * 0.5), 0,
     ));
+  }
+}
+
+function spawnTroll(state: GameState): void {
+  let p: { x: number; y: number };
+  if (state.playerFaction === "troll") {
+    // 玩家是巨魔：此时出现的是 AI 精灵
+    p = gridToWorld(ELF_START.gx, ELF_START.gy);
+    state.heroes.push(makeHero(state, "elf", false, p.x, p.y));
+    setHint(state, "精灵对手已出现");
+  } else {
+    p = gridToWorld(TROLL_START.gx, TROLL_START.gy);
+    const troll = makeHero(state, "troll", false, p.x, p.y);
+    troll.invuln = RULES.trollInvulnerableSeconds;
+    state.heroes.push(troll);
+    createTrollInfrastructure(state);
+    setHint(state, "巨魔出现了！守住你的阵地");
   }
   state.trollSpawned = true;
   state.phase = "battle";
-  setHint(state, "巨魔出现了！守住你的阵地");
   addEffect(state, p.x, p.y, 90, "#ff8a5c");
 }
 
@@ -184,7 +210,7 @@ function makeBuilding(state: GameState, kind: BuildKind, faction: Faction, gx: n
     x: (gx + def.size / 2) * TILE, y: (gy + def.size / 2) * TILE,
     gx0: gx, gy0: gy, size: def.size, level: 1,
     hp: def.levels[0].hp, maxHp: def.levels[0].hp,
-    alive: true, buildTimer, demolishTimer: 0, flash: 0, cd: 0,
+    alive: true, buildTimer, demolishTimer: 0, eyeMarked: 0, flash: 0, cd: 0,
   };
 }
 
@@ -211,39 +237,40 @@ export function getPlayer(state: GameState): Hero | undefined {
 
 // ---------------------------------------------------------------- 碰撞 / 建造
 
-function occupiedByBuilding(state: GameState, x: number, y: number, r: number): boolean {
+function occupiedByBuilding(state: GameState, x: number, y: number, r: number, faction?: Faction): boolean {
   for (const b of state.buildings) {
     if (!b.alive || b.buildTimer > 0) continue;
+    // 同阵营建筑不阻挡自己（否则出生点的系统商店/小屋会把巨魔围死）
+    if (faction && b.faction === faction) continue;
     const half = (b.size * TILE) / 2;
     if (Math.abs(x - b.x) < half + r * 0.5 && Math.abs(y - b.y) < half + r * 0.5) return true;
   }
   return false;
 }
 
-function positionFree(state: GameState, x: number, y: number, r: number): boolean {
+function positionFree(state: GameState, x: number, y: number, r: number, faction?: Faction): boolean {
   if (x < r || y < r || x > WORLD_W - r || y > WORLD_H - r) return false;
-  const minGX = Math.floor((x - r) / TILE);
-  const maxGX = Math.floor((x + r) / TILE);
-  const minGY = Math.floor((y - r) / TILE);
-  const maxGY = Math.floor((y + r) / TILE);
-  for (let gy = minGY; gy <= maxGY; gy += 1) {
-    for (let gx = minGX; gx <= maxGX; gx += 1) {
-      if (cellBlocked(state, gx, gy)) return false;
-    }
+  // 圆形采样：周向 + 中心，避免 AABB 角点把 1 格墙误判成可穿过，同时允许斜向挤过窄口
+  for (let i = 0; i < 16; i += 1) {
+    const a = (i / 16) * Math.PI * 2;
+    const px = x + Math.cos(a) * r;
+    const py = y + Math.sin(a) * r;
+    if (cellBlocked(state, Math.floor(px / TILE), Math.floor(py / TILE))) return false;
   }
-  return !occupiedByBuilding(state, x, y, r);
+  if (cellBlocked(state, Math.floor(x / TILE), Math.floor(y / TILE))) return false;
+  return !occupiedByBuilding(state, x, y, r, faction);
 }
 
 function moveWithCollision(state: GameState, h: Hero, dx: number, dy: number): void {
   const nx = h.x + dx;
   const ny = h.y + dy;
-  if (positionFree(state, nx, ny, h.radius)) {
+  if (positionFree(state, nx, ny, h.radius, h.faction)) {
     h.x = nx;
     h.y = ny;
     return;
   }
-  if (positionFree(state, nx, h.y, h.radius)) h.x = nx;
-  if (positionFree(state, h.x, ny, h.radius)) h.y = ny;
+  if (positionFree(state, nx, h.y, h.radius, h.faction)) h.x = nx;
+  if (positionFree(state, h.x, ny, h.radius, h.faction)) h.y = ny;
 }
 
 function cellsFreeForBuilding(state: GameState, gx: number, gy: number, size: number): boolean {
@@ -257,6 +284,16 @@ function cellsFreeForBuilding(state: GameState, gx: number, gy: number, size: nu
     }
   }
   return true;
+}
+
+function requirementReason(state: GameState, kind: BuildKind, level: number, faction: Faction): string | null {
+  const req = REQUIREMENTS[kind]?.find((r) => r.level === level);
+  if (!req) return null;
+  const met = state.buildings.some(
+    (b) => b.alive && b.faction === faction && b.kind === req.need.kind
+      && b.level >= req.need.level && b.buildTimer <= 0,
+  );
+  return met ? null : `需要先建造 ${BUILDINGS[req.need.kind].label} Lv${req.need.level}`;
 }
 
 export function canBuild(
@@ -279,6 +316,8 @@ export function canBuild(
   const level = def.levels[0];
   if (hero && hero.gold < level.cost) return { ok: false, reason: "金币不足" };
   if (hero && hero.wood < (level.woodCost ?? 0)) return { ok: false, reason: "木材不足" };
+  const missing = requirementReason(state, kind, 1, faction);
+  if (missing) return { ok: false, reason: missing };
   return { ok: true, reason: "" };
 }
 
@@ -316,6 +355,11 @@ export function tryUpgrade(state: GameState, id: number): boolean {
     setHint(state, "木材不足");
     return false;
   }
+  const missing = requirementReason(state, b.kind, b.level + 1, b.faction);
+  if (missing) {
+    setHint(state, missing);
+    return false;
+  }
   hero.gold -= spec.cost;
   hero.wood -= spec.woodCost ?? 0;
   b.level += 1;
@@ -337,13 +381,12 @@ export function canDemolish(state: GameState, id: number): { ok: boolean; reason
     return { ok: false, reason: `血量需 ≥ ${Math.round(DEMOLISH_RULE.minHpRatio * 100)}%` };
   }
   const heroRadius = DEMOLISH_RULE.enemyHeroRadius * SCALE;
-  const eyeRadius = DEMOLISH_RULE.trollEyeRadius * SCALE;
   const troll = state.heroes.find((h) => h.faction === "troll" && h.alive);
   if (troll) {
     if (Math.hypot(troll.x - b.x, troll.y - b.y) <= heroRadius) {
       return { ok: false, reason: "附近有敌方英雄，暂时无法拆除" };
     }
-    if (b.kind !== "tent" && troll.buffs.revealed <= 0 && Math.hypot(troll.x - b.x, troll.y - b.y) <= eyeRadius) {
+    if (b.kind !== "tent" && b.eyeMarked > 0) {
       return { ok: false, reason: "被巨魔之眼照到的非作坊无法拆除" };
     }
   }
@@ -392,11 +435,108 @@ interface DamageTarget {
   ref: Hero | Building;
 }
 
+function hasLineOfSight(state: GameState, x1: number, y1: number, x2: number, y2: number): boolean {
+  const dist = Math.hypot(x2 - x1, y2 - y1);
+  const steps = Math.max(1, Math.ceil(dist / (TILE / 2)));
+  for (let i = 1; i < steps; i += 1) {
+    const t = i / steps;
+    const gx = Math.floor((x1 + (x2 - x1) * t) / TILE);
+    const gy = Math.floor((y1 + (y2 - y1) * t) / TILE);
+    if (cellBlocked(state, gx, gy)) return false;
+  }
+  return true;
+}
+
+function cellWalkable(state: GameState, gx: number, gy: number, faction: Faction): boolean {
+  // 为英雄半径留出 1 格余量：相邻格也不通行，否则会贴墙卡住
+  for (let dy = -1; dy <= 1; dy += 1) {
+    for (let dx = -1; dx <= 1; dx += 1) {
+      const nx = gx + dx;
+      const ny = gy + dy;
+      if (cellBlocked(state, nx, ny)) return false;
+      for (const b of state.buildings) {
+        if (!b.alive || b.buildTimer > 0 || b.faction === faction) continue;
+        if (nx >= b.gx0 && nx < b.gx0 + b.size && ny >= b.gy0 && ny < b.gy0 + b.size) return false;
+      }
+    }
+  }
+  return true;
+}
+
+/** 简易 BFS 寻路：绕开墙体与敌对建筑，返回世界坐标路点。 */
+function findPath(
+  state: GameState,
+  sx: number, sy: number,
+  gx: number, gy: number,
+  faction: Faction,
+): Array<{ x: number; y: number }> {
+  const startX = Math.floor(sx / TILE);
+  const startY = Math.floor(sy / TILE);
+  let goalX = Math.max(0, Math.min(GRID_W - 1, Math.floor(gx / TILE)));
+  let goalY = Math.max(0, Math.min(GRID_H - 1, Math.floor(gy / TILE)));
+  if (!cellWalkable(state, goalX, goalY, faction)) {
+    let found = false;
+    for (let r = 1; r <= 6 && !found; r += 1) {
+      for (let dy = -r; dy <= r && !found; dy += 1) {
+        for (let dx = -r; dx <= r && !found; dx += 1) {
+          const nx = goalX + dx;
+          const ny = goalY + dy;
+          if (cellWalkable(state, nx, ny, faction)) {
+            goalX = nx;
+            goalY = ny;
+            found = true;
+          }
+        }
+      }
+    }
+    if (!found) return [];
+  }
+  const total = GRID_W * GRID_H;
+  const start = startY * GRID_W + startX;
+  const goal = goalY * GRID_W + goalX;
+  if (start === goal) return [];
+  const parent = new Int32Array(total).fill(-1);
+  const queue = new Int32Array(total);
+  let head = 0;
+  let tail = 0;
+  parent[start] = start;
+  queue[tail++] = start;
+  const dirs = [1, -1, GRID_W, -GRID_W];
+  while (head < tail && parent[goal] < 0) {
+    const cur = queue[head++];
+    for (const d of dirs) {
+      const next = cur + d;
+      if (next < 0 || next >= total) continue;
+      if (parent[next] >= 0) continue;
+      if (d === 1 && next % GRID_W === 0) continue;
+      if (d === -1 && cur % GRID_W === 0) continue;
+      const nx = next % GRID_W;
+      const ny = Math.floor(next / GRID_W);
+      if (!cellWalkable(state, nx, ny, faction)) continue;
+      parent[next] = cur;
+      queue[tail++] = next;
+    }
+  }
+  if (parent[goal] < 0) return [];
+  const cells: number[] = [];
+  let cur = goal;
+  while (cur !== start && cells.length < 4096) {
+    cells.push(cur);
+    cur = parent[cur];
+  }
+  cells.reverse();
+  return cells.map((c) => ({
+    x: ((c % GRID_W) + 0.5) * TILE,
+    y: (Math.floor(c / GRID_W) + 0.5) * TILE,
+  }));
+}
+
 function heroTarget(state: GameState, h: Hero, maxRange: number): DamageTarget | null {
   let best: DamageTarget | null = null;
   let bestD = Infinity;
   for (const other of state.heroes) {
     if (!other.alive || other.faction === h.faction || other.invuln > 0) continue;
+    if (!hasLineOfSight(state, h.x, h.y, other.x, other.y)) continue;
     const d = Math.hypot(other.x - h.x, other.y - h.y) - other.radius;
     if (d <= maxRange && d < bestD) {
       bestD = d;
@@ -407,6 +547,7 @@ function heroTarget(state: GameState, h: Hero, maxRange: number): DamageTarget |
   if (h.faction === "troll") {
     for (const b of state.buildings) {
       if (!b.alive || b.buildTimer > 0 || b.faction === h.faction) continue;
+      if (!hasLineOfSight(state, h.x, h.y, b.x, b.y)) continue;
       const r = (b.size * TILE) / 2;
       const d = Math.hypot(b.x - h.x, b.y - h.y) - r;
       if (d <= maxRange && d < bestD) {
@@ -427,9 +568,17 @@ function dealDamage(state: GameState, attacker: Hero, target: DamageTarget, raw:
   target.ref.hp -= amount;
   state.stats.damage += amount;
   // VERIFIED：伤害整数部分转金币，飘字只在攻击者处
-  attacker.gold += amount;
-  state.stats.goldEarned += amount;
-  addFloat(state, attacker.x, attacker.y - 20, `+ ${amount}`, "#ffd86b", 12);
+  let goldGain = amount;
+  const victim = target.kind === "hero" ? (target.ref as Hero) : null;
+  if (
+    state.mobileDev && victim?.faction === "elf"
+    && !state.buildings.some((b) => b.alive && b.faction === "elf" && b.kind === "tent")
+  ) {
+    goldGain = Math.floor(goldGain * SCENARIO_RULE.elf.mobileDevGoldPenalty);
+  }
+  attacker.gold += goldGain;
+  state.stats.goldEarned += goldGain;
+  addFloat(state, attacker.x, attacker.y - 20, `+ ${goldGain}`, "#ffd86b", 12);
   if (attacker.faction === "troll" && COMBAT_RULE.lifestealModes.includes(state.mode)) {
     const heal = COMBAT_RULE.lifesteal * raw; // 0.22 × 真实伤害
     attacker.hp = Math.min(attacker.maxHp, attacker.hp + heal);
@@ -524,6 +673,7 @@ function updateTimers(state: GameState, dt: number): void {
   for (const b of state.buildings) {
     b.flash = Math.max(0, b.flash - dt);
     if (b.alive && b.buildTimer > 0) b.buildTimer = Math.max(0, b.buildTimer - dt);
+    if (b.alive && b.eyeMarked > 0) b.eyeMarked = Math.max(0, b.eyeMarked - dt);
     if (b.alive && b.demolishTimer > 0) {
       b.demolishTimer -= dt;
       if (b.demolishTimer <= 0) {
@@ -532,6 +682,7 @@ function updateTimers(state: GameState, dt: number): void {
       }
     }
   }
+  state.relocateCd = Math.max(0, state.relocateCd - dt);
   state.effects = state.effects.filter((e) => (e.t += dt) < e.dur);
   state.floats = state.floats.filter((f) => (f.t += dt) < f.dur);
   if (state.hint && (state.hint.t -= dt) <= 0) state.hint = null;
@@ -555,6 +706,14 @@ function updateIncome(state: GameState, dt: number): void {
       if (gain > 0) {
         h.gold += gain;
         state.stats.goldEarned += gain;
+      }
+      // 跳字显示在产出建筑（小屋/作坊/矿）上，而不是英雄身上
+      for (const b of state.buildings) {
+        if (!b.alive || b.buildTimer > 0 || b.faction !== h.faction) continue;
+        const income = BUILDINGS[b.kind].levels[b.level - 1].income ?? 0;
+        if (income > 0) {
+          addFloat(state, b.x, b.y - b.size * TILE * 0.5, `+${income} 金`, "#ffd86b", 11);
+        }
       }
     }
   }
@@ -669,16 +828,55 @@ function nearShop(state: GameState, troll: Hero): boolean {
   return Math.hypot(troll.x - spawn.x, troll.y - spawn.y) <= EQUIPMENT_RULE.purchaseRadius;
 }
 
-function updateAI(state: GameState, dt: number): void {
-  const troll = state.heroes.find((h) => h.faction === "troll");
-  if (!troll || !troll.alive) return;
+function updateElfAI(state: GameState, dt: number, elf: Hero): void {
+  const troll = state.heroes.find((h) => h.faction === "troll" && h.alive);
+  const danger = !!troll && Math.hypot(troll.x - elf.x, troll.y - elf.y) < 260;
+  if (danger) {
+    // 巨魔前期来袭：向远处房间转移，不硬拼
+    const fx = 150 * TILE;
+    const fy = 80 * TILE;
+    const dx = fx - elf.x;
+    const dy = fy - elf.y;
+    const d = Math.hypot(dx, dy) || 1;
+    elf.vx = (dx / d) * elf.speed;
+    elf.vy = (dy / d) * elf.speed;
+  } else {
+    elf.vx = 0;
+    elf.vy = 0;
+  }
+  state.aiTimer -= dt;
+  if (state.aiTimer > 0) return;
+  state.aiTimer = 4 + Math.random() * 3;
+  const have = (kind: BuildKind) => state.buildings.some((b) => b.alive && b.faction === "elf" && b.kind === kind);
+  const tryPlace = (kind: BuildKind): boolean => {
+    for (let r = 2; r <= 9; r += 1) {
+      for (let a = 0; a < 12; a += 1) {
+        const ang = (a / 12) * Math.PI * 2;
+        const gx = Math.round(ELF_START.gx + Math.cos(ang) * r);
+        const gy = Math.round(ELF_START.gy + Math.sin(ang) * r);
+        if (canBuild(state, kind, gx, gy, "elf").ok) return tryBuild(state, kind, gx, gy, "elf");
+      }
+    }
+    return false;
+  };
+  if (!have("tent")) tryPlace("tent");
+  if (!have("mine") || (have("mine") && elf.gold > 200)) tryPlace("mine");
+  if (danger && (!have("tower") || elf.gold > 100)) tryPlace("tower");
+}
+
+function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
   const nextItem = EQUIPMENT_RULE.items.find((i) => !troll.items.includes(i.key));
   if (nextItem && nearShop(state, troll)) buyEquipment(state, nextItem.key);
+  if (nearShop(state, troll) && troll.gold > 0) {
+    const book = [...SCENARIO_RULE.troll.strengthBooks].reverse().find((b) => troll.gold >= b.gold);
+    if (book) buyStrengthBook(state, book.key);
+  }
   state.aiTimer -= dt;
   if (state.aiTimer <= 0) {
     state.aiTimer = 3 + Math.random() * 2;
     if (troll.cooldowns.berserk <= 0 && troll.hp < troll.maxHp * 0.7) castSkillFor(state, troll, "berserk");
     else if (troll.cooldowns.windwalk <= 0) castSkillFor(state, troll, "windwalk");
+    else if (troll.cooldowns.farSight <= 0) castSkillFor(state, troll, "farSight");
     const house = state.buildings.find((b) => b.alive && b.kind === "trollHouse");
     if (house && troll.gold > BUILDINGS.trollHouse.levels[house.level]?.cost) tryUpgrade(state, house.id);
   }
@@ -694,8 +892,23 @@ function updateAI(state: GameState, dt: number): void {
     tx = house.x;
     ty = house.y;
   } else if (elf) {
-    tx = elf.x;
-    ty = elf.y;
+    // 有墙先拆墙：挡住视线或比精灵更近时优先攻击墙体
+    const blocker = state.buildings
+      .filter((b) => b.alive && b.faction === "elf" && b.buildTimer <= 0)
+      .sort((a, b) => {
+        const ak = a.kind === "wall" ? 0 : 1;
+        const bk = b.kind === "wall" ? 0 : 1;
+        return ak - bk || Math.hypot(a.x - troll.x, a.y - troll.y) - Math.hypot(b.x - troll.x, b.y - troll.y);
+      })[0];
+    const elfDist = Math.hypot(elf.x - troll.x, elf.y - troll.y);
+    const losBlocked = !hasLineOfSight(state, troll.x, troll.y, elf.x, elf.y);
+    if (blocker && (losBlocked || Math.hypot(blocker.x - troll.x, blocker.y - troll.y) < elfDist)) {
+      tx = blocker.x;
+      ty = blocker.y;
+    } else {
+      tx = elf.x;
+      ty = elf.y;
+    }
   } else {
     const b = state.buildings.find((x) => x.alive && x.faction === "elf");
     if (!b) {
@@ -710,17 +923,58 @@ function updateAI(state: GameState, dt: number): void {
   const dy = ty - troll.y;
   const dist = Math.hypot(dx, dy);
   if (dist > troll.range + 6) {
+    // BFS 寻路：绕开墙体与精灵建筑，沿路点前进
+    state.pathTimer -= dt;
+    if (state.pathTimer <= 0 || state.aiPath.length === 0) {
+      state.pathTimer = 0.6;
+      state.aiPath = findPath(state, troll.x, troll.y, tx, ty, "troll");
+      state.aiPathIdx = 0;
+    }
+    while (
+      state.aiPathIdx < state.aiPath.length
+      && Math.hypot(state.aiPath[state.aiPathIdx].x - troll.x, state.aiPath[state.aiPathIdx].y - troll.y) < TILE
+    ) {
+      state.aiPathIdx += 1;
+    }
+    const waypoint = state.aiPath[state.aiPathIdx] ?? { x: tx, y: ty };
+    const mx = waypoint.x - troll.x;
+    const my = waypoint.y - troll.y;
+    const md = Math.hypot(mx, my) || 1;
     let speed = troll.speed;
     if (troll.buffs.haste > 0) speed *= 2.1;
     if (troll.buffs.windwalk > 0) speed *= 1.5;
     if (troll.buffs.berserk > 0) speed *= 1.5;
     if (troll.buffs.root > 0) speed = 0;
-    troll.vx = (dx / dist) * speed;
-    troll.vy = (dy / dist) * speed;
+    troll.vx = (mx / md) * speed;
+    troll.vy = (my / md) * speed;
   } else {
+    state.aiPath = [];
+    state.aiPathIdx = 0;
     troll.vx = 0;
     troll.vy = 0;
   }
+}
+
+function updateAI(state: GameState, dt: number): void {
+  // 召唤的大法师自动追杀巨魔
+  const mage = state.heroes.find((h) => h.isAlly && h.alive);
+  const troll = state.heroes.find((h) => h.faction === "troll" && !h.isAlly && h.alive);
+  if (mage && troll) {
+    const dx = troll.x - mage.x;
+    const dy = troll.y - mage.y;
+    const d = Math.hypot(dx, dy) || 1;
+    if (d > mage.range) {
+      mage.vx = (dx / d) * mage.speed;
+      mage.vy = (dy / d) * mage.speed;
+    } else {
+      mage.vx = 0;
+      mage.vy = 0;
+    }
+  }
+  const enemy = state.heroes.find((h) => !h.isPlayer && !h.isAlly);
+  if (!enemy || !enemy.alive) return;
+  if (enemy.faction === "troll") updateTrollAI(state, dt, enemy);
+  else updateElfAI(state, dt, enemy);
 }
 
 function checkResult(state: GameState): void {
@@ -734,27 +988,37 @@ function checkResult(state: GameState): void {
     state.elfExposed = true;
     setHint(state, "没有作坊的精灵已暴露视野");
   }
-  const elf = getPlayer(state);
-  const troll = state.heroes.find((h) => h.faction === "troll");
+  const elf = state.heroes.find((h) => h.faction === "elf" && !h.isAlly);
+  const troll = state.heroes.find((h) => h.faction === "troll" && !h.isAlly);
   const trollOut = !!troll && troll.lives <= 0 && !troll.alive;
   const elfOut = !!elf && elf.lives <= 0 && !elf.alive;
-  if (state.rule === "SURVIVE") {
-    if (elfOut) {
-      state.result = "lose";
-      state.phase = "over";
-      setHint(state, "精灵倒下了，失败");
+  const elfWins = (): void => {
+    state.result = state.playerFaction === "elf" ? "win" : "lose";
+    state.phase = "over";
+    setHint(state, state.playerFaction === "elf" ? "巨魔已被消灭，胜利！" : "精灵获胜，你失败了");
+  };
+  const trollWins = (reason: string): void => {
+    state.result = state.playerFaction === "troll" ? "win" : "lose";
+    state.phase = "over";
+    setHint(state, state.playerFaction === "troll" ? `${reason}，胜利！` : `${reason}，失败`);
+  };
+  // 巨魔 16 万力量暴涨属性获胜（PROPOSED 玩法线）
+  if (state.trollStrength >= SCENARIO_RULE.troll.strengthWin) {
+    const h = troll;
+    if (h) {
+      h.maxHp *= 10;
+      h.damage *= 10;
+      h.hp = h.maxHp;
     }
+    trollWins("巨魔力量达到 16 万");
     return;
   }
-  if (trollOut) {
-    state.result = "win";
-    state.phase = "over";
-    setHint(state, "巨魔已被消灭，胜利！");
-  } else if (elfOut) {
-    state.result = "lose";
-    state.phase = "over";
-    setHint(state, "精灵倒下了，失败");
+  if (state.rule === "SURVIVE") {
+    if (elfOut) trollWins("精灵倒下");
+    return;
   }
+  if (trollOut) elfWins();
+  else if (elfOut) trollWins("所有精灵被消灭");
 }
 
 export function stepGame(state: GameState, dt: number, input: InputState): void {
@@ -816,10 +1080,7 @@ export function canBuyEquipment(state: GameState, key: string): boolean {
 }
 
 export function buyEquipment(state: GameState, key: string): boolean {
-  if (!canBuyEquipment(state, key)) {
-    setHint(state, "需回到商店附近且金币足够");
-    return false;
-  }
+  if (!canBuyEquipment(state, key)) return false;
   const item = EQUIPMENT_RULE.items.find((i) => i.key === key)!;
   const troll = state.heroes.find((h) => h.faction === "troll" && h.alive)!;
   troll.gold -= item.gold;
@@ -834,6 +1095,82 @@ export function buyEquipment(state: GameState, key: string): boolean {
   addEffect(state, troll.x, troll.y, 48, "#ffd86b");
   addFloat(state, troll.x, troll.y - 30, item.label, "#ffd86b", 13);
   setHint(state, `巨魔购买 ${item.label}`);
+  return true;
+}
+
+// ---------------------------------------------------------------- 核心玩法线
+
+/** 精灵后期：66 座终极塔后召唤精灵大法师协助击杀巨魔。 */
+export function canSummonMage(state: GameState): boolean {
+  const towers = state.buildings.filter(
+    (b) => b.alive && b.faction === "elf" && b.kind === "tower" && b.buildTimer <= 0,
+  ).length;
+  return !state.mageSummoned && towers >= SCENARIO_RULE.elf.ultimateTowerCount;
+}
+
+export function summonArchmage(state: GameState): boolean {
+  if (!canSummonMage(state)) {
+    setHint(state, `需要 ${SCENARIO_RULE.elf.ultimateTowerCount} 座塔才能召唤大法师`);
+    return false;
+  }
+  const spec = SCENARIO_RULE.elf.archmage;
+  const mage = makeHero(state, "elf", false, getPlayer(state)?.x ?? 0, getPlayer(state)?.y ?? 0);
+  mage.isAlly = true;
+  mage.hp = spec.hp;
+  mage.maxHp = spec.hp;
+  mage.damage = spec.damage;
+  mage.range = spec.range;
+  mage.interval = spec.interval;
+  state.heroes.push(mage);
+  state.mageSummoned = true;
+  addEffect(state, mage.x, mage.y, 120, "#bfe9ff");
+  setHint(state, "精灵大法师已召唤！");
+  return true;
+}
+
+/** 巨魔前期来找：精灵搬家到目标房间（保留作坊等级）。 */
+export function relocateElf(state: GameState, gx: number, gy: number): boolean {
+  if (state.relocateCd > 0) {
+    setHint(state, `迁移冷却中 ${Math.ceil(state.relocateCd)}s`);
+    return false;
+  }
+  const hero = getPlayer(state);
+  const tent = state.buildings.find((b) => b.alive && b.faction === "elf" && b.kind === "tent");
+  if (!hero || hero.faction !== "elf" || !tent) {
+    setHint(state, "需要先拥有作坊");
+    return false;
+  }
+  const level = tent.level;
+  tent.alive = false;
+  const fresh = makeBuilding(state, "tent", "elf", gx, gy, 0);
+  fresh.level = level;
+  fresh.maxHp = BUILDINGS.tent.levels[level - 1].hp;
+  fresh.hp = fresh.maxHp;
+  state.buildings.push(fresh);
+  hero.x = fresh.x;
+  hero.y = fresh.y;
+  state.relocateCd = SCENARIO_RULE.elf.relocateCooldown;
+  addEffect(state, hero.x, hero.y, 100, "#7ee08a");
+  setHint(state, "已迁移到新家园");
+  return true;
+}
+
+/** 游走发育：无作坊时降低巨魔打钱速度，避免变成提款机。 */
+export function toggleMobileDev(state: GameState): boolean {
+  state.mobileDev = !state.mobileDev;
+  setHint(state, state.mobileDev ? "游走发育：巨魔打钱速度减半" : "固定发育");
+  return state.mobileDev;
+}
+
+/** 巨魔购买力量之书，达到 16 万力量即获胜。 */
+export function buyStrengthBook(state: GameState, key: string): boolean {
+  const troll = state.heroes.find((h) => h.faction === "troll" && !h.isAlly);
+  const book = SCENARIO_RULE.troll.strengthBooks.find((b) => b.key === key);
+  if (!troll || !book || !nearShop(state, troll) || troll.gold < book.gold) return false;
+  troll.gold -= book.gold;
+  state.trollStrength += book.strength;
+  addEffect(state, troll.x, troll.y, 60, "#ffd86b");
+  addFloat(state, troll.x, troll.y - 36, book.label, "#ffd86b", 14);
   return true;
 }
 
@@ -886,6 +1223,18 @@ function castSkillFor(state: GameState, hero: Hero, key: SkillKey, aim?: { x: nu
     hero.channelTime = 2;
     hero.vx = 0;
     hero.vy = 0;
+  }
+  if (key === "farSight") {
+    const range = DEMOLISH_RULE.trollEyeRadius * SCALE;
+    const point = aim ?? { x: hero.x, y: hero.y };
+    const target = state.buildings
+      .filter((b) => b.alive && b.faction === "elf" && Math.hypot(b.x - point.x, b.y - point.y) <= range)
+      .sort((a, b) => Math.hypot(a.x - point.x, a.y - point.y) - Math.hypot(b.x - point.x, b.y - point.y))[0];
+    if (target) {
+      target.eyeMarked = 15;
+      addEffect(state, target.x, target.y, 40, "#ff9c7a");
+      addFloat(state, target.x, target.y - 26, "巨魔之眼", "#ff9c7a", 12);
+    }
   }
   if (key === "entangle" || key === "silence") {
     const troll = state.heroes.find((h) => h.faction === "troll" && h.alive);

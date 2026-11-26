@@ -10,6 +10,9 @@ export interface Stage4 {
   render(state: GameState): void;
   setInteraction(info: Interaction): void;
   zoomBy(factor: number): void;
+  panBy(dx: number, dy: number): void;
+  setPanning(value: boolean): void;
+  getZoom(): number;
   resize(width: number, height: number): void;
   screenToWorld(clientX: number, clientY: number): { x: number; y: number } | null;
   destroy(): void;
@@ -50,6 +53,7 @@ class Tve4Scene extends Phaser.Scene {
   private zoomTarget = 1.15;
   private fullMap = false;
   private forceAttack = false;
+  private panning = false;
 
   constructor() {
     super("tve4");
@@ -127,6 +131,20 @@ class Tve4Scene extends Phaser.Scene {
     this.fullMap = false;
   }
 
+  panBy(dx: number, dy: number): void {
+    this.camX = Phaser.Math.Clamp(this.camX + dx, 0, WORLD_W);
+    this.camY = Phaser.Math.Clamp(this.camY + dy, 0, WORLD_H);
+    this.fullMap = false;
+  }
+
+  setPanning(value: boolean): void {
+    this.panning = value;
+  }
+
+  getZoomValue(): number {
+    return this.zoom;
+  }
+
   private drawMapElements(): void {
     const g = this.add.graphics().setDepth(1);
     const paint = (gx: number, gy: number): void => {
@@ -198,7 +216,7 @@ class Tve4Scene extends Phaser.Scene {
   apply(state: GameState): void {
     const camera = this.cameras.main;
     const player = state.heroes.find((h) => h.isPlayer && h.alive);
-    if (!this.fullMap && player) {
+    if (!this.fullMap && !this.panning && player) {
       this.camX += (player.x - this.camX) * 0.1;
       this.camY += (player.y - this.camY) * 0.1;
     }
@@ -266,6 +284,10 @@ class Tve4Scene extends Phaser.Scene {
         this.overlays.lineStyle(2, 0xffd86b, 0.9);
         this.overlays.strokeRect(b.x - px / 2 - 3, b.y - px / 2 - 3, px + 6, px + 6);
       }
+      if (b.eyeMarked > 0) {
+        this.overlays.lineStyle(2, 0xff7a5c, 0.9);
+        this.overlays.strokeCircle(b.x, b.y, px * 0.7);
+      }
     }
     for (const [id, sprite] of this.buildingSprites) if (!aliveBuildings.has(id)) sprite.setVisible(false);
 
@@ -332,7 +354,10 @@ class Tve4Scene extends Phaser.Scene {
         this.drawBar(h.x, h.y - height * 0.92, barW, h.hp / h.maxHp, h.faction === "elf" ? 0x7ee08a : 0xff7a5c);
       }
       if (h.isPlayer && h.alive) {
-        this.overlays.lineStyle(2, 0x7ee08a, 0.65);
+        const exposed = state.elfExposed && !state.buildings.some(
+          (b) => b.alive && b.faction === "elf" && b.kind === "tent" && b.level >= 5,
+        );
+        this.overlays.lineStyle(2, exposed ? 0xff6b6b : 0x7ee08a, 0.8);
         this.overlays.strokeEllipse(h.x, h.y + 5, sw + 10, sw * 0.38);
       }
       if (h.buffs.root > 0) {
@@ -411,13 +436,21 @@ export async function createStage4(canvas: HTMLCanvasElement, width: number, hei
     render: { antialias: true },
     scene: [scene],
   } as Phaser.Types.Core.GameConfig);
-  await scene.readyPromise;
+  await Promise.race([
+    scene.readyPromise,
+    new Promise<void>((_, reject) => {
+      window.setTimeout(() => reject(new Error("渲染器初始化超时，请检查浏览器 WebGL 支持")), 8000);
+    }),
+  ]);
   return {
     render: (state) => scene.apply(state),
     setInteraction: (info) => {
       scene.setInteractionInfo(info);
     },
     zoomBy: (factor) => scene.setZoomBy(factor),
+    panBy: (dx, dy) => scene.panBy(dx, dy),
+    setPanning: (value) => scene.setPanning(value),
+    getZoom: () => scene.getZoomValue(),
     resize: (w, h) => {
       game.scale.resize(w, h);
       scene.cameras.main.setSize(w, h);

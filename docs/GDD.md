@@ -89,7 +89,7 @@ BIG_SNOW_LAND、BIG_FOREST、SMALL_FOREST、SOLO_AREA、DEFEND_AREA、MIDDLE_FOR
 
 - 帐篷 u00Y、金矿 e00H、房屋 u03D、精灵墙 u04B、岩石墙 u01X、水泥墙 u030、箭塔 h000 等的 HP/费用/收入见 `buildings.md`（VERIFIED 抽样）。
 - 帐篷“每精灵仅一座”来自 Ubertip（VERIFIED）。
-- 建造合法性：网格占用 + 地形阻挡（网页实现为 PROPOSED；原版建造区域规则 UNKNOWN）。
+- 建造合法性：网格占用 + 地形阻挡 + VERIFIED 的前置科技链（`Requires`/`DependencyOr`：农场需墙、作坊需墙/城镇、真视塔需猎手大厅；网页用墙等级与城镇/市场等级近似）。区域建造限制 UNKNOWN。
 - 网页已对齐：**基础墙（u01F，4 金起）可直接建造**；精灵墙/岩石墙/水泥墙不再直接建造，而是基础墙的升级链（10/10 断言通过）。
 - 建造进度、升级链、修理：原版存在相关处理器（VERIFIED 存在，细则 UNKNOWN）。
 
@@ -162,6 +162,12 @@ BIG_SNOW_LAND、BIG_FOREST、SMALL_FOREST、SOLO_AREA、DEFEND_AREA、MIDDLE_FOR
 - 当前 `/tve-*` 页面为单机模拟（PROPOSED），多人对战尚未实现。
 
 ---
+
+## 21. 网页核心玩法线（PROPOSED，按用户描述）
+- 进入界面先选择阵营：精灵或巨魔；模式/规则/测试模式可在起始页选择。
+- 精灵线：前期全速发育；中期起塔压制巨魔打钱；后期 66 座终极塔召唤精灵大法师；可迁移到新房间、开启游走发育降低巨魔打钱；也可到巨魔家里起塔。
+- 巨魔线：前期把打钱投入攻击/攻速，精灵反抗时补护甲血量；杀光精灵或堆到 16 万力量（购买力量之书）触发属性暴涨获胜。
+- 实现位于 `src/lib/tve4/engine.ts` 的 `summonArchmage` / `relocateElf` / `toggleMobileDev` / `buyStrengthBook`，数值在 `data/game/game-rules.json` 的 `scenarios`。
 
 ## 附：与网页现状的差异清单（PROPOSED → 原版）
 
