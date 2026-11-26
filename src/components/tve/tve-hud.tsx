@@ -137,6 +137,8 @@ export interface HudSnapshot {
   paused: boolean;
   muted: boolean;
   gold: number;
+  /** 每秒金币收入 */
+  income: number;
   wood: number;
   woodPrice: number;
   woodSellPrice: number;
@@ -274,6 +276,7 @@ export function TveHud(props: TveHudProps) {
           <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/45 px-2.5 py-1.5 text-white backdrop-blur">
             <span className="flex items-center gap-1 text-sm font-bold text-amber-300">
               <Coins size={14} /> {coin(snapshot.gold)}
+              <span className="text-[10px] font-semibold text-amber-200/70">+{snapshot.income.toFixed(1)}/s</span>
             </span>
             {snapshot.faction === "elf" ? (
               <span className="flex items-center gap-1 text-sm font-bold text-lime-300">
@@ -609,6 +612,7 @@ export function TveHud(props: TveHudProps) {
                           <span className="text-xs font-semibold">{spec.label}</span>
                           <span className="text-[10px] text-amber-200">
                             {level.cost} 金{level.wood > 0 ? ` · ${level.wood} 木` : ""}
+                            {kind === "goldmine" ? " · 需 1 只小精灵" : ""}
                           </span>
                           <span className="line-clamp-2 text-[9px] leading-tight text-white/45">{spec.desc}</span>
                         </button>

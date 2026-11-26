@@ -126,6 +126,7 @@ function createElf(index: number, x: number, y: number, isPlayer: boolean, gold:
     // AI 精灵默认开启自动维修；玩家由 HUD 开关控制
     autoRepair: !isPlayer,
     hasteTime: 0,
+    revealTimer: 0,
     repairTarget: -1,
     repairAuto: false,
     cooldowns: { blink: 0, haste: 0, entangle: 0, silence: 0, wallguard: 0 },
@@ -276,7 +277,6 @@ export function createGame(
     shake: 0,
     stats: { kills: 0, destroyed: 0, goldEarned: 0, woodGathered: 0 },
     nightTimer: 0,
-    revealTimer: 0,
     playerElf: faction === "elf" ? 0 : -1,
     playerTroll: faction === "troll" ? 0 : -1,
     woodPrice: WOOD_PACK.basePrice,
@@ -512,16 +512,19 @@ function moveCircle(
   }
 }
 
-function damageTroll(state: GameState, t: Troll, raw: number, magic = false) {
-  if (!t.alive || state.result) return;
+/** @returns 实际造成的伤害（已扣除护甲与溢出） */
+function damageTroll(state: GameState, t: Troll, raw: number, magic = false): number {
+  if (!t.alive || state.result) return 0;
   // 普通攻击与物理塔受护甲减免；毒/银月等魔法伤害无视护甲
   const dmg = Math.max(1, raw * (magic ? 1 : physicalMultiplier(trollArmor(t))));
+  const dealt = Math.min(dmg, t.hp);
   t.hp -= dmg;
   t.flash = 0.14;
   if (t.hp <= 0) {
     t.hp = 0;
     killTroll(state, t);
   }
+  return dealt;
 }
 
 function killTroll(state: GameState, t: Troll) {
@@ -636,7 +639,9 @@ function damageBuilding(state: GameState, t: Troll, b: Building, dmg: number) {
       state.stats.destroyed += 1;
       addFx(state, "dust", b.x, b.y, 60, "#c9a87a", 0, 0.5);
       if (b.kind === "tree") {
-        pushHint(state, `${state.elves[b.owner]?.name ?? ""}的生命之树被摧毁`, 3);
+        // 生命之树被毁：依附于它的小精灵一并消失
+        state.wisps = state.wisps.filter((w) => w.owner !== b.owner);
+        pushHint(state, `${state.elves[b.owner]?.name ?? ""}的生命之树被摧毁，小精灵全部消失`, 3.5);
       }
       // 帐篷被摧毁时返还建造与升级投入的金币/木材
       if (b.kind === "tent" && owner) {
@@ -792,7 +797,6 @@ function updateTowers(state: GameState, dt: number) {
     const magic = b.kind === "poison" || b.kind === "moon";
     target.flash = 0.14;
     state.shake = Math.min(8, state.shake + 2.2);
-    addFloat(state, target.x + (Math.random() - 0.5) * 20, target.y - 30, `-${Math.round(dmg)}`, "#ff8f6b", 14);
     state.shots.push({
       x: b.x,
       y: b.y - TILE * 0.4,
@@ -825,7 +829,11 @@ function updateTowers(state: GameState, dt: number) {
     } else {
       state.sfx.push("attack_bow");
     }
-    damageTroll(state, target, dmg, magic);
+    const dealt = damageTroll(state, target, dmg, magic);
+    // 显示护甲减免后的实际伤害
+    if (dealt > 0) {
+      addFloat(state, target.x + (Math.random() - 0.5) * 20, target.y - 30, `-${Math.round(dealt)}`, "#ff8f6b", 14);
+    }
     // 产金塔：每次成功攻击后产一次金
     if (b.kind === "goldtower" && target) {
       const gain = spec.income ?? 0;
@@ -868,26 +876,21 @@ function updateWatch(state: GameState) {
   }
 }
 
-/** 帐篷全毁后暴露精灵视野；中期才启用，帐篷重建后仍保留一段时间再消失 */
+/** 某个精灵的帐篷全毁后暴露其视野；中期才启用，帐篷重建后仍保留一段时间再消失 */
 function updateReveal(state: GameState, dt: number) {
-  // 前期不暴露视野
-  if (state.time < REVEAL.startTime) {
-    state.revealTimer = 0;
-    return;
-  }
-  let noTent = false;
   for (const elf of state.elves) {
     if (!elf.alive) continue;
+    // 前期不暴露视野
+    if (state.time < REVEAL.startTime) {
+      elf.revealTimer = 0;
+      continue;
+    }
     const hasTent = state.buildings.some(
       (b) => b.alive && b.team === "elf" && b.owner === elf.id && b.kind === "tent" && b.buildTimer <= 0,
     );
-    if (!hasTent) {
-      noTent = true;
-      break;
-    }
+    if (!hasTent) elf.revealTimer = REVEAL.linger;
+    else elf.revealTimer = Math.max(0, elf.revealTimer - dt);
   }
-  if (noTent) state.revealTimer = REVEAL.linger;
-  else state.revealTimer = Math.max(0, state.revealTimer - dt);
 }
 
 function updateEconomy(state: GameState, dt: number) {
@@ -1305,6 +1308,8 @@ function updateElfAi(state: GameState, dt: number) {
         if (tryBuildForElf(state, elf.id, action.kind, action.gx, action.gy)) done += 1;
       } else if (action.type === "upgrade") {
         if (tryUpgradeBuilding(state, action.id)) done += 1;
+      } else if (action.type === "convert") {
+        if (convertBuilding(state, action.id, action.kind)) done += 1;
       } else if (action.type === "wood") {
         if (buyWoodForElf(state, elf.id)) done += 1;
       }
@@ -1323,14 +1328,18 @@ function updateTrollAi(state: GameState, dt: number) {
       if (action.type === "shop") buyShopItem(state, t.id, action.key);
       else if (action.type === "hut" && t.hutId >= 0) tryUpgradeBuilding(state, t.hutId);
       else if (action.type === "windwalk") castTrollSkill(state, t.id, "windwalk");
+      else if (action.type === "berserk") castTrollSkill(state, t.id, "berserk");
       else if (action.type === "recall") castTrollSkill(state, t.id, "recall");
+      else if (action.type === "buyRecall") buyRecallScroll(state, t.id);
+      else if (action.type === "useRecall") useRecallScroll(state, t.id);
     }
   }
 }
 
 function checkResult(state: GameState) {
   if (state.result) return;
-  const trollsGone = state.trolls.every((t) => !t.alive || t.wolf);
+  // 双巨魔规则下，死亡后正在化狼（reviveTimer > 0）不算出局；幽灵狼全部被消灭才算巨魔方败
+  const trollsGone = state.trolls.every((t) => !t.alive && t.reviveTimer <= 0);
   if (trollsGone) {
     state.result = state.faction === "elf" ? "win" : "lose";
     return;
@@ -1422,6 +1431,10 @@ export function canBuildAt(state: GameState, elfIndex: number, kind: BuildingKin
   const spec = BUILD_SPECS[kind];
   if (!spec || spec.team !== "elf" || kind === "tree") return { ok: false, reason: "无法建造" };
   if (!ELF_BUILDABLE.includes(kind)) return { ok: false, reason: "需要从基础建筑升级而来" };
+  // 金矿由小精灵化成：没有小精灵就无法开工
+  if (kind === "goldmine" && !state.wisps.some((w) => w.owner === elf.id)) {
+    return { ok: false, reason: "需要 1 只小精灵化成金矿" };
+  }
   if (
     kind === "tent" &&
     state.buildings.some((b) => b.alive && b.team === "elf" && b.owner === elf.id && b.kind === "tent")
@@ -1451,6 +1464,15 @@ export function tryBuildForElf(
   const level = BUILD_SPECS[kind].levels[0];
   elf.gold -= level.cost;
   elf.wood -= level.wood;
+  if (kind === "goldmine") {
+    // 化成金矿的那只小精灵从此消失
+    const wisp = state.wisps.find((w) => w.owner === elf.id);
+    if (wisp) {
+      state.wisps = state.wisps.filter((w) => w.id !== wisp.id);
+      addFx(state, "dust", wisp.x, wisp.y, 26, "#9adf7a", 0, 0.5);
+      if (elf.isPlayer) addFloat(state, wisp.x, wisp.y - 18, "小精灵化成金矿", "#c7e3a0", 14);
+    }
+  }
   const b = newBuilding(state.nextId++, kind, elf.id, "elf", gx, gy, false);
   state.buildings.push(b);
   addFx(state, "dust", b.x, b.y + 20, 40, "#d8c08a", 0, 0.5);

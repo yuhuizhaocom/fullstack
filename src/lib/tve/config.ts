@@ -718,7 +718,7 @@ export const GAME_MODES: Record<GameMode, ModeSpec> = {
 
 export const TROLL_RULES: Record<TrollRule, { label: string; desc: string }> = {
   single: { label: "单巨魔", desc: "巨魔死亡立即结束" },
-  double: { label: "双巨魔", desc: "巨魔死亡后变幽灵狼，全部变狼则巨魔方败" },
+  double: { label: "双巨魔", desc: "巨魔死亡后化为幽灵狼继续战斗，幽灵狼全部被消灭则巨魔方败" },
 };
 
 export interface DifficultySpec {

@@ -191,6 +191,8 @@ export interface Elf {
   autoRepair: boolean;
   /** 移动加速剩余时间 */
   hasteTime: number;
+  /** 被暴露视野的剩余时间（该精灵帐篷全毁触发，重建后仍持续一段时间） */
+  revealTimer: number;
   /** 当前正在维修/前往维修的建筑 id，-1 表示没有 */
   repairTarget: number;
   /** 当前维修目标是否由自动维修选出（关闭自动维修时清除） */
@@ -338,8 +340,6 @@ export interface GameState {
   stats: GameStats;
   /** 黑夜剩余时间（精灵技能制造） */
   nightTimer: number;
-  /** 精灵暴露视野剩余时间（帐篷全毁触发，重建后仍持续一段时间） */
-  revealTimer: number;
   /** 玩家控制的精灵下标；玩家为巨魔时为 -1 */
   playerElf: number;
   /** 玩家控制的巨魔下标；玩家为精灵时为 -1 */

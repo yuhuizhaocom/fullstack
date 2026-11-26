@@ -974,13 +974,12 @@ function drawFog(ctx: CanvasRenderingContext2D, state: GameState, view: RenderVi
   for (const b of state.buildings) {
     if (b.alive && b.team === "troll") hole(b.x, b.y, 420);
   }
-  // 精灵暴露视野（帐篷全毁；重建后仍持续一段时间）
-  if (state.revealTimer > 0) {
-    for (const elf of state.elves) {
-      if (elf.alive) hole(elf.x, elf.y, 460);
-    }
+  // 精灵暴露视野（某个精灵帐篷全毁时只暴露它自己的位置与建筑；重建后仍持续一段时间）
+  for (const elf of state.elves) {
+    if (!elf.alive || elf.revealTimer <= 0) continue;
+    hole(elf.x, elf.y, 460);
     for (const b of state.buildings) {
-      if (b.alive && b.team === "elf") hole(b.x, b.y, 300);
+      if (b.alive && b.team === "elf" && b.owner === elf.id) hole(b.x, b.y, 300);
     }
   }
 

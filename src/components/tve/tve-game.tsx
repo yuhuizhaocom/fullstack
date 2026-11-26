@@ -7,7 +7,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { TveHud, TveMenu, TveResult, type HudSelected, type HudSnapshot } from "./tve-hud";
 import { drawGame, drawMinimap, screenToWorld, type RenderView } from "@/lib/tve/render";
 import { loadTveAssets, type TveAssets } from "@/lib/tve/assets";
-import { BUILD_SPECS, TILE, WOOD_PACK } from "@/lib/tve/config";
+import { BUILD_SPECS, GAME_MODES, TILE, WOOD_PACK } from "@/lib/tve/config";
 import {
   buyScroll,
   buyRecallScroll,
@@ -120,6 +120,19 @@ function makeSnapshot(state: GameState, paused: boolean, muted: boolean): HudSna
     }
   }
 
+  // 每秒收入：精灵为已完成帐篷/金矿之和，巨魔为小屋被动收入
+  let income = 0;
+  if (elf) {
+    for (const b of state.buildings) {
+      if (!b.alive || b.team !== "elf" || b.owner !== elf.id || b.buildTimer > 0) continue;
+      if (b.kind !== "tent" && b.kind !== "goldmine") continue;
+      income += BUILD_SPECS[b.kind].levels[b.level - 1].income ?? 0;
+    }
+    income *= GAME_MODES[state.mode].goldMult;
+  } else if (troll && hutLevel > 0) {
+    income = BUILD_SPECS.hut.levels[hutLevel - 1].income ?? 0;
+  }
+
   return {
     faction: state.faction,
     difficulty: state.difficulty,
@@ -128,6 +141,7 @@ function makeSnapshot(state: GameState, paused: boolean, muted: boolean): HudSna
     paused,
     muted,
     gold: elf ? elf.gold : troll ? troll.gold : 0,
+    income,
     wood: elf ? elf.wood : 0,
     woodPrice: state.woodPrice,
     woodSellPrice: Math.max(WOOD_PACK.minSell, Math.round(state.woodPrice * WOOD_PACK.sellRatio)),
