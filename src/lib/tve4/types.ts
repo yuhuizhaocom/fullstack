@@ -62,6 +62,7 @@ export interface Hero {
   vy: number;
   facing: number;
   flash: number;
+  invuln: number;
   hp: number;
   maxHp: number;
   damage: number;
@@ -95,6 +96,7 @@ export interface Building {
   maxHp: number;
   alive: boolean;
   buildTimer: number;
+  demolishTimer: number;
   flash: number;
   cd: number;
 }
@@ -145,7 +147,10 @@ export interface GameState {
   mode: Mode;
   rule: Rule;
   testMode: boolean;
-  sharedVision: boolean;
+  elfShared: boolean;
+  elfExposed: boolean;
+  woodPriceIn: number;
+  woodPriceOut: number;
   time: number;
   phase: "prep" | "battle" | "over";
   result: "win" | "lose" | null;

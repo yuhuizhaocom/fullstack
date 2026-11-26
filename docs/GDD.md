@@ -35,10 +35,10 @@
 1. 选图/选规则/选模式 → `currentMode/currentRule/currentMap` 由 JASS 初始化（VERIFIED）。
 2. 准备期：巨魔在 **30 秒**（多数规则）或 **45 秒**（FIX/SURVIVE）后出现（VERIFIED，`getTrollAppearTime`）。
 3. 精灵建造与发展；巨魔出现后开始进攻。
-4. 300 秒后开启共享/暴露视野机制（VERIFIED，参数提供者）。
+4. 300 秒精灵互享视野；600 秒没有作坊的精灵向敌人暴露（VERIFIED，`docs/research/original-mechanics-verified.md`）。
 5. 胜负检查器每秒检查，force 清空则结算（VERIFIED）。
 
-网页已按 OLD-SINGLE 对齐为 30 秒准备期；共享/暴露视野机制仍未实现。
+网页按 OLD-SINGLE 对齐为 5 秒生成 + 30 秒等待（约 35 秒）；300/600 秒视野机制按原文实现，不使巨魔显形。
 
 ## 5. 玩家人数
 
@@ -98,7 +98,7 @@ BIG_SNOW_LAND、BIG_FOREST、SMALL_FOREST、SOLO_AREA、DEFEND_AREA、MIDDLE_FOR
 - `ItemData.slk` / `ItemFunc.txt` 已解包，具体物品 ID 与属性尚未逐项映射（UNKNOWN）。
 - 网页草案 8 件装备（剑/手套/靴/护符/项链/指环）及其数值为 PROPOSED。
 - 商店购买、金币消耗、属性加成逻辑见 `engine.ts`（PROPOSED）。网页 tve4 规定巨魔必须回到出生点附近才能购买装备，给精灵发育时间；装备价格与属性由 `data/game/game-rules.json` 的 `equipmentShop` 提供。
-- 精灵主动拆除建筑（PROPOSED）：仅可拆除 HP ≥ 90% 且巨魔不在附近的建筑；拆除帐篷返还全部升级花费。条件由 `elfDemolish` 规则文件字段读取。
+- 精灵主动拆除建筑 A02P（VERIFIED）：HP ≥ 95%、1240 范围无敌对英雄、1800 范围无巨魔之眼（作坊例外），0.25 秒后死亡；作坊死亡返还全部累计升级花费（金+木）。数值由 `elfDemolish` / `buildings.tent` 规则文件字段读取。
 
 ## 12. 技能系统
 
@@ -124,7 +124,7 @@ BIG_SNOW_LAND、BIG_FOREST、SMALL_FOREST、SOLO_AREA、DEFEND_AREA、MIDDLE_FOR
 - 原版存在 `gg_trg_ReviveElveDie` 与 REVIVE 规则（VERIFIED 存在）。
 - DOUBLE 规则下巨魔死亡转狼并按 `DOUBLE_WOLF_REVIVE_TIME` 复活（VERIFIED）。
 - 网页已对齐：巨魔在小屋 2.5 格内持续回血（12%/秒）并加速恢复技能冷却（回蓝），带“休整”飘字（10/10 断言通过）。
-- 网页草案未实现复活（PROPOSED 缺失）。
+- 网页单机模拟：精灵 2 秒清理、狼 20 秒小屋复活、REVIVE 3 条命；狼/天使角色与皮肤仍未实现（PROPOSED 缺失）。
 
 ## 15. 死亡机制
 
@@ -138,7 +138,7 @@ BIG_SNOW_LAND、BIG_FOREST、SMALL_FOREST、SOLO_AREA、DEFEND_AREA、MIDDLE_FOR
 
 ## 17. 特殊事件
 
-- 300 秒共享/暴露视野（VERIFIED 参数）。
+- 300 秒精灵共享视野；600 秒没有作坊的精灵暴露给巨魔（均不使巨魔显形，VERIFIED）。
 - 模式化结算埋点（oldSingleTrollWin / fastDoubleElveWin 等，VERIFIED 存在）。
 - 随机事件、计时器、触发器依赖：部分 VERIFIED，完整调用链 UNKNOWN。
 
@@ -167,13 +167,13 @@ BIG_SNOW_LAND、BIG_FOREST、SMALL_FOREST、SOLO_AREA、DEFEND_AREA、MIDDLE_FOR
 
 | 项目 | 网页现状 | 原版 VERIFIED |
 | --- | --- | --- |
-| 巨魔出现 | 已对齐 30 秒（OLD-SINGLE） | 30/45 秒准备期 |
+| 巨魔出现 | 约 35 秒（5+30，OLD-SINGLE） | 5+30 秒；FIX/SURVIVE 45 秒 |
 | 伤害击杀 | 早期瞬杀，已修为伤害制 | 两击击杀，伤害转金币 |
 | 纠缠根须 CD | 45 秒 | 3 秒 |
 | 模式 | 1 种 | 4 模式 × 9 规则 × 8 地图 |
 | 角色 | 精灵/巨魔 | 另有狼/天使与多皮肤 |
 | 复活 | 无 | REVIVE 规则与 DOUBLE 转狼 |
-| 视野 | 无共享/暴露 | 300 秒触发 |
+| 视野 | 300 秒精灵共享、600 秒无作坊精灵暴露 | 300/600 秒触发，均不使巨魔显形 |
 | 出生点 | PROPOSED 坐标 | w3i 未解析（UNKNOWN） |
 
 > 本 GDD 不把 UNKNOWN 当成规则写入实现；后续解析得到的 VERIFIED 数据需同步更新本文档与 `docs/research/`。

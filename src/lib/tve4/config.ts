@@ -1,6 +1,8 @@
-// tve4 数值配置。
-// 数值来源：docs/research/**（VERIFIED / INFERRED）与 data/game/game-rules.json（PROPOSED 网页镜像）。
-// 每条关键数值在注释中标注来源，UNKNOWN 不写入实现。
+// tve4 配置：地图常量 + 从规则文件派生的数值。
+// 规则文件已从原版解包文件核对（见 data/game/game-rules.json）。
+
+import { BUILDING_RULES } from "./rules";
+import type { Mode, Rule } from "./types";
 
 export const GRID_W = 168;
 export const GRID_H = 96;
@@ -8,42 +10,30 @@ export const TILE = 16;
 export const WORLD_W = GRID_W * TILE;
 export const WORLD_H = GRID_H * TILE;
 
-export const PREP_SECONDS = 30;       // VERIFIED：SINGLE/DOUBLE/RACE/SOLO/DUET/DEFEND/REVIVE
-export const GAME_LIMIT = 300;        // VERIFIED：共享/暴露视野开启时间，不是胜利条件
-export const START_GOLD = { elf: 30, troll: 70 };  // VERIFIED：OLD/SINGLE 初始资源
-export const START_WOOD = 0;          // VERIFIED
-export const LIVES = 1;               // VERIFIED：force 清空即判负（原版无 3 条命）
-export const RESPAWN = 6;             // PROPOSED：仅预留给 REVIVE 规则
-export const BOUNTY_MAX = 1_000_000;  // VERIFIED：赏金上限
-export const LIFESTEAL = 0.22;        // VERIFIED：OLD 巨魔偷血技能 0.22 * damage
+export const GAME_LIMIT = 300;        // 仅用于 300 秒精灵共享视野事件
+export const START_GOLD = { elf: 30, troll: 70 };
+export const START_WOOD = 0;
+export const LIVES = 1;               // 网页模拟用；原版按 force 判定，无生命数
+export const RESPAWN = 6;             // PROPOSED 网页模拟复活时间
+export const BOUNTY_MAX = 1_000_000;  // VERIFIED 赏金上限
 
 export const ELF_START = { gx: 54, gy: 59 };
 export const TROLL_START = { gx: 64, gy: 42 };
 
-// VERIFIED：FIX/SURVIVE 为 45 秒，其余规则 30 秒
-export const RULE_PREP: Record<import("./types").Rule, number> = {
-  SINGLE: 30, DOUBLE: 30, FIX: 45, RACE: 30, DEFEND: 30,
-  SOLO: 30, DUET: 30, SURVIVE: 45, REVIVE: 30,
+// VERIFIED：5 秒精灵生成 + 30 秒等待 = 35 秒；FIX/SURVIVE 45 秒
+export const RULE_PREP: Record<Rule, number> = {
+  SINGLE: 35, DOUBLE: 35, FIX: 45, RACE: 35, DEFEND: 35,
+  SOLO: 35, DUET: 35, SURVIVE: 45, REVIVE: 35,
 };
 
-export const RULE_LABEL: Record<import("./types").Rule, string> = {
-  SINGLE: "单挑", DOUBLE: "双巨魔", FIX: "固定", RACE: "竞速",
-  DEFEND: "守护", SOLO: "单人", DUET: "双人", SURVIVE: "生存", REVIVE: "复活",
+export const RULE_LABEL: Record<Rule, string> = {
+  SINGLE: "单魔群战", DOUBLE: "双魔群战", FIX: "定点群战", RACE: "竞赛规则",
+  DEFEND: "防守规则", SOLO: "单挑规则", DUET: "2v2规则", SURVIVE: "人机规则", REVIVE: "复活群战",
 };
 
-export const MODE_LABEL: Record<import("./types").Mode, string> = {
-  OLD: "经典", BALANCE: "平衡", FAST: "快速", MIDDLE: "中级",
+export const MODE_LABEL: Record<Mode, string> = {
+  OLD: "普速", BALANCE: "平衡", FAST: "快速", MIDDLE: "中速",
 };
-
-// 木材市场（PROPOSED 固定步长，文档记录 5/155/150/495）
-export const WOOD_STEP = 5;
-export const WOOD_BUY = 155;
-export const WOOD_SELL = 150;
-export const WOOD_MAX = 495;
-
-export const HOUSE_HEAL = 0.12;       // PROPOSED：巨魔小屋 12%/秒回血
-export const HOUSE_RANGE = 40;        // 2.5 格
-export const REVEAL_RANGE = 192;      // 显影塔反隐范围（PROPOSED）
 
 export interface BuildingLevel {
   cost: number;
@@ -64,115 +54,81 @@ export interface BuildingDef {
   levels: BuildingLevel[];
 }
 
-// 建筑 L1 数值 VERIFIED（buildings.md / units.md）；后续等级为 INFERRED/PROPOSED。
+function arr(value: number | number[] | undefined): number[] {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function levels(key: string, ranges?: number[]): BuildingLevel[] {
+  const gold = arr(BUILDING_RULES[key].gold);
+  const wood = arr(BUILDING_RULES[key].wood);
+  const hp = arr(BUILDING_RULES[key].hp);
+  const income = arr(BUILDING_RULES[key].income);
+  const damage = arr(BUILDING_RULES[key].damage);
+  return gold.map((cost, i) => ({
+    cost,
+    hp: hp[i] ?? 10,
+    woodCost: wood[i] || undefined,
+    income: income[i],
+    damage: damage[i],
+    range: ranges?.[i],
+    interval: key === "tower" ? 1.5 : undefined,
+  }));
+}
+
 export const BUILDINGS: Record<string, BuildingDef> = {
   wall: {
-    label: "基础墙",
-    desc: "u01F 石墙起，升级为岩石墙/精灵墙/水泥墙",
-    size: 1,
-    texture: "b_wall",
-    buildTime: 0.5,
-    levels: [
-      { cost: 4, hp: 50 },    // u01F VERIFIED
-      { cost: 120, hp: 300 }, // u01X 岩石墙 VERIFIED
-      { cost: 128, hp: 320 }, // u04B 精灵墙 VERIFIED
-      { cost: 144, hp: 360 }, // u030 水泥墙 VERIFIED
-    ],
+    label: "石墙", desc: "u01F 石墙链，可升级 10 级", size: 1, texture: "b_wall", buildTime: 0.5,
+    levels: levels("wall"),
   },
   tower: {
-    label: "基础箭塔",
-    desc: "h000 箭塔，自动攻击靠近的巨魔",
-    size: 2,
-    texture: "b_tower",
-    buildTime: 1.5,
-    levels: [
-      { cost: 4, hp: 10, damage: 7, range: 112, interval: 1.5 },   // h000 VERIFIED 费用/HP
-      { cost: 16, hp: 30, damage: 12, range: 144, interval: 1.2 },  // INFERRED
-      { cost: 64, hp: 80, damage: 20, range: 176, interval: 0.9 },  // INFERRED
-    ],
+    label: "基础箭塔", desc: "h000 箭塔链，可升级 7 级", size: 2, texture: "b_tower", buildTime: 1.5,
+    levels: levels("tower", [96, 112, 128, 144, 160, 176, 192]),
   },
   mine: {
-    label: "金矿",
-    desc: "e00H 闹鬼金矿起，升级为精灵农场/高等农场/蓝宝石矿脉",
-    size: 2,
-    texture: "b_mine",
-    buildTime: 1.5,
-    levels: [
-      { cost: 90, hp: 50, income: 1 },   // e00H VERIFIED
-      { cost: 100, hp: 40, income: 4 },  // u010 精灵农场 VERIFIED
-      { cost: 200, hp: 80, income: 8 },  // u011 高等精灵农场 VERIFIED
-      { cost: 800, hp: 50, income: 32 }, // e020 蓝宝石矿脉 VERIFIED（原版 800 木，网页以金代替 PROPOSED）
-    ],
+    label: "闹鬼金矿", desc: "e00H 金矿链，每秒金币", size: 2, texture: "b_mine", buildTime: 2,
+    levels: levels("mine"),
   },
   tent: {
-    label: "帐篷",
-    desc: "u00Y 帐篷，每个精灵限一座，每秒 1 金",
-    size: 2,
-    texture: "b_tent",
-    buildTime: 1.2,
-    levels: [
-      { cost: 0, hp: 10, income: 1 },    // u00Y VERIFIED（免费自带）
-      { cost: 50, hp: 30, income: 2 },   // INFERRED
-      { cost: 150, hp: 80, income: 4 },  // INFERRED
-    ],
-  },
-  farm: {
-    label: "精灵农场",
-    desc: "u010 农场，每秒 4 金；可升级为高等农场",
-    size: 2,
-    texture: "b_mine",
-    buildTime: 2,
-    levels: [
-      { cost: 100, hp: 40, income: 4 },  // u010 VERIFIED
-      { cost: 200, hp: 80, income: 8 },  // u011 VERIFIED
-    ],
+    label: "作坊", desc: "u00Y 帐篷起，10 级链，死亡返还全部升级花费", size: 2, texture: "b_tent", buildTime: 1.2,
+    levels: levels("tent"),
   },
   market: {
-    label: "市场",
-    desc: "u018 市场，金币与木材交易",
-    size: 2,
-    texture: "b_tent",
-    buildTime: 2,
-    levels: [
-      { cost: 64, hp: 50 },  // u018 VERIFIED
-    ],
+    label: "市场", desc: "u018 城镇，金币与木材交易", size: 2, texture: "b_tent", buildTime: 2,
+    levels: [{ cost: 64, hp: 50 }],
   },
   reveal: {
-    label: "显影之塔",
-    desc: "u01E 反隐塔，让疾风步巨魔现形",
-    size: 2,
-    texture: "b_tower",
-    buildTime: 2,
-    levels: [
-      { cost: 0, hp: 10, woodCost: 256 },  // u01E VERIFIED（256 木）
-    ],
+    label: "真视之塔", desc: "u01E 反隐塔", size: 2, texture: "b_tower", buildTime: 2,
+    levels: [{
+      cost: arr(BUILDING_RULES.reveal.gold)[0] ?? 0,
+      hp: arr(BUILDING_RULES.reveal.hp)[0] ?? 10,
+      woodCost: arr(BUILDING_RULES.reveal.wood)[0] || undefined,
+      range: (BUILDING_RULES.reveal.revealRange ?? 900) * 0.125,
+    }],
   },
   trollHouse: {
-    label: "巨魔小屋",
-    desc: "u03D 巨魔房屋，每秒 3 金并回血回蓝",
-    size: 3,
-    texture: "b_tent",
-    buildTime: 2,
-    levels: [
-      { cost: 200, hp: 550, income: 3 },  // u03D VERIFIED
-      { cost: 300, hp: 700, income: 5 },  // INFERRED
-      { cost: 450, hp: 900, income: 9 },  // INFERRED
-    ],
+    label: "巨魔房屋", desc: "u03D 系统建筑，玩家只能升级", size: 3, texture: "b_tent", buildTime: 2,
+    levels: levels("trollHouse"),
   },
 };
 
-export const ELF_BUILD_KINDS = ["wall", "tower", "mine", "tent", "farm", "market", "reveal"] as const;
-
+export const ELF_BUILD_KINDS = ["wall", "tower", "mine", "tent", "reveal"] as const;
 export const BUILD_KINDS = ELF_BUILD_KINDS;
 
-// H010/H020 VERIFIED（units.md / UnitWeapons.slk / data/game/game-rules.json）。
-// 半径按当前 TILE=16 调整，使 3 格入口可通行、1 格墙可封堵（PROPOSED 碰撞调校）。
+import type { SkillKey } from "./types";
+
 export const HERO_STATS = {
   elf: { hp: 10, damage: 7, interval: 2.2, range: 112, speed: 125, radius: 14 },
   troll: { hp: 750, damage: 7, interval: 1.5, range: 90, speed: 175, radius: 22 },
 } as const;
 
-// 技能冷却/持续按 w3a VERIFIED 与 data/game/game-rules.json PROPOSED 对齐。
+export interface SkillKeyInfo {
+  key: SkillKey;
+  label: string;
+  cd: number;
+  desc: string;
+}
+
 export const SKILLS: Record<"elf" | "troll", SkillKeyInfo[]> = {
   elf: [
     { key: "blink", label: "闪烁", cd: 25, desc: "向指针方向瞬移 12 格" },
@@ -181,19 +137,12 @@ export const SKILLS: Record<"elf" | "troll", SkillKeyInfo[]> = {
     { key: "silence", label: "沉默", cd: 60, desc: "封锁巨魔技能 5 秒" },
   ],
   troll: [
-    { key: "windwalk", label: "疾风步", cd: 30, desc: "隐身并加速 20 秒" },
-    { key: "berserk", label: "狂战士", cd: 120, desc: "10 秒 +50% 攻速，受伤 +50%" },
-    { key: "teleport", label: "传送", cd: 45, desc: "2 秒读条后返回出生点" },
+    { key: "windwalk", label: "疾风步", cd: 30, desc: "隐身 20 秒，移速 +50%" },
+    { key: "berserk", label: "狂战士", cd: 120, desc: "10 秒 +100% 攻速、+50% 移速，受伤 +50%" },
+    { key: "teleport", label: "传送", cd: 45, desc: "2 秒读条，返回巨魔小屋或商店" },
   ],
 };
 
-export interface SkillKeyInfo {
-  key: import("./types").SkillKey;
-  label: string;
-  cd: number;
-  desc: string;
-}
-
-export const ALL_SKILL_KEYS: import("./types").SkillKey[] = [
+export const ALL_SKILL_KEYS: SkillKey[] = [
   "blink", "haste", "entangle", "silence", "windwalk", "berserk", "teleport",
 ];

@@ -1,33 +1,97 @@
-// tve4 运行期规则文件：直接读取 data/game/game-rules.json，不在引擎里硬编码。
+// tve4 运行期规则：直接读取原版解包核对后的规则文件，不在引擎里硬编码。
 
 import raw from "../../../data/game/game-rules.json";
 
 export interface EquipmentItem {
   key: string;
   label: string;
-  cost: number;
+  gold: number;
+  allStats?: number;
+  strength?: number;
+  agility?: number;
   damage?: number;
-  attackSpeed?: number;
+  heroDamage?: number;
+  armor?: number;
   speed?: number;
-  maxHp?: number;
-  income?: number;
-  lifesteal?: number;
+  magicImmune?: boolean;
 }
 
 export interface RuleFile {
   version: number;
+  scale: number;
+  modes: Record<string, string>;
+  rules: Record<string, string>;
+  startGold: { elf: number; troll: number };
+  startWood: number;
+  trollAppear: { withPrepare: number; fixSurvive: number };
+  trollInvulnerableSeconds: number;
+  heroes: Record<string, { hp: number; speed: number; attack: number; range: number; interval: number; radius: number }>;
+  buildings: Record<string, {
+    gold: number | number[];
+    wood: number | number[];
+    hp: number | number[];
+    income?: number | number[];
+    damage?: number | number[];
+    revealRange?: number;
+    heal?: number;
+    auraRange?: number;
+  }>;
   elfDemolish: {
     minHpRatio: number;
-    trollAvoidRadius: number;
-    refundTentUpgrades: boolean;
+    enemyHeroRadius: number;
+    trollEyeRadius: number;
+    delayedDeath: number;
+    refundOnAnyDeath: boolean;
+  };
+  market: {
+    buyPrice: number;
+    sellPrice: number;
+    priceStep: number;
+    minPrice: number;
+    maxPrice: number;
+    tradeAmount: number;
   };
   equipmentShop: {
-    trollSpawnRadius: number;
+    purchaseRadius: number;
+    shopOffsets: Array<[number, number]>;
     items: EquipmentItem[];
+  };
+  skills: Record<string, Record<string, number | boolean>>;
+  combat: {
+    lifesteal: number;
+    lifestealSkill: string;
+    lifestealModes: string[];
+    noNegativeDamageFloat: boolean;
+  };
+  bounty: {
+    goldRatio: number;
+    woodMultiplier: number;
+    middleRatio: number;
+    angelStoleGoldPerMinute: number[];
+    angelStoleCapIndex: number;
+    minMultiplier: number;
+    max: number;
+  };
+  vision: {
+    elfShareAtSeconds: number;
+    exposeAtSeconds: number;
+  };
+  respawn: {
+    elfCleanup: number;
+    wolf: number;
+    angel: number;
+    duetElf: number;
+    reviveTrollVote: number[];
   };
 }
 
 export const RULES = raw as unknown as RuleFile;
 
+export const BUILDING_RULES = RULES.buildings;
 export const DEMOLISH_RULE = RULES.elfDemolish;
+export const MARKET_RULE = RULES.market;
 export const EQUIPMENT_RULE = RULES.equipmentShop;
+export const BOUNTY_RULE = RULES.bounty;
+export const COMBAT_RULE = RULES.combat;
+export const VISION_RULE = RULES.vision;
+export const RESPAWN_RULE = RULES.respawn;

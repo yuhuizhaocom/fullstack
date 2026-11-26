@@ -12,9 +12,6 @@ import {
   RULE_PREP,
   SKILLS,
   TILE,
-  WOOD_BUY,
-  WOOD_SELL,
-  WOOD_STEP,
 } from "@/lib/tve4/config";
 import {
   canBuild,
@@ -30,7 +27,7 @@ import {
   tryUpgrade,
 } from "@/lib/tve4/engine";
 import { buildBlocked } from "@/lib/tve4/map";
-import { RULES } from "@/lib/tve4/rules";
+import { MARKET_RULE, RULES } from "@/lib/tve4/rules";
 import type { BuildKind, GameState, Interaction, Mode, Rule, SkillKey } from "@/lib/tve4/types";
 
 import type { Stage4 } from "./stage";
@@ -45,6 +42,8 @@ interface Snapshot {
   rule: Rule;
   testMode: boolean;
   hasMarket: boolean;
+  woodPriceIn: number;
+  woodPriceOut: number;
   result: "win" | "lose" | null;
   hint: string | null;
   gold: number;
@@ -98,6 +97,8 @@ export function Tve4Game() {
       rule: s.rule,
       testMode: s.testMode,
       hasMarket: s.buildings.some((b) => b.alive && b.kind === "market" && b.faction === "elf"),
+      woodPriceIn: s.woodPriceIn,
+      woodPriceOut: s.woodPriceOut,
       result: s.result,
       hint: s.hint?.text ?? null,
       gold: hero?.gold ?? 0,
@@ -386,7 +387,7 @@ export function Tve4Game() {
                   if (s) { tradeWood(s, true); sync(); }
                 }}
               >
-                买木 {WOOD_STEP} · {WOOD_BUY} 金
+                买木 {MARKET_RULE.tradeAmount} · {snapshot.woodPriceIn} 金
               </button>
               <button
                 className="pointer-events-auto rounded-lg bg-black/60 px-2 py-1 text-[11px] text-white"
@@ -395,7 +396,7 @@ export function Tve4Game() {
                   if (s) { tradeWood(s, false); sync(); }
                 }}
               >
-                卖木 {WOOD_STEP} · +{WOOD_SELL} 金
+                卖木 {MARKET_RULE.tradeAmount} · +{snapshot.woodPriceOut} 金
               </button>
             </div>
           ) : null}

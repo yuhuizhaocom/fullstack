@@ -1,89 +1,164 @@
 {
-  "version": 3,
-  "confidence": "PROPOSED",
-  "basedOn": "data/original/game-rules.json",
-  "note": "网页 tve4 当前生效配置镜像。数值来源见 docs/research/**；VERIFIED 不覆盖，PROPOSED 为网页实现。",
+  "version": 4,
+  "confidence": "MIXED",
+  "basedOn": "C:/Users/肥胖的粽子/AppData/Local/Temp/tve_w3x/extracted (war3map.j + Units/*.slk + *.txt)",
+  "note": "直接从原版解包文件核对。VERIFIED=原文证据；PROPOSED=网页端缩放/简化。网页像素与 WC3 世界单位换算 scale=0.125（TILE16/原版128）。",
+  "scale": 0.125,
   "mode": "OLD",
   "rule": "SINGLE",
+  "modes": {
+    "OLD": "普速",
+    "BALANCE": "平衡",
+    "FAST": "快速",
+    "MIDDLE": "中速"
+  },
+  "rules": {
+    "SINGLE": "单魔群战",
+    "DOUBLE": "双魔群战",
+    "FIX": "定点群战",
+    "RACE": "竞赛规则",
+    "DEFEND": "防守规则",
+    "SOLO": "单挑规则",
+    "DUET": "2v2规则",
+    "SURVIVE": "人机规则",
+    "REVIVE": "复活群战"
+  },
   "startGold": { "elf": 30, "troll": 70 },
   "startWood": 0,
-  "trollAppearSeconds": 30,
-  "trollAppearNote": "VERIFIED：SINGLE/DOUBLE/RACE/SOLO/DUET/DEFEND/REVIVE=30 秒，FIX/SURVIVE=45 秒（网页已实现）",
+  "trollAppear": {
+    "withPrepare": 35,
+    "note": "VERIFIED：5 秒精灵生成 + 30 秒等待 = 35 秒；FIX/SURVIVE 为 45 秒直接生成",
+    "fixSurvive": 45
+  },
+  "trollInvulnerableSeconds": 2,
   "heroes": {
     "elf": { "hp": 10, "speed": 125, "attack": 7, "range": 112, "interval": 2.2, "radius": 14 },
     "troll": { "hp": 750, "speed": 175, "attack": 7, "range": 90, "interval": 1.5, "radius": 22 }
   },
+  "buildings": {
+    "tent": {
+      "note": "VERIFIED：10 级作坊链，收入 1..512，费用含木材，返还=全部累计升级花费",
+      "gold": [0, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800],
+      "wood": [0, 0, 0, 0, 0, 30, 60, 128, 256, 512],
+      "hp": [10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120],
+      "income": [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+    },
+    "wall": {
+      "note": "VERIFIED：u01F 石墙主链 L1-L5，L6-L10 按翻倍规律 INFERRED",
+      "gold": [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048],
+      "wood": [0, 0, 0, 0, 0, 30, 60, 128, 256, 512],
+      "hp": [50, 80, 140, 200, 250, 500, 1000, 2000, 4000, 8000]
+    },
+    "tower": {
+      "note": "VERIFIED：h000 主链 7 级",
+      "gold": [4, 16, 32, 64, 128, 256, 512],
+      "wood": [0, 0, 0, 0, 0, 0, 16],
+      "hp": [10, 15, 30, 50, 80, 140, 200],
+      "damage": [4, 6, 9, 13, 18, 26, 38]
+    },
+    "mine": {
+      "note": "VERIFIED：e00H 金矿链，后期以木材支付",
+      "gold": [90, 0, 0, 0, 0],
+      "wood": [0, 24, 200, 800, 3200],
+      "hp": [50, 50, 50, 50, 50],
+      "income": [1, 2, 8, 32, 128]
+    },
+    "reveal": {
+      "note": "VERIFIED：u01E 真视之塔 256 木，反隐 900 世界单位",
+      "gold": 0,
+      "wood": 256,
+      "hp": 10,
+      "revealRange": 900
+    },
+    "trollHouse": {
+      "note": "VERIFIED：系统创建、玩家只能升级；收入 3/5/9/17/1250；升级价 UNKNOWN",
+      "gold": [200, 400, 800, 1600, 3200],
+      "wood": [0, 0, 0, 0, 8],
+      "hp": [550, 700, 900, 1200, 1600],
+      "income": [3, 5, 9, 17, 1250],
+      "heal": 0.06,
+      "auraRange": 500
+    }
+  },
+  "elfDemolish": {
+    "minHpRatio": 0.95,
+    "enemyHeroRadius": 1240,
+    "trollEyeRadius": 1800,
+    "delayedDeath": 0.25,
+    "refundOnAnyDeath": true,
+    "note": "VERIFIED：技能 A02P『摧毁』；0.25 秒后死亡并走通用死亡链返还"
+  },
+  "market": {
+    "buyPrice": 155,
+    "sellPrice": 150,
+    "priceStep": 5,
+    "minPrice": 5,
+    "maxPrice": 495,
+    "tradeAmount": 10,
+    "note": "VERIFIED：全局动态价格，每次交易买卖价各 ±5；交易 10 木"
+  },
+  "equipmentShop": {
+    "note": "VERIFIED：6 座固定商店围绕巨魔房屋生成；必须走到商店旁购买（WC3 原生商店交互半径 UNKNOWN，网页用 240px 近似 PROPOSED）",
+    "purchaseRadius": 240,
+    "shopOffsets": [[-128, 256], [-256, 0], [-128, -256], [128, 256], [256, 0], [128, -256]],
+    "items": [
+      { "key": "branch", "label": "铁树枝干", "gold": 75, "allStats": 1 },
+      { "key": "ring", "label": "能量之戒", "gold": 200, "strength": 2, "agility": 5 },
+      { "key": "sword1", "label": "生锈的铁剑", "gold": 100, "damage": 2 },
+      { "key": "sword2", "label": "磨快的铁剑", "gold": 200, "damage": 4 },
+      { "key": "sword3", "label": "青铜剑", "gold": 400, "damage": 8 },
+      { "key": "sword4", "label": "水晶剑", "gold": 800, "damage": 16 },
+      { "key": "shield1", "label": "木制盾牌", "gold": 400, "heroDamage": 3 },
+      { "key": "shield2", "label": "铜制盾牌", "gold": 800, "armor": 8 },
+      { "key": "boots1", "label": "青铜便靴", "gold": 200, "speed": 120 },
+      { "key": "boots2", "label": "匡威便靴", "gold": 400, "speed": 135 },
+      { "key": "boots3", "label": "闪避长靴", "gold": 800, "speed": 150 },
+      { "key": "potion", "label": "魔法免疫药水", "gold": 800, "magicImmune": true }
+    ]
+  },
   "skills": {
-    "blink": { "cooldown": 25, "rangeTiles": 12 },
-    "haste": { "cooldown": 30, "duration": 15, "speedBonus": 1.1 },
-    "entangle": { "cooldown": 3, "duration": 3 },
-    "silence": { "cooldown": 60, "duration": 5 },
-    "windwalk": { "cooldown": 30, "duration": 20 },
-    "berserk": { "cooldown": 120, "duration": 10, "attackSpeedBonus": 0.5, "damageTakenBonus": 0.5 },
-    "teleport": { "cooldown": 45, "channel": 2 }
+    "windwalk": { "duration": 20, "cooldown": 30, "speedBonus": 0.5, "breakDamage": 1, "id": "A061" },
+    "berserk": { "duration": 10, "cooldown": 120, "attackSpeed": 1.0, "speedBonus": 0.5, "damageTaken": 0.5, "id": "A0H0" },
+    "teleport": { "cooldown": 45, "channel": 2, "searchRange": 1600, "landingInvuln": 1, "id": "A024" }
+  },
+  "combat": {
+    "damageGold": "R2I(damage)",
+    "lifesteal": 0.22,
+    "lifestealSkill": "A070",
+    "lifestealModes": ["OLD"],
+    "noNegativeDamageFloat": true
   },
   "bounty": {
     "goldRatio": 0.5,
     "woodMultiplier": 8,
-    "max": 1000000,
-    "middleRatioImplemented": false,
-    "minImplemented": false
+    "middleRatio": 0.5,
+    "angelStoleGoldPerMinute": [1, 2, 4, 7, 11, 16, 23, 32, 45, 62, 75, 93, 113],
+    "angelStoleCapIndex": 60,
+    "minMultiplier": 25,
+    "max": 1000000
   },
-  "damage": {
-    "goldPerDamage": 1,
-    "lifesteal": 0.22,
-    "instantElfKillImplemented": false,
-    "heroDamageGoldImplemented": true,
-    "buildingDamageGoldImplemented": true
+  "vision": {
+    "elfShareAtSeconds": 300,
+    "exposeAtSeconds": 600,
+    "note": "VERIFIED：300 秒精灵互享视野；600 秒让没有作坊（tent Lv<5）的精灵暴露给巨魔；均不使巨魔显形"
   },
-  "victory": {
-    "implementedRules": ["SINGLE", "DOUBLE", "FIX", "RACE", "DEFEND", "SOLO", "DUET", "SURVIVE", "REVIVE"],
-    "forceClearedLoses": true,
-    "surviveChecksElfOnly": true,
-    "timeLimitAutoWin": "SURVIVE only",
-    "sharedVisionAtSeconds": 300,
-    "doubleTrollBecomesWolf": true,
-    "reviveElfLives": 3
-  },
-  "buildings": {
-    "wall": [4, 120, 128, 144],
-    "tower": [4, 16, 64],
-    "mine": [90, 100, 200, 800],
-    "tent": [0, 50, 150],
-    "farm": [100, 200],
-    "market": [64],
-    "reveal": [{ "wood": 256 }],
-    "trollHouse": [200, 300, 450],
-    "tentLimitPerElf": 1,
-    "trollHouseHealPerSecond": 0.12,
-    "trollHouseIncome": 3
-  },
-  "market": { "step": 5, "buy": 155, "sell": 150, "max": 495 },
-  "elfDemolish": {
-    "minHpRatio": 0.9,
-    "trollAvoidRadius": 240,
-    "refundTentUpgrades": true,
-    "note": "PROPOSED：精灵可拆除血量 >=90% 且巨魔不在附近的建筑；帐篷返还全部升级花费"
-  },
-  "equipmentShop": {
-    "trollSpawnRadius": 160,
-    "note": "PROPOSED：巨魔必须回到出生点附近才能购买装备，给精灵发育时间",
-    "items": [
-      { "key": "sword", "label": "铁剑", "cost": 100, "damage": 3 },
-      { "key": "gloves", "label": "手套", "cost": 100, "attackSpeed": 0.15 },
-      { "key": "boots", "label": "靴子", "cost": 100, "speed": 25 },
-      { "key": "amulet", "label": "护符", "cost": 120, "maxHp": 100 },
-      { "key": "necklace", "label": "项链", "cost": 150, "income": 2 },
-      { "key": "ring", "label": "指环", "cost": 150, "lifesteal": 0.08 }
-    ]
+  "respawn": {
+    "elfCleanup": 2,
+    "wolf": 20,
+    "angel": 10,
+    "duetElf": 60,
+    "reviveTrollVote": [5, 10, 5]
   },
   "implementedModes": ["OLD", "BALANCE", "FAST", "MIDDLE"],
+  "implementedRules": ["SINGLE", "DOUBLE", "FIX", "RACE", "DEFEND", "SOLO", "DUET", "SURVIVE", "REVIVE"],
   "missingOriginalSystems": [
-    "exposeVision",
-    "angelRoles",
+    "wolfAndAngelRoles",
     "skins",
-    "raceTwoTeamScoring",
     "unitTraining",
-    "itemShop"
+    "packingA06F",
+    "towerModifyA06G",
+    "trollEyeScouting",
+    "surviveRounds",
+    "raceTwoTeamScoring"
   ]
 }

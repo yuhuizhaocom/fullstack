@@ -308,7 +308,7 @@ class Tve4Scene extends Phaser.Scene {
       const width = height * (FRAME_W / FRAME_H);
       const alpha = !h.alive
         ? Phaser.Math.Clamp(h.deathTimer / 1.5, 0, 1)
-        : h.buffs.windwalk > 0 && !state.sharedVision && h.buffs.revealed <= 0
+        : h.buffs.windwalk > 0 && h.buffs.revealed <= 0
           ? 0.38
           : 1;
       sprite
