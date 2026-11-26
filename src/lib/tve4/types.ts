@@ -109,6 +109,7 @@ export interface InputState {
 }
 
 export interface GameState {
+  testMode: boolean;
   time: number;
   phase: "prep" | "battle" | "over";
   result: "win" | "lose" | null;

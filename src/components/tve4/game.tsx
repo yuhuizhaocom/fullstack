@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { BUILDINGS, BUILD_KINDS, PREP_SECONDS, SKILLS, TILE } from "@/lib/tve4/config";
+import { BUILDINGS, BUILD_KINDS, GRID_H, GRID_W, PREP_SECONDS, SKILLS, TILE } from "@/lib/tve4/config";
 import { canBuild, castSkill, createGame, getPlayer, setBlocked, stepGame, tryBuild, tryUpgrade } from "@/lib/tve4/engine";
 import type { BuildKind, GameState, Interaction, SkillKey } from "@/lib/tve4/types";
 
@@ -14,6 +14,7 @@ type Sheet = "build" | "skill" | null;
 interface Snapshot {
   time: number;
   phase: string;
+  testMode: boolean;
   result: "win" | "lose" | null;
   hint: string | null;
   gold: number;
@@ -38,6 +39,7 @@ export function Tve4Game() {
   const placingRef = useRef<BuildKind | null>(null);
   const moveTargetRef = useRef<{ x: number; y: number } | null>(null);
   const pendingSkillRef = useRef<SkillKey | null>(null);
+  const testModeRef = useRef(false);
   const selectedRef = useRef<number | null>(null);
   const sheetRef = useRef<Sheet>(null);
   const toggleSheetRef = useRef<(s: Sheet) => void>(() => {});
@@ -56,6 +58,7 @@ export function Tve4Game() {
     setSnapshot({
       time: s.time,
       phase: s.phase,
+      testMode: s.testMode,
       result: s.result,
       hint: s.hint?.text ?? null,
       gold: hero?.gold ?? 0,
@@ -95,7 +98,9 @@ export function Tve4Game() {
           return;
         }
         stageRef.current = stage;
-        const state = createGame();
+        const testMode = new URLSearchParams(window.location.search).get("test") === "1";
+        testModeRef.current = testMode;
+        const state = createGame(testMode);
         try {
           const res = await fetch("/tve4/blocked.bin");
           if (res.ok) setBlocked(state, new Uint8Array(await res.arrayBuffer()));
@@ -169,8 +174,8 @@ export function Tve4Game() {
       const interaction: Interaction = { placing, selectedId: selectedRef.current, hover, gx: 0, gy: 0, valid: false };
       if (placing && hover) {
         const size = BUILDINGS[placing].size;
-        const gx = Math.max(0, Math.min(128 - size, Math.floor(hover.x / TILE - (size - 1) / 2)));
-        const gy = Math.max(0, Math.min(96 - size, Math.floor(hover.y / TILE - (size - 1) / 2)));
+        const gx = Math.max(0, Math.min(GRID_W - size, Math.floor(hover.x / TILE - (size - 1) / 2)));
+        const gy = Math.max(0, Math.min(GRID_H - size, Math.floor(hover.y / TILE - (size - 1) / 2)));
         interaction.gx = gx;
         interaction.gy = gy;
         interaction.valid = canBuild(state, placing, gx, gy).ok;
@@ -256,8 +261,9 @@ export function Tve4Game() {
   }, []);
   toggleSheetRef.current = toggleSheet;
 
-  const restart = useCallback(() => {
-    stateRef.current = createGame();
+  const restart = useCallback((testMode = testModeRef.current) => {
+    testModeRef.current = testMode;
+    stateRef.current = createGame(testMode);
     selectedRef.current = null;
     moveTargetRef.current = null;
     pendingSkillRef.current = null;
@@ -283,6 +289,13 @@ export function Tve4Game() {
           <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2">
             <button className="pointer-events-auto rounded-lg bg-black/60 px-3 py-2 text-xs text-white" onClick={() => toggleSheet("build")}>建造</button>
             <button className="pointer-events-auto rounded-lg bg-black/60 px-3 py-2 text-xs text-white" onClick={() => toggleSheet("skill")}>技能</button>
+            <button
+              className={`pointer-events-auto rounded-lg px-3 py-2 text-xs ${snapshot.testMode ? "bg-amber-700 text-white" : "bg-black/60 text-white"}`}
+              onClick={() => restart(!snapshot.testMode)}
+              title="测试模式跳过 30 秒准备期"
+            >
+              {snapshot.testMode ? "测试模式" : "常规模式"}
+            </button>
             <button className="pointer-events-auto rounded-lg bg-black/60 px-3 py-2 text-xs text-white" onClick={() => stageRef.current?.zoomBy(1.25)}>＋</button>
             <button className="pointer-events-auto rounded-lg bg-black/60 px-3 py-2 text-xs text-white" onClick={() => stageRef.current?.zoomBy(0.8)}>－</button>
             <div className="rounded-lg bg-black/60 px-3 py-2 text-xs text-white">
@@ -303,7 +316,7 @@ export function Tve4Game() {
             <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/70 text-white">
               <div className="text-3xl font-bold">{snapshot.result === "win" ? "胜利" : "失败"}</div>
               <div className="text-sm text-white/70">坚守 {snapshot.time.toFixed(0)} 秒 · 击杀 {snapshot.stats.kills} · 摧毁 {snapshot.stats.destroyed}</div>
-              <button className="rounded-lg bg-emerald-600 px-4 py-2 text-sm" onClick={restart}>再来一局</button>
+              <button className="rounded-lg bg-emerald-600 px-4 py-2 text-sm" onClick={() => restart()}>再来一局</button>
             </div>
           ) : null}
           {sheet ? (

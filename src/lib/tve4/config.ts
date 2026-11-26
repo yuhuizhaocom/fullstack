@@ -1,6 +1,6 @@
 // tve4 全新数值配置。全部为本版本原创设计，不继承旧版数据。
 
-export const GRID_W = 128;
+export const GRID_W = 168;
 export const GRID_H = 96;
 export const TILE = 16;
 export const WORLD_W = GRID_W * TILE;
@@ -13,8 +13,8 @@ export const START_WOOD = 200;
 export const LIVES = 3;
 export const RESPAWN = 6;
 
-export const ELF_START = { gx: 55, gy: 55 };
-export const TROLL_START = { gx: 73, gy: 73 };
+export const ELF_START = { gx: 54, gy: 59 };
+export const TROLL_START = { gx: 64, gy: 42 };
 
 export interface BuildingLevel {
   cost: number;

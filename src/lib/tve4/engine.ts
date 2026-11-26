@@ -89,8 +89,9 @@ function setHint(state: GameState, text: string): void {
 
 // ---------------------------------------------------------------- 创建 / 复活
 
-export function createGame(): GameState {
+export function createGame(testMode = false): GameState {
   const state: GameState = {
+    testMode,
     time: 0,
     phase: "prep",
     result: null,
@@ -109,7 +110,12 @@ export function createGame(): GameState {
   };
   const p = gridToWorld(ELF_START.gx, ELF_START.gy);
   state.heroes.push(makeHero(state, "elf", true, p.x, p.y));
-  setHint(state, "准备阶段：建造防线，巨魔即将出现");
+  if (testMode) {
+    spawnTroll(state);
+    setHint(state, "测试模式：巨魔已出现");
+  } else {
+    setHint(state, "准备阶段：建造防线，巨魔即将出现");
+  }
   return state;
 }
 
@@ -332,6 +338,12 @@ function heroTarget(state: GameState, h: Hero, maxRange: number): DamageTarget |
 
 function dealDamage(state: GameState, attacker: Hero, target: DamageTarget, raw: number): void {
   if (target.hp <= 0) return;
+  // 巨魔攻击会取消疾风步的隐身效果
+  if (attacker.buffs.windwalk > 0) {
+    attacker.buffs.windwalk = 0;
+    addEffect(state, attacker.x, attacker.y, 44, "#bfe9ff");
+    addFloat(state, attacker.x, attacker.y - 28, "现身!", "#bfe9ff", 12);
+  }
   let amount = raw;
   if (attacker.buffs.berserk > 0) amount *= 1.5;
   amount = Math.round(amount);

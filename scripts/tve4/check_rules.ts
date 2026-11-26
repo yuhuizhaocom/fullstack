@@ -164,6 +164,27 @@ check("胜负：精灵生命耗尽判定失败", () => {
   assert.equal(s.result, "lose");
 });
 
+check("测试模式：巨魔立即出现，跳过准备期", () => {
+  const s = createGame(true);
+  assert.equal(s.testMode, true);
+  assert.equal(s.trollSpawned, true);
+  assert.equal(s.phase, "battle");
+  assert.equal(s.heroes.length, 2);
+});
+
+check("隐身：巨魔攻击后现身", () => {
+  const s = createGame(true);
+  openMap(s);
+  const troll = s.heroes.find((h) => h.faction === "troll")!;
+  const p = getPlayer(s)!;
+  p.x = troll.x + 20;
+  p.y = troll.y;
+  p.hp = 10000;
+  troll.buffs.windwalk = 5;
+  run(s, 0.25);
+  assert.equal(troll.buffs.windwalk, 0);
+});
+
 check("数据边界：碰撞格尺寸正确", () => {
   const s = createGame();
   assert.equal(s.blocked.length, GRID_W * GRID_H);

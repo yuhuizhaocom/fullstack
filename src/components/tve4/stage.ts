@@ -101,7 +101,9 @@ class Tve4Scene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     keyboard?.on("keydown-M", () => {
       this.fullMap = !this.fullMap;
-      this.zoomTarget = this.fullMap ? Math.min(WORLD_W / this.scale.width, WORLD_H / this.scale.height) * 0.95 : 1.15;
+      this.zoomTarget = this.fullMap
+        ? Math.min(this.scale.width / WORLD_W, this.scale.height / WORLD_H) * 0.95
+        : 1.15;
       if (this.fullMap) {
         this.camX = WORLD_W / 2;
         this.camY = WORLD_H / 2;
@@ -330,7 +332,7 @@ export async function createStage4(canvas: HTMLCanvasElement, width: number, hei
     width,
     height,
     parent: canvas.parentElement ?? undefined,
-    backgroundColor: "#07100b",
+    backgroundColor: "#cbdde6",
     banner: false,
     audio: { noAudio: true },
     scale: { mode: Phaser.Scale.NONE, autoCenter: Phaser.Scale.NO_CENTER, width, height },
