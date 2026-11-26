@@ -9,9 +9,9 @@
 import { planElfActions, planElfSkill, planTrollActions, planTrollMove } from "./ai";
 import {
   BASE_ROOMS,
-  BASE_SITES,
   BUILD_SPECS,
   DIFFICULTIES,
+  ELF_BUILDABLE,
   ELF_HERO,
   ELF_SKILLS,
   GAME_MODES,
@@ -19,6 +19,9 @@ import {
   MAP_SIZE,
   MAP_TILES,
   POND,
+  RECALL_SCROLL,
+  REVEAL,
+  REPAIR,
   REPAIRER,
   SCROLL,
   SHOP_ITEMS,
@@ -26,9 +29,14 @@ import {
   START_GOLD_PLAYER,
   START_WOOD,
   TILE,
+  TOWER_BRANCHES,
+  TOWER_BRANCH_LEVEL,
   TOWER_KINDS,
   TROLL_BASE,
   TROLL_SKILLS,
+  WALL_BRANCHES,
+  WALL_BRANCH_LEVEL,
+  WATCH,
   WISP,
   WOLF,
   WOOD_PACK,
@@ -82,22 +90,29 @@ function newBuilding(
     hp: level.hp,
     maxHp: level.hp,
     spawn: spawned ? 0 : 0.5,
+    buildTime: spawned ? 0 : spec.buildTime ?? 0,
+    buildTimer: spawned ? 0 : spec.buildTime ?? 0,
     cd: 0,
     timer: 0,
     flash: 0,
     alive: true,
+    repairing: false,
     spentGold: level.cost,
     spentWood: level.wood,
+    incomeAcc: 0,
+    incomeTimer: 0,
+    invuln: 0,
   };
 }
 
-function createElf(index: number, siteIndex: number, isPlayer: boolean, gold: number): Elf {
-  const site = BASE_SITES[siteIndex] ?? BASE_SITES[0];
+const ELF_NAMES = ["精灵一号", "精灵二号", "精灵三号"];
+
+function createElf(index: number, x: number, y: number, isPlayer: boolean, gold: number): Elf {
   return {
     id: index,
-    name: site.name,
-    x: tileCenter(site.tx + 3),
-    y: tileCenter(site.ty + 2),
+    name: ELF_NAMES[index] ?? `精灵${index + 1}`,
+    x,
+    y,
     hp: ELF_HERO.hp,
     maxHp: ELF_HERO.hp,
     gold,
@@ -108,7 +123,12 @@ function createElf(index: number, siteIndex: number, isPlayer: boolean, gold: nu
     flash: 0,
     deadTimer: 0,
     woodBuys: 0,
-    cooldowns: { night: 0, entangle: 0, blink: 0, reinforce: 0 },
+    // AI 精灵默认开启自动维修；玩家由 HUD 开关控制
+    autoRepair: !isPlayer,
+    hasteTime: 0,
+    repairTarget: -1,
+    repairAuto: false,
+    cooldowns: { blink: 0, haste: 0, entangle: 0, silence: 0, wallguard: 0 },
   };
 }
 
@@ -137,6 +157,11 @@ function createTroll(index: number, x: number, y: number, isPlayer: boolean, sta
     windwalk: 0,
     windwalkCd: 0,
     recallCd: 0,
+    silenceTime: 0,
+    berserkTime: 0,
+    berserkCd: 0,
+    recallChannel: 0,
+    recallScrolls: 0,
     items: { weapon: 0, gloves: 0, boots: 0, armor: 0, vitality: 0, regen: 0 },
     hutId: -1,
     regenAcc: 0,
@@ -167,11 +192,25 @@ export function createGame(
   const trolls: Troll[] = [];
 
   const elfCount = modeSpec.elfCount;
+  // 精灵随机出生在房间：每局打乱房间顺序，前 elfCount 个房间各放一个精灵
+  const roomOrder = BASE_ROOMS.map((_, i) => i);
+  for (let i = roomOrder.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [roomOrder[i], roomOrder[j]] = [roomOrder[j], roomOrder[i]];
+  }
   for (let i = 0; i < elfCount; i += 1) {
     const isPlayer = faction === "elf" && i === 0;
-    const site = BASE_SITES[i] ?? BASE_SITES[0];
-    const elf = createElf(i, i, isPlayer, Math.round((isPlayer ? START_GOLD_PLAYER : START_GOLD_AI) * goldMult));
-    const tree = newBuilding(nextId++, "tree", i, "elf", site.tx - 1, site.ty - 1, true);
+    const room = BASE_ROOMS[roomOrder[i] ?? 0];
+    const cx = Math.floor((room.gx0 + room.gx1) / 2);
+    const cy = Math.floor((room.gy0 + room.gy1) / 2);
+    const elf = createElf(
+      i,
+      tileCenter(cx + 2),
+      tileCenter(cy + 2),
+      isPlayer,
+      Math.round((isPlayer ? START_GOLD_PLAYER : START_GOLD_AI) * goldMult),
+    );
+    const tree = newBuilding(nextId++, "tree", i, "elf", cx - 1, cy - 1, true);
     elf.treeId = tree.id;
     buildings.push(tree);
     elves.push(elf);
@@ -237,6 +276,7 @@ export function createGame(
     shake: 0,
     stats: { kills: 0, destroyed: 0, goldEarned: 0, woodGathered: 0 },
     nightTimer: 0,
+    revealTimer: 0,
     playerElf: faction === "elf" ? 0 : -1,
     playerTroll: faction === "troll" ? 0 : -1,
     woodPrice: WOOD_PACK.basePrice,
@@ -290,13 +330,14 @@ function trollRadius(t: Troll): number {
 function trollAttackPower(state: GameState, t: Troll): number {
   const base = t.wolf ? WOLF.attack : TROLL_BASE.attack + SHOP_ITEMS.weapon.per * t.items.weapon;
   const stat = !t.isPlayer ? DIFFICULTIES[state.difficulty].trollStat : 1;
-  return base * stat;
+  return base * stat * (t.berserkTime > 0 ? 1.3 : 1);
 }
 
 function trollAttackInterval(t: Troll): number {
   const base = t.wolf ? WOLF.interval : TROLL_BASE.interval;
   const haste = t.wolf ? 0 : SHOP_ITEMS.gloves.per * t.items.gloves;
-  return Math.max(0.42, base * (1 - haste));
+  const berserk = t.berserkTime > 0 ? 1.4 : 1;
+  return Math.max(0.32, (base * (1 - haste)) / berserk);
 }
 
 function trollSpeed(t: Troll): number {
@@ -307,8 +348,13 @@ function trollSpeed(t: Troll): number {
   return base * boots * slow * ww;
 }
 
+/** 巨魔护甲值（参考英雄联盟：物理减伤 = 护甲 / (护甲 + 100)） */
 function trollArmor(t: Troll): number {
-  return t.wolf ? 0 : clamp(SHOP_ITEMS.armor.per * t.items.armor, 0, 0.5);
+  return t.wolf ? 0 : SHOP_ITEMS.armor.per * t.items.armor;
+}
+
+function physicalMultiplier(armor: number): number {
+  return armor > 0 ? 100 / (100 + armor) : 1;
 }
 
 function trollRegen(t: Troll): number {
@@ -384,16 +430,6 @@ function resolveCircle(state: GameState, entity: { x: number; y: number }, radiu
     }
   }
 
-  for (const t of MAP_DATA.trees) {
-    const dx = p.x - t.x;
-    const dy = p.y - t.y;
-    const min = t.r + radius * 0.75;
-    const d = Math.hypot(dx, dy);
-    if (d < min && d > 0.0001) {
-      p.x = t.x + (dx / d) * min;
-      p.y = t.y + (dy / d) * min;
-    }
-  }
   for (const rock of MAP_DATA.rocks) {
     const dx = p.x - rock.x;
     const dy = p.y - rock.y;
@@ -442,15 +478,16 @@ function resolveCircle(state: GameState, entity: { x: number; y: number }, radiu
         resolveBox(wall.gx * TILE, wall.gy * TILE, (wall.gx + 1) * TILE, (wall.gy + 1) * TILE);
       }
       if (bulky) {
-        // 门口只要堵了一块墙，巨魔就把整个入口视为封死；精灵仍可从剩下的缝穿过
-        const sealed = state.buildings.some(
-          (b) =>
-            b.alive &&
-            ((b.gx === room.gateX && b.gy === room.gateY) || (b.gx === room.gate2X && b.gy === room.gate2Y)),
-        );
-        if (sealed) {
-          resolveBox(room.gateX * TILE, room.gateY * TILE, (room.gateX + 1) * TILE, (room.gateY + 1) * TILE);
-          resolveBox(room.gate2X * TILE, room.gate2Y * TILE, (room.gate2X + 1) * TILE, (room.gate2Y + 1) * TILE);
+        // 任一入口只要堵了一块墙，巨魔就把整个入口视为封死；精灵仍可从剩下的缝穿过
+        for (const gate of room.gates) {
+          const sealed = state.buildings.some(
+            (b) =>
+              b.alive &&
+              ((b.gx === gate.gx && b.gy === gate.gy) || (b.gx === gate.gx2 && b.gy === gate.gy2)),
+          );
+          if (!sealed) continue;
+          resolveBox(gate.gx * TILE, gate.gy * TILE, (gate.gx + 1) * TILE, (gate.gy + 1) * TILE);
+          resolveBox(gate.gx2 * TILE, gate.gy2 * TILE, (gate.gx2 + 1) * TILE, (gate.gy2 + 1) * TILE);
         }
       }
     }
@@ -475,9 +512,10 @@ function moveCircle(
   }
 }
 
-function damageTroll(state: GameState, t: Troll, raw: number) {
+function damageTroll(state: GameState, t: Troll, raw: number, magic = false) {
   if (!t.alive || state.result) return;
-  const dmg = Math.max(1, raw * (1 - trollArmor(t)));
+  // 普通攻击与物理塔受护甲减免；毒/银月等魔法伤害无视护甲
+  const dmg = Math.max(1, raw * (magic ? 1 : physicalMultiplier(trollArmor(t))));
   t.hp -= dmg;
   t.flash = 0.14;
   if (t.hp <= 0) {
@@ -494,6 +532,9 @@ function killTroll(state: GameState, t: Troll) {
     t.windwalk = 0;
     t.stunTime = 0;
     t.poisonTime = 0;
+    t.recallChannel = 0;
+    t.silenceTime = 0;
+    t.berserkTime = 0;
     pushHint(state, `${t.name}倒下，3 秒后化为幽灵狼`, 3.5);
   } else {
     t.alive = false;
@@ -513,6 +554,9 @@ function reviveTroll(t: Troll) {
   t.windwalk = 0;
   t.windwalkCd = 0;
   t.recallCd = 0;
+  t.recallChannel = 0;
+  t.silenceTime = 0;
+  t.berserkTime = 0;
   t.stunTime = 0;
   t.poisonTime = 0;
   t.slowTime = 0;
@@ -524,6 +568,8 @@ function killElf(state: GameState, elf: Elf) {
   elf.hp = 0;
   elf.deadTimer = 3;
   elf.flash = 0.3;
+  elf.repairTarget = -1;
+  elf.repairAuto = false;
   pushHint(state, `${elf.name}的精灵倒下了！`, 3.5);
   addFx(state, "boom", elf.x, elf.y, 90, "#8bf0a6", 0, 0.8);
   if (elf.isPlayer) state.sfx.push("death");
@@ -535,6 +581,7 @@ function purgeElf(state: GameState, elf: Elf) {
     if (b.alive && b.team === "elf" && b.owner === elf.id) {
       b.alive = false;
       b.hp = 0;
+      b.repairing = false;
     }
   }
   for (const w of state.wisps) {
@@ -546,6 +593,12 @@ function purgeElf(state: GameState, elf: Elf) {
 
 function damageBuilding(state: GameState, t: Troll, b: Building, dmg: number) {
   if (!b.alive) return;
+  if (b.invuln > 0) {
+    if (Math.random() < 0.25) addFloat(state, b.x, b.y - 30, "免疫", "#bfe3ff", 14);
+    return;
+  }
+  // 实际造成多少伤害，巨魔就获得多少金币（不多算溢出的那部分）
+  const dealt = Math.min(dmg, b.hp);
   b.hp -= dmg;
   b.flash = 0.16;
   if (b.team === "elf" && b.kind === "icewall") {
@@ -553,11 +606,18 @@ function damageBuilding(state: GameState, t: Troll, b: Building, dmg: number) {
     t.slowTime = Math.max(t.slowTime, 1.4);
     t.slowPower = Math.max(t.slowPower, slow);
   }
+  if (b.team === "elf" && b.kind === "thorn") {
+    const reflect = BUILD_SPECS.thorn.levels[b.level - 1].thorn ?? 0;
+    if (reflect > 0) {
+      addFx(state, "spark", b.x, b.y, 26, "#c8ff8a", 0, 0.25);
+      damageTroll(state, t, dmg * reflect);
+    }
+  }
   if (b.team === "elf" && b.owner === state.playerElf && b.kind !== "tree") {
     // 基地遭袭提示节流交给 hint 自身
     if (Math.random() < 0.2) pushHint(state, "建筑遭到攻击！", 1.6);
   }
-  const gain = Math.round(TROLL_BASE.lootBase + dmg * TROLL_BASE.lootPerHit);
+  const gain = Math.round(dealt);
   if (gain > 0) {
     t.gold += gain;
     state.stats.goldEarned += gain;
@@ -566,15 +626,31 @@ function damageBuilding(state: GameState, t: Troll, b: Building, dmg: number) {
   if (b.hp <= 0) {
     b.hp = 0;
     b.alive = false;
+    b.repairing = false;
     if (b.team === "elf") {
+      const owner = state.elves[b.owner];
+      if (owner && owner.repairTarget === b.id) {
+        owner.repairTarget = -1;
+        owner.repairAuto = false;
+      }
       state.stats.destroyed += 1;
-      const bonus = TROLL_BASE.destroyBonus + b.level * 20;
-      t.gold += bonus;
-      state.stats.goldEarned += bonus;
-      addFloat(state, b.x, b.y - 34, `+${bonus}`, "#ffd479", 18);
       addFx(state, "dust", b.x, b.y, 60, "#c9a87a", 0, 0.5);
       if (b.kind === "tree") {
         pushHint(state, `${state.elves[b.owner]?.name ?? ""}的生命之树被摧毁`, 3);
+      }
+      // 帐篷被摧毁时返还建造与升级投入的金币/木材
+      if (b.kind === "tent" && owner) {
+        owner.gold += b.spentGold;
+        owner.wood += b.spentWood;
+        addFloat(
+          state,
+          b.x,
+          b.y - 52,
+          `返还 ${b.spentGold} 金${b.spentWood > 0 ? ` + ${b.spentWood} 木` : ""}`,
+          "#8bf0a6",
+          14,
+        );
+        if (owner.isPlayer) pushHint(state, "帐篷被摧毁：已返还建造与升级花费", 3);
       }
     } else if (b.kind === "hut") {
       pushHint(state, "巨魔小屋被摧毁！巨魔失去被动收入", 4);
@@ -584,8 +660,15 @@ function damageBuilding(state: GameState, t: Troll, b: Building, dmg: number) {
 }
 
 /** 巨魔攻击：优先攻击附近的精灵英雄，其次建筑与小精灵 */
-function trollCombat(state: GameState, t: Troll) {
+function trollCombat(state: GameState, t: Troll, manual = false) {
   if (!t.alive || t.cd > 0 || t.stunTime > 0) return;
+  // 隐身状态下不会自动攻击；玩家手动攻击会立刻显形
+  if (t.windwalk > 0) {
+    if (!manual) return;
+    t.windwalk = 0;
+    addFloat(state, t.x, t.y - 36, "现身", "#ffcf8b", 16);
+    addFx(state, "ring", t.x, t.y, 60, "#ffcf8b", 0, 0.45);
+  }
   const reach = (t.wolf ? 50 : TROLL_BASE.range) + trollRadius(t);
   let bestType: "elf" | "wisp" | "building" | null = null;
   let bestId = -1;
@@ -637,10 +720,10 @@ function trollCombat(state: GameState, t: Troll) {
   if (bestType === "elf") {
     const elf = state.elves.find((item) => item.id === bestId && item.alive);
     if (!elf) return;
-    elf.hp -= atk;
-    elf.flash = 0.2;
-    addFloat(state, elf.x, elf.y - 30, `-${Math.round(atk)}`, "#ff8f6b", 16);
-    if (elf.hp <= 0) killElf(state, elf);
+    // 原作机制：巨魔普通攻击一击秒杀精灵
+    elf.flash = 0.25;
+    addFloat(state, elf.x, elf.y - 30, "秒杀", "#ff6b6b", 18);
+    killElf(state, elf);
   } else if (bestType === "wisp") {
     const wisp = state.wisps.find((item) => item.id === bestId);
     if (!wisp) return;
@@ -665,13 +748,29 @@ function updateBuildingTimers(state: GameState, dt: number) {
     if (!b.alive) continue;
     b.flash = Math.max(0, b.flash - dt);
     b.cd = Math.max(0, b.cd - dt);
+    b.invuln = Math.max(0, b.invuln - dt);
     if (b.spawn > 0) b.spawn = Math.max(0, b.spawn - dt);
+    if (b.buildTimer > 0) {
+      b.buildTimer = Math.max(0, b.buildTimer - dt);
+      if (b.buildTimer === 0) {
+        addFx(state, "ring", b.x, b.y, 42, "#9adeff", 0, 0.45);
+        if (b.team === "elf" && state.elves[b.owner]?.isPlayer) {
+          addFloat(state, b.x, b.y - 34, "建成", "#9adeff", 14);
+        }
+      }
+    } else {
+      // 草墙缓慢自愈
+      const regen = BUILD_SPECS[b.kind].levels[b.level - 1].regen ?? 0;
+      if (regen > 0 && b.hp < b.maxHp) {
+        b.hp = Math.min(b.maxHp, b.hp + b.maxHp * regen * dt);
+      }
+    }
   }
 }
 
 function updateTowers(state: GameState, dt: number) {
   for (const b of state.buildings) {
-    if (!b.alive || b.spawn > 0 || b.cd > 0) continue;
+    if (!b.alive || b.spawn > 0 || b.buildTimer > 0 || b.cd > 0) continue;
     if (!TOWER_KINDS.includes(b.kind)) continue;
     const spec = BUILD_SPECS[b.kind].levels[b.level - 1];
     const range = spec.range ?? 0;
@@ -690,6 +789,7 @@ function updateTowers(state: GameState, dt: number) {
     b.cd = spec.interval ?? 1;
     const bonus = 1 + trollLabBonus(state, b.owner);
     const dmg = (spec.dmg ?? 0) * bonus;
+    const magic = b.kind === "poison" || b.kind === "moon";
     target.flash = 0.14;
     state.shake = Math.min(8, state.shake + 2.2);
     addFloat(state, target.x + (Math.random() - 0.5) * 20, target.y - 30, `-${Math.round(dmg)}`, "#ff8f6b", 14);
@@ -700,7 +800,7 @@ function updateTowers(state: GameState, dt: number) {
       ty: target.y,
       t: 0,
       dur: b.kind === "arrow" ? 0.16 : 0.24,
-      kind: b.kind as "arrow" | "gun" | "poison" | "ice" | "moon",
+      kind: b.kind as "arrow" | "goldtower" | "gun" | "poison" | "ice" | "moon",
     });
 
     if (spec.slow) {
@@ -717,7 +817,7 @@ function updateTowers(state: GameState, dt: number) {
       for (const other of state.trolls) {
         if (other === target || !other.alive) continue;
         if (Math.hypot(other.x - target.x, other.y - target.y) <= (spec.splash ?? 80)) {
-          damageTroll(state, other, dmg * 0.6);
+          damageTroll(state, other, dmg * 0.6, true);
         }
       }
     } else if (b.kind === "gun") {
@@ -725,23 +825,93 @@ function updateTowers(state: GameState, dt: number) {
     } else {
       state.sfx.push("attack_bow");
     }
-    damageTroll(state, target, dmg);
+    damageTroll(state, target, dmg, magic);
+    // 产金塔：每次成功攻击后产一次金
+    if (b.kind === "goldtower" && target) {
+      const gain = spec.income ?? 0;
+      const elf = state.elves[b.owner];
+      if (gain > 0 && elf) {
+        elf.gold += gain;
+        state.stats.goldEarned += gain;
+        addFloat(state, b.x, b.y - 30, `+${gain}`, "#ffd479", 12);
+      }
+    }
     if (state.result) return;
   }
+}
+
+/** 预警哨：破除范围内巨魔的隐身并向精灵玩家预警（同一哨点有冷却） */
+function updateWatch(state: GameState) {
+  for (const b of state.buildings) {
+    if (!b.alive || b.team !== "elf" || b.kind !== "watch" || b.buildTimer > 0) continue;
+    const elf = state.elves[b.owner];
+    if (!elf || !elf.alive) continue;
+    for (const t of state.trolls) {
+      if (!t.alive) continue;
+      if (Math.hypot(t.x - b.x, t.y - b.y) > WATCH.radius) continue;
+      // 破隐：范围内的巨魔立刻显形，防御塔也能锁定
+      if (t.windwalk > 0) {
+        t.windwalk = 0;
+        addFx(state, "ring", t.x, t.y, 70, "#9fe8ff", 0, 0.5);
+        addFloat(state, t.x, t.y - 34, "显形", "#9fe8ff", 15);
+        if (elf.isPlayer) {
+          pushHint(state, "预警哨发现了隐身巨魔！", 2.6);
+          state.sfx.push("pickup");
+        }
+      }
+      if (!elf.isPlayer || b.cd > 0) continue;
+      b.cd = WATCH.cooldown;
+      addFx(state, "ring", t.x, t.y, 90, "#ffb36b", 0, 0.6);
+      pushHint(state, `预警：${t.name} 出现在预警哨附近！`, 2.6);
+      state.sfx.push("pickup");
+    }
+  }
+}
+
+/** 帐篷全毁后暴露精灵视野；中期才启用，帐篷重建后仍保留一段时间再消失 */
+function updateReveal(state: GameState, dt: number) {
+  // 前期不暴露视野
+  if (state.time < REVEAL.startTime) {
+    state.revealTimer = 0;
+    return;
+  }
+  let noTent = false;
+  for (const elf of state.elves) {
+    if (!elf.alive) continue;
+    const hasTent = state.buildings.some(
+      (b) => b.alive && b.team === "elf" && b.owner === elf.id && b.kind === "tent" && b.buildTimer <= 0,
+    );
+    if (!hasTent) {
+      noTent = true;
+      break;
+    }
+  }
+  if (noTent) state.revealTimer = REVEAL.linger;
+  else state.revealTimer = Math.max(0, state.revealTimer - dt);
 }
 
 function updateEconomy(state: GameState, dt: number) {
   const diffFactor = (elf: Elf) => (elf.isPlayer ? 1 : DIFFICULTIES[state.difficulty].aiIncome) * GAME_MODES[state.mode].goldMult;
   for (const elf of state.elves) {
     if (!elf.alive) continue;
-    let income = 0;
     for (const b of state.buildings) {
       if (!b.alive || b.team !== "elf" || b.owner !== elf.id) continue;
-      if (b.kind === "tent" || b.kind === "goldmine") {
-        income += BUILD_SPECS[b.kind].levels[b.level - 1].income ?? 0;
+      if (b.buildTimer > 0) continue;
+      if (b.kind !== "tent" && b.kind !== "goldmine") continue;
+      const income = BUILD_SPECS[b.kind].levels[b.level - 1].income ?? 0;
+      if (income <= 0) continue;
+      const gain = income * diffFactor(elf) * dt;
+      elf.gold += gain;
+      // 收入弹字：每 3 秒把累计收入显示在建筑上方
+      b.incomeAcc += gain;
+      b.incomeTimer += dt;
+      if (elf.isPlayer && b.incomeTimer >= 3) {
+        const shown = Math.round(b.incomeAcc);
+        if (shown > 0) addFloat(state, b.x, b.y - 26, `+${shown}`, "#ffd479", 13);
+        b.incomeAcc = 0;
+        b.incomeTimer = 0;
       }
     }
-    elf.gold += income * diffFactor(elf) * dt;
   }
   for (const t of state.trolls) {
     if (!t.alive || t.wolf) continue;
@@ -856,9 +1026,71 @@ function updateWisps(state: GameState, dt: number) {
   }
 }
 
+/** 取消精灵当前的维修目标 */
+function cancelElfRepair(state: GameState, elf: Elf) {
+  if (elf.repairTarget >= 0) {
+    const old = buildingOf(state, elf.repairTarget);
+    if (old) old.repairing = false;
+  }
+  elf.repairTarget = -1;
+  elf.repairAuto = false;
+}
+
+function setElfRepairTarget(state: GameState, elf: Elf, b: Building, auto: boolean) {
+  if (elf.repairTarget !== b.id) cancelElfRepair(state, elf);
+  elf.repairTarget = b.id;
+  elf.repairAuto = auto;
+  b.repairing = true;
+}
+
+/**
+ * 精灵就近维修：必须走到建筑边缘 REPAIR.range 内才能修。
+ * 自动维修只在精灵空闲时挑选最近的受损建筑，速度与手动相同。
+ * @returns 是否正在维修/前往维修（用于跳过 AI 的闲逛移动）
+ */
+function updateElfRepair(state: GameState, elf: Elf, dt: number): boolean {
+  let target = elf.repairTarget >= 0 ? buildingOf(state, elf.repairTarget) : undefined;
+  if (target && (target.owner !== elf.id || target.hp >= target.maxHp || target.spawn > 0 || target.buildTimer > 0)) {
+    cancelElfRepair(state, elf);
+    target = undefined;
+  }
+  if (!target && elf.autoRepair) {
+    let best: Building | undefined;
+    let bestDist = Number.POSITIVE_INFINITY;
+    for (const b of state.buildings) {
+      if (!b.alive || b.team !== "elf" || b.owner !== elf.id) continue;
+      if (b.spawn > 0 || b.buildTimer > 0 || b.hp >= b.maxHp) continue;
+      const d = Math.hypot(b.x - elf.x, b.y - elf.y);
+      if (d < bestDist) {
+        bestDist = d;
+        best = b;
+      }
+    }
+    if (best) {
+      setElfRepairTarget(state, elf, best, true);
+      target = best;
+    }
+  }
+  if (!target) return false;
+
+  const dx = target.x - elf.x;
+  const dy = target.y - elf.y;
+  const len = Math.hypot(dx, dy);
+  const reach = (target.size * TILE) / 2 + REPAIR.range;
+  if (len > reach) {
+    moveCircle(state, elf, ELF_HERO.radius, (dx / len) * ELF_HERO.speed * dt, (dy / len) * ELF_HERO.speed * dt, false);
+    return true;
+  }
+  target.hp = Math.min(target.maxHp, target.hp + target.maxHp * (REPAIR.percentPerSec / 100) * dt);
+  if (Math.random() < dt * 2.4) addFx(state, "heal", target.x, target.y, 34, "#8bf0a6", 0, 0.4);
+  if (target.hp >= target.maxHp) cancelElfRepair(state, elf);
+  return true;
+}
+
 function updateRepairers(state: GameState, dt: number) {
   for (const elf of state.elves) {
     if (!elf.alive) continue;
+
     const workshops = state.buildings.filter((b) => b.alive && b.team === "elf" && b.owner === elf.id && b.kind === "workshop");
     let cap = 0;
     let rate = 0;
@@ -933,6 +1165,8 @@ function updateElfHero(state: GameState, elf: Elf, dt: number, input: InputState
     return;
   }
   elf.hp = Math.min(elf.maxHp, elf.hp + ELF_HERO.regen * dt);
+  elf.hasteTime = Math.max(0, elf.hasteTime - dt);
+  const speed = ELF_HERO.speed * (elf.hasteTime > 0 ? 1.6 : 1);
   for (const key of Object.keys(elf.cooldowns) as ElfSkill[]) {
     elf.cooldowns[key] = Math.max(0, elf.cooldowns[key] - dt);
   }
@@ -942,15 +1176,21 @@ function updateElfHero(state: GameState, elf: Elf, dt: number, input: InputState
   if (elf.isPlayer) {
     const mag = Math.hypot(input.mx, input.my);
     if (mag > 0.04) {
+      // 玩家手动移动立即取消维修（含自动寻路）
+      cancelElfRepair(state, elf);
       const nx = input.mx / Math.max(1, mag);
       const ny = input.my / Math.max(1, mag);
-      moveCircle(state, elf, ELF_HERO.radius, nx * ELF_HERO.speed * dt, 0, false);
-      moveCircle(state, elf, ELF_HERO.radius, 0, ny * ELF_HERO.speed * dt, false);
+      moveCircle(state, elf, ELF_HERO.radius, nx * speed * dt, 0, false);
+      moveCircle(state, elf, ELF_HERO.radius, 0, ny * speed * dt, false);
+    } else {
+      updateElfRepair(state, elf, dt);
     }
     return;
   }
 
   if (!tree) return;
+  // 自动维修只有两个条件：空闲 + 存在未满血建筑（敌情不会取消维修）
+  if (updateElfRepair(state, elf, dt)) return;
   const threat = nearestTroll(state, elf.x, elf.y, 240);
   let aimX = tree.x + 50;
   let aimY = tree.y + 70;
@@ -969,7 +1209,7 @@ function updateElfHero(state: GameState, elf: Elf, dt: number, input: InputState
   const dy = aimY - elf.y;
   const len = Math.hypot(dx, dy);
   if (len > 26) {
-    moveCircle(state, elf, ELF_HERO.radius, (dx / len) * ELF_HERO.speed * 0.7 * dt, (dy / len) * ELF_HERO.speed * 0.7 * dt, false);
+    moveCircle(state, elf, ELF_HERO.radius, (dx / len) * speed * 0.7 * dt, (dy / len) * speed * 0.7 * dt, false);
   }
 }
 
@@ -982,6 +1222,9 @@ function updateTroll(state: GameState, t: Troll, dt: number, input: InputState) 
   t.windwalk = Math.max(0, t.windwalk - dt);
   t.windwalkCd = Math.max(0, t.windwalkCd - dt);
   t.recallCd = Math.max(0, t.recallCd - dt);
+  t.silenceTime = Math.max(0, t.silenceTime - dt);
+  t.berserkTime = Math.max(0, t.berserkTime - dt);
+  t.berserkCd = Math.max(0, t.berserkCd - dt);
 
   if (!t.alive) {
     if (t.reviveTimer > 0) {
@@ -1006,6 +1249,23 @@ function updateTroll(state: GameState, t: Troll, dt: number, input: InputState) 
     }
   }
 
+  // 回城读条：期间不能移动/攻击，可再释放隐身
+  if (t.recallChannel > 0) {
+    t.recallChannel = Math.max(0, t.recallChannel - dt);
+    if (t.recallChannel === 0) {
+      const hut = t.hutId >= 0 ? buildingOf(state, t.hutId) : undefined;
+      if (hut) {
+        t.x = hut.x;
+        t.y = hut.y + TWO * 0.75;
+        resolveCircle(state, t, trollRadius(t), false);
+      }
+      addFx(state, "ring", t.x, t.y, 50, "#d9b8ff", 0, 0.6);
+      pushHint(state, "巨魔回城", 2);
+      if (t.isPlayer) state.sfx.push("skill");
+    }
+    return;
+  }
+
   if (t.stunTime <= 0) {
     const mag = Math.hypot(input.mx, input.my);
     if (mag > 0.04) {
@@ -1017,7 +1277,7 @@ function updateTroll(state: GameState, t: Troll, dt: number, input: InputState) 
     }
   }
 
-  trollCombat(state, t);
+  trollCombat(state, t, input.attack === true);
 }
 
 function updateEffects(state: GameState, dt: number) {
@@ -1098,6 +1358,8 @@ export function stepGame(state: GameState, dt: number, input: InputState) {
 
   updateBuildingTimers(state, dt);
   updateEconomy(state, dt);
+  updateReveal(state, dt);
+  updateWatch(state);
   spawnWisps(state, dt);
   updateWisps(state, dt);
   updateRepairers(state, dt);
@@ -1159,6 +1421,13 @@ export function canBuildAt(state: GameState, elfIndex: number, kind: BuildingKin
   if (!elf || !elf.alive) return { ok: false, reason: "精灵已阵亡" };
   const spec = BUILD_SPECS[kind];
   if (!spec || spec.team !== "elf" || kind === "tree") return { ok: false, reason: "无法建造" };
+  if (!ELF_BUILDABLE.includes(kind)) return { ok: false, reason: "需要从基础建筑升级而来" };
+  if (
+    kind === "tent" &&
+    state.buildings.some((b) => b.alive && b.team === "elf" && b.owner === elf.id && b.kind === "tent")
+  ) {
+    return { ok: false, reason: "每个精灵只能建造一座帐篷" };
+  }
   // 原作允许精灵在地图任意位置建造（例如开局在巨魔基地旁偷放帐篷）
   const free = tileRangeFree(state, kind, gx, gy, elf);
   if (!free.ok) return free;
@@ -1189,6 +1458,36 @@ export function tryBuildForElf(
   return true;
 }
 
+/** 精灵当前帐篷等级（已建成帐篷的最高等级），作为墙体/防御塔的升级门槛 */
+export function elfTentLevel(state: GameState, owner: number): number {
+  let level = 0;
+  for (const b of state.buildings) {
+    if (!b.alive || b.team !== "elf" || b.owner !== owner) continue;
+    if (b.kind !== "tent" || b.buildTimer > 0) continue;
+    level = Math.max(level, b.level);
+  }
+  return level;
+}
+
+/** 精灵生命之树等级 */
+export function elfTreeLevel(state: GameState, owner: number): number {
+  const treeId = state.elves[owner]?.treeId ?? -1;
+  if (treeId < 0) return 0;
+  const tree = buildingOf(state, treeId);
+  return tree ? tree.level : 0;
+}
+
+/** 精灵已建成墙体的最高等级，作为帐篷升级门槛 */
+export function elfWallLevel(state: GameState, owner: number): number {
+  let level = 0;
+  for (const b of state.buildings) {
+    if (!b.alive || b.team !== "elf" || b.owner !== owner || b.buildTimer > 0) continue;
+    if (BUILD_SPECS[b.kind].category !== "wall") continue;
+    level = Math.max(level, b.level);
+  }
+  return level;
+}
+
 export function upgradeCost(state: GameState, id: number): { gold: number; wood: number } | null {
   const b = buildingOf(state, id);
   if (!b) return null;
@@ -1201,10 +1500,13 @@ export function upgradeCost(state: GameState, id: number): { gold: number; wood:
 export function tryUpgradeBuilding(state: GameState, id: number): boolean {
   if (state.result) return false;
   const b = buildingOf(state, id);
-  if (!b) return false;
+  if (!b || b.buildTimer > 0) return false;
   const levels = BUILD_SPECS[b.kind].levels;
   if (b.level >= levels.length) return false;
   const next = levels[b.level];
+  // 墙体/防御塔升级受帐篷等级限制；帐篷升级只看金币、木材与墙体等级
+  if (b.team === "elf" && next.requireTentLevel && elfTentLevel(state, b.owner) < next.requireTentLevel) return false;
+  if (b.team === "elf" && next.requireWallLevel && elfWallLevel(state, b.owner) < next.requireWallLevel) return false;
   if (b.team === "elf") {
     const elf = state.elves[b.owner];
     if (!elf || !elf.alive || elf.gold < next.cost || elf.wood < next.wood) return false;
@@ -1230,28 +1532,67 @@ export function tryUpgradeBuilding(state: GameState, id: number): boolean {
   return true;
 }
 
-export function repairBuilding(state: GameState, id: number): boolean {
+/** 普通墙/普通塔到达 2 级后，选择一次强化方向（选定后不可更改） */
+export function convertBuilding(state: GameState, id: number, kind: BuildingKind): boolean {
+  if (state.result) return false;
   const b = buildingOf(state, id);
-  if (!b || b.team !== "elf" || b.hp >= b.maxHp) return false;
+  if (!b || b.team !== "elf") return false;
   const elf = state.elves[b.owner];
-  if (!elf || !elf.alive) return false;
-  const missing = b.maxHp - b.hp;
-  const cost = Math.max(5, Math.ceil(missing * 0.25));
-  if (elf.gold < cost) {
-    if (elf.isPlayer) pushHint(state, "金币不足，无法修理", 2);
-    return false;
-  }
-  elf.gold -= cost;
-  b.hp = b.maxHp;
-  addFx(state, "heal", b.x, b.y, 46, "#8bf0a6", 0, 0.5);
-  addFloat(state, b.x, b.y - 28, `修理 -${cost}`, "#8bf0a6", 14);
-  if (elf.isPlayer) state.sfx.push("heal");
+  if (!elf || !elf.alive || b.buildTimer > 0) return false;
+
+  const isWall = b.kind === "wall";
+  const isTower = b.kind === "arrow";
+  const needLevel = isWall ? WALL_BRANCH_LEVEL : isTower ? TOWER_BRANCH_LEVEL : 0;
+  if (!needLevel || b.level < needLevel) return false;
+  const option = (isWall ? WALL_BRANCHES : TOWER_BRANCHES).find((item) => item.kind === kind);
+  if (!option) return false;
+  if (elf.gold < option.gold || elf.wood < option.wood) return false;
+  const target = BUILD_SPECS[kind].levels[b.level - 1];
+  if (!target) return false;
+
+  elf.gold -= option.gold;
+  elf.wood -= option.wood;
+  b.spentGold += option.gold;
+  b.spentWood += option.wood;
+  b.kind = kind;
+  b.maxHp = target.hp;
+  b.hp = target.hp;
+  b.cd = 0;
+  addFx(state, "ring", b.x, b.y, 46, "#ffe9a3", 0, 0.5);
+  addFloat(state, b.x, b.y - 30, BUILD_SPECS[kind].label, "#ffe9a3", 15);
+  state.sfx.push("levelup");
   return true;
 }
 
-export function repairCost(b: Building | undefined): number {
-  if (!b || b.hp >= b.maxHp) return 0;
-  return Math.max(5, Math.ceil((b.maxHp - b.hp) * 0.25));
+/**
+ * 手动维修命令：精灵走到该建筑旁持续维修（免费），修满或再次点击停止。
+ * 同一时间只能维修一座建筑。
+ * @returns 切换后的维修状态
+ */
+export function toggleRepairBuilding(state: GameState, id: number): boolean {
+  const b = buildingOf(state, id);
+  if (!b || b.team !== "elf") return false;
+  const elf = state.elves[b.owner];
+  if (!elf || !elf.alive) return false;
+  if (elf.repairTarget === b.id) {
+    cancelElfRepair(state, elf);
+    if (elf.isPlayer) state.sfx.push("click");
+    return false;
+  }
+  if (b.hp >= b.maxHp) return false;
+  setElfRepairTarget(state, elf, b, false);
+  addFx(state, "heal", b.x, b.y, 40, "#8bf0a6", 0, 0.4);
+  if (elf.isPlayer) state.sfx.push("pickup");
+  return true;
+}
+
+/** 开关自动维修：空闲时自动前往最近的受损建筑，速度与手动一致 */
+export function setAutoRepair(state: GameState, on: boolean): void {
+  const elf = playerElfOf(state);
+  if (!elf || elf.autoRepair === on) return;
+  elf.autoRepair = on;
+  if (!on && elf.repairAuto) cancelElfRepair(state, elf);
+  pushHint(state, on ? "自动维修已开启：空闲时前往维修受损建筑" : "自动维修已关闭", 2.4);
 }
 
 export function demolishBuilding(state: GameState, id: number): boolean {
@@ -1267,6 +1608,7 @@ export function demolishBuilding(state: GameState, id: number): boolean {
   }
   b.alive = false;
   b.hp = 0;
+  b.repairing = false;
   addFx(state, "dust", b.x, b.y, 36, "#c9a87a", 0, 0.4);
   addFloat(state, b.x, b.y - 20, `+${refundGold}`, "#ffd479", 15);
   return true;
@@ -1276,6 +1618,19 @@ export function buyWood(state: GameState): boolean {
   const elf = playerElfOf(state);
   if (!elf || !elf.alive) return false;
   return buyWoodForElf(state, elf.id);
+}
+
+/** 木材市场卖出：10 木材换金币（按当前买价折算） */
+export function sellWood(state: GameState): boolean {
+  const elf = playerElfOf(state);
+  if (!elf || !elf.alive) return false;
+  if (elf.wood < WOOD_PACK.amount) return false;
+  const price = Math.max(WOOD_PACK.minSell, Math.round(state.woodPrice * WOOD_PACK.sellRatio));
+  elf.wood -= WOOD_PACK.amount;
+  elf.gold += price;
+  addFloat(state, elf.x, elf.y - 34, `+${price} 金币`, "#ffd479", 15);
+  state.sfx.push("pickup");
+  return true;
 }
 
 function buyWoodForElf(state: GameState, elfIndex: number): boolean {
@@ -1338,6 +1693,34 @@ export function buyScroll(state: GameState, trollIndex: number): boolean {
   return true;
 }
 
+/** 购买回城卷轴（不可打断的瞬间回城） */
+export function buyRecallScroll(state: GameState, trollIndex: number): boolean {
+  const t = state.trolls[trollIndex];
+  if (!t || !t.alive || t.gold < RECALL_SCROLL.cost) return false;
+  t.gold -= RECALL_SCROLL.cost;
+  t.recallScrolls += 1;
+  addFloat(state, t.x, t.y - 40, "回城卷轴 +1", "#d9b8ff", 15);
+  if (t.isPlayer) state.sfx.push("pickup");
+  return true;
+}
+
+/** 使用回城卷轴：瞬间回城，无法被打断 */
+export function useRecallScroll(state: GameState, trollIndex: number): boolean {
+  const t = state.trolls[trollIndex];
+  if (!t || !t.alive || t.recallScrolls <= 0) return false;
+  const hut = t.hutId >= 0 ? buildingOf(state, t.hutId) : undefined;
+  if (!hut) return false;
+  t.recallScrolls -= 1;
+  t.recallChannel = 0;
+  t.x = hut.x;
+  t.y = hut.y + TWO * 0.75;
+  resolveCircle(state, t, trollRadius(t), false);
+  addFx(state, "ring", t.x, t.y, 50, "#d9b8ff", 0, 0.6);
+  pushHint(state, "回城卷轴：瞬间返回小屋", 2);
+  if (t.isPlayer) state.sfx.push("skill");
+  return true;
+}
+
 export function castElfSkill(state: GameState, skill: ElfSkill, mx: number, my: number): boolean {
   const elf = playerElfOf(state);
   if (!elf) return false;
@@ -1349,25 +1732,43 @@ function castElfSkillForElf(state: GameState, elf: Elf, skill: ElfSkill, mx: num
   const spec = ELF_SKILLS[skill];
   if (elf.cooldowns[skill] > 0) return false;
 
-  if (skill === "night") {
-    state.nightTimer = Math.max(state.nightTimer, spec.value ?? 12);
+  if (skill === "haste") {
+    elf.hasteTime = spec.value ?? 8;
     elf.cooldowns[skill] = spec.cooldown;
-    addFx(state, "ring", elf.x, elf.y, 260, "#7fb2ff", 0, 1.2);
-    pushHint(state, "黑夜降临：精灵可以潜行了", 3);
-    state.sfx.push("skill_frost");
+    addFx(state, "ring", elf.x, elf.y, 40, "#bfe3ff", 0, 0.5);
+    addFloat(state, elf.x, elf.y - 34, "疾跑", "#bfe3ff", 15);
+    if (elf.isPlayer) state.sfx.push("skill");
     return true;
   }
 
-  if (skill === "entangle") {
-    const troll = nearestTroll(state, elf.x, elf.y, spec.range ?? 300);
+  if (skill === "entangle" || skill === "silence") {
+    // 隐身的巨魔无法被选中
+    let troll: Troll | null = null;
+    let best = spec.range ?? 320;
+    for (const t of state.trolls) {
+      if (!t.alive || t.windwalk > 0) continue;
+      const d = Math.hypot(t.x - elf.x, t.y - elf.y);
+      if (d < best) {
+        best = d;
+        troll = t;
+      }
+    }
     if (!troll) {
-      if (elf.isPlayer) pushHint(state, "范围内没有巨魔", 1.6);
+      if (elf.isPlayer) pushHint(state, "范围内没有可命中的巨魔", 1.6);
       return false;
     }
-    troll.stunTime = Math.max(troll.stunTime, spec.value ?? 2.2);
+    // 缠绕/沉默都会打断回城读条
+    troll.recallChannel = 0;
+    if (skill === "entangle") {
+      troll.stunTime = Math.max(troll.stunTime, spec.value ?? 2.2);
+      addFx(state, "ring", troll.x, troll.y, 46, "#9adf7a", 0, 0.6);
+      addFloat(state, troll.x, troll.y - 36, "缠绕", "#9adf7a", 15);
+    } else {
+      troll.silenceTime = Math.max(troll.silenceTime, spec.value ?? 6);
+      addFx(state, "ring", troll.x, troll.y, 46, "#c9a7ff", 0, 0.6);
+      addFloat(state, troll.x, troll.y - 36, "沉默", "#c9a7ff", 15);
+    }
     elf.cooldowns[skill] = spec.cooldown;
-    addFx(state, "ring", troll.x, troll.y, 46, "#9adf7a", 0, 0.6);
-    addFloat(state, troll.x, troll.y - 36, "缠绕", "#9adf7a", 15);
     if (elf.isPlayer) state.sfx.push("skill");
     return true;
   }
@@ -1397,19 +1798,19 @@ function castElfSkillForElf(state: GameState, elf: Elf, skill: ElfSkill, mx: num
     return true;
   }
 
-  // reinforce
+  // wallguard：所有己方墙体短暂无敌
   let count = 0;
   for (const b of state.buildings) {
-    if (!b.alive || b.team !== "elf" || b.owner !== elf.id || b.kind === "tree") continue;
-    const ratio = b.kind === "woodwall" || b.kind === "stone" || b.kind === "icewall" ? 0.5 : 0.35;
-    b.hp = Math.min(b.maxHp, b.hp + b.maxHp * ratio);
-    addFx(state, "heal", b.x, b.y, 30, "#8bf0a6", 0, 0.4);
+    if (!b.alive || b.team !== "elf" || b.owner !== elf.id) continue;
+    if (BUILD_SPECS[b.kind].category !== "wall") continue;
+    b.invuln = Math.max(b.invuln, spec.value ?? 6);
+    addFx(state, "ring", b.x, b.y, 34, "#bfe3ff", 0, 0.5);
     count += 1;
   }
   if (count === 0) return false;
   elf.cooldowns[skill] = spec.cooldown;
-  pushHint(state, "建筑已加固", 2);
-  if (elf.isPlayer) state.sfx.push("heal");
+  pushHint(state, "墙体无敌 6 秒", 2);
+  if (elf.isPlayer) state.sfx.push("skill");
   return true;
 }
 
@@ -1417,24 +1818,41 @@ export function castTrollSkill(state: GameState, trollIndex: number, skill: Trol
   const t = state.trolls[trollIndex];
   if (!t || !t.alive || state.result) return false;
   const spec = TROLL_SKILLS[skill];
+  if (t.silenceTime > 0) {
+    if (t.isPlayer) pushHint(state, "被沉默，无法施法", 1.6);
+    return false;
+  }
+  // 回城读条期间只能释放隐身
+  if (t.recallChannel > 0 && skill !== "windwalk") return false;
+
   if (skill === "windwalk") {
     if (t.windwalkCd > 0 || t.wolf) return false;
     t.windwalk = spec.value ?? 5;
     t.windwalkCd = spec.cooldown;
     addFx(state, "ring", t.x, t.y, 40, "#cfe8ff", 0, 0.5);
-    addFloat(state, t.x, t.y - 38, "疾风步", "#cfe8ff", 15);
+    addFloat(state, t.x, t.y - 38, "隐身", "#cfe8ff", 15);
     if (t.isPlayer) state.sfx.push("skill");
     return true;
   }
-  if (t.recallCd > 0) return false;
+
+  if (skill === "berserk") {
+    if (t.berserkCd > 0 || t.berserkTime > 0 || t.wolf) return false;
+    t.berserkTime = spec.value ?? 8;
+    t.berserkCd = spec.cooldown;
+    addFx(state, "ring", t.x, t.y, 44, "#ffb36b", 0, 0.5);
+    addFloat(state, t.x, t.y - 38, "狂暴", "#ffb36b", 15);
+    if (t.isPlayer) state.sfx.push("skill");
+    return true;
+  }
+
+  // recall：读条回城（可被沉默/缠绕打断）
+  if (t.recallCd > 0 || t.recallChannel > 0 || t.wolf) return false;
   const hut = t.hutId >= 0 ? buildingOf(state, t.hutId) : undefined;
   if (!hut) return false;
+  t.recallChannel = spec.value ?? 4;
   t.recallCd = spec.cooldown;
-  t.x = hut.x;
-  t.y = hut.y + TWO * 0.75;
-  resolveCircle(state, t, trollRadius(t), false);
-  addFx(state, "ring", t.x, t.y, 50, "#d9b8ff", 0, 0.6);
-  pushHint(state, "巫医将巨魔拉回小屋", 2);
+  addFx(state, "ring", t.x, t.y, 40, "#d9b8ff", 0, 0.5);
+  pushHint(state, "回城读条中，可被沉默或缠绕打断", 2.4);
   if (t.isPlayer) state.sfx.push("skill");
   return true;
 }

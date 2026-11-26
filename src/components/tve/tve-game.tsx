@@ -7,19 +7,25 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { TveHud, TveMenu, TveResult, type HudSelected, type HudSnapshot } from "./tve-hud";
 import { drawGame, drawMinimap, screenToWorld, type RenderView } from "@/lib/tve/render";
 import { loadTveAssets, type TveAssets } from "@/lib/tve/assets";
-import { BUILD_SPECS, TILE } from "@/lib/tve/config";
+import { BUILD_SPECS, TILE, WOOD_PACK } from "@/lib/tve/config";
 import {
   buyScroll,
+  buyRecallScroll,
+  useRecallScroll,
   buyShopItem,
   buyWood,
   canBuildAt,
   castElfSkill,
   castTrollSkill,
+  convertBuilding,
   createGame,
   demolishBuilding,
-  repairBuilding,
-  repairCost,
+  elfTentLevel,
+  elfWallLevel,
+  sellWood,
+  setAutoRepair,
   stepGame,
+  toggleRepairBuilding,
   tryBuildForElf,
   tryUpgradeBuilding,
 } from "@/lib/tve/engine";
@@ -79,8 +85,18 @@ function makeSnapshot(state: GameState, paused: boolean, muted: boolean): HudSna
           maxHp: selectedBuilding.maxHp,
           upgradeGold: next ? next.cost : null,
           upgradeWood: next ? next.wood : 0,
-          repairCost: repairCost(selectedBuilding),
+          repairing: selectedBuilding.repairing,
           canRepair: selectedBuilding.hp < selectedBuilding.maxHp,
+          constructProgress:
+            selectedBuilding.buildTime > 0
+              ? 1 - selectedBuilding.buildTimer / selectedBuilding.buildTime
+              : 1,
+          requireTentLevel: next?.requireTentLevel ?? null,
+          requireWallLevel: next?.requireWallLevel ?? null,
+          tentLevel: elf ? elfTentLevel(state, elf.id) : 0,
+          wallLevel: elf ? elfWallLevel(state, elf.id) : 0,
+          canBranch:
+            (selectedBuilding.kind === "wall" || selectedBuilding.kind === "arrow") && selectedBuilding.level >= 4,
         };
       })()
     : null;
@@ -114,6 +130,7 @@ function makeSnapshot(state: GameState, paused: boolean, muted: boolean): HudSna
     gold: elf ? elf.gold : troll ? troll.gold : 0,
     wood: elf ? elf.wood : 0,
     woodPrice: state.woodPrice,
+    woodSellPrice: Math.max(WOOD_PACK.minSell, Math.round(state.woodPrice * WOOD_PACK.sellRatio)),
     elf: elf ? { name: elf.name, hp: elf.hp, maxHp: elf.maxHp, alive: elf.alive } : null,
     trolls: state.trolls.map((t) => ({
       name: t.name,
@@ -131,12 +148,19 @@ function makeSnapshot(state: GameState, paused: boolean, muted: boolean): HudSna
     surviveTime: state.surviveTime,
     hint: state.hint?.text ?? null,
     selected,
+    autoRepair: elf?.autoRepair ?? false,
     placing: selectedPlacingRef.current,
+    recallScrolls: troll?.recallScrolls ?? 0,
+    recallChannel: troll?.recallChannel ?? 0,
     skills: {
-      elf: elf ? elf.cooldowns : { night: 0, entangle: 0, blink: 0, reinforce: 0 },
+      elf: elf ? elf.cooldowns : { blink: 0, haste: 0, entangle: 0, silence: 0, wallguard: 0 },
       troll: troll
-        ? { windwalk: Math.max(troll.windwalkCd, troll.windwalk), recall: troll.recallCd }
-        : { windwalk: 0, recall: 0 },
+        ? {
+            windwalk: Math.max(troll.windwalkCd, troll.windwalk),
+            berserk: Math.max(troll.berserkCd, troll.berserkTime),
+            recall: Math.max(troll.recallCd, troll.recallChannel),
+          }
+        : { windwalk: 0, berserk: 0, recall: 0 },
     },
     items: troll ? troll.items : { weapon: 0, gloves: 0, boots: 0, armor: 0, vitality: 0, regen: 0 },
     stats: state.stats,
@@ -165,8 +189,9 @@ export function TveGame() {
   const assetsRef = useRef<TveAssets>(EMPTY_ASSETS);
   const camRef = useRef<CameraState>({ x: 0, y: 0, zoom: 1 });
   const viewRef = useRef({ width: 1, height: 1, dpr: 1 });
-  const inputRef = useRef({ mx: 0, my: 0 });
+  const inputRef = useRef<{ mx: number; my: number; attack?: boolean }>({ mx: 0, my: 0 });
   const joyRef = useRef({ mx: 0, my: 0 });
+  const attackRef = useRef(false);
   const keysRef = useRef<Set<string>>(new Set());
   const pointerWorldRef = useRef({ x: 0, y: 0 });
   const pointerInsideRef = useRef(false);
@@ -180,6 +205,7 @@ export function TveGame() {
   const [snapshot, setSnapshot] = useState<HudSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const [faction, setFaction] = useState<Faction>("elf");
   const [mode, setMode] = useState<GameMode>("old");
@@ -201,6 +227,12 @@ export function TveGame() {
     selectedBuildingRef.current = id;
     sync();
   };
+
+  useEffect(() => {
+    const onChange = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -279,7 +311,8 @@ export function TveGame() {
               my /= len;
             }
           }
-          inputRef.current = { mx, my };
+          inputRef.current = { mx, my, attack: attackRef.current };
+          attackRef.current = false;
 
           let acc = dt;
           let guard = 0;
@@ -367,6 +400,10 @@ export function TveGame() {
           sync();
         }
       }
+      if (key === "j" || key === "f") {
+        // 手动攻击：隐身时按下会立刻显形并攻击
+        attackRef.current = true;
+      }
       if (key === "escape") {
         setPlacingKind(null);
         selectBuilding(null);
@@ -399,7 +436,7 @@ export function TveGame() {
     camRef.current = {
       x: hero?.x ?? game.elves[0]?.x ?? 0,
       y: hero?.y ?? game.elves[0]?.y ?? 0,
-      zoom: viewRef.current.width < 720 ? 0.7 : 0.95,
+      zoom: viewRef.current.width < 720 ? 0.5 : 0.85,
     };
     manualCamUntilRef.current = 0;
     setSnapshot(makeSnapshot(game, false, mutedRef.current));
@@ -429,6 +466,18 @@ export function TveGame() {
     if (mutedRef.current) stopBgm();
     else if (screen === "game" && !pausedRef.current) startBgm();
     sync();
+  };
+
+  const toggleFullscreen = () => {
+    const target = containerRef.current;
+    if (!target) return;
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => {});
+    } else if (target.requestFullscreen) {
+      void target.requestFullscreen().catch(() => {
+        setSnapshot((prev) => (prev ? { ...prev, hint: "当前浏览器不支持全屏" } : prev));
+      });
+    }
   };
 
   /* ---------------- 指针交互 ---------------- */
@@ -543,6 +592,8 @@ export function TveGame() {
       const bx = Math.floor(wx / TILE - (size - 1) / 2);
       const by = Math.floor(wy / TILE - (size - 1) / 2);
       const ok = tryBuildForElf(game, game.playerElf, kind, bx, by);
+      // 移动端放置成功后退出建造模式，避免一直停留在放置光标
+      if (ok && window.matchMedia("(pointer: coarse)").matches) setPlacingKind(null);
       if (!ok) {
         const check = canBuildAt(game, game.playerElf, kind, bx, by);
         if (check.reason) setSnapshot({ ...makeSnapshot(game, pausedRef.current, mutedRef.current), hint: check.reason });
@@ -588,10 +639,25 @@ export function TveGame() {
     sync();
   };
 
+  const handleConvert = (id: number, kind: BuildingKind) => {
+    const game = gameRef.current;
+    if (!game) return;
+    convertBuilding(game, id, kind);
+    sync();
+  };
+
   const handleRepair = (id: number) => {
     const game = gameRef.current;
     if (!game) return;
-    repairBuilding(game, id);
+    toggleRepairBuilding(game, id);
+    sync();
+  };
+
+  const handleToggleAutoRepair = () => {
+    const game = gameRef.current;
+    if (!game) return;
+    const elf = game.playerElf >= 0 ? game.elves[game.playerElf] : null;
+    setAutoRepair(game, !elf?.autoRepair);
     sync();
   };
 
@@ -609,6 +675,13 @@ export function TveGame() {
     sync();
   };
 
+  const handleSellWood = () => {
+    const game = gameRef.current;
+    if (!game) return;
+    sellWood(game);
+    sync();
+  };
+
   const handleShop = (key: ShopKey) => {
     const game = gameRef.current;
     if (!game) return;
@@ -620,6 +693,20 @@ export function TveGame() {
     const game = gameRef.current;
     if (!game) return;
     buyScroll(game, game.playerTroll);
+    sync();
+  };
+
+  const handleBuyRecallScroll = () => {
+    const game = gameRef.current;
+    if (!game) return;
+    buyRecallScroll(game, game.playerTroll);
+    sync();
+  };
+
+  const handleUseScroll = () => {
+    const game = gameRef.current;
+    if (!game) return;
+    useRecallScroll(game, game.playerTroll);
     sync();
   };
 
@@ -643,6 +730,10 @@ export function TveGame() {
     if (!game) return;
     castTrollSkill(game, game.playerTroll, skill);
     sync();
+  };
+
+  const handleAttack = () => {
+    attackRef.current = true;
   };
 
   const handleJoystick = (x: number, y: number) => {
@@ -697,19 +788,27 @@ export function TveGame() {
           onPause={togglePause}
           onResume={togglePause}
           onMute={toggleMute}
+          fullscreen={fullscreen}
+          onToggleFullscreen={toggleFullscreen}
           onExit={exitToMenu}
           onBuild={handleBuild}
           onCancelPlacing={() => setPlacingKind(null)}
           onUpgrade={handleUpgrade}
+          onConvert={handleConvert}
           onRepair={handleRepair}
+          onToggleAutoRepair={handleToggleAutoRepair}
           onDemolish={handleDemolish}
           onCloseSelected={() => selectBuilding(null)}
           onBuyWood={handleBuyWood}
+          onSellWood={handleSellWood}
           onShop={handleShop}
           onScroll={handleScroll}
+          onBuyRecallScroll={handleBuyRecallScroll}
+          onUseScroll={handleUseScroll}
           onHutUpgrade={handleHutUpgrade}
           onElfSkill={handleElfSkill}
           onTrollSkill={handleTrollSkill}
+          onAttack={handleAttack}
         />
       ) : null}
 

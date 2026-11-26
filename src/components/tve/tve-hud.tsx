@@ -2,12 +2,17 @@
 
 import { useRef, useState, type RefObject } from "react";
 import {
+  BrickWall,
   Castle,
   Coins,
   Crosshair,
+  Eye,
   Flame,
   FlaskConical,
+  Flower2,
   Heart,
+  Maximize,
+  Minimize,
   Moon,
   Pause,
   Pickaxe,
@@ -15,6 +20,7 @@ import {
   Shield,
   Snowflake,
   Sparkles,
+  Sprout,
   Swords,
   Tent,
   Timer,
@@ -35,6 +41,9 @@ import {
   SHOP_ITEMS,
   TROLL_RULES,
   SCROLL,
+  RECALL_SCROLL,
+  TOWER_BRANCHES,
+  WALL_BRANCHES,
   WOOD_PACK,
 } from "@/lib/tve/config";
 import type {
@@ -56,10 +65,15 @@ const KIND_ICON: Record<BuildingKind, LucideIcon> = {
   goldmine: Pickaxe,
   workshop: Wrench,
   lab: FlaskConical,
-  woodwall: Shield,
+  wall: Shield,
+  grasswall: Sprout,
   stone: Shield,
+  concrete: BrickWall,
+  thorn: Flower2,
   icewall: Snowflake,
+  watch: Eye,
   arrow: Crosshair,
+  goldtower: Coins,
   gun: Flame,
   poison: Zap,
   ice: Snowflake,
@@ -68,15 +82,17 @@ const KIND_ICON: Record<BuildingKind, LucideIcon> = {
 };
 
 const ELF_SKILL_META: Record<ElfSkill, { label: string; desc: string; icon: LucideIcon }> = {
-  night: { label: "黑夜", desc: "12 秒黑夜，巨魔视野受限", icon: Moon },
-  entangle: { label: "缠绕", desc: "定身最近巨魔 2.2 秒", icon: Sparkles },
-  blink: { label: "闪现", desc: "向移动方向瞬移 6 格", icon: Wind },
-  reinforce: { label: "加固", desc: "全体建筑恢复生命", icon: Shield },
+  blink: { label: "闪烁", desc: "向移动方向瞬移 6 格", icon: Wind },
+  haste: { label: "疾跑", desc: "8 秒内移速 +60%", icon: Zap },
+  entangle: { label: "缠绕", desc: "定身最近巨魔并打断回城", icon: Sparkles },
+  silence: { label: "沉默", desc: "沉默最近巨魔 6 秒", icon: VolumeX },
+  wallguard: { label: "墙之守护", desc: "己方墙体无敌 6 秒", icon: Shield },
 };
 
 const TROLL_SKILL_META: Record<TrollSkill, { label: string; desc: string; icon: LucideIcon }> = {
-  windwalk: { label: "疾风步", desc: "隐身 5 秒并提速", icon: Wind },
-  recall: { label: "召回", desc: "立刻回到巨魔小屋", icon: Castle },
+  windwalk: { label: "隐身", desc: "隐身 5 秒并提速；隐身时不会自动攻击，出手即显形", icon: Wind },
+  berserk: { label: "狂暴", desc: "8 秒攻击与攻速提升", icon: Swords },
+  recall: { label: "回城", desc: "4 秒读条，可被打断", icon: Castle },
 };
 
 const SHOP_META: Record<ShopKey, { icon: LucideIcon }> = {
@@ -97,8 +113,20 @@ export interface HudSelected {
   maxHp: number;
   upgradeGold: number | null;
   upgradeWood: number;
-  repairCost: number;
+  repairing: boolean;
   canRepair: boolean;
+  /** 施工进度 0~1，1 表示已建成 */
+  constructProgress: number;
+  /** 下一级升级所需的帐篷等级（null 表示无门槛） */
+  requireTentLevel: number | null;
+  /** 下一级升级所需的墙体等级（null 表示无门槛） */
+  requireWallLevel: number | null;
+  /** 己方当前帐篷等级 */
+  tentLevel: number;
+  /** 己方当前最高墙体等级 */
+  wallLevel: number;
+  /** 是否已到可选择强化方向的等级 */
+  canBranch: boolean;
 }
 
 export interface HudSnapshot {
@@ -111,6 +139,7 @@ export interface HudSnapshot {
   gold: number;
   wood: number;
   woodPrice: number;
+  woodSellPrice: number;
   elf: { name: string; hp: number; maxHp: number; alive: boolean } | null;
   trolls: { name: string; hp: number; maxHp: number; wolf: boolean; alive: boolean; isPlayer: boolean }[];
   hutLevel: number;
@@ -121,6 +150,11 @@ export interface HudSnapshot {
   surviveTime: number | null;
   hint: string | null;
   selected: HudSelected | null;
+  autoRepair: boolean;
+  /** 巨魔回城卷轴数量 */
+  recallScrolls: number;
+  /** 回城读条剩余时间（0 表示未在读条） */
+  recallChannel: number;
   placing: BuildingKind | null;
   skills: { elf: Record<ElfSkill, number>; troll: Record<TrollSkill, number> };
   items: Record<ShopKey, number>;
@@ -139,19 +173,28 @@ interface TveHudProps {
   onPause: () => void;
   onResume: () => void;
   onMute: () => void;
+  fullscreen: boolean;
+  onToggleFullscreen: () => void;
   onExit: () => void;
   onBuild: (kind: BuildingKind) => void;
   onCancelPlacing: () => void;
   onUpgrade: (id: number) => void;
+  onConvert: (id: number, kind: BuildingKind) => void;
   onRepair: (id: number) => void;
+  onToggleAutoRepair: () => void;
   onDemolish: (id: number) => void;
   onCloseSelected: () => void;
   onBuyWood: () => void;
+  onSellWood: () => void;
   onShop: (key: ShopKey) => void;
   onScroll: () => void;
+  onBuyRecallScroll: () => void;
+  onUseScroll: () => void;
   onHutUpgrade: () => void;
   onElfSkill: (skill: ElfSkill) => void;
   onTrollSkill: (skill: TrollSkill) => void;
+  /** 手动攻击：隐身时按下会立刻显形并攻击 */
+  onAttack: () => void;
 }
 
 type Sheet = "build" | "skill" | "shop" | null;
@@ -171,6 +214,15 @@ export function TveHud(props: TveHudProps) {
   const { snapshot, minimapRef } = props;
   const [sheet, setSheet] = useState<Sheet>(null);
   const troll = snapshot.trolls.find((t) => t.isPlayer) ?? null;
+  const tentLocked =
+    !!snapshot.selected &&
+    snapshot.selected.requireTentLevel !== null &&
+    snapshot.selected.tentLevel < snapshot.selected.requireTentLevel;
+  const wallLocked =
+    !!snapshot.selected &&
+    snapshot.selected.requireWallLevel !== null &&
+    snapshot.selected.wallLevel < snapshot.selected.requireWallLevel;
+  const upgradeLocked = tentLocked || wallLocked;
 
   const closeSheet = () => setSheet(null);
 
@@ -199,6 +251,14 @@ export function TveHud(props: TveHudProps) {
             aria-label="音效"
           >
             {snapshot.muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+          </button>
+          <button
+            type="button"
+            onClick={props.onToggleFullscreen}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-black/45 text-white backdrop-blur"
+            aria-label={props.fullscreen ? "退出全屏" : "全屏"}
+          >
+            {props.fullscreen ? <Minimize size={17} /> : <Maximize size={17} />}
           </button>
           <div className="rounded-xl border border-white/10 bg-black/45 px-2.5 py-1.5 text-[11px] leading-tight text-white/80 backdrop-blur">
             <div className="font-semibold text-white">{GAME_MODES[snapshot.mode].label}</div>
@@ -268,6 +328,11 @@ export function TveHud(props: TveHudProps) {
             黑夜 {Math.ceil(snapshot.nightTimer)}s
           </div>
         ) : null}
+        {snapshot.recallChannel > 0 ? (
+          <div className="pointer-events-none mb-2 self-center rounded-full border border-violet-300/40 bg-violet-950/80 px-4 py-1.5 text-xs font-bold text-violet-100 backdrop-blur">
+            回城读条 {snapshot.recallChannel.toFixed(1)}s · 可被沉默/缠绕打断
+          </div>
+        ) : null}
         {snapshot.hint ? (
           <div className="max-w-[85%] rounded-full border border-white/10 bg-black/55 px-3 py-1.5 text-center text-xs text-white/90 backdrop-blur">
             {snapshot.hint}
@@ -276,8 +341,8 @@ export function TveHud(props: TveHudProps) {
         {snapshot.placing ? (
           <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-950/70 px-3 py-1.5 text-xs text-amber-100 backdrop-blur">
             点击空地放置 {BUILD_SPECS[snapshot.placing].label}
-            <button type="button" onClick={props.onCancelPlacing} className="rounded-full bg-white/15 p-0.5" aria-label="取消建造">
-              <X size={13} />
+            <button type="button" onClick={props.onCancelPlacing} className="rounded-full bg-white/15 p-1" aria-label="取消建造">
+              <X size={15} />
             </button>
           </div>
         ) : null}
@@ -315,34 +380,75 @@ export function TveHud(props: TveHudProps) {
               <div className="mt-1 text-[10px] text-white/60">
                 {Math.ceil(snapshot.selected.hp)} / {Math.round(snapshot.selected.maxHp)}
               </div>
+              {snapshot.selected.constructProgress < 1 ? (
+                <div className="mt-1 text-[10px] font-semibold text-sky-300">
+                  施工中 {Math.round(snapshot.selected.constructProgress * 100)}%
+                </div>
+              ) : null}
             </div>
             <button type="button" onClick={props.onCloseSelected} className="rounded-lg bg-white/10 p-1.5">
               <X size={14} />
             </button>
           </div>
+          {snapshot.selected.canBranch ? (
+            <div className="mt-2 rounded-xl border border-amber-300/25 bg-amber-500/10 p-2">
+              <div className="mb-1.5 text-[10px] font-semibold text-amber-200">
+                选择强化方向（选定后不可更改，除非拆除重建）
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                {(snapshot.selected.kind === "wall" ? WALL_BRANCHES : TOWER_BRANCHES).map((option) => (
+                  <button
+                    key={option.kind}
+                    type="button"
+                    onClick={() => props.onConvert(snapshot.selected!.id, option.kind)}
+                    disabled={snapshot.gold < option.gold || snapshot.wood < option.wood}
+                    className="rounded-lg border border-white/10 bg-white/5 p-1.5 text-left disabled:opacity-40"
+                  >
+                    <div className="text-[11px] font-semibold text-amber-100">{option.label}</div>
+                    <div className="text-[9px] leading-tight text-white/50">{option.desc}</div>
+                    <div className="mt-0.5 text-[9px] text-amber-200">
+                      {option.gold} 金{option.wood > 0 ? ` · ${option.wood} 木` : ""}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="mt-2.5 flex flex-wrap gap-2">
-            {snapshot.selected.upgradeGold !== null && snapshot.selected.level < snapshot.selected.maxLevel ? (
+            {snapshot.selected.upgradeGold !== null && snapshot.selected.level < snapshot.selected.maxLevel && snapshot.selected.constructProgress >= 1 ? (
               <button
                 type="button"
                 onClick={() => props.onUpgrade(snapshot.selected!.id)}
-                disabled={snapshot.gold < snapshot.selected.upgradeGold || snapshot.wood < snapshot.selected.upgradeWood}
+                disabled={
+                  upgradeLocked || snapshot.gold < snapshot.selected.upgradeGold || snapshot.wood < snapshot.selected.upgradeWood
+                }
                 className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-amber-500/90 px-3 py-2 text-xs font-bold text-amber-950 disabled:opacity-40"
               >
-                升级
-                <span className="font-semibold">
-                  {snapshot.selected.upgradeGold}
-                  {snapshot.selected.upgradeWood > 0 ? ` + ${snapshot.selected.upgradeWood}木` : ""}
-                </span>
+                {tentLocked ? (
+                  `需帐篷 Lv${snapshot.selected.requireTentLevel}`
+                ) : wallLocked ? (
+                  `需墙体 Lv${snapshot.selected.requireWallLevel}`
+                ) : (
+                  <>
+                    升级
+                    <span className="font-semibold">
+                      {snapshot.selected.upgradeGold}
+                      {snapshot.selected.upgradeWood > 0 ? ` + ${snapshot.selected.upgradeWood}木` : ""}
+                    </span>
+                  </>
+                )}
               </button>
             ) : null}
-            {snapshot.selected.canRepair ? (
+            {(snapshot.selected.canRepair || snapshot.selected.repairing) && snapshot.selected.constructProgress >= 1 ? (
               <button
                 type="button"
                 onClick={() => props.onRepair(snapshot.selected!.id)}
-                disabled={snapshot.gold < snapshot.selected.repairCost}
-                className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-500/90 px-3 py-2 text-xs font-bold text-emerald-950 disabled:opacity-40"
+                className={`flex flex-1 items-center justify-center gap-1 rounded-xl px-3 py-2 text-xs font-bold text-emerald-950 ${
+                  snapshot.selected.repairing ? "bg-emerald-300" : "bg-emerald-500/90"
+                }`}
               >
-                修理 <span>{snapshot.selected.repairCost}</span>
+                <Wrench size={13} />
+                {snapshot.selected.repairing ? "维修中 · 停止" : "前往维修（免费）"}
               </button>
             ) : null}
             <button
@@ -363,6 +469,18 @@ export function TveHud(props: TveHudProps) {
         <div className="flex flex-col items-end gap-2">
           {snapshot.faction === "elf" ? (
             <>
+              <button
+                type="button"
+                onClick={props.onToggleAutoRepair}
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold backdrop-blur ${
+                  snapshot.autoRepair
+                    ? "border-emerald-300/60 bg-emerald-400/25 text-emerald-100"
+                    : "border-white/15 bg-black/45 text-white/70"
+                }`}
+              >
+                <Wrench size={13} />
+                自动维修 {snapshot.autoRepair ? "开" : "关"}
+              </button>
               <div className="flex items-center gap-2">
                 <ActionButton
                   icon={TreePine}
@@ -376,19 +494,30 @@ export function TveHud(props: TveHudProps) {
                   onClick={() => setSheet(sheet === "skill" ? null : "skill")}
                   active={sheet === "skill"}
                   cooldown={Math.min(
-                    snapshot.skills.elf.night,
-                    snapshot.skills.elf.entangle,
                     snapshot.skills.elf.blink,
-                    snapshot.skills.elf.reinforce,
+                    snapshot.skills.elf.haste,
+                    snapshot.skills.elf.entangle,
+                    snapshot.skills.elf.silence,
+                    snapshot.skills.elf.wallguard,
                   )}
                 />
-                <ActionButton
-                  icon={Castle}
-                  label="建造"
-                  onClick={() => setSheet(sheet === "build" ? null : "build")}
-                  active={sheet === "build"}
-                  primary
-                />
+                {snapshot.placing ? (
+                  <button
+                    type="button"
+                    onClick={props.onCancelPlacing}
+                    className="flex min-h-[44px] items-center gap-1 rounded-xl bg-rose-500/90 px-3 py-2 text-xs font-bold text-white shadow-lg active:scale-95"
+                  >
+                    <X size={14} /> 取消建造
+                  </button>
+                ) : (
+                  <ActionButton
+                    icon={Castle}
+                    label="建造"
+                    onClick={() => setSheet(sheet === "build" ? null : "build")}
+                    active={sheet === "build"}
+                    primary
+                  />
+                )}
               </div>
             </>
           ) : (
@@ -406,7 +535,7 @@ export function TveHud(props: TveHudProps) {
                 label="技能"
                 onClick={() => setSheet(sheet === "skill" ? null : "skill")}
                 active={sheet === "skill"}
-                cooldown={Math.min(snapshot.skills.troll.windwalk, snapshot.skills.troll.recall)}
+                cooldown={Math.min(snapshot.skills.troll.windwalk, snapshot.skills.troll.berserk, snapshot.skills.troll.recall)}
               />
               <ActionButton
                 icon={Coins}
@@ -434,6 +563,25 @@ export function TveHud(props: TveHudProps) {
 
           {sheet === "build" ? (
             <div className="space-y-3 pb-2">
+              <div className="flex items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-500/10 p-2">
+                <span className="shrink-0 text-[11px] font-semibold text-amber-200">木材市场</span>
+                <button
+                  type="button"
+                  onClick={props.onBuyWood}
+                  disabled={snapshot.gold < snapshot.woodPrice}
+                  className="flex-1 rounded-lg bg-amber-500/90 px-2 py-1.5 text-[11px] font-bold text-amber-950 disabled:opacity-40"
+                >
+                  买入 10 木 · {snapshot.woodPrice} 金
+                </button>
+                <button
+                  type="button"
+                  onClick={props.onSellWood}
+                  disabled={snapshot.wood < 10}
+                  className="flex-1 rounded-lg bg-white/10 px-2 py-1.5 text-[11px] font-semibold text-amber-100 disabled:opacity-40"
+                >
+                  卖出 10 木 · {snapshot.woodSellPrice} 金
+                </button>
+              </div>
               {BUILD_CATEGORIES.map((category) => (
                 <div key={category.key}>
                   <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/45">{category.label}</div>
@@ -501,7 +649,8 @@ export function TveHud(props: TveHudProps) {
                       </button>
                     );
                   })
-                : (Object.keys(TROLL_SKILL_META) as TrollSkill[]).map((skill) => {
+                : [
+                    ...(Object.keys(TROLL_SKILL_META) as TrollSkill[]).map((skill) => {
                     const meta = TROLL_SKILL_META[skill];
                     const Icon = meta.icon;
                     const cd = snapshot.skills.troll[skill];
@@ -526,7 +675,22 @@ export function TveHud(props: TveHudProps) {
                         ) : null}
                       </button>
                     );
-                  })}
+                  }),
+                <button
+                  key="attack"
+                  type="button"
+                  disabled={!troll || troll.wolf}
+                  onClick={() => {
+                    props.onAttack();
+                    closeSheet();
+                  }}
+                  className="relative flex flex-col items-start gap-1 overflow-hidden rounded-xl border border-orange-400/25 bg-orange-500/10 p-2.5 text-left disabled:opacity-45"
+                >
+                  <Swords size={20} className="text-orange-200" />
+                  <span className="text-xs font-semibold">攻击</span>
+                  <span className="text-[10px] leading-tight text-white/50">隐身时手动出手会提前显形（快捷键 J）</span>
+                </button>
+                ]}
             </div>
           ) : null}
 
@@ -574,6 +738,27 @@ export function TveHud(props: TveHudProps) {
                 </span>
                 <span>{SCROLL.cost} 金</span>
               </button>
+              <button
+                type="button"
+                disabled={snapshot.gold < RECALL_SCROLL.cost || troll?.wolf}
+                onClick={props.onBuyRecallScroll}
+                className="flex w-full items-center justify-between rounded-xl border border-violet-400/30 bg-violet-500/15 px-3 py-2.5 text-xs font-semibold text-violet-100 disabled:opacity-35"
+              >
+                <span className="flex items-center gap-2">
+                  <Castle size={16} /> 回城卷轴 ×{snapshot.recallScrolls} · 瞬间回城不可打断
+                </span>
+                <span>{RECALL_SCROLL.cost} 金</span>
+              </button>
+              {snapshot.recallScrolls > 0 ? (
+                <button
+                  type="button"
+                  disabled={!!troll?.wolf}
+                  onClick={props.onUseScroll}
+                  className="w-full rounded-xl bg-violet-400/90 px-3 py-2.5 text-xs font-bold text-violet-950 disabled:opacity-35"
+                >
+                  使用回城卷轴（不可打断）
+                </button>
+              ) : null}
               <div className="pt-1 text-[10px] leading-relaxed text-white/45">
                 巨魔拆墙每击获得金币，摧毁建筑另有赏金；小屋提供每秒被动收入。
               </div>

@@ -16,10 +16,15 @@ export type BuildingKind =
   | "goldmine" // 金矿（小精灵所化）
   | "workshop" // 工人雇佣所
   | "lab" // 塔研究所
-  | "woodwall" // 木墙
-  | "stone" // 石头
+  | "wall" // 普通墙（升级后选择方向）
+  | "grasswall" // 草墙
+  | "stone" // 岩石墙
+  | "concrete" // 水泥墙
+  | "thorn" // 荆棘墙
   | "icewall" // 冰墙
-  | "arrow" // 箭塔
+  | "watch" // 预警哨
+  | "arrow" // 箭塔（普通塔）
+  | "goldtower" // 产金塔
   | "gun" // 火枪塔
   | "poison" // 毒塔
   | "ice" // 冰塔
@@ -30,9 +35,9 @@ export type BuildingKind =
 /** 巨魔商店条目 */
 export type ShopKey = "weapon" | "gloves" | "boots" | "armor" | "vitality" | "regen";
 /** 精灵技能 */
-export type ElfSkill = "night" | "entangle" | "blink" | "reinforce";
+export type ElfSkill = "blink" | "haste" | "entangle" | "silence" | "wallguard";
 /** 巨魔技能 */
-export type TrollSkill = "windwalk" | "recall";
+export type TrollSkill = "windwalk" | "berserk" | "recall";
 
 export interface Point {
   x: number;
@@ -67,7 +72,16 @@ export interface RoomTile {
   gy: number;
 }
 
-/** 精灵房间：四周由不可建造的地形围墙包围，仅留一个入口需要玩家用墙堵住 */
+/** 房间入口：2 格宽，放一块墙即留出精灵能过、巨魔过不去的缝 */
+export interface RoomGate {
+  gx: number;
+  gy: number;
+  gx2: number;
+  gy2: number;
+  side: RoomSide;
+}
+
+/** 精灵房间：四周由不可建造的地形围墙包围，留 3 个 2 格宽入口需要玩家用墙堵住 */
 export interface RoomInfo {
   siteId: number;
   /** 外墙包围盒（格，含端点） */
@@ -75,11 +89,9 @@ export interface RoomInfo {
   gy0: number;
   gx1: number;
   gy1: number;
-  /** 唯一入口（2 格宽，放一块墙即留出精灵能过、巨魔过不去的缝） */
-  gateX: number;
-  gateY: number;
-  gate2X: number;
-  gate2Y: number;
+  /** 3 个入口，gates[0] 为朝地图中心的主入口 */
+  gates: RoomGate[];
+  /** 主入口朝向 */
   side: RoomSide;
   /** 所有不可通行的外围墙体格（不含入口） */
   walls: RoomTile[];
@@ -105,6 +117,8 @@ export interface BuildCheck {
 export interface InputState {
   mx: number;
   my: number;
+  /** 手动攻击：隐身状态下会立刻显形并打出一次普通攻击 */
+  attack?: boolean;
 }
 
 export interface GameStats {
@@ -134,6 +148,9 @@ export interface Building {
   maxHp: number;
   /** 建造动画剩余时间（秒），大于 0 时尚未生效 */
   spawn: number;
+  /** 施工总时长与剩余时间（秒），buildTimer 大于 0 时建筑尚未建成 */
+  buildTime: number;
+  buildTimer: number;
   /** 攻击冷却 */
   cd: number;
   /** 通用计时器（生命之树产小精灵等） */
@@ -141,9 +158,16 @@ export interface Building {
   /** 受击闪白时间 */
   flash: number;
   alive: boolean;
+  /** 玩家手动持续维修中（免费） */
+  repairing: boolean;
   /** 累计投入，用于拆除返还 */
   spentGold: number;
   spentWood: number;
+  /** 收入累计与弹字计时（帐篷/金矿） */
+  incomeAcc: number;
+  incomeTimer: number;
+  /** 无敌剩余时间（精灵“墙无敌”技能） */
+  invuln: number;
 }
 
 export interface Elf {
@@ -163,6 +187,14 @@ export interface Elf {
   deadTimer: number;
   /** 已购买木材次数（价格递增） */
   woodBuys: number;
+  /** 是否开启自动维修（空闲时自动前往最近的受损建筑） */
+  autoRepair: boolean;
+  /** 移动加速剩余时间 */
+  hasteTime: number;
+  /** 当前正在维修/前往维修的建筑 id，-1 表示没有 */
+  repairTarget: number;
+  /** 当前维修目标是否由自动维修选出（关闭自动维修时清除） */
+  repairAuto: boolean;
   cooldowns: Record<ElfSkill, number>;
 }
 
@@ -194,6 +226,16 @@ export interface Troll {
   windwalk: number;
   windwalkCd: number;
   recallCd: number;
+  /** 被沉默剩余时间（无法施法） */
+  silenceTime: number;
+  /** 狂暴剩余时间（攻速与攻击力提升） */
+  berserkTime: number;
+  /** 狂暴冷却 */
+  berserkCd: number;
+  /** 回城读条剩余时间，大于 0 表示正在读条（可被打断） */
+  recallChannel: number;
+  /** 回城卷轴数量（不可打断） */
+  recallScrolls: number;
   items: Record<ShopKey, number>;
   hutId: number;
   regenAcc: number;
@@ -261,7 +303,7 @@ export interface Projectile {
   ty: number;
   t: number;
   dur: number;
-  kind: "arrow" | "gun" | "poison" | "ice" | "moon";
+  kind: "arrow" | "goldtower" | "gun" | "poison" | "ice" | "moon";
 }
 
 export interface Hint {
@@ -296,6 +338,8 @@ export interface GameState {
   stats: GameStats;
   /** 黑夜剩余时间（精灵技能制造） */
   nightTimer: number;
+  /** 精灵暴露视野剩余时间（帐篷全毁触发，重建后仍持续一段时间） */
+  revealTimer: number;
   /** 玩家控制的精灵下标；玩家为巨魔时为 -1 */
   playerElf: number;
   /** 玩家控制的巨魔下标；玩家为精灵时为 -1 */

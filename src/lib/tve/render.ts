@@ -25,7 +25,8 @@ export interface RenderView {
 const SPRITE_FOR_KIND: Partial<Record<BuildingKind, string>> = {
   tree: "tree",
   goldmine: "mine",
-  woodwall: "wall",
+  wall: "wall",
+  grasswall: "wall",
   arrow: "arrow",
   moon: "magic",
 };
@@ -225,9 +226,21 @@ function drawRoomWallTile(ctx: CanvasRenderingContext2D, gx: number, gy: number)
   ctx.strokeRect(x + 0.5, y + 0.5, TILE - 2, TILE - 2);
 }
 
-/** 精灵房间：内部为可建造的石板地面，四周是不可破坏的围墙（仅留一个入口） */
-function drawRooms(ctx: CanvasRenderingContext2D, patterns: { dirt: CanvasPattern | null }) {
+/** 精灵房间：内部为可建造的石板地面，四周是不可破坏的围墙（每间留 3 个入口） */
+function drawRooms(ctx: CanvasRenderingContext2D, patterns: { dirt: CanvasPattern | null }, view: RenderView) {
+  const vw = view.width / view.cam.zoom;
+  const vh = view.height / view.cam.zoom;
+  const left = view.cam.x - vw / 2 - TILE;
+  const top = view.cam.y - vh / 2 - TILE;
+  const right = left + vw + TILE * 2;
+  const bottom = top + vh + TILE * 2;
   for (const room of BASE_ROOMS) {
+    const rx0 = room.gx0 * TILE;
+    const ry0 = room.gy0 * TILE;
+    const rx1 = (room.gx1 + 1) * TILE;
+    const ry1 = (room.gy1 + 1) * TILE;
+    // 视野裁剪：20 个房间全画会明显掉帧
+    if (rx1 < left || rx0 > right || ry1 < top || ry0 > bottom) continue;
     const ix0 = (room.gx0 + 1) * TILE;
     const iy0 = (room.gy0 + 1) * TILE;
     const ix1 = room.gx1 * TILE;
@@ -241,11 +254,13 @@ function drawRooms(ctx: CanvasRenderingContext2D, patterns: { dirt: CanvasPatter
     ctx.save();
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = "#c9b48a";
-    for (const gate of [
-      { gx: room.gateX, gy: room.gateY },
-      { gx: room.gate2X, gy: room.gate2Y },
-    ]) {
-      ctx.fillRect(gate.gx * TILE + 6, gate.gy * TILE + 6, TILE - 12, TILE - 12);
+    for (const gate of room.gates) {
+      for (const tile of [
+        { gx: gate.gx, gy: gate.gy },
+        { gx: gate.gx2, gy: gate.gy2 },
+      ]) {
+        ctx.fillRect(tile.gx * TILE + 6, tile.gy * TILE + 6, TILE - 12, TILE - 12);
+      }
     }
     ctx.restore();
   }
@@ -319,14 +334,28 @@ function drawProceduralBuilding(
     ctx.stroke();
     ctx.fillStyle = "#6b4d2a";
     ctx.fillRect(x - s * 0.15, y - s * 0.55, s * 0.3, s * 0.55);
-  } else if (kind === "stone" || kind === "icewall") {
-    const fill = kind === "stone" ? "#8d9299" : "#9fdcff";
-    const edge = kind === "stone" ? "#585e66" : "#4b8fb8";
+  } else if (kind === "grasswall" || kind === "stone" || kind === "concrete" || kind === "thorn" || kind === "icewall") {
+    const fill =
+      kind === "grasswall"
+        ? "#7f9a4e"
+        : kind === "concrete"
+          ? "#a9aeb6"
+          : kind === "thorn"
+            ? "#6d7f3c"
+            : kind === "stone"
+              ? "#8d9299"
+              : "#9fdcff";
+    const edge =
+      kind === "grasswall"
+        ? "#4d6330"
+        : kind === "concrete"
+          ? "#6d727a"
+          : kind === "thorn"
+            ? "#3f4d24"
+            : kind === "stone"
+              ? "#585e66"
+              : "#4b8fb8";
     body(fill, edge, s * 1.7, s * 1.15);
-    ctx.fillStyle = kind === "stone" ? "#b3b8bf" : "#cdefff";
-    for (let i = 0; i < 3; i += 1) {
-      ctx.fillRect(x - s * 0.7 + i * s * 0.5, y - s * 1.05, s * 0.38, s * 0.26);
-    }
     if (kind === "icewall") {
       ctx.strokeStyle = "#e7f9ff";
       ctx.beginPath();
@@ -334,7 +363,43 @@ function drawProceduralBuilding(
       ctx.lineTo(x + s * 0.1, y - s * 1.6);
       ctx.lineTo(x + s * 0.4, y - s * 1.05);
       ctx.stroke();
+    } else if (kind === "grasswall") {
+      ctx.strokeStyle = "#b6d97a";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 4; i += 1) {
+        const bx = x - s * 0.6 + i * s * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(bx, y - s * 1.1);
+        ctx.lineTo(bx, y - s * 1.45);
+        ctx.stroke();
+      }
+    } else if (kind === "thorn") {
+      ctx.fillStyle = "#d8f79a";
+      for (let i = 0; i < 5; i += 1) {
+        const bx = x - s * 0.7 + i * s * 0.35;
+        ctx.beginPath();
+        ctx.moveTo(bx, y - s * 1.1);
+        ctx.lineTo(bx + s * 0.1, y - s * 1.5);
+        ctx.lineTo(bx + s * 0.2, y - s * 1.1);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = kind === "concrete" ? "#c9cdd3" : "#b3b8bf";
+      for (let i = 0; i < 3; i += 1) {
+        ctx.fillRect(x - s * 0.7 + i * s * 0.5, y - s * 1.05, s * 0.38, s * 0.26);
+      }
     }
+  } else if (kind === "goldtower") {
+    body("#8a6d2f", "#5c451c", s * 1.35, s * 1.5);
+    ctx.fillStyle = "rgba(255,215,106,0.35)";
+    ctx.beginPath();
+    ctx.arc(x, y - s * 1.7, s * 0.62, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffd76a";
+    ctx.beginPath();
+    ctx.arc(x, y - s * 1.7, s * 0.36, 0, Math.PI * 2);
+    ctx.fill();
   } else if (kind === "workshop") {
     body("#a8743c", "#6f4820", s * 1.55, s * 1.05);
     ctx.fillStyle = "#7d5a34";
@@ -385,6 +450,25 @@ function drawProceduralBuilding(
     ctx.lineTo(x - s * 0.32, y - s * 1.5);
     ctx.closePath();
     ctx.fill();
+  } else if (kind === "watch") {
+    body("#59626f", "#333a45", s * 1.1, s * 1.7);
+    ctx.strokeStyle = "#d9c191";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y - s * 1.7);
+    ctx.lineTo(x, y - s * 3.1);
+    ctx.stroke();
+    ctx.fillStyle = "#ff9b6b";
+    ctx.beginPath();
+    ctx.moveTo(x, y - s * 3.1);
+    ctx.lineTo(x + s * 0.95, y - s * 2.82);
+    ctx.lineTo(x, y - s * 2.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#ffe9a3";
+    ctx.beginPath();
+    ctx.arc(x, y - s * 1.35, s * 0.26, 0, Math.PI * 2);
+    ctx.fill();
   } else if (kind === "hut") {
     body("#3f5a37", "#23331e", s * 1.9, s * 1.25);
     ctx.fillStyle = "#577a4a";
@@ -413,9 +497,12 @@ function drawProceduralBuilding(
 }
 
 function drawBuilding(ctx: CanvasRenderingContext2D, assets: TveAssets, b: Building, selected: boolean) {
-  const progress = b.spawn > 0 ? 1 - b.spawn / 0.5 : 1;
-  const scale = b.spawn > 0 ? 0.55 + 0.45 * progress : 1;
-  const alpha = b.spawn > 0 ? 0.55 + 0.45 * progress : 1;
+  const building = b.buildTimer > 0 && b.buildTime > 0;
+  const buildProgress = building ? 1 - b.buildTimer / b.buildTime : 1;
+  const spawnProgress = b.spawn > 0 ? 1 - b.spawn / 0.5 : 1;
+  const progress = Math.min(spawnProgress, building ? 0.55 + 0.45 * buildProgress : 1);
+  const scale = b.spawn > 0 || building ? 0.55 + 0.45 * progress : 1;
+  const alpha = b.spawn > 0 ? 0.55 + 0.45 * spawnProgress : building ? 0.7 : 1;
   drawShadow(ctx, b.x, b.y + 8, (b.size * TILE) * 1.1 * scale, 0.24);
   const spriteKey = SPRITE_FOR_KIND[b.kind];
   let box: DrawBox;
@@ -437,7 +524,10 @@ function drawBuilding(ctx: CanvasRenderingContext2D, assets: TveAssets, b: Build
   }
 
   const showBar = b.hp < b.maxHp || selected || b.kind === "tree" || b.kind === "hut";
-  if (showBar) {
+  if (building) {
+    const width = b.size === 2 ? 110 : 54;
+    drawBar(ctx, b.x, box.top - 10, width, buildProgress, "#6fc8ff", b.size === 2 ? 6 : 5);
+  } else if (showBar) {
     const width = b.size === 2 ? 110 : 54;
     const ratio = b.hp / b.maxHp;
     drawBar(ctx, b.x, box.top - 10, width, ratio, ratio > 0.5 ? "#79d97c" : ratio > 0.25 ? "#f0c46a" : "#ef6b6b", b.size === 2 ? 6 : 5);
@@ -773,7 +863,7 @@ export function drawGame(
 
   drawRoads(ctx, patterns);
   drawPond(ctx, time);
-  drawRooms(ctx, patterns);
+  drawRooms(ctx, patterns, view);
 
   const props: { y: number; draw: () => void }[] = [];
   const margin = 140;
@@ -819,6 +909,9 @@ export function drawGame(
 
   ctx.restore();
 
+  // 战争迷雾（仅巨魔视角）：巨魔与己方建筑提供视野；某精灵帐篷全毁时暴露其基地直到重建
+  if (state.faction === "troll") drawFog(ctx, state, view);
+
   const night = state.nightTimer > 0;
   const tint = night ? 0.4 : 0.03;
   ctx.save();
@@ -834,6 +927,66 @@ export function drawGame(
 
 // 岩石沿用地图静态数据（仅渲染）
 const MAP_DATA_ROCKS = MAP_DATA.rocks;
+
+let fogCanvas: HTMLCanvasElement | null = null;
+
+/** 巨魔视角的战争迷雾：用离屏画布挖出视野圆 */
+function drawFog(ctx: CanvasRenderingContext2D, state: GameState, view: RenderView) {
+  const { width, height, cam } = view;
+  if (typeof document === "undefined") return;
+  if (!fogCanvas) fogCanvas = document.createElement("canvas");
+  if (fogCanvas.width !== Math.ceil(width) || fogCanvas.height !== Math.ceil(height)) {
+    fogCanvas.width = Math.max(1, Math.ceil(width));
+    fogCanvas.height = Math.max(1, Math.ceil(height));
+  }
+  const fctx = fogCanvas.getContext("2d");
+  if (!fctx) return;
+
+  fctx.globalCompositeOperation = "source-over";
+  fctx.clearRect(0, 0, width, height);
+  fctx.fillStyle = "rgba(5, 10, 16, 0.88)";
+  fctx.fillRect(0, 0, width, height);
+
+  const toScreen = (x: number, y: number) => ({
+    sx: (x - cam.x) * cam.zoom + width / 2,
+    sy: (y - cam.y) * cam.zoom + height / 2,
+  });
+  const hole = (x: number, y: number, radius: number) => {
+    const { sx, sy } = toScreen(x, y);
+    const r = radius * cam.zoom;
+    if (sx + r < 0 || sy + r < 0 || sx - r > width || sy - r > height) return;
+    const g = fctx.createRadialGradient(sx, sy, r * 0.55, sx, sy, r);
+    g.addColorStop(0, "rgba(0,0,0,1)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    fctx.fillStyle = g;
+    fctx.beginPath();
+    fctx.arc(sx, sy, r, 0, Math.PI * 2);
+    fctx.fill();
+  };
+
+  fctx.globalCompositeOperation = "destination-out";
+
+  // 巨魔视野
+  for (const t of state.trolls) {
+    if (t.alive) hole(t.x, t.y, t.wolf ? 440 : 560);
+  }
+  // 巨魔建筑（小屋）视野
+  for (const b of state.buildings) {
+    if (b.alive && b.team === "troll") hole(b.x, b.y, 420);
+  }
+  // 精灵暴露视野（帐篷全毁；重建后仍持续一段时间）
+  if (state.revealTimer > 0) {
+    for (const elf of state.elves) {
+      if (elf.alive) hole(elf.x, elf.y, 460);
+    }
+    for (const b of state.buildings) {
+      if (b.alive && b.team === "elf") hole(b.x, b.y, 300);
+    }
+  }
+
+  fctx.globalCompositeOperation = "source-over";
+  ctx.drawImage(fogCanvas, 0, 0);
+}
 
 export function screenToWorld(view: RenderView, sx: number, sy: number): { x: number; y: number } {
   return {
@@ -872,11 +1025,11 @@ export function drawMinimap(ctx: CanvasRenderingContext2D, state: GameState, siz
       continue;
     }
     ctx.fillStyle =
-      b.kind === "tent" || b.kind === "goldmine"
+      b.kind === "tent" || b.kind === "goldmine" || b.kind === "goldtower"
         ? "#ffd479"
         : b.kind === "tree"
           ? "#6fe08a"
-          : b.kind === "woodwall" || b.kind === "stone" || b.kind === "icewall"
+          : BUILD_SPECS[b.kind].category === "wall"
             ? "#b09060"
             : "#cfe8ff";
     const s = b.kind === "tree" ? 3 : 1.8;

@@ -6,10 +6,11 @@ import {
   DIFFICULTIES,
   SHOP_ITEMS,
   TILE,
+  TROLL_BASE,
   isTerrainBlocked,
 } from "./config";
 import { buildNav, findPath, pathToWorld, type NavGrid } from "./nav";
-import type { Building, BuildingKind, Elf, ElfSkill, GameState, Point, RoomSide, ShopKey, Troll } from "./types";
+import type { Building, BuildingKind, Elf, ElfSkill, GameState, Point, RoomInfo, RoomSide, ShopKey, Troll } from "./types";
 
 export type ElfAction =
   | { type: "build"; kind: BuildingKind; gx: number; gy: number }
@@ -22,36 +23,43 @@ export type TrollAction =
   | { type: "windwalk" }
   | { type: "recall" };
 
-// 房间内部 7×7（相对生命之树中心 dx/dy ∈ [-2,4]），生命之树占据 [-1,0]×[-1,0]
+// 房间内部 11×11（相对生命之树中心 dx/dy ∈ [-4,6]），生命之树占据 [-1,0]×[-1,0]
 const TENT_SLOTS: [number, number][] = [
+  [-3, 2],
+  [-3, 3],
   [-2, 2],
   [-2, 3],
   [2, 2],
   [3, 2],
   [2, 3],
   [3, 3],
-  [2, -2],
-  [3, -2],
+  [2, -3],
+  [3, -3],
+  [-3, -3],
+  [-2, -3],
 ];
 
 /** 防御塔贴近入口一侧摆放，才能覆盖唯一的门口 */
 function gateTowerSlots(side: RoomSide): [number, number][] {
-  if (side === "east") return [[4, 0], [4, -2], [4, 3], [3, 0]];
-  if (side === "west") return [[-2, 0], [-2, -2], [-2, 3], [-1, 2]];
-  if (side === "south") return [[2, 4], [-2, 4], [4, 4], [2, 3]];
-  return [[2, -2], [-2, -2], [4, -2], [2, 3]];
+  if (side === "east") return [[6, 0], [6, -2], [6, 3], [5, 0], [4, 0]];
+  if (side === "west") return [[-4, 0], [-4, -2], [-4, 3], [-3, 0], [-2, 0]];
+  if (side === "south") return [[0, 6], [-2, 6], [4, 6], [0, 5], [0, 4]];
+  return [[0, -4], [-2, -4], [4, -4], [0, -3], [0, -2]];
 }
 
 const SUPPORT_SLOTS: [number, number][] = [
   [4, 4],
-  [-2, 4],
-  [4, -2],
+  [5, 4],
+  [4, 5],
+  [-3, 4],
+  [4, -3],
 ];
 
 const GOLD_SLOTS: [number, number][] = [
-  [-2, 4],
-  [4, 4],
-  [4, -2],
+  [-3, 5],
+  [5, 5],
+  [5, -3],
+  [-4, -3],
 ];
 
 const navCache = new WeakMap<GameState, { key: string; nav: NavGrid }>();
@@ -68,6 +76,13 @@ function getNav(state: GameState): NavGrid {
 
 function treeOf(state: GameState, elf: Elf): Building | undefined {
   return elf.treeId >= 0 ? state.buildings.find((b) => b.id === elf.treeId && b.alive) : undefined;
+}
+
+/** 生命之树所在的房间（精灵可能出生在任意房间，也可能去别的房间发展） */
+function roomOf(tree: Building): RoomInfo | undefined {
+  const gx = tree.gx + 1;
+  const gy = tree.gy + 1;
+  return BASE_ROOMS.find((r) => gx > r.gx0 && gx < r.gx1 && gy > r.gy0 && gy < r.gy1);
 }
 
 function occupied(state: GameState, gx: number, gy: number, size: number): boolean {
@@ -90,11 +105,17 @@ function trySlot(
   slots: [number, number][],
   baseTx: number,
   baseTy: number,
+  room?: RoomInfo,
 ): { gx: number; gy: number } | null {
   const size = BUILD_SPECS[kind].size;
   for (const [dx, dy] of slots) {
-    const gx = baseTx + dx;
-    const gy = baseTy + dy;
+    let gx = baseTx + dx;
+    let gy = baseTy + dy;
+    // 房间大小不一：把候选点位夹回房间内部，避免摆到外墙上
+    if (room) {
+      gx = Math.max(room.gx0 + 1, Math.min(room.gx1 - size, gx));
+      gy = Math.max(room.gy0 + 1, Math.min(room.gy1 - size, gy));
+    }
     if (occupied(state, gx, gy, size)) continue;
     return { gx, gy };
   }
@@ -115,88 +136,87 @@ export function planElfActions(state: GameState, elfId: number): ElfAction[] {
   const baseTy = tree.gy + 1;
   const actions: ElfAction[] = [];
   const mine = state.buildings.filter((b) => b.alive && b.team === "elf" && b.owner === elfId);
+  const room = roomOf(tree);
 
-  // 1. 木材不足时优先购买
-  if (elf.wood < 40 && elf.gold >= state.woodPrice + 40) {
+  // 1. 木材不足时补充，但要给堵门墙和帐篷留足金币，避免开局把钱全换成木材
+  if (elf.wood < 40 && elf.gold >= state.woodPrice + 120) {
     actions.push({ type: "wood" });
   }
 
-  // 2. 房间只有一个入口，先放一块石头/木墙堵住（原作开局先堵口）
-  const room = BASE_ROOMS[elfId];
+  // 2. 房间有 3 个入口，先用普通墙全部堵住（原作开局先堵口），再逐步升级
   if (room) {
-    const gate = state.buildings.find(
-      (b) =>
-        b.alive &&
-        b.team === "elf" &&
-        b.owner === elfId &&
-        ((b.gx === room.gateX && b.gy === room.gateY) || (b.gx === room.gate2X && b.gy === room.gate2Y)),
-    );
-    if (!gate) {
-      const stone = BUILD_SPECS.stone.levels[0];
-      const useStone = elf.gold >= stone.cost + 60 && elf.wood >= stone.wood;
-      const kind: BuildingKind = useStone ? "stone" : "woodwall";
-      const level = BUILD_SPECS[kind].levels[0];
-      if (elf.gold >= level.cost && elf.wood >= level.wood) {
-        actions.push({ type: "build", kind, gx: room.gateX, gy: room.gateY });
+    const wallLevel = BUILD_SPECS.wall.levels[0];
+    for (const gate of room.gates) {
+      const wall = mine.find(
+        (b) => (b.gx === gate.gx && b.gy === gate.gy) || (b.gx === gate.gx2 && b.gy === gate.gy2),
+      );
+      if (!wall) {
+        if (elf.gold >= wallLevel.cost && elf.wood >= wallLevel.wood) {
+          actions.push({ type: "build", kind: "wall", gx: gate.gx, gy: gate.gy });
+        }
+      } else if (wall.level < BUILD_SPECS[wall.kind].levels.length) {
+        const next = BUILD_SPECS[wall.kind].levels[wall.level];
+        if (elf.gold >= next.cost + 40 && elf.wood >= next.wood) actions.push({ type: "upgrade", id: wall.id });
       }
-    } else if (gate.level < BUILD_SPECS[gate.kind].levels.length) {
-      const next = BUILD_SPECS[gate.kind].levels[gate.level];
-      if (elf.gold >= next.cost + 40 && elf.wood >= next.wood) actions.push({ type: "upgrade", id: gate.id });
     }
   }
 
   // 3. 帐篷：至少两座
   const tents = mine.filter((b) => b.kind === "tent");
   if (tents.length < 2 && elf.gold >= BUILD_SPECS.tent.levels[0].cost) {
-    const slot = trySlot(state, elf, "tent", TENT_SLOTS, baseTx, baseTy);
+    const slot = trySlot(state, elf, "tent", TENT_SLOTS, baseTx, baseTy, room);
     if (slot) actions.push({ type: "build", kind: "tent", gx: slot.gx, gy: slot.gy });
   }
 
-  // 4. 防御塔：前期箭塔，后期升级
-  const towers = mine.filter((b) => ["arrow", "gun", "poison", "ice", "moon"].includes(b.kind));
+  // 3.5 经济优先：先升帐篷（收入翻倍），再升生命之树解锁更高的帐篷等级
+  for (const tent of tents.sort((a, b) => a.level - b.level)) {
+    if (tent.level >= BUILD_SPECS.tent.levels.length) continue;
+    const next = BUILD_SPECS.tent.levels[tent.level];
+    if (elf.gold >= next.cost + 30 && elf.wood >= next.wood) {
+      actions.push({ type: "upgrade", id: tent.id });
+      break;
+    }
+  }
+  if (tree.level < BUILD_SPECS.tree.levels.length) {
+    const next = BUILD_SPECS.tree.levels[tree.level];
+    if (elf.gold >= next.cost && elf.wood >= next.wood) actions.push({ type: "upgrade", id: tree.id });
+  }
+
+  // 4. 防御塔：先造普通塔，之后可在面板里选择方向
+  const towers = mine.filter((b) => ["arrow", "goldtower", "gun", "poison", "ice", "moon"].includes(b.kind));
   if (towers.length < 3) {
-    const order: BuildingKind[] = ["arrow", "arrow", "gun", "ice", "poison", "moon"];
+    const order: BuildingKind[] = ["arrow", "arrow", "arrow"];
     const kind = order[Math.min(towers.length, order.length - 1)];
     const level = BUILD_SPECS[kind].levels[0];
     if (elf.gold >= level.cost && elf.wood >= level.wood) {
-      const slot = trySlot(state, elf, kind, gateTowerSlots(room?.side ?? "south"), baseTx, baseTy);
+      const slot = trySlot(state, elf, kind, gateTowerSlots(room?.side ?? "south"), baseTx, baseTy, room);
       if (slot) actions.push({ type: "build", kind, gx: slot.gx, gy: slot.gy });
     }
   }
 
   // 5. 工人雇佣所与塔研究所
   if (countKind(state.buildings, elfId, ["workshop"]) === 0 && elf.gold >= 200) {
-    const slot = trySlot(state, elf, "workshop", SUPPORT_SLOTS, baseTx, baseTy);
+    const slot = trySlot(state, elf, "workshop", SUPPORT_SLOTS, baseTx, baseTy, room);
     if (slot) actions.push({ type: "build", kind: "workshop", gx: slot.gx, gy: slot.gy });
   }
   if (towers.length >= 3 && countKind(state.buildings, elfId, ["lab"]) === 0 && elf.gold >= 300) {
-    const slot = trySlot(state, elf, "lab", SUPPORT_SLOTS, baseTx, baseTy);
+    const slot = trySlot(state, elf, "lab", SUPPORT_SLOTS, baseTx, baseTy, room);
     if (slot) actions.push({ type: "build", kind: "lab", gx: slot.gx, gy: slot.gy });
   }
 
   // 6. 金矿
   if (countKind(state.buildings, elfId, ["goldmine"]) < 2 && elf.gold >= 300 && elf.wood >= 60) {
-    const slot = trySlot(state, elf, "goldmine", GOLD_SLOTS, baseTx, baseTy);
+    const slot = trySlot(state, elf, "goldmine", GOLD_SLOTS, baseTx, baseTy, room);
     if (slot) actions.push({ type: "build", kind: "goldmine", gx: slot.gx, gy: slot.gy });
   }
 
-  // 7. 升级：帐篷优先（木材门槛），其次塔与生命之树
-  for (const tent of tents.sort((a, b) => a.level - b.level)) {
-    if (tent.level < BUILD_SPECS.tent.levels.length) {
-      const next = BUILD_SPECS.tent.levels[tent.level];
-      if (elf.gold >= next.cost && elf.wood >= next.wood) actions.push({ type: "upgrade", id: tent.id });
-    }
-  }
-  const upgradeOrder = ["arrow", "gun", "ice", "poison", "moon"];
+  // 7. 塔升级
+  const upgradeOrder = ["arrow", "goldtower", "gun", "ice", "poison", "moon"];
   for (const building of towers.sort((a, b) => a.level - b.level)) {
     if (!upgradeOrder.includes(building.kind)) continue;
     if (building.level >= BUILD_SPECS[building.kind].levels.length) continue;
     const next = BUILD_SPECS[building.kind].levels[building.level];
     if (elf.gold >= next.cost + 80 && elf.wood >= next.wood) actions.push({ type: "upgrade", id: building.id });
-  }
-  if (tree.level < BUILD_SPECS.tree.levels.length) {
-    const next = BUILD_SPECS.tree.levels[tree.level];
-    if (elf.gold >= next.cost && elf.wood >= next.wood) actions.push({ type: "upgrade", id: tree.id });
   }
 
   return actions;
@@ -216,9 +236,18 @@ export function planElfSkill(state: GameState, elf: Elf): ElfSkill | null {
   }
   if (!nearest) return null;
   if (nearestDist < 300 && elf.cooldowns.entangle <= 0) return "entangle";
+  if (nearestDist < 260 && elf.cooldowns.silence <= 0) return "silence";
   if (nearestDist < 150 && elf.cooldowns.blink <= 0) return "blink";
-  if (nearestDist < 360 && elf.hp < elf.maxHp * 0.6 && elf.cooldowns.night <= 0) return "night";
-  if (elf.hp < elf.maxHp * 0.4 && elf.cooldowns.reinforce <= 0) return "reinforce";
+  if (nearestDist < 420 && elf.cooldowns.haste <= 0) return "haste";
+  const wallsHurt = state.buildings.some(
+    (b) =>
+      b.alive &&
+      b.team === "elf" &&
+      b.owner === elf.id &&
+      BUILD_SPECS[b.kind].category === "wall" &&
+      b.hp < b.maxHp * 0.5,
+  );
+  if (wallsHurt && elf.cooldowns.wallguard <= 0) return "wallguard";
   return null;
 }
 
@@ -261,6 +290,8 @@ export function planTrollActions(state: GameState, troll: Troll): TrollAction[] 
 export interface TrollMove {
   mx: number;
   my: number;
+  /** 隐身贴到目标时手动出手（会提前显形） */
+  attack?: boolean;
 }
 
 /** 巨魔 AI：白天拆最薄弱建筑刷金，残血回小屋，被围时开疾风步 */
@@ -326,12 +357,23 @@ export function planTrollMove(state: GameState, troll: Troll, dt: number): Troll
       goal.y > (room.gy0 + 1) * TILE &&
       goal.y < room.gy1 * TILE;
     if (!inside) continue;
-    const gate = state.buildings.find(
-      (b) =>
-        b.alive &&
-        b.team === "elf" &&
-        ((b.gx === room.gateX && b.gy === room.gateY) || (b.gx === room.gate2X && b.gy === room.gate2Y)),
-    );
+    // 房间有 3 个入口：找距离巨魔最近的、已被堵住的入口墙
+    let gate: Building | undefined;
+    let gateDist = Number.POSITIVE_INFINITY;
+    for (const g of room.gates) {
+      const wall = state.buildings.find(
+        (b) =>
+          b.alive &&
+          b.team === "elf" &&
+          ((b.gx === g.gx && b.gy === g.gy) || (b.gx === g.gx2 && b.gy === g.gy2)),
+      );
+      if (!wall) continue;
+      const d = Math.hypot(wall.x - troll.x, wall.y - troll.y);
+      if (d < gateDist) {
+        gateDist = d;
+        gate = wall;
+      }
+    }
     if (gate) {
       goal = { x: gate.x, y: gate.y };
       troll.targetBuilding = gate.id;
@@ -383,5 +425,8 @@ export function planTrollMove(state: GameState, troll: Troll, dt: number): Troll
     troll.stuck = 0;
   }
 
-  return { mx: dx, my: dy };
+  // 隐身状态不会自动攻击：目标进入攻击距离时手动出手（提前显形）
+  const reach = (troll.wolf ? 50 : TROLL_BASE.range) + (troll.wolf ? 18 : TROLL_BASE.radius);
+  const attack = troll.windwalk > 0 && Math.hypot(goal.x - troll.x, goal.y - troll.y) <= reach + 12;
+  return { mx: dx, my: dy, attack };
 }

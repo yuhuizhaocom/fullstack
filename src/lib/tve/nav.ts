@@ -26,16 +26,17 @@ export function buildNav(state: GameState): NavGrid {
       }
     }
   }
-  // 房间入口被堵一块墙后，2×2 的巨魔就把整个入口视为封死
+  // 房间任一入口被堵一块墙后，2×2 的巨魔就把整个入口视为封死
   for (const room of BASE_ROOMS) {
-    const sealed = state.buildings.some(
-      (b) =>
-        b.alive &&
-        ((b.gx === room.gateX && b.gy === room.gateY) || (b.gx === room.gate2X && b.gy === room.gate2Y)),
-    );
-    if (sealed) {
-      blocked[room.gateY * MAP_TILES + room.gateX] = 1;
-      blocked[room.gate2Y * MAP_TILES + room.gate2X] = 1;
+    for (const gate of room.gates) {
+      const sealed = state.buildings.some(
+        (b) =>
+          b.alive &&
+          ((b.gx === gate.gx && b.gy === gate.gy) || (b.gx === gate.gx2 && b.gy === gate.gy2)),
+      );
+      if (!sealed) continue;
+      blocked[gate.gy * MAP_TILES + gate.gx] = 1;
+      blocked[gate.gy2 * MAP_TILES + gate.gx2] = 1;
     }
   }
 
