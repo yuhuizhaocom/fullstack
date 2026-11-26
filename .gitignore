@@ -43,3 +43,12 @@ yarn-error.log*
 # editor
 .idea/
 .vscode/
+
+# tve original map cache
+/.tve-cache/
+*.w3x
+**/__pycache__/
+
+# local tool artifacts
+/.trae/
+/.screenshots/

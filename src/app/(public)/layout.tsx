@@ -72,7 +72,7 @@ export default async function PublicLayout({
               <span className="hidden sm:inline">猎人与农民</span>
             </Link>
             <Link
-              href="/tve"
+              href="/tve4"
               title="巨魔VS精灵"
               className="flex items-center gap-1 hover:text-foreground"
             >

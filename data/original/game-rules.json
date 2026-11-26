@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "confidence": "VERIFIED",
+  "source": "war3map.j / Units/UnitBalance.slk / Units/UnitWeapons.slk / war3map.w3a",
+  "extractedAt": "2026-11-26",
+  "note": "原版数值快照，不可被网页配置覆盖。详见 docs/research/。",
+  "startGold": {
+    "elf": { "OLD": 30, "MIDDLE": 10 },
+    "troll": { "OLD": 70, "MIDDLE": 50 }
+  },
+  "startWood": 0,
+  "trollAppearSeconds": {
+    "SINGLE": 30,
+    "DOUBLE": 30,
+    "FIX": 45,
+    "RACE": 30,
+    "DEFEND": 30,
+    "SOLO": 30,
+    "DUET": 30,
+    "SURVIVE": 45,
+    "REVIVE": 30
+  },
+  "visionSeconds": { "share": 300, "expose": 300 },
+  "bounty": {
+    "goldRatio": 0.5,
+    "woodMultiplier": 8,
+    "middleRatio": 0.5,
+    "max": 1000000,
+    "minAngelStolenGoldMultiplier": 25
+  },
+  "damage": {
+    "goldPerDamage": 1,
+    "oldLifestealRatio": 0.22
+  },
+  "heroes": {
+    "H010": {
+      "name": "精灵",
+      "hp": 10,
+      "speed": 250,
+      "attack": 7,
+      "range": 100,
+      "attackInterval": 2.2,
+      "sight": 1200
+    },
+    "H020": {
+      "name": "巨魔",
+      "hp": 750,
+      "speed": 350,
+      "attack": 7,
+      "range": 80,
+      "attackInterval": 1.5,
+      "sight": 1400
+    }
+  },
+  "skills": {
+    "A067": {
+      "name": "魔法提速",
+      "cooldown": 30,
+      "duration": 15,
+      "manaCost": 20,
+      "moveSpeedBonus": 1.1
+    },
+    "A06M": {
+      "name": "纠缠根须",
+      "cooldown": 3,
+      "duration": 3,
+      "heroDuration": 3,
+      "range": 999999,
+      "manaCost": 0
+    },
+    "A066": {
+      "name": "闪烁",
+      "source": "CampaignAbilityStrings.txt + JASS 引用",
+      "note": "数值来自物编内置技能，未从 w3a 读取"
+    }
+  },
+  "rules": ["SINGLE", "DOUBLE", "FIX", "RACE", "DEFEND", "SOLO", "DUET", "SURVIVE", "REVIVE"],
+  "modes": ["OLD", "BALANCE", "FAST", "MIDDLE"],
+  "maps": [
+    "BIG_SNOW_LAND",
+    "BIG_FOREST",
+    "SMALL_FOREST",
+    "SOLO_AREA",
+    "DEFEND_AREA",
+    "MIDDLE_FOREST",
+    "RACE_FOREST",
+    "BIG_SNOW_FIELD"
+  ]
+}

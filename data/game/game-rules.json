@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "confidence": "PROPOSED",
+  "basedOn": "data/original/game-rules.json",
+  "note": "网页端当前生效配置（src/lib/tve-classic/data.ts / engine.ts 的镜像）。不覆盖原版数据。",
+  "mode": "OLD",
+  "rule": "SINGLE",
+  "startGold": { "elf": 30, "troll": 70 },
+  "startWood": 0,
+  "trollAppearSeconds": 30,
+  "trollAppearNote": "已按原版 SINGLE 准备期对齐为 30 秒；原版 FIX/SURVIVE 为 45 秒（网页暂未实现）",
+  "heroes": {
+    "elf": { "hp": 10, "speed": 125, "attack": 7, "range": 112, "interval": 2.2, "radius": 14 },
+    "troll": { "hp": 750, "speed": 175, "attack": 7, "range": 90, "interval": 1.5, "radius": 22 }
+  },
+  "skills": {
+    "blink": { "cooldown": 25, "range": 750 },
+    "haste": { "cooldown": 30, "duration": 15 },
+    "entangle": { "cooldown": 45, "duration": 3, "range": 230 },
+    "silence": { "cooldown": 60, "duration": 5, "range": 300 },
+    "windwalk": { "cooldown": 30, "duration": 20 },
+    "berserk": { "cooldown": 120, "duration": 10 },
+    "teleport": { "cooldown": 45, "channel": 2 }
+  },
+  "bounty": {
+    "goldRatio": 0.5,
+    "woodMultiplier": 8,
+    "max": 1000000,
+    "middleRatioImplemented": false,
+    "minImplemented": false
+  },
+  "damage": {
+    "goldPerDamage": 1,
+    "instantElfKillImplemented": false,
+    "lifestealImplemented": false,
+    "heroDamageGoldImplemented": true,
+    "buildingDamageGoldImplemented": true
+  },
+  "implementedModes": ["OLD-SINGLE"],
+  "missingOriginalSystems": [
+    "trollAppearDelay",
+    "sharedVision",
+    "exposeVision",
+    "wolfAndAngelRoles",
+    "skins",
+    "revive",
+    "double/fix/race/defend/solo/duet/survive rules"
+  ]
+}

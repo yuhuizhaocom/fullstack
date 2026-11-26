@@ -1,0 +1,4257 @@
+{
+  "w3x": "92321DFF967C964EC7EB7EE52A91A7A4.w3x",
+  "sha256": "D8D3DF747520529EE530A87754D568278F51378DFA30E419A64FE208165BB9D7",
+  "md5": "92321DFF967C964EC7EB7EE52A91A7A4",
+  "listfile_count": 607,
+  "files": [
+    {
+      "category": "模型 (MDX)",
+      "path": "Abilities/Spells/Human/DivineShield/DivineShieldTargetLianYi.mdx",
+      "size": 23956,
+      "sha256": "6ae8b01bbb55eae18c42299c8399a59db5cb9cabac76030cb845f760f8b51d7b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Abilities/Spells/Human/HolyBolt/HolyBoltSpecialArtLianYi.mdx",
+      "size": 40301,
+      "sha256": "49157205d7945d406c50646bd46c81c009b0924a8ae2f464441c7d030f6e2057",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Abilities/Spells/NightElf/EntanglingRoots/EntanglingRootsTargetLianYi.mdx",
+      "size": 255611,
+      "sha256": "4a76529db9842de310dea9117881060d10292c9cf034d73782281c53065714bd",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Abilities/Spells/Undead/FrostArmor/FrostArmorDamageLianYi.mdx",
+      "size": 1483,
+      "sha256": "0102e4a0cb160d31123ecbd63aa56a5fbcdc49efa0056a511fa784158c367774",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Abilities/Spells/Undead/FrostArmor/FrostArmorTargetLianyi.mdx",
+      "size": 13650,
+      "sha256": "dd04ed2c025b3f1afe02204258e6ee2b28825b65d130bf4770264bf5dc17bbc1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "BatTroll.blp",
+      "size": 98765,
+      "sha256": "c699309190bb6292273565283c6896c8c59f9d869c96bb7f6a2636bc5f846daf",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Blood_Ritual.mdx",
+      "size": 9876,
+      "sha256": "bdc74f9e1eb221c6f62a70bec3e31b0f0e583e20a697dd66cd9c9b2580aef11f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "DarkTrollTrapper.mdx",
+      "size": 173337,
+      "sha256": "a2d6f880279db72a61407258ad2b98a9c6308b9a77b1d98c5d1095fc238f0d16",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "DarkTrollTrapper_Portrait.mdx",
+      "size": 49205,
+      "sha256": "02bc83dff4c1776891e8e657f3d02c0985791a1332764bd874ea275208c1c478",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Doodads/Cityscape/Structures/CathedralRuined/CathedralRuined.mdx",
+      "size": 4274,
+      "sha256": "f59e061db9c48debfa228ce770795c6a491a09aa265527b790009f8ed75927ea",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "DwarvenMiner.mdx",
+      "size": 149483,
+      "sha256": "d38adbf55d7892a63fa3925eee38ce3caa0d1848fb2aa5a896e676e54417650d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "HeroArchMaiden.mdx",
+      "size": 289805,
+      "sha256": "cde9de51ca884a0043a122f00505789ce4f23233ee2429716417c6bed3ccb5ab",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "HeroArchMaiden_Portrait.mdx",
+      "size": 30710,
+      "sha256": "c1beb6bc89c3a4047e1026cda08d477f90b23d9637d0dfb82391fdac4e40af21",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "HeroArchSorceressFZ1.blp",
+      "size": 60749,
+      "sha256": "f81178ecbf61567a596efb2f0eaa688992eb4cae86d85368b5d270e99e394136",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Hero_BloodElf.blp",
+      "size": 69723,
+      "sha256": "bcd18aef0140d5b71c2c47edc7ee5cfae444ab3e3fef3e88b2568529d39c8c31",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "HighElfPeasant.mdx",
+      "size": 139840,
+      "sha256": "0163678ea9edbf0284604014cf220bf5ccabc171ca74d9b3161c74bdd9ade19c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "HighElfPeasant_portrait.mdx",
+      "size": 48657,
+      "sha256": "1d79588e63a18797792dcef6cc0907677a44915604bf79d756ea88b9c10aad71",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "IceTroll.blp",
+      "size": 81370,
+      "sha256": "bd15da7a7bc5aebe65dbd2aeb8618d54fcdf064cb5eeeb44126ca02931208bd6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Jaina_portrait.mdx",
+      "size": 46863,
+      "sha256": "acaa21a5a5580b68f2ac44afd3eaf840b37244846aa05f3e43fad9092ca4564a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Jmjs.mdx",
+      "size": 205015,
+      "sha256": "b63efe0a0d66e449a8bea4c486ee04168a8617f41933b615f19496145c4b6dbf",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Kael_Portrait.mdx",
+      "size": 123374,
+      "sha256": "bf182967d1560e042bd6b2fd85d7ab32e31f831faffe94e188c5fc3dfb2a750f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "KulTirasSailor2.mdx",
+      "size": 148497,
+      "sha256": "2e5a3b51e65774a48b4fe244bb1f970e7e300e3434748295837ebcf2a42374cf",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Laborer.mdx",
+      "size": 139039,
+      "sha256": "e234e9aff0c4093810af9efbbb14473f4b292d4df887912b203a3a4d6e4a66f8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "LoadingScreen.mdx",
+      "size": 3140,
+      "sha256": "ed4201e1fe08be07daf526ef04dd79dc0bc42b7aa55d03a81b1ae5fd257355df",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "LoadingScreenBL.blp",
+      "size": 58680,
+      "sha256": "e97767e194b3b6955b8bc705427ad95267c44a624eb30f93690b0c12da7928b2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "LoadingScreenBR.blp",
+      "size": 96154,
+      "sha256": "585e7078908fc7c26d55615119b09fbec5e7291abec36f9b79c712f09960e8c2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "LoadingScreenTL.blp",
+      "size": 124838,
+      "sha256": "492349071e8d6f7e5690ad063884418db569fc8d902f31e012652a15f4e4bae9",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "LoadingScreenTR.blp",
+      "size": 216780,
+      "sha256": "3023c8db0b2bedad4822ccf33cf5d3310d6d9b0c8e79bbc2cda9fbe973ae9c91",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Malthael.mdx",
+      "size": 136277,
+      "sha256": "511c0fd6b0b95675bc6110c9a814ac50de957e65fec8b39ebc30cd2382920ba9",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "MirrorZI_model_bingjinlangren02.blp",
+      "size": 343406,
+      "sha256": "8e965cfaa48ccd060a26f429e5e5603d6172a922cfa2dda54d880476da30fdac",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "MirrorZI_model_bingjinlangren02.mdx",
+      "size": 583931,
+      "sha256": "05eb0f946942e4476c53f639bee2152c516baeea252be735ba72bc8c249e7ce7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "MoonPriestess.mdx",
+      "size": 162594,
+      "sha256": "236e039f0a6dc622af26eb7cebff5f871dd44ea4e3b45272478a0fbe160fbb12",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "MoonPriestess_Portrait.mdx",
+      "size": 57979,
+      "sha256": "ebae7f98309cc5dae62a4630e30986f7509ff81c10078a2393ce0ea788ede7b1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Mr.War3_ADLE.MDX",
+      "size": 774994,
+      "sha256": "fefb3511c3b6df46de37530c272d94800ec72b7c10e2f3a5550b5ca4df178107",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Mr.War3_ADLE.blp",
+      "size": 402188,
+      "sha256": "a9d6734408b2fb010dff124087f176d69afb17fb818785aa2c60b61fc588d343",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Mr.War3_JD2_0259_0.blp",
+      "size": 12598,
+      "sha256": "4a107b46e7704221403039df833770cddfe860ee1001eff4ae1452a77e83ab4f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Mr.War3_JD2_0262_0.blp",
+      "size": 71407,
+      "sha256": "1f3c011eb677ed34d10818aacf33e1a36866a177255bdb306bfb8ad4d02312cf",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Mr.War3_JD2_0263_0.blp",
+      "size": 7439,
+      "sha256": "66b750c41a9a0250697d536d1c46bc87df4053c51896f80ebd83bdd0a9fa704e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Mr.War3_JD2_0266_0.blp",
+      "size": 6689,
+      "sha256": "1ba663643eb97737782413058b94d12dc52e7aa05a759e880901b60d18c77df3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Mr.War3_Xingtian.blp",
+      "size": 143024,
+      "sha256": "8a99d3a342e704c44ea06f7728131bb7b1ff3142f62eb404769619bba49c161e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Mr.War3_Xingtian.mdx",
+      "size": 237881,
+      "sha256": "ba4cce0e1e6f1b7bda65a424de76372b7d9f2377ac3097d3ecaa78695be6e4de",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Mr.War3_ZhangfeiZ.mdx",
+      "size": 450416,
+      "sha256": "ee2157946383e01bbd9860d7f32a38d822a378b26a339fd1fbee9709af7321ba",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Mr.War3_guanyuz.mdx",
+      "size": 448007,
+      "sha256": "feabf4222fcab3256ea8d563d0a472c5025b5e0d92fb2c3a74894e8dd67d4496",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "NPC_qingyi.blp",
+      "size": 210279,
+      "sha256": "ccf3fd1e208ae796b4322816038b6cce1c6f97a1819a06e5c7179869dc87daf9",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Objects/Spawnmodels/Undead/UndeadBlood/ObsidianStatueCrumble.mdx",
+      "size": 4273,
+      "sha256": "-",
+      "status": "VERIFIED (MPQ 内可读，未解包到目录)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Objects/Spawnmodels/Undead/UndeadBlood/ObsidianStatueCrumble2.mdx",
+      "size": 4273,
+      "sha256": "-",
+      "status": "VERIFIED (MPQ 内可读，未解包到目录)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Oldelf.mdx",
+      "size": 101345,
+      "sha256": "ab02409a40ad4adef6cfe1f642d814f949d1778db12b5ef5f878a9399463a8b2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (TGA)",
+      "path": "PathTextures/WayGate.tga",
+      "size": 4114,
+      "sha256": "fd929ff0a0dbefb07f4a6edf427321b0dfe9f0856cb1ebbaad7fd33482fca76c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "PeasantFemale.mdx",
+      "size": 149237,
+      "sha256": "ff6ed1b7b4e1d629db816581b7f50e6549453174472231449a2055b6f46d34fc",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Priest_portrait.mdx",
+      "size": 50856,
+      "sha256": "e815fc054650fab13efb454f8a0edf7ee51d4980a97a6238aaf80ba03e6b296d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CameraMasks/White_mask.blp",
+      "size": 4274,
+      "sha256": "f59e061db9c48debfa228ce770795c6a491a09aa265527b790009f8ed75927ea",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNFireBlade.blp",
+      "size": 14677,
+      "sha256": "93a8c82033ae2a2f0eb871e47fbf962827a32ebcfccb66c13d9923329cf468b3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNIceBlade.blp",
+      "size": 13526,
+      "sha256": "c53be0e8e7e535ca7c01c7a80a4735e21bf6648d807cbdf5daf7ef5f8d6c1e44",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNLaserSword.BLP",
+      "size": 6275,
+      "sha256": "47aeeb6c7aa5e2fa23f23768ff1312ec69354449b95a1479e1e9dcf2de591bb3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNaixinnuosibilei.blp",
+      "size": 4114,
+      "sha256": "0d799a0b6dc32ecbe325b0bd9835d24b9c6fe8fabc4fdffe934a3c5a7a495ddf",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNangel.blp",
+      "size": 11522,
+      "sha256": "decc8304868fd79932d0778beb4a24d954666ee660a52d168fc3988eb5770058",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNaogeruimabubingzhuishi.BLP",
+      "size": 7837,
+      "sha256": "68f17036a7d8fce11e6c0dc3cb2b1fa8de6b0ab46ea876b37affc43e705be554",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNblueBook.blp",
+      "size": 13310,
+      "sha256": "6ed505f16adc758388605a27723da72aaca37032ca44bb6bf28ce3292965a822",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNciyuanzhidun.blp",
+      "size": 9008,
+      "sha256": "63a3e1c1579dd425fba20b9dd4e815f3443b5d56caec3610b852070a4f5bd25d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNdashanhu.blp",
+      "size": 12445,
+      "sha256": "36d62772754ed2742135b9af5cf298b3f872f19a67ceaafeeac548a354deae48",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNdeluyizhuishi.BLP",
+      "size": 8117,
+      "sha256": "2ed32d6304c13723498764dca87336a807e51f94824ae8ce1a08ab78cd3e81e2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNelvebenzhuo.blp",
+      "size": 10120,
+      "sha256": "c6b224eb727ebea57cbede92a140206e1f814d6507aeafa85c9e2314fd17427d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNelvecaiji.blp",
+      "size": 10045,
+      "sha256": "afde8dbfc808c1b5136d08c4c917698890ed553eedc581615671ee027524568e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNelvecongming.blp",
+      "size": 10132,
+      "sha256": "f295cb9f08fc3b5c93f468550eb0f26f19e5326c0bfc32d777ed50f284e5f6d6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNelvefengkuang.blp",
+      "size": 9998,
+      "sha256": "25f572ec6f8582f2ca25c1e93741811498467ed5ec8e74ffa1957ee31c70aa4b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNelveguangming.blp",
+      "size": 9959,
+      "sha256": "6f62f8a0ac60c87b7da3307da9eaec8d311677a25fbd5ed030094b3c398e3aa0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNelvejinkuang.blp",
+      "size": 9459,
+      "sha256": "b89683d1ad174563be5233f63af4f061241a7d731e5ffefeac3706e40c944dab",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNelvelanduo.blp",
+      "size": 10168,
+      "sha256": "cd4d3556e5a97331b3b4927e1ed3fe25b36ec9f7ea0b028fed1b76f098b83101",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNelveputong.blp",
+      "size": 9901,
+      "sha256": "cd99117b6efcf7cfa8363e8aebf4519572f20cb4a0424b76886f55deb97028ca",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNelveqinkuai.blp",
+      "size": 10000,
+      "sha256": "1e9586a29d03afe4f76e0bea997a2a17ede6eba625ad5ff9ef86f4cc4e08943c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNelvexiee.blp",
+      "size": 10110,
+      "sha256": "c8c917f8db6bf03d82290c5cfc524cfc6c726b812c060903191a1087e375c2ca",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNelvexingfen.blp",
+      "size": 9950,
+      "sha256": "12f3ed012eaf30a82489603c88a7c6b4b5ebd49dd24921a03a28670548eff0e6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNemptyItem.blp",
+      "size": 6882,
+      "sha256": "c8b9e97e644ae2d39d462a4e70f2a87940545eeac6c03a944d490d11c46f42ad",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNforRepair.blp",
+      "size": 4211,
+      "sha256": "170ea42b8cc1c40af5a25811487e948e5b9d60623b93f6d70c09569ea8d49075",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNgreenBook.blp",
+      "size": 12638,
+      "sha256": "846ce3a4889d27194d96550c3f9fe80c61b18b67e74c16b27876071e518a5104",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNhuaitedelingyitiaotui.blp",
+      "size": 6239,
+      "sha256": "79b274f015c657b363a6067aa67b97e398c086afba8dc9749b552b3276f9368d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNiconeswispgold.blp",
+      "size": 3204,
+      "sha256": "42758f94a371805a90c364a34a8d16ec6d06e771a2970279c0e03d8f2cea849c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNiconeswispmine.blp",
+      "size": 3204,
+      "sha256": "42758f94a371805a90c364a34a8d16ec6d06e771a2970279c0e03d8f2cea849c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNjuxingshanhu.blp",
+      "size": 14073,
+      "sha256": "cab5ac0bbe6f81fcea7d3827bb69c04f621c81c771c5a6dd6ed27ff845f48c62",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNkaziluojiazhixin.BLP",
+      "size": 7630,
+      "sha256": "983aa056aaaa7671c9b7e12737a1556e9f52f405ebc7f5029dfe657c3660887f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNkuangweibianxue.BLP",
+      "size": 7786,
+      "sha256": "8008bc4664fdbf940edc0063f441feeeb0afe6918ac554a74b3994602c86a8d9",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNlongdan.blp",
+      "size": 5265,
+      "sha256": "554cc78b3b7aab819cc2e4aecf16d2e76f1378dedd1d4c538eedc788c2c9eef6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNluodanlunyingxiongzhidun.BLP",
+      "size": 7846,
+      "sha256": "2935d9cadae9aa8adeb5c6779e766ff2e3ef94bf801db6936e75df2bcc23bc5c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNmaichumucai10.blp",
+      "size": 19104,
+      "sha256": "7478429d15edcde2d4bd1e6605dcbce546f591c7a3b7e440089d7d536832076b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNmaichumucai200.blp",
+      "size": 20154,
+      "sha256": "8ab848ae6e5d88b6dbe1435e516dee41620bd043d640ecb14dbe3385de297f87",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNmairumucai10.blp",
+      "size": 19230,
+      "sha256": "b6e438327c457de1c92a95c49feb5c730a7e94fd852b686a82322a5b9d8a9adf",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNmairumucai200.blp",
+      "size": 19956,
+      "sha256": "700b3a58901ae0248c35c57708f9c9ef56b43b8cc5a1184853afc76aefbfbe63",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNminaixier.blp",
+      "size": 5308,
+      "sha256": "770c5dec855c7e38e6e4ea3d381378fca0f64d2115f07318720e7f6dec3589d4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNminefeiqi.blp",
+      "size": 12343,
+      "sha256": "c3af0d9a64b767ff0e55531f01b5c8f52992435b9a0082903a98ce35bf23f0c9",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNmineheitie.blp",
+      "size": 12352,
+      "sha256": "a490001bcbe4517bab8e3129cab8fc4ac232ba63b592440ef55d719b372db614",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNminehong.blp",
+      "size": 12214,
+      "sha256": "95e4e8675b351fb58feabf11c650be29c3d11cc438e22abc8593d6d4793eba35",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNminelan.blp",
+      "size": 12258,
+      "sha256": "d37b63fe66db6d1c1ece8b12e6dda774a57a61413d1bbee2889f9abb34242459",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNminelv.blp",
+      "size": 12458,
+      "sha256": "3719e674ef84e50cf2f8d28b5f0496319ce974438ad8965405a980cc8497e475",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNminenaogui.blp",
+      "size": 12126,
+      "sha256": "7ba46e7d770d0d8281b24ffff3fb1fffdd5096aad6e6f8ce1d1eeff4b3925c00",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNminepojiu.blp",
+      "size": 12395,
+      "sha256": "51bef84d691dda05eabc2f41e84ff482f4233beac7a05ba96ce46d42b36cc499",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNminezi.blp",
+      "size": 12509,
+      "sha256": "91b1dbc2fabdaf3ebbc19adeef1dc0aa418558d43a7891b0810557b83a845cf9",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNmineziran.blp",
+      "size": 11808,
+      "sha256": "7dac51a2f8a62d4b13420a1e3b66ad7d25e1dcb010ddab252b9e24ad0a4fe740",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNmohuashaluzhidun.BLP",
+      "size": 7484,
+      "sha256": "f6fb2ff18f419411f3019ae25f81671e9a5ec1a911cd29293a12aaabb05c1b8a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNniantu.blp",
+      "size": 11653,
+      "sha256": "f9bc518d8d3be66a2a89adab5d638cc0df5d33816f094aea6e1fad456b284efe",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNok.blp",
+      "size": 12789,
+      "sha256": "e68520c5b1df39b0d3c503c11f9ab852a92f1a5119de6e8af18f07d029f1d77a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNredBook.blp",
+      "size": 12893,
+      "sha256": "c9662581d961701d77a1e94fb077949b23fb0731dd8eb2d85c5155e23e596b08",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNreformTower.blp",
+      "size": 4838,
+      "sha256": "e1104df827b020eb2b7062f3645d715e0d6b8be63784ad1fd729669c1bc6b7d1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNshanbixue.blp",
+      "size": 8772,
+      "sha256": "3cdfb95153bcd690e234237723baa8ffeb720bfec1cbe05762fb28ad87e251d6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNshanhu.blp",
+      "size": 10175,
+      "sha256": "fb77d8a680bcb04d69cf7233aa725edf419712ebb3ce615abe4d9ba78fe6cec7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNshendexueye.blp",
+      "size": 6484,
+      "sha256": "f6784280c87c5f8387cfc66bedcd5b30f2b66c1c5d453c7dfffc1003de21760d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNshengjian.blp",
+      "size": 12539,
+      "sha256": "18aab56bcc87deac1f5bfef3a56d2fab179f91ed90966bea6e124b8d4690fe5f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNshengmingxianglian.blp",
+      "size": 9279,
+      "sha256": "b9b6e86ee56324cd42197a823e324e1f6b12fb820e9c5839d544dde52cb9e429",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNshixinhufu.BLP",
+      "size": 7599,
+      "sha256": "4bce2d073982a04aa289d61996436630449f695c1839a587eba58f60e69d0eb0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNshixue.blp",
+      "size": 10525,
+      "sha256": "580b79ea33badb6b8d2a972b7b7db28e3aab3ee8d209e49d549c0b3c1f3b21d1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNshouwangzhezhuishi.BLP",
+      "size": 7521,
+      "sha256": "fb764934a0d43053affd9902302fb92a6cf8ad04e5477870368c051f3398401d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNshuiyinxie.blp",
+      "size": 4548,
+      "sha256": "08270ed5d64ce9d9d19d85c57fd2f303877e134cc96828ed825f61208770498e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNstonewall.blp",
+      "size": 11663,
+      "sha256": "ee4ea8456a220bea0ef45c0f516e4a3eca41b685522e7f433b1057e3ba4e0f5c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNstudySkill.blp",
+      "size": 2672,
+      "sha256": "aee0616185ed707f8640fa7662561947d444aa1b5600d9f7117d6f3e26f86e3c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNwuxianhuoliyaoji.blp",
+      "size": 6802,
+      "sha256": "da2f8c817498ecec4263e0202b7e993c838a7336f4aa0f11922264442265e624",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNxianrenzhang.blp",
+      "size": 11748,
+      "sha256": "7d0ce138ade1363e7e485c8aa5d635db2e1100aa46db2a4e17194317728fd58f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNyanshiqiang.blp",
+      "size": 13296,
+      "sha256": "09c60a6661f860fd3eac82b5ccd595d1c5f16a9e396deeb70254799b0b3a0fe3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNyinghuapifuDisable.blp",
+      "size": 8710,
+      "sha256": "e538ff4f1102b0922675c25416b5488a4eaa1434e35b672b2311460c2266774c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNyueshenxianglian.blp",
+      "size": 5972,
+      "sha256": "8a49f4e8ea72e3637cab50d6fecd669f2f51fe75e74b7f414e840241b668a085",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNzhaomingex.blp",
+      "size": 10602,
+      "sha256": "70f4865b0807dd95094ca951a0eeeeef0a53b5a5bdb28baa0427ce4c238c5efe",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISBTNzhejibilei.blp",
+      "size": 5142,
+      "sha256": "c6014b8e8417f5d18d84f8e91f0490fd03baddd236608e2837d665a2e4816c80",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNblinkDisable.blp",
+      "size": 7903,
+      "sha256": "ac57eaf548ac14c72484b10b29598e4f6fceeb0f9c7e6da60f38937cc65f8ec4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNchouqian.blp",
+      "size": 12827,
+      "sha256": "ae68debcc4dc85a8f000de6c742c10fba8f0da9638171614618be067f47922da",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNjiasushoutao0.blp",
+      "size": 12955,
+      "sha256": "0effe2b0ea3e633ce5e9c58239bad404088b255d97e4711b6705b23072ed89ea",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNjiasushoutao1.blp",
+      "size": 12417,
+      "sha256": "6f08809d39e300f9b108ea83ca6775e29a203eb0b17040dfa679fa932d2635eb",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNjiasushoutao10.blp",
+      "size": 13176,
+      "sha256": "8c715009a4e3f42b4eb61c3d75e4f0f212615b0c1f236e7d5539002d084eb9dc",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNjiasushoutao2.blp",
+      "size": 12889,
+      "sha256": "7ae758072abd13d1a12886572a2a26bcb54970528dba2ecf114cfdd53752e704",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNjiasushoutao3.blp",
+      "size": 12895,
+      "sha256": "7bc44a8bb31eaf6637874de508da8f905f2f062ec76abd22169714675fd98adc",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNjiasushoutao4.blp",
+      "size": 12744,
+      "sha256": "94e70e40bf1984c72f8ba02fecb48bcc17d39edd9be5bb03ff7f9342c28f071d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNjiasushoutao5.blp",
+      "size": 12907,
+      "sha256": "908312098d353731fca33a438b3883203de48ec0ad63b4290f76597e26c74fc0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNjiasushoutao6.blp",
+      "size": 13022,
+      "sha256": "9ee872feb91c723d407d0909153c302895d1a37ed3eb589618b760fa88dedb03",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNjiasushoutao7.blp",
+      "size": 12493,
+      "sha256": "d72d7a498e9cc163e95040f98a0b4a81d2df099783aab6c6e06cf924860254df",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNjiasushoutao8.blp",
+      "size": 13063,
+      "sha256": "9abbe55e1cc4d25b075aed1e190baa7bdcf5ce83c7b0cc26a41125ffd61b456c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNjiasushoutao9.blp",
+      "size": 12992,
+      "sha256": "88f65270437a3da33e2dba10a9aefade665f1feddf6bed792a0f147b49ceb8da",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNmofatisuDisable.blp",
+      "size": 9686,
+      "sha256": "6a150979f7d9ded5991ce2897310944dae39b4ea45971c114cf54b5a3ca972fa",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNmomianex.blp",
+      "size": 12108,
+      "sha256": "a7cb0287aa722bfcc9c60b03c539c132167f6ee4a6aa60928931627e42cfb648",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNquxiao.blp",
+      "size": 4853,
+      "sha256": "b1e96eb7ffcb67ef13dbc1628d0914ecf6c2b594d910d6bf7f9e2b43ee4e9f51",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNsiwangyizhi.blp",
+      "size": 11777,
+      "sha256": "47780122a409487643d5d14a1ea06e78b124f08f8a99ce5af5eeb3269549fc14",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNyinghuapifu.blp",
+      "size": 11803,
+      "sha256": "08f41a83c60b1924b64bf7cd8199334ab6c621a6c22e55a9c8cc7c21d90980e0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtonsDisabled/DISPASBTNzhuanzhu.blp",
+      "size": 13009,
+      "sha256": "eccca18ff87c22b172a4a8ea06fb3db5bc46772da1b5c40a32212c4431d4a10a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNFireBlade.blp",
+      "size": 19388,
+      "sha256": "3a9d253f1eca917b6f3100b629d54a04fc9a4f28c1963d3662e6fa9095008a9e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNIceBlade.blp",
+      "size": 18066,
+      "sha256": "c2a84b31b44156504409080673f0053c3b60d0d367a944fcaaa3ede957286160",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNLaserSword.BLP",
+      "size": 8859,
+      "sha256": "7bc12e1d81e6b040737e32e06801219b9062eb31be69bc8f4ea1d599d8844830",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNaixinnuosibilei.blp",
+      "size": 5443,
+      "sha256": "b849bfdd3fe6d2f64204cb2133e0f918fe04e7dcebf5be4c0d011c1a510d70e7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNangel.blp",
+      "size": 17194,
+      "sha256": "3b0f2c31c58da70b195b2d413d95b098fa4338823b4f966f61005cd5c5f19a99",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNaogeruimabubingzhuishi.BLP",
+      "size": 11143,
+      "sha256": "ab012959b84a4e6f780cc05cff7cdadd0d22c2b978254c382a1f75a8bfb9a2ef",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNblueBook.blp",
+      "size": 19106,
+      "sha256": "a5dd5e61a7fb288698f486aec91e6ce7c0c9dcf28afe4c7c9b6903fb4ee548f5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNciyuanzhidun.blp",
+      "size": 10787,
+      "sha256": "a2d99cc371954ffb97822c457a67b287a9fdb256425c0ddddddd87467cb57ea5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNdashanhu.blp",
+      "size": 17668,
+      "sha256": "6637faba5a822ac53737d73aa1bc152c226dec9f9c238a48135b7c1256bf1f5b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNdeluyizhuishi.BLP",
+      "size": 11373,
+      "sha256": "b57f7dcde7065d9fec99bab91185707dbea3df5ccfae5f4e662e30a176f5bf0f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNelvebenzhuo.blp",
+      "size": 16032,
+      "sha256": "cd3d8e5428a1556d3146ec9615eba32cd3385e9172260b78b61617e9d3fa56a1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNelvecaiji.blp",
+      "size": 15894,
+      "sha256": "6b8d51a55735bc9d051c5c811d58ff1045f7f2ca0d4f80abdafceaf667dd9bea",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNelvecongming.blp",
+      "size": 16006,
+      "sha256": "0c250ca8ec7e3b7c0f5c3073fc064dfa7df2c5c58250f0dd0e5a935c19abc1d0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNelvefengkuang.blp",
+      "size": 15921,
+      "sha256": "c39c68b532beb1121a5ac3002be14c8872d83cac9464f9eee866f3df3c19a05c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNelveguangming.blp",
+      "size": 15908,
+      "sha256": "e6d70c75e4a52537dafb3722ebb920f4e209073683ceb73c52604cf63d899a88",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNelvejinkuang.blp",
+      "size": 15435,
+      "sha256": "c21c022fd6809c6fed3226e40479112c42c1be77ec737ee25192b59722aadc94",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNelvelanduo.blp",
+      "size": 16043,
+      "sha256": "639263892d19237148b640d00a60fb033044103954d75c6b81ce97a6019ddb57",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNelveputong.blp",
+      "size": 15851,
+      "sha256": "6f43f674b5f6bf7ecf8b7ba84ade543865fc5d1396cc4de78c1f38583ebfddce",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNelveqinkuai.blp",
+      "size": 15870,
+      "sha256": "feec9c086ff97f9e06c32ab4054063a8c3fea14f56f6b1c70b510d25b05ea55c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNelvexiee.blp",
+      "size": 15974,
+      "sha256": "50ec896fd9a5274794a521af4a20d293164a68ffbc1e8a713d7c6a092cf445b4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNelvexingfen.blp",
+      "size": 15891,
+      "sha256": "8aa85ba0317249b9b4d7e4721482405f03e43ac41b607bcb663949de79d5d022",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNemptyItem.blp",
+      "size": 13338,
+      "sha256": "8b3d0a12fb0134564e2abee1e9e4a219bc4ce6b71bf26ef6573925196aa028a6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNforRepair.blp",
+      "size": 6872,
+      "sha256": "9483fe32cb3cc72df977e9f3866ec59263448611bd1ff5068d9dca391ed1781c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNgreenBook.blp",
+      "size": 18330,
+      "sha256": "77006b1b4ea865c62aadcc5072da695bcb56b3aa112c83c5a05e189d1576ab4d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNhuaitedelingyitiaotui.blp",
+      "size": 9416,
+      "sha256": "245ed3ceee14ba20e673b6a22afeec74e49d8bee33c34852bf8633241b15c8c2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNiconeswispgold.blp",
+      "size": 15940,
+      "sha256": "91dd5ce65bbb70698e2e8e305f236c31d5dfab3f3e1dac9228f7e3379d3675db",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNiconeswispmine.blp",
+      "size": 15239,
+      "sha256": "e486dd1c03d4ae8a553852747a9832b68f659d8cc52ec8bd6fd4e6ea275fee3a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNjuxingshanhu.blp",
+      "size": 19484,
+      "sha256": "433b52e1f2cb07035fa501df771bd41ffc15ac51397a64a21f6f99b45d404c90",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNkaziluojiazhixin.BLP",
+      "size": 11021,
+      "sha256": "b401fa9c0554abf4d99bfb58371ea30d7200f0a9f4560e5692bb8e9ce0350ed1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNkuangweibianxue.BLP",
+      "size": 10639,
+      "sha256": "b2028ca27be737d8ca5c43833c530613e1c1319f10cdb5dae5559a438e110639",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNlongdan.blp",
+      "size": 8526,
+      "sha256": "5227581bc43fdaabb69cc1e74ad2e0493e223f4fa682a65a3175f7d766fedfb2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNluodanlunyingxiongzhidun.BLP",
+      "size": 11214,
+      "sha256": "6c11d92714eb3fab1c06c8c30d8edf060b58a51dbcfa8f7487657a44ea7c2bad",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNmaichumucai10.blp",
+      "size": 19132,
+      "sha256": "2d08e7a5574fb3fc55885f3d6867031a100b693804e3fea6fa4aba63d111e4e4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNmaichumucai200.blp",
+      "size": 20194,
+      "sha256": "86c35d7396879164e6be5708ddee91ae4dda1c765d6ea0273e95e282acf4c50f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNmairumucai10.blp",
+      "size": 18924,
+      "sha256": "37f8fa7a48e4e57be74e68896a2a13cc7a9225016eff376696c3ffc139b8bf53",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNmairumucai200.blp",
+      "size": 19733,
+      "sha256": "7c16956dcb338d4fdea56574400bf8e900a919edb23c40e56bc33bebae931a4d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNminaixier.blp",
+      "size": 8754,
+      "sha256": "d0579ccd7aa961bc304912c2a8be9a949322a241828f6cdb74eb91d27df59d58",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNminefeiqi.blp",
+      "size": 17555,
+      "sha256": "7919eec90481e471e2147cef81c0dd9ef1f4d17b60e67af158bbb13c018744f1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNmineheitie.blp",
+      "size": 17524,
+      "sha256": "2b14775615907c4c58177f5589ba90a47239d52410cb04a366624b39317db60e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNminehong.blp",
+      "size": 17394,
+      "sha256": "d475d1f2cfd651ecd7a5d92a706da43129279f3c19a7e49fb34c28ec6bc4dccd",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNminelan.blp",
+      "size": 17424,
+      "sha256": "6bad34326587a38e122c4536387d6032a862088fb336f0411991e4d6598acd69",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNminelv.blp",
+      "size": 17669,
+      "sha256": "d25d2398a921f50180d114cb6c77974dc97b847edd69d53d935ec85767ce896f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNminenaogui.blp",
+      "size": 17256,
+      "sha256": "b2685048bcd473354e8c2c83196b15ab085db0575979258bc4c4e7bbb2324254",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNminepojiu.blp",
+      "size": 17586,
+      "sha256": "16eea4207ba4d7be1ff5552f7749e2cd1a830a781d7d5fe22f1ae4d70a6eebe7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNminezi.blp",
+      "size": 17649,
+      "sha256": "8b0a7e89b037a4b7154f4baf180f497a0e1e3fbb727cc0c24ab1fcc14bad1b12",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNmineziran.blp",
+      "size": 17009,
+      "sha256": "85b99dd70384a7c63b4c22fdc1516ce1567e337685097eeec82e09d674b45448",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNmohuashaluzhidun.BLP",
+      "size": 10756,
+      "sha256": "e9a49bd96dc1b094e126bf59839ce481147ddcbb9aafdb870af9eb7ed4cd8e9b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNniantu.blp",
+      "size": 17269,
+      "sha256": "c4989ee65941e84cbda99fb564b1b250e7bb5e1e25cf4f94672c958bab64c474",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNok.blp",
+      "size": 18072,
+      "sha256": "5cd60fcc637bd98869f6480e73cf174796616bcc8cc4ba8ca0d2439e03b92435",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNredBook.blp",
+      "size": 18631,
+      "sha256": "cc38734ea625b36d6ceb93204c6d4f3e7f0269a9e969ef2a11cd5b0238856f90",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNreformTower.blp",
+      "size": 7833,
+      "sha256": "8e84bd0458ebe8048386b6c73e0044c896dde2bbdb679fb144e2d723d7fd42db",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNshanbixue.blp",
+      "size": 10560,
+      "sha256": "cecb1a2529ad403e177b92f74190535c17321af36c17f8a5344a9d2b46c14340",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNshanhu.blp",
+      "size": 16775,
+      "sha256": "75a80fb98bd51710c4af78648ab71c69d63ea2586af0d60d0506ccdbfe4eb640",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNshendexueye.blp",
+      "size": 10295,
+      "sha256": "7a779944891284d1cd16ed56425a584fd1bfe80d6f6eea23791dac5493562489",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNshengjian.blp",
+      "size": 18705,
+      "sha256": "673b864cd2a0bac9306d1c52cca2c2c1bcf1d13690fc9af6b4b3a23c71c13dd1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNshengmingxianglian.blp",
+      "size": 15088,
+      "sha256": "46dd4190283b00b7e894cf3d277aa5117041b539c59aa9343d634d1f8d144a6d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNshixinhufu.BLP",
+      "size": 10803,
+      "sha256": "cc5d25b9dd8f32d78f5f5a88c1ba74cca1ffbe7642fa8ea2998c80aa231ffafc",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNshouwangzhezhuishi.BLP",
+      "size": 10723,
+      "sha256": "6fba2d988c306e2188640cf5ec2e86a61ab8e42f749de8983134aa2e472e9e9c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNshuiyinxie.blp",
+      "size": 7212,
+      "sha256": "6b9b233fa178aba6db53e23a1aff9403727626a9c1715018d9999591f3151d7e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNstonewall.blp",
+      "size": 17216,
+      "sha256": "81b7db2a3aff2f96561255be4e9e5f79d7fc7b93429b647c5d60c8a6a97541b4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNstudySkill.blp",
+      "size": 4892,
+      "sha256": "dbf06f6353da434238f7ec7557cb3fb4985aa4c5ce50ef2377bffb00ab9d8a62",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNwuxianhuoliyaoji.blp",
+      "size": 10725,
+      "sha256": "9899d05a23a2e6274fe1058c68ca97aff0bce34806d039ef182b8ca02ed29970",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNxianrenzhang.blp",
+      "size": 17453,
+      "sha256": "929c7a237d9b952d77cdc0ef41b0b038141274eb7b8d9de2bb8f1c8a59d5c349",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNyanshiqiang.blp",
+      "size": 19114,
+      "sha256": "a2d8e72fb7eb473067676933d71bf13385a4ff99361e544d1ff595e415552b6d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNyinghuapifuDisable.blp",
+      "size": 14489,
+      "sha256": "82a6e90e706535260b143c71e6c688f8f87ffede713872aaee16208f26c58737",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNyueshenxianglian.blp",
+      "size": 8656,
+      "sha256": "bb7b11d6092adc99e067e3a88f53f474249687e95b691e3803d4564649a7b9f5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/BTNzhejibilei.blp",
+      "size": 7013,
+      "sha256": "5dddf5224d9012c78e84e5fa1f4da0199eeb8dea71d7a62df31e3c346bcbb82a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNchouqian.blp",
+      "size": 15636,
+      "sha256": "a357c1209902f53a612846e138c167e3fc3762544bb34a2e82e2530a96bbd473",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNjiasushoutao0.blp",
+      "size": 15793,
+      "sha256": "4a69f3374739f6fd2c5306a5f76e2087f297a9e9f213ac345846dd1eb93ff825",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNjiasushoutao1.blp",
+      "size": 15198,
+      "sha256": "3b8a5d5f1c205d83d2c43fa8ac0c5e4d1c9d1a6c28f7932fb587aed0986f14b3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNjiasushoutao10.blp",
+      "size": 16063,
+      "sha256": "abc5b195ea7a17d541c05ace968717339e3d71015dd2a5ba547cd46cd53eb846",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNjiasushoutao2.blp",
+      "size": 15719,
+      "sha256": "c7bd775a60672ee640d73d1d1f3360b51d9221f889260b1b6c4fd592a9c23fa1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNjiasushoutao3.blp",
+      "size": 15742,
+      "sha256": "94aad209e19d4267f5d0b1a7044451f3f7cea4bf8acabe17edb4b95c2f8ea9f3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNjiasushoutao4.blp",
+      "size": 15552,
+      "sha256": "97b87128b380181ff46b281c81dd75dad7f5263e0e4a6c4786ac0de65d9ff667",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNjiasushoutao5.blp",
+      "size": 15758,
+      "sha256": "1d39a7a06950e32e55ffb4a99b007f53de948b7511972ad4593f4ebbc856614f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNjiasushoutao6.blp",
+      "size": 15880,
+      "sha256": "6064ef9fbf1dd0650446969a462d9440603085fc23a7670b4bf3b46a084d40c5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNjiasushoutao7.blp",
+      "size": 15272,
+      "sha256": "7e5b2dd8e132daeecb2bdc140c93d4b02bae4efce530d4654cf0cdebb503cf13",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNjiasushoutao8.blp",
+      "size": 15920,
+      "sha256": "91869ffb03a01e334b3d4677bde3e68c69e2ecf8b71da2e7da364dff227e9d82",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNjiasushoutao9.blp",
+      "size": 15826,
+      "sha256": "284f4e791b320a835b1ee3a1310700f5ee30bc9941ebe36f390e970f7f4fffbb",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNmomianex.blp",
+      "size": 15001,
+      "sha256": "5cb89249a9d7b0d43a9856ce47d6857a3ee32ad8d1f9d2528cfe56967e251f35",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNquxiao.blp",
+      "size": 5987,
+      "sha256": "a48df2a9bea79f0a36db7aab4bb31830baef50ad7b6046c3631708eeeda3837c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNshixue.blp",
+      "size": 12939,
+      "sha256": "6c23f742ac9c2c0bdc3c9effb12fd8027d924b69d6c43ba74b60008c5a33c698",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNsiwangyizhi.blp",
+      "size": 14551,
+      "sha256": "b0ade91e5e81cd42829c7d06d7625c8253af87c671ec6bc985e1ea3dedfeb1b6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNyinghuapifu.blp",
+      "size": 14562,
+      "sha256": "5f7354415678f053cb45c51c38a52ea61bc0af771fc7c6bbb55fe7409099e3f8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNzhaomingex.blp",
+      "size": 13191,
+      "sha256": "09026373649d2c119c9189d6e31c4f8ab264838e6e0e6a2a68c3503ea8c6d214",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ReplaceableTextures/CommandButtons/PASBTNzhuanzhu.blp",
+      "size": 15942,
+      "sha256": "c92bfe01df9bc6bda7fa987d4b4af696cb378b639e9ea22ba7673360b156a410",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Revenant.mdx",
+      "size": 112127,
+      "sha256": "6a57720a0efa4c6d6acde805cea6a898239be41bdc61d47bfe9487387cb3612d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "Revenant_Portrait.mdx",
+      "size": 30310,
+      "sha256": "dad0fc890a29800326f279dd0c16b233bca378fbec04cdd024457896f8d638a7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Stave_2H_Sunwell_D_01.BLP",
+      "size": 105387,
+      "sha256": "df1fddeb4991b4f6f4c5ec71a57d1b7daf48872a710a9d8f4a79b686b088f2c6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Tex_0415_0.blp",
+      "size": 7439,
+      "sha256": "66b750c41a9a0250697d536d1c46bc87df4053c51896f80ebd83bdd0a9fa704e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Tex_0416_0.blp",
+      "size": 3694,
+      "sha256": "547c0d2d41eedec56b35711f2e3b251e5082f4038907da1319c8290110366494",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Tex_0417_0.blp",
+      "size": 59039,
+      "sha256": "cc67e44ccc5185f66387b780e667cf97e4f54b50eddee9d2a40155feb9746ab1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Textures/OldElf.blp",
+      "size": 82377,
+      "sha256": "56c30c94e0a6d21ef1803b38539e1478510c72590bec4c1839e34cb24dbf60ec",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "Tiger.blp",
+      "size": 55933,
+      "sha256": "be35b39976bb1eec48d88d9d8dcf1d9f656e450142af1a793af9f155cac7274a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "TrollBoarRiderVI1.mdx",
+      "size": 189756,
+      "sha256": "ab716485d3dc3b8c3df13449a4f13bb667a755824311db719444f14ed6393735",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "TrollBoarRiderVI1_Portrait.mdx",
+      "size": 59651,
+      "sha256": "5886277ab05f9f43df2d656f461a876ca4c6b72edd8d333efeaabdf5ab1a113b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "TrollPirate.mdx",
+      "size": 162957,
+      "sha256": "e21bac03e27a90f2028359542e69a4c09ef62199cdc77589bcc78f4fef7d61ff",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "TrollPirate_Portrait.mdx",
+      "size": 51651,
+      "sha256": "87b4e3229db7c8f74b1d58ae1655f57e2ddcfabbc5a829aa82f8549730fcc102",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "VillagerMan1.mdx",
+      "size": 175877,
+      "sha256": "e6f5bc22c85e665e25ca779b6bf744dc30b4773814cd6e74af3b1f819048e5d2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "VillagerMan1_Portrait.mdx",
+      "size": 19305,
+      "sha256": "56666e704aaa5a53ce88a95cb2b58a6c890a1d573900ec8bab1955ef135419c3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "XQbody.blp",
+      "size": 224321,
+      "sha256": "c1b2b45d6b8aa646f9ed949d3aee87e69cac31ecb6356a5748992fdb029d74ea",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "XQface.blp",
+      "size": 108423,
+      "sha256": "7f42e23984b136fefe637d59f53ed96f9d520d8cd5ed7b151ddd6c86579c4199",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "XQfair.blp",
+      "size": 297112,
+      "sha256": "52067277cbf91a07798f75994a61b1b429ed83f4ea670d50c3c8906601a0eac3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "ZhaoYun.mdx",
+      "size": 181859,
+      "sha256": "fe73851a0e814bce3a13da30107f0dc87c129db9cc998d044a06bd0ce017f14d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ZhaoYun1.blp",
+      "size": 62618,
+      "sha256": "c643daf9639065e56bdc69e89bf6c72d7ea44fdab69f4141368649670c9b6a01",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ZhaoYun2.blp",
+      "size": 68096,
+      "sha256": "dac0846cb50b26fe9e9734d1f0bc0d8e22eaf7e5535e88cbb2eec550bf91ae1d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ZhaoYun3.blp",
+      "size": 85106,
+      "sha256": "a4b3df8e8316128137702c48b953fabab542699a29293ec3712486054ea6b5aa",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ZhaoYun4.blp",
+      "size": 65389,
+      "sha256": "4a57c6bebf60ae543af7767c22d4fe001e5ae1bd564016c7814bbf433ff5916a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ZhaoYun5.blp",
+      "size": 11590,
+      "sha256": "e146c36d34cc842fc5e5a61897e4b7f3b562bb9d541c5c3530b44c586d600fa4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "bingjingzhiyi.mdx",
+      "size": 29786,
+      "sha256": "d90457c4906791276505a52ee124bcbe2b96bd7cd3240aa04a39ef1b7be3ba93",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/Headhunter.mdx",
+      "size": 165866,
+      "sha256": "8b46c3b4353f164430c4289c9367ed9575b4ab34176177427afabb36e85447ab",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/Headhunter_portrait.mdx",
+      "size": 94484,
+      "sha256": "0f968cd3f1f92bbd36d2b64c1a6bffd2805c76b2ab72727deec23338bd2ead7b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/ArcaneVault.mdx",
+      "size": 125200,
+      "sha256": "6482477d2cbd2782c4353c4ee7fac8b52a1699de1568886e6fd1ca12917b76bc",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/AzsharaStatue.mdx",
+      "size": 37794,
+      "sha256": "3f4019e02bdf8afebd3e0bf5b926953b0cea915f92d9553c9171141610ecc3d0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Barrens_Rocks8.mdx",
+      "size": 2604,
+      "sha256": "392e765e49a22889e8eb698b59db6a2751491826a6363937e93f2327eb92410f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Cactus0.mdx",
+      "size": 4710,
+      "sha256": "f095eebae4d94a0875c4e5d17312037063d0ec8053abc01a2d6dd5e8edbecff5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/CentaurTent2.mdx",
+      "size": 16725,
+      "sha256": "34adfee3d081095ec30b05e3b4be082dd98926019c504d8ef035debe7997477d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/CityBuildingSmall45_0.mdx",
+      "size": 23972,
+      "sha256": "4e6d006e720a5f1ce25133b07497cab2968b993b00b1593f45f42d9650bcec42",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/CityBuildingSmall45_1.mdx",
+      "size": 23972,
+      "sha256": "0261a3fc06dd8abb6bd1cbf5b8e47189d02c67eb5503694941fff801b0061dfe",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/CityBuildingSmall45_2.mdx",
+      "size": 23972,
+      "sha256": "66da6c511446ed019660a43d8fe5ce8d8b948296da87a766d22cda65e30b8381",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/City_LowWall_ShortEndCap.mdx",
+      "size": 2028,
+      "sha256": "ac80ca7d5b832d770cbea1365ae20541ed0dadcc750323aa6ce2ef5408387ab3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Coral0.mdx",
+      "size": 7773,
+      "sha256": "6b0e07bcb657d197a56759fe034623f1f4643a1549a122cabbe85c334cd2ac67",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Coral1.mdx",
+      "size": 7257,
+      "sha256": "01a4a73968c67ec4d274573d586a7dcb5e96465aa53976f5da8b9172ac4662d2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Coral4.mdx",
+      "size": 5399,
+      "sha256": "5996ab4a16e86b946a3f2d2f0ae0a0f125cece43b2cf15195c18356722be131b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/DalaranGuardTower.mdx",
+      "size": 27840,
+      "sha256": "03af3f361ff02325afe492517d3c16efaa83a0a59846e446e1ec7ff24bd0a459",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/DragonBuilding.mdx",
+      "size": 68501,
+      "sha256": "3574ac81952fdd5842f33a882d9e34579a2d22e468059923750f4b1d5544c490",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/DragonBuildingBlack.mdx",
+      "size": 68501,
+      "sha256": "8a14f6180195b8592cab34a4e928d4f72a99a76ee2dcc1e29bbf5b0df41be55d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/DragonBuildingBlue.mdx",
+      "size": 68501,
+      "sha256": "c76be75aaf5792b8844a9fe1423b3cc75a468a185ccbf2bb330e73792e447b10",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/DragonBuildingGreen.mdx",
+      "size": 68501,
+      "sha256": "82f613c258baaf0861358ac1d2604eabc172308f4c1b84546c2a065db4c64421",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/EntangledGoldmine050.mdx",
+      "size": 125464,
+      "sha256": "bc5f37a367d4580630d0f68097c1ee3e52a4822f15f401bdc9fef717e60f1f0e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/EntangledGoldmine080.mdx",
+      "size": 125464,
+      "sha256": "3b3b7d17e06dbec0007340ade19c9a4083bfe697526596ac844565dfc5e8f988",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/FelwoodRock8.mdx",
+      "size": 2604,
+      "sha256": "6b0a39851c3b4229d8e276244546b09a9b797717e76aab562bab2f728453e7c0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/ForestTrollHut0.mdx",
+      "size": 19189,
+      "sha256": "efd3e05ef1eca32e73404cd7581524b92a2475346f0e1cd27ee5c6a1792dc41f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/ForestTrollHut1.mdx",
+      "size": 16552,
+      "sha256": "875a33f5eeac892f44a3d194d0b415ab982e1ee05b58284c950d95d828249cb4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/FountainOfHealth.mdx",
+      "size": 42064,
+      "sha256": "387814276dde0cf0c14a7ed1ad16314e36c1db0a926de7a7bb2a3afe291001b7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Glacier1.mdx",
+      "size": 4905,
+      "sha256": "d655ebd93924fd13f23f8729e26075c35353f414d06cb5e3ad904f7975946677",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Glacier3.mdx",
+      "size": 7011,
+      "sha256": "614a1a0d6f40fddda45653081029be02b94a1441a481d64f7ca1a358890c3b8b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Glacier6.mdx",
+      "size": 5036,
+      "sha256": "48ee12925eaca41d9fce3a9500e8c38515641889f078ebcad8f00b075a47183f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Glacier7.mdx",
+      "size": 5115,
+      "sha256": "19f5b0858ad59221db7258534f3c2801ead131ef08f5d841438e0fc6c9889db7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Glacier8.mdx",
+      "size": 4899,
+      "sha256": "38a905856fe497f25bb29456a3fb979fb9bb680e0695390abc4f1c906cb4a03d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/GnollHut2.mdx",
+      "size": 25285,
+      "sha256": "3d500a57981a2d803f2c5b26b334bb2954bb598e981f5bd5ae324ce7c6aaf2f9",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/HauntedMine.mdx",
+      "size": 67627,
+      "sha256": "7d12f0e3e64c488788aa51275aca6ed62c5b9501ac66970b413167a2d8aa01f0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Hay1.mdx",
+      "size": 2937,
+      "sha256": "4f26dbbb5ce1c457716b1174634149e14b63050909984a2dd72e1573f09fccf0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/IceBlock1.mdx",
+      "size": 4062,
+      "sha256": "00ecd889641e3e4821f51250636d4d37b50e60bdfa041273225cc59f7702998c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/IceBlock3.mdx",
+      "size": 2340,
+      "sha256": "50e6bf4cb23a59c2e18f4183f8212ff0f856b988af0e66d4f4869dc1315a41ff",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/IceTrollHut0.mdx",
+      "size": 19618,
+      "sha256": "d4328ff5543b1195ae5d404904e2074d0439508965b0371e9c6a7d2bccaa51f2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/IceTrollHut1.mdx",
+      "size": 14776,
+      "sha256": "0280fffbcbc4de5450a4a7ff4237254f4c5ba39b5de877c62e53dfda3a4f7e88",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/IcecrownObelisk.mdx",
+      "size": 15604,
+      "sha256": "6754167ef633a410209c08c135f428f3aedfd3a3c7dfb4499d2e8aee482a477f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Icecrown_Crystal0.mdx",
+      "size": 6348,
+      "sha256": "fa7ef4ca9b00c533cc8da851977c6e37a6714d438d22f56137c429bbcf2a2513",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Icecrown_Crystal2.mdx",
+      "size": 6348,
+      "sha256": "77e6faf9b79c07f296f1e57546eab655ec93b921f2cfc16f9252a8f20203f427",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Icecrown_Crystal4.mdx",
+      "size": 6348,
+      "sha256": "46447fd3cefbf04b1de6bc125097cf0fa2fcaa11cfab7418db9cab1efcad1182",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Icecrown_Crystal5.mdx",
+      "size": 6348,
+      "sha256": "de82b19293008ddf031e4da76301622ee40a76cc4b7d4a5151bdd3ec004fd4cd",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Icecrown_Crystal6.mdx",
+      "size": 6320,
+      "sha256": "6573f8a17019d70267500799e1a68cb4761c583c0ef7950b370d4448cda1a4d9",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/KeeperStatue.mdx",
+      "size": 19421,
+      "sha256": "7b7c2d5633f723d0cbc5e8736be5fc8d50a2ba497398f609d2d7af1c9ec0aec6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/LoardaeronRockChunks1.mdx",
+      "size": 8277,
+      "sha256": "be4353d08deacfbe1fe952b3ee17b053692949ccfb0ec0ce56f229989cd98fd5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/LoardaeronRockChunks2.mdx",
+      "size": 7986,
+      "sha256": "4c68373a7f82622a8f7b66665c4ed95ead4b99bfd5247b832c37fbf800dab042",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/LoardaeronRockChunks3.mdx",
+      "size": 6854,
+      "sha256": "51b8b7c048ab675711cfb3ef7a6f3973f11a96d30c8efc3dbfd24c688cea81e1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/LoardaeronRockChunks4.mdx",
+      "size": 7776,
+      "sha256": "1091116a93878b2e293a5e1827595f5bd456e15ab382181708361b695ee8e381",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/LoardaeronRockChunks5.mdx",
+      "size": 7383,
+      "sha256": "0be94f984969f9dc566361dce1a8a70875b0b5e10a2e1c1f0bd104f02e0fbd84",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Lords_Rock8.mdx",
+      "size": 2604,
+      "sha256": "f9557b3478395d60ae952b071a6594ce56abcf4d981b043967472b4cf40e0876",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/MagicVault.mdx",
+      "size": 22442,
+      "sha256": "179b7bb1034a86d6b6e18a1ee6a031a3aeac476ccb605f718d642f973c47bb93",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/North_Rocks8.mdx",
+      "size": 2604,
+      "sha256": "5443f4b13a98e63e5ce1054e38e79f6cbb1357bbb230d78fa92bd91857f776a9",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/NorthrendBrokenColumn0.mdx",
+      "size": 4914,
+      "sha256": "0e0c3e170d6acc83e87763026fa0fe5debabf3477046a90f340a37943e39d7c2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/NorthrendBrokenColumn1.mdx",
+      "size": 3474,
+      "sha256": "2d7d73eb2c98663d53321adcb21c3a0dabc33ebabf343b878bbf33c81306d2e8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/RessurectionStoneSE.mdx",
+      "size": 12299,
+      "sha256": "69a69147ac1dc0c7cf165014f0593db9eaebb415ed1acf8a5e3399bcc7908ffc",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/RockPillar0.mdx",
+      "size": 4635,
+      "sha256": "20f78a75534bc4ebea777c81be5cde70b394f75b78d0ecf321b3a98a904314fc",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/RuinsObelisk1.mdx",
+      "size": 4002,
+      "sha256": "56b85ccb9de7ea926bc865953862c03c2d2ad25e71fd63dd4f7c7fdbbcc050f7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/SacrificialPit.mdx",
+      "size": 42206,
+      "sha256": "d1aff5fa42d846f2d4b76be1cb22e0962eb16adb094b9d566c2f200a3aa10d32",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Stone2.mdx",
+      "size": 2824,
+      "sha256": "5823543e41046722a6e85a422be954100c0fffba66b27623642fa952cb6e3197",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/TowerDefenseTower.mdx",
+      "size": 295573,
+      "sha256": "bf7414f781ca235c0008eb939d888e4f4c8d5d0b760f019a61ba8f33b8ed5f79",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/TownHall.mdx",
+      "size": 291887,
+      "sha256": "1172d49081a279a2d104b53d69285d36e47fe597f537f7698e29c6886bf33bcb",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/TrollBurrow.mdx",
+      "size": 52754,
+      "sha256": "99cf86bb10f3bac3ea8ebbde8f78fc7ce86e404b2586111b4431af56280934d4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/UndergoundRock8.mdx",
+      "size": 2604,
+      "sha256": "81f7994ef6e9f6cf0b08a21dfd085e2015dcdc90866bba319561723cd6b99d9e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/VillageBuilding0.mdx",
+      "size": 7988,
+      "sha256": "3c4319fd7c73485d944a126cd2d7c04fb028ab1622890e5faf16052235d9ddad",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/VillageBuilding2.mdx",
+      "size": 8888,
+      "sha256": "f71ee2958c9291b6d44fa82fe11b44ba472555d6c1424fb3ece64938128f6e81",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/WindMill.mdx",
+      "size": 20817,
+      "sha256": "4d449ab5d3e4892f1049dd0dd4472cdae8d1070946fa95ed0eb51a635dd42bba",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "blzModels/buildings/Ziggurat.mdx",
+      "size": 56537,
+      "sha256": "5e71635ce654f331ed112675758d60db2a24d3b233e49976260b03aa1fd6ed8f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "boneguard.blp",
+      "size": 42248,
+      "sha256": "fbf8652266cf93109ffc53f25292b3132ed4293651ee4aa1e989bfcb556e3c04",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "boneguard.mdx",
+      "size": 1329128,
+      "sha256": "891c97ab1acd0fdeb10b1d91e3dd4996f60386079cf65409e10865b6c47acee0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "boneguardglow.blp",
+      "size": 33913,
+      "sha256": "61374caaf2b4975d52b5c637b17ca29f9ac01f16016b629b3f52e1fdac29e371",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "demon_orcish_man_melee_no2.mdx",
+      "size": 703559,
+      "sha256": "eb85fdb5250a812719989b63d00c7b53e1c4c696929aa385bb64c47f810dea62",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "e6669316.blp",
+      "size": 5146,
+      "sha256": "0bde9fa3c57cc4abb9bb37d2c0ba71fa63e1fe21a3cdcc0d356c8d7f9cdbb00f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "fixedModel/GrandUndeadAura.mdx",
+      "size": 8136,
+      "sha256": "44db88373555074738fae07d23db4cdfad5a47370afb16aa30f38d4a30dd3c75",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "flare.blp",
+      "size": 3408,
+      "sha256": "34a6a011fa55180e4da848660d62cfaa555fa2f1d005e07c4f090870b0034cc0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (TGA)",
+      "path": "fonts/0.tga",
+      "size": 4114,
+      "sha256": "6e823fe6f333a1e7aae3e7b98bf318707524ed5e3dcf26c827871e1fb672ceeb",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (TGA)",
+      "path": "fonts/1.tga",
+      "size": 4114,
+      "sha256": "d040b75cf06feca228c6751efd97a697e0f86e14a4a851b8708b251ab0c6b84c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (TGA)",
+      "path": "fonts/2.tga",
+      "size": 4114,
+      "sha256": "b27c7d6d9d1dcf6e2f17f099cecb341e110d88cd0347922e72aaa4e9e9d9b35c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (TGA)",
+      "path": "fonts/3.tga",
+      "size": 4114,
+      "sha256": "1a34c140f522cde11d0914006d02cb4c169d901adbbc1d04174c0d3cbcce244d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (TGA)",
+      "path": "fonts/4.tga",
+      "size": 4114,
+      "sha256": "a4e7ad11677e5c394e11a7b2c717d24e772f229c8869c8aa879ddcfafe29cc89",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (TGA)",
+      "path": "fonts/5.tga",
+      "size": 4114,
+      "sha256": "f6eb976bf59fed6fbdee1b04691a20e5dc5f9af3e53f4a3848a4fe2b179d84ff",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (TGA)",
+      "path": "fonts/6.tga",
+      "size": 4114,
+      "sha256": "ab02843eeb4130ea2105acc3794ca823e8fe99d924fbdd5724d369278e05a944",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (TGA)",
+      "path": "fonts/7.tga",
+      "size": 4114,
+      "sha256": "8d2a288b20ce69616670507c61cfb9a63887778e4932351be2a347445dd29c17",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (TGA)",
+      "path": "fonts/8.tga",
+      "size": 4114,
+      "sha256": "48a36e5551d453345b6b5399f21218bf8fce89e56149bebfdd2d859a04a2b6f6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (TGA)",
+      "path": "fonts/9.tga",
+      "size": 4114,
+      "sha256": "47821a54e6bcdfe7a6191fd40d62359e117780c7baf93c43b975b43e79e997ee",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "frozenfire.blp",
+      "size": 22676,
+      "sha256": "22b81dc3129d1ba1b9f4efca91d962ccd81adaaa9f7a31128527348dbdc89790",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "guanyutt.blp",
+      "size": 501550,
+      "sha256": "4d2359a85cb696789440d1125f07539bb2218ae439b372cfa714c694d87d6da2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "herotrollvoodoohunter.mdx",
+      "size": 413775,
+      "sha256": "f03e2049fe543e6e72fa1a4f7ff3f23e2dcc4f1b1d65ff81b3454f6e09dbde9f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "herotyrael.mdx",
+      "size": 230625,
+      "sha256": "057ea45cb936dd2de4940451210c4b99588bbe4990874b5b64e5f31b529aa7da",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "huangjinzhiyi.mdx",
+      "size": 381198,
+      "sha256": "13d534c8ead70499e956398824cf76bf6087ebc38fcbed94abea0630e7fe20c6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "interface/cooldown ui.mdx",
+      "size": 33948,
+      "sha256": "8225ca2726b9f7c8f5fb4304935aec514c73451a338fd66f50f8dbdcb2765425",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "jaina.mdx",
+      "size": 163601,
+      "sha256": "179c258b7d6bbf1dc54a308b698f007a04eda865a4ba55e7567346944c427441",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "jianyinmojianbaguazhen1.blp",
+      "size": 2889,
+      "sha256": "898ec12b032b1e2be5271ab9c6b898a88dfeaf3dbf734853886a39260defaf5c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "jianyinmojianbaguazhen2.blp",
+      "size": 12129,
+      "sha256": "43f25b46d5889ccfb58278ba3b07809d184140289be09a004dc424768d106c1f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "jianyinmojianbaguazhen3.blp",
+      "size": 12004,
+      "sha256": "2fa83fff362794c7ec8fc3081937d212bf583f26425c0ee8c87ed3467e6d3105",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "jianyinmojianbaguazhen4.blp",
+      "size": 6369,
+      "sha256": "ad335c4d89f73f5c618bcb6ea61baea74388f6f054e8cd23f59a306114b6ceb3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "jinguangtianshizhiyiA.blp",
+      "size": 700230,
+      "sha256": "b1310915728aa1180c61be6a61aafc245db821ab469aae7fb854ca35f5186b59",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "jinguangtianshizhiyi_SF4_dds_0246.blp",
+      "size": 175942,
+      "sha256": "d76e041a2fd86ab210008e1a1d3e1bf1d88a3ee194cd9285ff43d96a58160478",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "jinguangtianshizhiyi__SF4_dds_0144.blp",
+      "size": 136850,
+      "sha256": "b59e0ea80dfe9931178c23ef1ad51fe372715430b72e86d502eec7a6bfc2e340",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "jinguangtianshizhiyi_movelight.blp",
+      "size": 175942,
+      "sha256": "54b41efc3cb10848685cbf2b171a2b356be87c1b721e9c10a6fbc6837ee97329",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "jinguangtianshizhiyi_movelight2.blp",
+      "size": 175942,
+      "sha256": "7d7fd23df7599bbe4a6935b4d0755a4b69cc75e385d92e5dbc1687a8fb9ddb8e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "jinguangtianshizhiyi_xulie_star_2x2.blp",
+      "size": 5336,
+      "sha256": "dddcd750f4c88a803e8471586297ef54e4e0a65e7e0d75572b7633e46c2eb9de",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "kael.mdx",
+      "size": 413441,
+      "sha256": "d7d264d82907c11e0e9117e4ea54148295d673dffa0e415568030b9a3032858f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "liuguang5.blp",
+      "size": 78911,
+      "sha256": "15547cdf46c0b3f51fccc8dab826fe0cef5aa73c504a6e3915bd778a92366d21",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "lycanbonecrusher.mdx",
+      "size": 102058,
+      "sha256": "4e15e8ae7957547ef4b41767a39fe78be7e1bf851483f81c92e9376c7dc42d5f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "miniMaps/mapId0.blp",
+      "size": 24647,
+      "sha256": "7c078cb6bbd6b6c8ce117724601d3f100f75f15e6d4205a0a2168518c05ff25a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "miniMaps/mapId1.blp",
+      "size": 22813,
+      "sha256": "4285b39177fc70c195b2cac5686c6de0ee46220c94f72fc9d6dc8e77e3a20834",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "miniMaps/mapId2.blp",
+      "size": 23151,
+      "sha256": "bf3c8c34bbc90b93dabc2e7c2ab9c2dfa71231ac301e5e5d2484e9387b608d55",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "miniMaps/mapId3.blp",
+      "size": 18929,
+      "sha256": "f00729e04102cb6cbfae2989a1e3649dde22e133792e9df989a797f68b947e27",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "miniMaps/mapId4.blp",
+      "size": 15204,
+      "sha256": "4a0c65e363c0b1a39fe3941d2c0b61b414a47f89b6fae72f2978e6a49e3b09f6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "miniMaps/mapId5.blp",
+      "size": 23024,
+      "sha256": "aac0b20a58b522a0401be2f49d9b79542504736c793dfafdd3fdd32f5cf57658",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "miniMaps/mapId6.blp",
+      "size": 16610,
+      "sha256": "4fd90a42d53d0fdb6fedf517349321491494579404f557bca5c8f8aeb1c77978",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "miniMaps/mapId7.blp",
+      "size": 18233,
+      "sha256": "5aa13a463c12df223b0edcc80cc3241488a5e2ea81938a4711d1ebb7f212f292",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "miniMaps/mapIdAll.blp",
+      "size": 20326,
+      "sha256": "bd018150b02bb1ddea1373e2434ba7dcb2c57f3177bf85777372ebf7af281a9e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "moon_shin_xq.mdx",
+      "size": 152053,
+      "sha256": "2e33cdc3362beb494bf4a320f558abb852c416d64396bffe1feab1c44cdda226",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "npc_shusheng.blp",
+      "size": 206519,
+      "sha256": "4fda6ab7ccbfa6b98e53be837e1f6d3c571fc7435181851217c7a88134db2d3a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "npc_shusheng.mdx",
+      "size": 652130,
+      "sha256": "315b55b3e01f9f42bd36fdf84a7af971ae6118a0c27b51d7f7c8bbf4b456e3b3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "priest.mdx",
+      "size": 101450,
+      "sha256": "0356183f683f4c2129329a29e9085c3dc5f29bfc1a8dff82970b7e43eafb8a6d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "qingtongjian.blp",
+      "size": 27674,
+      "sha256": "b54086fcb4012f7d65e792a6be232eba1cc0da85af18b2942c9590659c66d8d8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "qingtongjiangh.blp",
+      "size": 27305,
+      "sha256": "1c2c17ab93cc7bf45dded89cb1296147c57dce57c580de4caa0751a6eef62c75",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "qingyi.mdx",
+      "size": 622998,
+      "sha256": "cac503ec66dcf6ba5dedaff2d6ca3ba02440624690ce2ad1a03402830ebd0936",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "ringsmoke.blp",
+      "size": 19940,
+      "sha256": "641145ed02fefd4e485eb9ebb02f0a4bf80579419539131c96b824b70fa1577f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "star5tga.blp",
+      "size": 6647,
+      "sha256": "2589035f933e354d37fa4db9d9a7e255927f6e944f63270142a71e92229cbfff",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "sumo.blp",
+      "size": 287202,
+      "sha256": "449e1d5373c4bc605e06bba29d073629a8159b1d8230d04d6a20a86e7571425c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "sumo.mdx",
+      "size": 421532,
+      "sha256": "7159b0de03fbae4206cca14436586b0c192d6d293df10f97e37c1d31954720d3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "sumowq.blp",
+      "size": 35035,
+      "sha256": "6244469aa81c82bbaadce7692fbf07df8ca5a91296123c4b0102a8e12d7808ae",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/Circle3.blp",
+      "size": 58241,
+      "sha256": "642ca607ace2b6ac868e2f6e2fa4728a37aaef35d128e0a5aba892eebce69c40",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/CircleDisolve.blp",
+      "size": 28561,
+      "sha256": "b26267b32cec691ee2dc25f4fe7bb7736bc2cb029b689226c488a0d6a4175331",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/CircleYellow.blp",
+      "size": 68624,
+      "sha256": "e676d996904fe236dd34f5483896af21b46e6bfc85f18ac43cd968d9bc257895",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/CircleYellow2.blp",
+      "size": 44926,
+      "sha256": "6de591d946e0ac352211c4d454feb6e61848b08ddd2c02c83e0cda8780cd99e1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/CircleYellow3.blp",
+      "size": 42686,
+      "sha256": "5c36dd99d76aa44aea011680cefdcaff661db80df0c7c422856a981272a07455",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/EntanglingRoots.blp",
+      "size": 187242,
+      "sha256": "7a29ceed8da41b7a7fbb3bf25995d587a674fc4aac1cf32d66d09b2548da65b0",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/GenericGlow2_64.blp",
+      "size": 5935,
+      "sha256": "6a53780267342b7cb866cd43e0ec1164d46b77a54a8a3a68134996809c2f75ba",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/GlowYellow.blp",
+      "size": 17212,
+      "sha256": "f28554ac039e526c544c7a7ee97f0a2d133e466f6e1804a4a214f0abc10e32c1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/HolyBolt.blp",
+      "size": 140071,
+      "sha256": "dea5ed364c62d90ca2115783cdb5ee29434e902572b78463a094daa3cdf16617",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/Ribbon.blp",
+      "size": 26344,
+      "sha256": "705d9478967191aa825527511785bd5e4afdc2dbfcd1ca03c07f7951210f19b1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/Smoke.blp",
+      "size": 16336,
+      "sha256": "9aa3fbfc1cba01a56d0d3eaf4bbba3771bf9572950acd6e490122a14ee617aa4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/Trail.blp",
+      "size": 39791,
+      "sha256": "e3778e0968c36924cbf90afc6bca38b051f6ddbc0c52de329798c43f2966888e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/Zap.blp",
+      "size": 8454,
+      "sha256": "052e175f6bcde76cd9daa1a8cb4ebafcb01f54c8da10f4a0ca6ae323d81af503",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/ZapSoulsd.blp",
+      "size": 47134,
+      "sha256": "db649ee9c05d9bc8f6047c14d0774f930bc82a7700515a542726fd06be5dfcac",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/ZapStar.blp",
+      "size": 13924,
+      "sha256": "ed909ab55d0b2da894186ef5c386a1c1c3ca6504f03b072171dc1869ba07dd98",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/genericglow2c.blp",
+      "size": 20355,
+      "sha256": "84dc99f2a3537d33ea5b1bc13fe2be1d5a8b69c11ab2abf097aa9de2b8e70541",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "textures/ribbonne1_white.blp",
+      "size": 7792,
+      "sha256": "080fbfc2799f1364f70c14e4dc869bf124e55b0533b7b3ef039b6c3ddb12b3fc",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "toumingzhiyi.mdx",
+      "size": 34440,
+      "sha256": "b28cd4ebe36b469586d9a4689b2f6586d19c24e35fc7d7f5ee3e1f1cab2c4b2a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "音效",
+      "path": "units/human/footman/footmanready1.wav",
+      "size": 58614,
+      "sha256": "e32eb56aef4167274c06b71896e57e0cbc78e4a528997896625a1bd8f9262b9d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "vipguanghuan.mdx",
+      "size": 7103,
+      "sha256": "08fba226d757e3472b066070171e6d63159c13ccc322997f6c4cc6747462972c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "装饰物数据",
+      "path": "war3map.doo",
+      "size": 214174,
+      "sha256": "0d007db35d01bf44d343decea8f9c832cd9656db63fa7362bcb0aa5bab7cf99d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "其它资源",
+      "path": "war3map.imp",
+      "size": "-",
+      "sha256": "-",
+      "status": "UNKNOWN (listfile 有记录，hash 表中缺失)"
+    },
+    {
+      "category": "触发器脚本 (JASS)",
+      "path": "war3map.j",
+      "size": 12283445,
+      "sha256": "d5941219dd0ac01a9189691266b55a0d205d41c537ce9ca0b7a06f6be5cf1720",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "小地图",
+      "path": "war3map.mmp",
+      "size": 296,
+      "sha256": "49e5f7ec83ac5d537331a1e7ce02e66fc3eaf96aa586f9a95ad2d69bdcae47fd",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "烘焙阴影图",
+      "path": "war3map.shd",
+      "size": 1769472,
+      "sha256": "de08628ef506dbf313acc53c83d4d656b56fb0ac806396ea6f7ca80767b6c792",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "物编-技能",
+      "path": "war3map.w3a",
+      "size": 127740,
+      "sha256": "f263f1fee82c65304c1477868a2b777d77aabe6a13f1439ba4933eb37e711a08",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "其它资源",
+      "path": "war3map.w3c",
+      "size": "-",
+      "sha256": "-",
+      "status": "UNKNOWN (listfile 有记录，hash 表中缺失)"
+    },
+    {
+      "category": "物编-装饰物模型",
+      "path": "war3map.w3d",
+      "size": 128,
+      "sha256": "c614c5d9637a3d2133380c1a2a29c80cb1ad90a4dca57e7454ec3915d165a418",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "地形数据",
+      "path": "war3map.w3e",
+      "size": 778928,
+      "sha256": "790bbf00fe6b305589fbe0db8af0911a633f39061c0569238a8d1437ebf21f15",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "其它资源",
+      "path": "war3map.w3h",
+      "size": "-",
+      "sha256": "-",
+      "status": "UNKNOWN (listfile 有记录，hash 表中缺失)"
+    },
+    {
+      "category": "地图信息",
+      "path": "war3map.w3i",
+      "size": 920,
+      "sha256": "40ba316e3505556cfbf67366f669372457e8e2c7fffe05f4973b199f8d97228c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "其它资源",
+      "path": "war3map.w3r",
+      "size": "-",
+      "sha256": "-",
+      "status": "UNKNOWN (listfile 有记录，hash 表中缺失)"
+    },
+    {
+      "category": "其它资源",
+      "path": "war3map.w3s",
+      "size": "-",
+      "sha256": "-",
+      "status": "UNKNOWN (listfile 有记录，hash 表中缺失)"
+    },
+    {
+      "category": "其它资源",
+      "path": "war3map.w3t",
+      "size": "-",
+      "sha256": "-",
+      "status": "UNKNOWN (listfile 有记录，hash 表中缺失)"
+    },
+    {
+      "category": "其它资源",
+      "path": "war3map.w3u",
+      "size": "-",
+      "sha256": "-",
+      "status": "UNKNOWN (listfile 有记录，hash 表中缺失)"
+    },
+    {
+      "category": "其它资源",
+      "path": "war3map.wct",
+      "size": "-",
+      "sha256": "-",
+      "status": "UNKNOWN (listfile 有记录，hash 表中缺失)"
+    },
+    {
+      "category": "可通行性数据",
+      "path": "war3map.wpm",
+      "size": 1769488,
+      "sha256": "0ec395397888d611c1c9a1d4107f16e38482273c69ca3e8c169e3a1b0631e399",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "其它资源",
+      "path": "war3map.wtg",
+      "size": "-",
+      "sha256": "-",
+      "status": "UNKNOWN (listfile 有记录，hash 表中缺失)"
+    },
+    {
+      "category": "其它资源",
+      "path": "war3map.wts",
+      "size": "-",
+      "sha256": "-",
+      "status": "UNKNOWN (listfile 有记录，hash 表中缺失)"
+    },
+    {
+      "category": "文本配置",
+      "path": "war3mapExtra.txt",
+      "size": 31,
+      "sha256": "fd261cfa00e19a3207483ac72a4ac3f0ec2b5676df77345c8bad71c4def83d33",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/1221dda_00000.blp",
+      "size": 31964,
+      "sha256": "a448267fa4f64507e4b086764d2b588fbb1a4375a6d6427329423d4794f8041b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/1221dda_00001.blp",
+      "size": 30920,
+      "sha256": "3732f4a4034949193ad6957f83e16f01ebb5aeef3aa34323203a0ae9d20c10c2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/1221dda_00002.blp",
+      "size": 30569,
+      "sha256": "9de333dcc42c842abf85a3f0fdc23e71a297d49339ac342ff47b1da4375ef463",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/1221dda_00003.blp",
+      "size": 29118,
+      "sha256": "368ec5bcf50948b36322ef8519d9334ca514e0b0d5a9da1f3679885d507d4246",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/1221dda_00004.blp",
+      "size": 26725,
+      "sha256": "351e780b9348fc44443fc5c79e2a0b667391a281fcb1b9bfd8f09034223d4d50",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/1221dda_00005.blp",
+      "size": 26779,
+      "sha256": "043b364c5e6d2150fe9039dedabfa976bffa13e8106bbf43990d579c4db90cf5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/1221dda_00006.blp",
+      "size": 29168,
+      "sha256": "9d6feb86a78f5fcf44786c714519bde015c18988a8def78837ee348827ca969c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/1221dda_00007.blp",
+      "size": 31497,
+      "sha256": "140c4e73513cb66dc7d0918e515142238809303c747181433d9b9b7844f4666f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/1221dda_00008.blp",
+      "size": 32383,
+      "sha256": "ce924c04673d18befcd9c2b82e1475ae53cb6ac9ebc11250f73e360f99f8898d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/1221dda_00009.blp",
+      "size": 33552,
+      "sha256": "44aec1ee335f6ae9603b287f5db35430ee641a62d63359e94946a0a666df770f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/Arthas.mdx",
+      "size": 310055,
+      "sha256": "32aa46ccb3a033859d7f5c5090ff8b95a9c0cbc96c69ea7cedaad8eb844b43b3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/Arthas_portrait.mdx",
+      "size": 37814,
+      "sha256": "7f7ec1858da931b8aa755bf9ebd96422f0a104636cc75926dabe1363ad6b03a6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/DivineShieldTargetWithoutSound.mdx",
+      "size": 6973,
+      "sha256": "babe7f5b5d7d5bf289301c24ffa5eeacbbd4ba0e87af040dda140bf07be96494",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/GS_Wing_12_alpha.blp",
+      "size": 271096,
+      "sha256": "0c7422ead375a4c790ab81670a51eaf58a4a0a0154149cf2734afb7ad31c0c39",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/GaiaShield.mdx",
+      "size": 7891,
+      "sha256": "40bf3edb299fc0926a5d37ea21857d915270810a7ea992d5759ec08d094cbb21",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/IceTroll_Worker.mdx",
+      "size": 147413,
+      "sha256": "8e6e41439a32a8c7861c7900dd88f2b338b0b11e83a0c71f07dd692fd4b498fe",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/KVTOK3.MDX",
+      "size": 1243629,
+      "sha256": "ea82ae914ba4e9e2a9a2738ff0883f5bdb7f162e127f3ee7b9918cf946c84f8e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/Tiger.mdx",
+      "size": 123098,
+      "sha256": "104db50e02926d339c2ceb0ae0a5362d32eb95c3aaa1e0d057416441ca5e4aa1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/WorkerHighborne.mdx",
+      "size": 165729,
+      "sha256": "8d28081c99f596bdcb7c5ab4f67e198dd02faee6d338f707bbea5a9aa3af7864",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/az_star3.blp",
+      "size": 6315,
+      "sha256": "d925baf9b1544d39470b560e358622e8193b7c3dcb5b0b1b3df7b378a310af0c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/ces2.mdx",
+      "size": 775801,
+      "sha256": "e905af1ff86c2b57e560651231063e6ef4f7ef1df3e571ebb85b56e3f58e0c71",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fM_CWTTdG.blp",
+      "size": 12614,
+      "sha256": "f51f1750fbb94bf0a9e4378b9fe0a973aa7e02738d97e6106f08a0bac3d77299",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fM_cbzhutietu.BLP",
+      "size": 51443,
+      "sha256": "fb77f29bfb0c6318babf41054b7f68f626b3551d0ab723adc9a49bfe831d0f7f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fazhen_0040_1.blp",
+      "size": 175942,
+      "sha256": "48b3e03c3eb1e54047bbac8e8940e65b36bff2106f571bc97f5a60732d732405",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/flare4x4.blp",
+      "size": 60744,
+      "sha256": "85dab665fa789c2f44af6ba8b43dc06feeb6218b1399a1df7febc9dc1516690c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm-speeddown.BLP",
+      "size": 14647,
+      "sha256": "5c8a7d9e6e0d3c4386a86e696a855f69944bddcc097dbc39d5b66869e502ccd9",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm-speeddown2.BLP",
+      "size": 33359,
+      "sha256": "3698d76c4388dd04f697b0262441762b541e08f0dbe98c46e9e16be20d9fb8b5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm2_05_body.blp",
+      "size": 192713,
+      "sha256": "c43011e31f377a12594ea0744ab263b7aee26035f78fd1099d3807efdde47e38",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm2_hair.blp",
+      "size": 43891,
+      "sha256": "20ab93440372f8db9336825dc23c54b3bedda0a5e6a84e9c4dfaedcab1f07272",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm2_head.blp",
+      "size": 38233,
+      "sha256": "92d7df4c6e1f47a4f5fe05d9219e97230fb1ae1b929a94c856af902033fe659f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm2_piaodai.blp",
+      "size": 67170,
+      "sha256": "8cad0c667718bc6a18879ad55622c34fba1fe049e6bf3ea7aad4b7c53b376089",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_44444_06.BLP",
+      "size": 12604,
+      "sha256": "714913eb67a2a2672846d1779f0944e7853e7d940f8d487d973acec5af442c4a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_4x4dimianshanguang.BLP",
+      "size": 88241,
+      "sha256": "516bc637c89f3982db254d9019d97329aab48409093839930059defa4c1f98fd",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_4x4dimianshanguang2.BLP",
+      "size": 23189,
+      "sha256": "d7b4826a50198e9a9d5c9330e17ec2099d6b8a4f543ab96abe5b9cba3784dbc6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_4x4sansanlizi.BLP",
+      "size": 98810,
+      "sha256": "5b6172c78c72e5da4e34a4eb83bd5d1b7d0aea9b9e87e3705f7b189f606c45b7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/fm_cwtt4.mdx",
+      "size": 606135,
+      "sha256": "fcae97d4bf4fb6c2770b572c0d9a0314d5e544a8f6f60b11f9fb5d3c1baac77f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_cwxtt.blp",
+      "size": 257460,
+      "sha256": "bfc2b01125e76633e47338c434aa5c43873610a3882652729225c90cf1cfa1e7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_cwxttpd.blp",
+      "size": 71071,
+      "sha256": "d0c741f74ee71666a9ffd444df3c2262abb6e0d857931d4bc668214c328098e2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_cwxttwq.blp",
+      "size": 13798,
+      "sha256": "5fa178ac889f0bdbdd4f68fbbd22bfb888723536691d1c0d6dc200ad7e66a8f5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_daoguang_30.BLP",
+      "size": 22942,
+      "sha256": "7de2c0cca1853413c461ce4486d3eaaed4773f9223d876de9054616496841311",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_daoguangjianying.BLP",
+      "size": 10379,
+      "sha256": "c8bb8cdde94f6cdd8af1af9b169bad61b0131c29ce1d31bfca8708411111a221",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_eff_222.BLP",
+      "size": 16700,
+      "sha256": "5ebe13bcb607599a9719f6b3075fa2614a52846993564741cb1def3348991784",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_eff_4x2.BLP",
+      "size": 33163,
+      "sha256": "b824827e992acae3f3e354e9b96ba62de8126e99ab01d6034fd3f5eec14cdcf8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_eff_mgjn05_05.BLP",
+      "size": 13710,
+      "sha256": "e6f3854276771d1454cf19c55321648d57bd6c15ba04474e0a3ca09469b1bc06",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_ff2huabanlizi4x5.BLP",
+      "size": 61618,
+      "sha256": "c77d77f7043cd3c78ae4be9a839981415d94a20e4a294dfdf3ae0c27ee8fc5a1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_fffsglz4x4.BLP",
+      "size": 46736,
+      "sha256": "a421c650b6bda8be3e58635010773e111e45ee74bb9f098fcc27786ae26066ad",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_ffgh2x2.BLP",
+      "size": 136019,
+      "sha256": "c55adfe56f7e3e9d6d0f5bcf5f40d06b813f0ff52aee3f0a3e4e1cedc521651e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_ffguangxianlizi.BLP",
+      "size": 9591,
+      "sha256": "d8befb5e63ad454f96b17d307602187054c30bc7f07ca0c5569bc831b0c7e861",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_ffqixilz4x4.BLP",
+      "size": 319620,
+      "sha256": "5b88d01064953f4b4d2047f8be591fd1a8bbe8c35207e0c57910a08f4c0d5797",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_fhhair.blp",
+      "size": 49491,
+      "sha256": "3db281253cd1a604085fb35ff363742bfbce66025fbed742f075f3f8d4a7877b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_fhhead.blp",
+      "size": 30071,
+      "sha256": "0037a836b378fe2427954dbb46faa0ce8cbc37d269bd265097738bff79214972",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_fsswq.blp",
+      "size": 85885,
+      "sha256": "4cba8d75c3e263028edd3a8be93946cde1faabec42a9a2236efcd71b936186ff",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_god_body.BLP",
+      "size": 237595,
+      "sha256": "d9b3eeac4054cacbe8e41218f91af0db3301aef85ca1ee9d3b243a1d7720c063",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_god_hair.BLP",
+      "size": 119303,
+      "sha256": "03fd65f48d7219952151d7161edd7f5adb3cb423c2a07d4cead9dd3144d819a1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_god_head.BLP",
+      "size": 119669,
+      "sha256": "84e5aab21e117d9ffda72bce8f5f8e2ed2b2bd0c6886295f7a884e5ff156b6e9",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_hehuatietu.BLP",
+      "size": 49022,
+      "sha256": "7ffd69692e9b5e57c633b7255f1b7fc3ad6a1be5c8ec242d4f40fe75df6ba704",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_hsbody.blp",
+      "size": 261296,
+      "sha256": "a2de2c7083ec05f5da756cb58fb47c81b16728440d579acfe39fcccd343197e3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/fm_hsgz6.mdx",
+      "size": 1953005,
+      "sha256": "00e0a947849d30d2f66991146f2451ddf466bcb01324a740ddc95717113f884d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_huahai_yinghua2x2.BLP",
+      "size": 62940,
+      "sha256": "8c968439251a167a5229d0052f8268894db3e1e2a5f53acf082d3354efc68547",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_hzy_glow.blp",
+      "size": 16839,
+      "sha256": "7abb66ec0a2752d38ee4903270ad0111df0bcdd32a86f242c7149756050228d8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_hzy_lg.blp",
+      "size": 41739,
+      "sha256": "acc6481e960cd651fbbd786f94e0fed6fa91c341dca4fd064acc3130cc32feeb",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_hzy_wei.blp",
+      "size": 14967,
+      "sha256": "66094fa1c54321ae78c8edc15a79f43230798abce3cbe86954f28c1b57b99686",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_hzychib.blp",
+      "size": 88670,
+      "sha256": "04e33ae61bf3e753fdfd4caa2e0856d4605ef3fb6c18d96f03e5d62c22b1e98f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_hzychib2.blp",
+      "size": 289894,
+      "sha256": "4aabcde51ba1827f0e95e81efa2c8a8261b9a02ded093c5e52233df454f674d8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_kvtst.blp",
+      "size": 210055,
+      "sha256": "0341b7cf082d0f32e4b3933fdc7f51e32795f9164b9f210f06fdc4e2501fbb8b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_kvtwq.blp",
+      "size": 227626,
+      "sha256": "f99356937782c98e85e2a4d5d1f57ef99c763433770118cd312e1c05f96c947e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_mnz__st.BLP",
+      "size": 86813,
+      "sha256": "03f4b05e32e8411af45bbad04380ddc2f029ae389ed101d43c6ba5aefe67de86",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_mnz_hair.BLP",
+      "size": 40414,
+      "sha256": "d2cc357f49527297dd81ac058bfc298f65ebb9fd16335b824ab1eba22c7fe66d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_mnz_head.BLP",
+      "size": 47327,
+      "sha256": "19379d0f2b1c22a503d183d61239ebe23ba3737c90cc12466a246fec47a97ec3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_mnz_styflg.BLP",
+      "size": 55482,
+      "sha256": "18159cbaa41e186becb672926481cb5d9297fa02978825cb7468d32450f32235",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_mnz_weapon.BLP",
+      "size": 88215,
+      "sha256": "a0a7c03b6ef1046659e58aa602407091dac325f62f896c374bba5c468df7656f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_qcfghhx.blp",
+      "size": 12401,
+      "sha256": "794d43c6426ff236890d81901fdfbc5a37d6409d3e96cae4bef8842c5de7b35c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_qclgtitxx.blp",
+      "size": 18019,
+      "sha256": "3036ec4c46ea4d4c0671d3dabd141cb3e9e71b832ca8926401f252217db4fa3f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_qxcxxliz4x4.blp",
+      "size": 21275,
+      "sha256": "3325ffdfae1ea2e0cd7a3e56878823c131ffa585fcd9f2894b94d701c6dbfbc4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_ssssslz4x4.blp",
+      "size": 175942,
+      "sha256": "30d40612ac2de23d52c419fa148d7ed0d9158f121a85dd7f8d87d5e45d4b8836",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_syqx4x4.blp",
+      "size": 175942,
+      "sha256": "e86121f77d0176752b3b7187964f34bd37c39333e9d2c757ad101c1c5ebda6f7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_tuiweilizi4x4.blp",
+      "size": 44870,
+      "sha256": "09cfd5e6194408146aa7a4cd322657c1e0662287fc5482e76f53d55ba99d7848",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/fm_xhl6.mdx",
+      "size": 1011527,
+      "sha256": "c19e5af712be89c0e88c413e20bb17c1c0489701b8c7cc0c74021b16c0736141",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_xhl_body.BLP",
+      "size": 81762,
+      "sha256": "8ebb100ca976c4980d1f7a00d23320e69915d9a0d5693f5719eb45776cb1e955",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_xhl_hair.BLP",
+      "size": 27381,
+      "sha256": "4d627c4d4dc98aef6130c125dd9ce7cba0852f5c57dbdab74d58e6ef5955d26a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_xhl_head.BLP",
+      "size": 46384,
+      "sha256": "1ac1e419bff9cc9334b6546be7273b5c56582540f1dcc0dfba79757e4f8740e8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_xhl_mao.BLP",
+      "size": 52765,
+      "sha256": "728046d6878c6cd3085213038b96dca7b2aaf55fcd8cc103a7b6c87d3dc2c87e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/fm_xhzycb5.mdx",
+      "size": 83697,
+      "sha256": "016a39d1895ee197645adfcdb29d34cdce1d6c86f3eb54780b240018919388f5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_xsqjx.blp",
+      "size": 700230,
+      "sha256": "9d623cac3220df5253dfeed6a8c7ce17e59fdf365fa51fa13feb156cf1f6efec",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yuliang__00000.BLP",
+      "size": 91842,
+      "sha256": "2c23e1fafe56ab3625c54dc37356a44ec9972d82c5d46d80d50ad9ef92740fed",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yuliang__00001.BLP",
+      "size": 90148,
+      "sha256": "175c0f48f26f5ce104403ab092fafc5958f8bbd0001c5b7a3e8f1030b93bd413",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yuliang__00002.BLP",
+      "size": 93778,
+      "sha256": "5958bb848cbac738aba9ff58c7b3294889a773712dcb94467b694470aaaae733",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yuliang__00003.BLP",
+      "size": 92403,
+      "sha256": "ca76fcad2fdeb05e4012e759d3964aec3122585e4d617ef6fe023a80f342e638",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yuliang__00004.BLP",
+      "size": 92188,
+      "sha256": "6b1f3bc6c0e878940ce1d74e860d4755988bd09fc1b901327ac9f1f5d27cdf45",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yuliang__00005.BLP",
+      "size": 94998,
+      "sha256": "3893dc587504a6b6a31b820e99826ba28cf738c6925d19d417e742aba97d1b22",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yuliang__00006.BLP",
+      "size": 93575,
+      "sha256": "0f5df5a87fb97a96dd152291326575e0d6ede944077b68bb3a5791afae970973",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yuliang__00007.BLP",
+      "size": 94047,
+      "sha256": "37b854547451802a4c86815ffd5620f69bb3bec82a1d93f4ddfb5a56afa60564",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yuliang__00008.BLP",
+      "size": 91567,
+      "sha256": "a3475a77777782cb04f7a8bc5a04920a9021b284b0caa6009d822834717129a1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yuliang__00009.BLP",
+      "size": 92070,
+      "sha256": "1da8c40ce17369fe1e0e8ad9e4ef9470dcc1af2547d71b6432b5fdfff42b6aae",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yyt.BLP",
+      "size": 269198,
+      "sha256": "a3c21a729f55e92e02291fa39e3c082fa51baebc84fe8b8a0858417604f05af4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fm_yyt2.BLP",
+      "size": 198813,
+      "sha256": "0c920062025a5b7e0b192e060dc87ee41f70eb63294b073366982ad7c51003ef",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fmemissivelight_033.blp",
+      "size": 26795,
+      "sha256": "2630e9c4d9180cf5ffd4d35c204135750e0ee8f52263ad0072c58b1d7243a686",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/frostnova_light.blp",
+      "size": 34595,
+      "sha256": "1dad93defe650af3a6bbae06be5174d9adccab57de83aa5abeee2c68b37aa737",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/fxyanwu2x2.blp",
+      "size": 51109,
+      "sha256": "7a8b0daf3d5d3d1d32da9491e0177cd249d55a9538cbd4e5e1f80ef69a2147ab",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/ggxmeizi8.mdx",
+      "size": 3375382,
+      "sha256": "83d070dade2a693b264b3a370f5856c77a9a75fedf363a75844ac61431782499",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/heduim_tt_demon_orcish_man_melee_no2_tt1.blp",
+      "size": 221959,
+      "sha256": "25285dd01afedeebf916d612e84233a99ccafccd3a4e774795c363c10823ecb5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/heduim_tt_demon_orcish_man_melee_no2_tt2.blp",
+      "size": 5417,
+      "sha256": "f06626481d5cf102559b06a0955e478bc57a106eb5a1abe2603a316ddd7223d8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/jianxian_chuansong_202011072216.mdx",
+      "size": 109082,
+      "sha256": "c64aa4d74eb33b9a93ca5bad52c6e244cd35261e6b4872e1a80b215323f1e11e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/jianxian_momian_202011072216.mdx",
+      "size": 21935,
+      "sha256": "2a4d91878ac3dd615bd8ede81f76a1d9aadf01ba2f02a20155bee5f9a087fdd4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/jianxian_zhaoming_202011081441.mdx",
+      "size": 242551,
+      "sha256": "07481f31c3003519450fe79802f0de2a4a3f521666cf4b2a29cd72439b2c97dc",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00000.blp",
+      "size": 84367,
+      "sha256": "8b78c4b141a5406a8bddc951bc5565b52ea4da049b99cabe721ef088d3dc8a28",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/jingling22_00000.mdx",
+      "size": 4812,
+      "sha256": "6b3a07332bfd279c9c3cb570fe80f8e80ea1c742066abfce7670580afe57a2c7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00001.blp",
+      "size": 81720,
+      "sha256": "79b8d6890f0bfb28307be66d2bbdfea44d2821a15572ec536fcd39b03dd9abec",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00002.blp",
+      "size": 82087,
+      "sha256": "bfc7dceb096d0697ba7950490afa0d5eb2d1c7b78f484b73b00415362eee3aa4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00003.blp",
+      "size": 81975,
+      "sha256": "2259e74027c5d194423484136c1f86f3a60de4b840e63d4404caaf1480c8eda4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00004.blp",
+      "size": 82242,
+      "sha256": "19d8da4cec5330352d14ff0196da855084fced61710bd5ded1eea5a926c970b6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00005.blp",
+      "size": 82534,
+      "sha256": "3337053578252ff53cb22b418296adf50cb46694747c24ea6442d61f99ceeb17",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00006.blp",
+      "size": 82697,
+      "sha256": "e92e99af9337e801b17c5cee51b4553d08c8e8a3a780a143377b68cc71278e59",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00007.blp",
+      "size": 83451,
+      "sha256": "a4b09afbcff65ee1d97e5f8240b3a1ed1a6e5217f85be95a081798895fe181bf",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00008.blp",
+      "size": 83790,
+      "sha256": "ccdad5817e2cc0769e1117af688c37a18c5f0657a12baf0002b0498c73bfb841",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00009.blp",
+      "size": 82961,
+      "sha256": "ead851d602ba052bca3e965bb43eaae3359cd5893816110ef9ce0719287d909f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00010.blp",
+      "size": 82637,
+      "sha256": "e31f6fb9762b1ae30a07e0fa7685461481c69ab05caa7338a5be0c9ce841963e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jingling22_00011.blp",
+      "size": 82273,
+      "sha256": "ad33ae8dee97d95e8f7a237a406fdb26f0a12fd7a30afdec934fbb2ff59330b7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jumo2_00000.blp",
+      "size": 27759,
+      "sha256": "5863a1d48c0b924cf9b507c28d7613aa4e492407f92a43a325eed1a754fbee2f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/jumo2_00000.mdx",
+      "size": 4544,
+      "sha256": "3a2b1a92215391fd0556d5986d9de817586d7a5c6a24446f6d2369d72038347a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jumo2_00001.blp",
+      "size": 27221,
+      "sha256": "ef4a94640f5ce8c6fc3ad717305c0d09bc96f8a4cf85ecbd459e5c3a87b2c824",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jumo2_00002.blp",
+      "size": 26499,
+      "sha256": "bd8292937b19f112929a006eff06a0d64a996f13b26ce94b7d6f2e0e4442897a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jumo2_00003.blp",
+      "size": 25947,
+      "sha256": "ba89813ee8bac92669be9c846c1f09df33aec6757b4ede306feb381184e50abc",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jumo2_00004.blp",
+      "size": 25606,
+      "sha256": "a35a39784d08a20e7b7fa97502922ee8b5da2c9bc5ba1f8acfc0113db16c8dd6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jumo2_00005.blp",
+      "size": 25584,
+      "sha256": "1fd55b477e84724739625a503b543b08e6d3ef166386a446095a98d5e36e67a6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jumo2_00006.blp",
+      "size": 25799,
+      "sha256": "230ad7bcb2e1a7c99ac90671124c05c4d9075e95955a2b876972ed46c85873f1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jumo2_00007.blp",
+      "size": 26231,
+      "sha256": "478aa55b27e18724e47b281de777d67f02314315fb899b7f37c59be238b2b209",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jumo2_00008.blp",
+      "size": 27026,
+      "sha256": "ee37583f171dc5beaaba4dcf0a802376e813393e68b89c3216c878c5671070f4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jumo2_00009.blp",
+      "size": 27675,
+      "sha256": "a0ad6d0afd50a493b6f3f3596f2606292b276f2662d1f6649c8ac34e6b2498b1",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/jumo2_00010.blp",
+      "size": 27881,
+      "sha256": "87378a7498fbf87b1265d77191adebcbefa18ef247ac1b9fc15d864e7bfae671",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "音效",
+      "path": "war3mapImported/ko.wav",
+      "size": 368754,
+      "sha256": "19f63efe5a7578a47c2131f0c7c780f439290a29cc574bfa0ee32f2b659e4dfb",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/laidawoya.mdx",
+      "size": 4544,
+      "sha256": "3a731960955e32297f55fa09d2a7ede257e4d9213ccf3afa72bb9bfbea65f6be",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ldwy2_00000.blp",
+      "size": 27368,
+      "sha256": "f3238f41d55961e3af2bec54c3002e2a4a7faa1626f20cb73d45e6e0375e1ec2",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ldwy2_00001.blp",
+      "size": 27507,
+      "sha256": "d81c169f3f5bbbf3ccb01d1f20e7a742e3c42b4adc672a7eb2927707d2c2bb61",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ldwy2_00002.blp",
+      "size": 28141,
+      "sha256": "339670c452b020a4e349a0d16d6637a64bfe426b08d5e42dd515fcab3b6e8d84",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ldwy2_00003.blp",
+      "size": 28717,
+      "sha256": "0c83af4c09fbb07afd186da331f5b210822d0e9422ae4879dbc289169cd4485b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ldwy2_00004.blp",
+      "size": 28784,
+      "sha256": "24db968655761857aed55ed0f6cc16416c55057934d271c94a625bed92dae367",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ldwy2_00005.blp",
+      "size": 28274,
+      "sha256": "b6688ed275b4b04260db5876569a5dd24931c21132bf4a0e506f3a45654bbe49",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ldwy2_00006.blp",
+      "size": 27398,
+      "sha256": "f9b0691a632cede72c53daba633965e43ee24303eb34898af3e41fec0a12e5f5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ldwy2_00007.blp",
+      "size": 26818,
+      "sha256": "0956e7fd678b4c3b95d5ba10536b4a60adc3e12ae9f367d58176ac7780d5781d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ldwy2_00008.blp",
+      "size": 26944,
+      "sha256": "a83a38b6002fa89c369c6c5a410d459b17ebf6ff973cc20c0b4e9e19e3189fa6",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ldwy2_00009.blp",
+      "size": 26970,
+      "sha256": "768a9ba2dd345a187d52e032a77c200ca4e5cb9a7bfe78780506aa7ae59771b8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ldwy2_00010.blp",
+      "size": 27278,
+      "sha256": "3d1b822d51d013b44ff8f42b176ee360dd21e9d0cec4ca92c256727787196e73",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/m14902.blp",
+      "size": 742779,
+      "sha256": "3bccd7c19faf979bd26dab4886603126dd0c02565b0c39af6ad718ade4bf49da",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/mgzOK12.mdx",
+      "size": 1726217,
+      "sha256": "fa274d1a602bbf180052f8b72f4445d2d32c15adc225d46278d55ead41d7e231",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/qcfhcb.blp",
+      "size": 121564,
+      "sha256": "dcbc5ea60bae3d1361613b7976ab8305ea9bd580b9bc1e3120588ae60ab69305",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/qcfncb.blp",
+      "size": 4274,
+      "sha256": "f59e061db9c48debfa228ce770795c6a491a09aa265527b790009f8ed75927ea",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/qrjmz33.mdx",
+      "size": 2310863,
+      "sha256": "ae2610b5dd8f472cbadcbf79022d38bcf67016aa75ff7d5f5674008782f792a4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/shockwave_new_2.blp",
+      "size": 44870,
+      "sha256": "fd6ddd9fe4be4452a0298809f2db27708f890018ed649b271d53b51091bc5f0d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/texiao_VIP_SVIP_SMINAD.blp",
+      "size": 61378,
+      "sha256": "66cd2831c0f60dd93759ad9d550aab3f6a1861ebc05d6af7b45589ee3bde5cf8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/trapOfNiutourenqiuzhang.mdx",
+      "size": 364582,
+      "sha256": "9e43a4f67f70a6291b4136fdf686855c3a74c8070bf963d397783988f59ecc69",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapImported/ui_bagua_fen.BLP",
+      "size": 16973,
+      "sha256": "f993612798e048428e2afcae46f94eef6c14ddd1778e5ed7639d22c8370082f5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/xiaojianxian2.mdx",
+      "size": 753799,
+      "sha256": "e4043182ccdc838f59c8ad91d47c8b63500493d38d3d2e6ee0bae6cd0799789c",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/xiaojingling.mdx",
+      "size": 118619,
+      "sha256": "5269d2a1d8d39ea4a59846ea77fd61b970cb41adff9121a5b75cdccaa05cf4ae",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/xiaojingling_chanrao_202011091249.mdx",
+      "size": 14376,
+      "sha256": "a6248acdccb0af3dbed2160eca7ca10db1c25bd58c0f3a986aa20ba3c217fefb",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/xiaojingling_chenmo_202011091236.mdx",
+      "size": 14629,
+      "sha256": "cfe48ae34405d06968071d651958a544ae214ac2446818a551fd5c83463a7d38",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/xiaojingling_shanshuo_202011091249.mdx",
+      "size": 22161,
+      "sha256": "9c78a0895bfdd381025092f433f806ca90ebc8d10bb5ee875745e34ba6af8508",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/xiaojingling_yueguangshouhu_202011090630.mdx",
+      "size": 11787,
+      "sha256": "53f6556feb6273cac6ae97b4925ebb9418992a573658f6848e90dc50e7872b56",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "war3mapImported/yytOK7.mdx",
+      "size": 1358066,
+      "sha256": "ef7a0ad6703d15bfb1a7a9a0647c4629cbc8d2633aff9d0bd6635816aae314fe",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "war3mapMap.blp",
+      "size": 20292,
+      "sha256": "1355c441af065ba01bca59abf2c9286d590d77ffe772248bc327276d1bbce592",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "文本配置",
+      "path": "war3mapMisc.txt",
+      "size": 1158,
+      "sha256": "e13e5b79fcf8ffe511de9ef211bbda5e32fe0a53495679bd5f56cbd73a9d6bb4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "文本配置",
+      "path": "war3mapSkin.txt",
+      "size": 4249,
+      "sha256": "42d1ce1d2d51876460a32c545e9fe1472e07e83d928db7a408be41c9f34c4e97",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "装饰物数据",
+      "path": "war3mapUnits.doo",
+      "size": "-",
+      "sha256": "-",
+      "status": "UNKNOWN (listfile 有记录，hash 表中缺失)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "xt_Slash.blp",
+      "size": 4153,
+      "sha256": "a5b20e3b5b455a3f4813c8c5be2ee41834d4d14b7cbcf4a1a45115c199d52b64",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zhangfeitt.blp",
+      "size": 226146,
+      "sha256": "824f9e88960304d22a0692527cd65198f664ab7f6d332d23457b30dcf8ff3d01",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zhenji1.blp",
+      "size": 436664,
+      "sha256": "ae34ac15918e516e90402248aa3de24f1dde5cc762df164cff7d315f00570d56",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zhenji2.blp",
+      "size": 334847,
+      "sha256": "951279ae3941bd0200aca66b856435c8fa6273a0b5ca5cd43850e1d8124fc531",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "zhenjipf.mdx",
+      "size": 632110,
+      "sha256": "da948d740808f2ab62652918f1e079586ecc6d81355da96e1176a2451abca1b4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zhugeliangshangzi.blp",
+      "size": 16083,
+      "sha256": "a166521f6d8624236913c6d20b7a35624e46bb9029a5f6865eee7f6cb6e3894a",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "ziranzhiyi.mdx",
+      "size": 59935,
+      "sha256": "e2b9fc5a85ece76cbfc5a22c5daaec36f0ec21ebb51fe1f6f13412532f1b8829",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "zsgguojia.mdx",
+      "size": 180886,
+      "sha256": "2a16a47ddf6567699bdb542006fc645e20bcda380468be5b1feb138e3011cf7e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgguojia1.blp",
+      "size": 232708,
+      "sha256": "a96dd53b22bc91328954ea2f52cab9afc2d3eff40cf68d0938bd4d1385da7522",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgguojia2.blp",
+      "size": 9223,
+      "sha256": "2f4ce33176f7455a46106b3173900493534d0e5aff803178aa682a725d7cc4f3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "zsghero25.mdx",
+      "size": 243025,
+      "sha256": "fe6d2fef53a8a4a78b292c4d667fb2006a1f82e4309307a395cf5312fcdb562f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "zsgliubei.mdx",
+      "size": 266566,
+      "sha256": "88e03b16e7902909a95d866f7bbadbefe101d3b0e61d2c0c914001748a6d0367",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgliubei1.blp",
+      "size": 105671,
+      "sha256": "3c3865f040cdd21f6640ff6426696d5532c948a27018c96900eee310daac26b8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgliubei2.blp",
+      "size": 15008,
+      "sha256": "a506e6f1978a220d3b165a30b34f5b7e95cc8a37165d4fc57a0b3b0526170da8",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "zsglvbu.mdx",
+      "size": 328627,
+      "sha256": "846634ea195eded215f9ec110f1503da7dc4a0ac1dda3f428c170cf134fddf1b",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsglvbu1.blp",
+      "size": 92022,
+      "sha256": "f7629b4da588e358a2ce1513a568e18839939b5e2c63f067bf94705294f675e3",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsglvbu2.blp",
+      "size": 15543,
+      "sha256": "5061a4f1d95f6df35927f96935e1012b358e1ff4f20a87e71c1dd43435f939db",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsglvbudaoguang.blp",
+      "size": 6642,
+      "sha256": "afdabd56d1c593de54ecdd5670954d19a1d4d1801c0e3cb6bf2fe58e800af33d",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsglvbuhuoyan.blp",
+      "size": 9886,
+      "sha256": "2b9ec188e0ce2487ff6a6b2728c88a85fa3d6ad56f1399dfa7c029ab6aaf38f5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgmachao.blp",
+      "size": 121636,
+      "sha256": "98f4ab7267274df874879d16cebe7f0e6e2bae0a383879d61575658312c51c79",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "zsgmachao.mdx",
+      "size": 413706,
+      "sha256": "349ddb1028c7f0e538d77d794c3f4ca70e846a3d61a907e331d26fa5775f9ef5",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgmachaoma.blp",
+      "size": 114411,
+      "sha256": "0459682a41b09e40e0c4689c1348ab1bfb0057f88e5e61b12efd93fdaaf61287",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgmachaowq.blp",
+      "size": 19341,
+      "sha256": "6adb9a80ad945ba2687dc92eb0d24e013ae3bd83e9f0cd59dda54cc88c962421",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "模型 (MDX)",
+      "path": "zsgsimayi.mdx",
+      "size": 284302,
+      "sha256": "c0670bb7a7d91f0b04d0a96a2f142d1c9cc712b50ab8b55f14dcc9c81fa610c7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgsimayi1.blp",
+      "size": 115702,
+      "sha256": "b497efc314704697077024971a5edd8ed54c8720c5bf9559f8507dd25087b44f",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgsimayi2.blp",
+      "size": 15444,
+      "sha256": "bf6f122976b8d83e14ea4ac8627dffb40652750843382b0ed3f7c196f2bc2224",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgskin_lvbu_01_055.blp",
+      "size": 14627,
+      "sha256": "4083204e60d003adbda6aa674d1834e33a071760108e9163c0a614c3f3f45da4",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgskin_lvbu_01_066.blp",
+      "size": 289116,
+      "sha256": "83faf8f5bb2957a4cf1c6c10cfed011b524612817f093bd1454a9e0a29499cc7",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgzhugeliang.blp",
+      "size": 113519,
+      "sha256": "1da1451b965502e0aaf6239cf2f226b2eb7aeeec086b187f814e4be241b4262e",
+      "status": "VERIFIED (已解包)"
+    },
+    {
+      "category": "贴图 (BLP)",
+      "path": "zsgzhugeliangwq.blp",
+      "size": 19787,
+      "sha256": "ad871b2702148c698bd2f379674ea0fd4b583af5914f3a97d7155f954c1018dd",
+      "status": "VERIFIED (已解包)"
+    }
+  ]
+}
