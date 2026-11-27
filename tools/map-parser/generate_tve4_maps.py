@@ -2,9 +2,10 @@
 
 The original map is one Warcraft III map containing eight separate arenas
 (`GG_rct_MAP_0_AREA` ... `MAP_7_AREA`, see `war3map.j` GameMap_load).  This
-script crops each arena, samples war3map.wpm at 128 world units per web tile,
-connects every open pocket with a minimal one-tile corridor, picks spawns and
-paints a self-made background from the terrain / tree data.
+legacy preview generator samples war3map.wpm at 128 world units per web tile
+and paints a self-made background from the terrain / tree data.  It does not
+clear spawns or carve corridors.  The MVP instead uses the unmodified WPM and
+JASS anchors produced by `tools/tve4_source/extract_core_maps.py`.
 
 It does NOT copy any original art.
 
@@ -37,9 +38,14 @@ OUT_SRC = ROOT / "src" / "lib" / "tve4"
 TILE = 16
 TILE_UNITS = 128
 S = TILE_UNITS // 32
-ORIGIN_X = -24640.0
-ORIGIN_Y = -18496.0
+# WPM is 384x288 terrain cells and W3E is 385x289; both grids are centered
+# on the W3I/JASS playable center (-5120, 256), not on world coordinate zero.
+PATHING_ORIGIN_X = -29696.0
+PATHING_ORIGIN_Y = -17920.0
+TERRAIN_ORIGIN_X = -29760.0
+TERRAIN_ORIGIN_Y = -18240.0
 WPM_W, WPM_H = 1536, 1152
+MAP_5_EXTRA = (-26688, -3264, -16448, 6752)
 
 GROUND = {
     0: (126, 108, 86),    # Wdrt dirt
@@ -115,7 +121,9 @@ def load_trees():
 def build_grid(cells, bounds):
     x0, y0, x1, y1 = bounds
     gw, gh = (x1 - x0) // TILE_UNITS, (y1 - y0) // TILE_UNITS
-    cx0, cy0 = int((x0 - ORIGIN_X) // 32), int((y0 - ORIGIN_Y) // 32)
+    cx0, cy0 = int((x0 - PATHING_ORIGIN_X) // 32), int((y0 - PATHING_ORIGIN_Y) // 32)
+    if cx0 < 0 or cy0 < 0 or cx0 + gw * S > WPM_W or cy0 + gh * S > WPM_H:
+        raise ValueError(f"arena bounds exceed the source WPM grid: {bounds}")
     grid = bytearray(gw * gh)
     for gy in range(gh):
         for gx in range(gw):
@@ -129,39 +137,6 @@ def build_grid(cells, bounds):
             if blocked >= 9:
                 grid[gy * gw + gx] = 1
     return grid, gw, gh
-
-
-def clear_rect(grid, gw, gh, gx, gy, radius):
-    for y in range(gy - radius, gy + radius + 1):
-        for x in range(gx - radius, gx + radius + 1):
-            if 0 <= x < gw and 0 <= y < gh:
-                grid[y * gw + x] = 0
-
-
-def components(grid, gw, gh):
-    seen = bytearray(gw * gh)
-    comps = []
-    for sy in range(gh):
-        for sx in range(gw):
-            i = sy * gw + sx
-            if seen[i] or grid[i]:
-                continue
-            q = deque([i])
-            seen[i] = 1
-            comp = []
-            while q:
-                j = q.popleft()
-                comp.append(j)
-                x, y = j % gw, j // gw
-                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
-                    if 0 <= nx < gw and 0 <= ny < gh:
-                        k = ny * gw + nx
-                        if not seen[k] and not grid[k]:
-                            seen[k] = 1
-                            q.append(k)
-            comps.append(comp)
-    comps.sort(key=len, reverse=True)
-    return comps
 
 
 def bfs(grid, gw, gh, start):
@@ -178,78 +153,6 @@ def bfs(grid, gw, gh, start):
     return dist
 
 
-def carve_to_main(grid, gw, gh, start):
-    """Connect every open pocket to the start component with minimal corridors."""
-    carved = []
-    while True:
-        comps = components(grid, gw, gh)
-        if len(comps) <= 1:
-            break
-        main = next((c for c in comps if start[1] * gw + start[0] in c), comps[0])
-        main_set = set(main)
-        dist = [[-1] * gw for _ in range(gh)]
-        prev = [[None] * gw for _ in range(gh)]
-        q = deque()
-        for i in main:
-            x, y = i % gw, i // gw
-            dist[y][x] = 0
-            q.append((x, y))
-        target = None
-        while q and target is None:
-            x, y = q.popleft()
-            for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
-                if not (0 <= nx < gw and 0 <= ny < gh) or dist[ny][nx] >= 0:
-                    continue
-                dist[ny][nx] = dist[y][x] + 1
-                prev[ny][nx] = (x, y)
-                if not grid[ny * gw + nx] and (ny * gw + nx) not in main_set:
-                    target = (nx, ny)
-                    break
-                q.append((nx, ny))
-        if target is None:
-            break
-        path = []
-        cur = target
-        while cur is not None and dist[cur[1]][cur[0]] > 0:
-            path.append(cur)
-            cur = prev[cur[1]][cur[0]]
-        for x, y in path:
-            if grid[y * gw + x]:
-                carved.append((x, y))
-            grid[y * gw + x] = 0
-    return carved
-
-
-def choose_elf_spawn(grid, gw, gh, troll):
-    dist = bfs(grid, gw, gh, troll)
-    best = None
-    best_score = -1
-    for y in range(2, gh - 2):
-        for x in range(2, gw - 2):
-            d = dist[y][x]
-            if d < 1:
-                continue
-            clear = all(
-                not grid[yy * gw + xx]
-                for yy in range(y - 1, y + 2)
-                for xx in range(x - 1, x + 2)
-            )
-            if not clear:
-                continue
-            # far away, and prefer some elbow room around the spawn
-            room = sum(
-                1
-                for yy in range(y - 3, y + 4)
-                for xx in range(x - 3, x + 4)
-                if 0 <= xx < gw and 0 <= yy < gh and not grid[yy * gw + xx]
-            )
-            score = d * 100 + room
-            if score > best_score:
-                best_score = score
-                best = (x, y, d)
-    return best
-
-
 def ground_at(ground, gx, gy):
     tx = min(384, max(0, gx))
     ty = min(288, max(0, gy))
@@ -261,8 +164,8 @@ def paint(grid, gw, gh, ground, trees, bounds, troll, elf, out_path):
     img = Image.new("RGB", (width, height), (22, 30, 34))
     draw = ImageDraw.Draw(img)
     x0, y0, _x1, _y1 = bounds
-    base_gx = int((x0 - ORIGIN_X) // TILE_UNITS)
-    base_gy = int((y0 - ORIGIN_Y) // TILE_UNITS)
+    base_gx = int((x0 - TERRAIN_ORIGIN_X) // TILE_UNITS)
+    base_gy = int((y0 - TERRAIN_ORIGIN_Y) // TILE_UNITS)
     for gy in range(gh):
         for gx in range(gw):
             px, py = gx * TILE, gy * TILE
@@ -339,7 +242,7 @@ def main():
         "生成工具：`tools/map-parser/generate_tve4_maps.py`。",
         "",
         "每张地图按 128 世界单位 = 1 个网页格采样 WPM（4×4 原格，严格多数判墙），",
-        "再清除出生点、用最小 1 格走廊把所有开放区域接到巨魔出生区，最后用 BFS 断言全图连通。",
+        "不清除出生点、不挖掘走廊；巨魔与精灵位置直接使用 JASS 预置锚点（防守图使用生命树锚点）。",
         "背景是按地表类型、墙体与树木位置重绘的自制图，不含原版贴图。",
         "",
         "| 编号 | 名称 | 逻辑格 | 世界尺寸 | 开放格 | 打通格 | 巨魔出生 | 精灵出生 | BFS 距离 |",
@@ -347,20 +250,30 @@ def main():
     ]
 
     for mid, key, name, bounds, troll_world, angel_world, stones_world, desc, tags in MAPS:
+        source_bounds = bounds
+        extra_rects = []
+        if mid == 5:
+            # Keep the official base rectangle as metadata while allowing the
+            # legacy preview to include the source extra area and real angel.
+            extra_rects.append(MAP_5_EXTRA)
+            bounds = (
+                min(bounds[0], MAP_5_EXTRA[0]),
+                min(bounds[1], MAP_5_EXTRA[1]),
+                max(bounds[2], MAP_5_EXTRA[2]),
+                max(bounds[3], MAP_5_EXTRA[3]),
+            )
         grid, gw, gh = build_grid(cells, bounds)
         x0, y0, _x1, _y1 = bounds
         troll = (int((troll_world[0] - x0) // TILE_UNITS), int((troll_world[1] - y0) // TILE_UNITS))
-        clear_rect(grid, gw, gh, troll[0], troll[1], 3)
-        carved = carve_to_main(grid, gw, gh, troll)
-        elf = choose_elf_spawn(grid, gw, gh, troll)
-        assert elf is not None, f"map {mid}: no elf spawn"
-        ex, ey, edist = elf
-        clear_rect(grid, gw, gh, ex, ey, 1)
-        # clearing may not disconnect anything; verify every open tile is reachable
-        comps = components(grid, gw, gh)
-        assert len(comps) == 1, f"map {mid}: {len(comps)} components after carving"
+        # The defend arena has no angel; its preplaced n008 life tree is the
+        # source elf anchor.  Never search for or clear a replacement spawn.
+        elf_world = angel_world if angel_world is not None else (-20480.0, 11008.0)
+        elf = (int((elf_world[0] - x0) // TILE_UNITS), int((elf_world[1] - y0) // TILE_UNITS))
+        ex, ey = elf
+        if not (0 <= ex < gw and 0 <= ey < gh):
+            raise ValueError(f"map {mid}: source elf anchor is outside the arena")
         dist = bfs(grid, gw, gh, troll)
-        assert dist[ey][ex] >= 0
+        edist = dist[ey][ex]
         open_tiles = sum(1 for v in grid if v == 0)
 
         bg_path = OUT_PUBLIC / f"map-{mid}.png"
@@ -392,13 +305,14 @@ def main():
             "grid": [gw, gh],
             "world": [gw * TILE, gh * TILE],
             "tileUnits": TILE_UNITS,
-            "sourceRect": list(bounds),
+            "sourceRect": list(source_bounds),
+            "extraRects": [list(rect) for rect in extra_rects],
             "spawns": {"troll": {"gx": troll[0], "gy": troll[1]}, "elf": {"gx": ex, "gy": ey}},
             "trollHouse": troll_house,
             "angel": angel,
             "stones": stones,
             "openTiles": open_after,
-            "carvedTiles": len(carved),
+            "carvedTiles": 0,
             "elfDistance": edist,
             "background": f"/tve4/maps/map-{mid}.png",
             "thumb": f"/tve4/maps/map-{mid}-thumb.png",
@@ -407,17 +321,17 @@ def main():
         meta_maps.append({k: v for k, v in entry.items() if k != "blockedBase64"})
         ts_entries.append(entry)
         report.append(
-            f"| {mid} | {name} | {gw}×{gh} | {gw * TILE}×{gh * TILE} | {open_after} | {len(carved)} | "
+            f"| {mid} | {name} | {gw}×{gh} | {gw * TILE}×{gh * TILE} | {open_after} | 0 | "
             f"({troll[0]},{troll[1]}) | ({ex},{ey}) | {edist} |"
         )
-        print(f"map {mid} {name}: {gw}x{gh} open {open_after} carved {len(carved)} "
+        print(f"map {mid} {name}: {gw}x{gh} open {open_after} carved 0 "
               f"troll {troll} elf {(ex, ey)} dist {edist} angel {angel} stones {stones}")
 
     meta = {
         "source": "war3map.j GameMap_load + war3map.wpm + war3map.w3e + war3map.doo",
         "tile": TILE,
         "tileUnits": TILE_UNITS,
-        "blockedRule": "4x4 WPM cells, >=9 no-walk cells => wall; spawn yards cleared; all open pockets connected with 1-tile corridors",
+        "blockedRule": "4x4 WPM cells, >=9 no-walk cells => wall; no spawn clearing and no carved corridors",
         "maps": meta_maps,
     }
     OUT_DATA.joinpath("maps.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -436,6 +350,7 @@ def main():
         "  world: [number, number];",
         "  tileUnits: number;",
         "  sourceRect: [number, number, number, number];",
+        "  extraRects: Array<[number, number, number, number]>;",
         "  spawns: { troll: { gx: number; gy: number }; elf: { gx: number; gy: number } };",
         "  trollHouse: { x: number; y: number };",
         "  angel: { gx: number; gy: number } | null;",
@@ -464,6 +379,7 @@ def main():
         ts.append(f"    world: [{e['world'][0]}, {e['world'][1]}],")
         ts.append(f"    tileUnits: {e['tileUnits']},")
         ts.append(f"    sourceRect: [{e['sourceRect'][0]}, {e['sourceRect'][1]}, {e['sourceRect'][2]}, {e['sourceRect'][3]}],")
+        ts.append(f"    extraRects: {json.dumps(e['extraRects'])},")
         ts.append(f"    spawns: {json.dumps(e['spawns'])},")
         ts.append(f"    trollHouse: {json.dumps(e['trollHouse'])},")
         ts.append(f"    angel: {json.dumps(e['angel'])},")
@@ -485,9 +401,9 @@ def main():
     report.append("## 结论")
     report.append("")
     report.append("- 8 张地图均来自原版 `GameMap_load` 的真实区域，不是自绘示意图。")
-    report.append("- 每张地图生成后都用 BFS 断言只有一个连通分量，且精灵出生点可达。")
-    report.append("- 原版 WPM 中天然存在多个开放块，生成器只在块与块之间打 1 格宽通道，不改动原有走廊。")
-    report.append("- 单机 1v1 使用每张图的巨魔小屋作为巨魔出生点，精灵出生点取距巨魔最远的可建造点。")
+    report.append("- 采样后的原始碰撞不清除出生点、不挖掘走廊，也不声称所有开放块连通。")
+    report.append("- 巨魔使用每张图的巨魔小屋锚点；精灵使用 JASS 天使锚点，防守图使用预置生命树锚点。")
+    report.append("- 本生成器只保留旧预览兼容；MVP 的原始碰撞与锚点由 `tools/tve4_source/extract_core_maps.py` 导入。")
     report.append("- 地图选择：`/tve4` 开始页可选择 8 张地图；原版特殊模式（防守/竞赛/单挑）只作为标签提示。")
     OUT_DOC.joinpath("local-map-restore.md").write_text("\n".join(report) + "\n", encoding="utf-8")
     print("wrote maps.json / maps.generated.ts / local-map-restore.md")

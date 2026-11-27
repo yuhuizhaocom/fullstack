@@ -39,7 +39,7 @@
 | 任务 | 交付物与验收 | 状态 |
 | --- | --- | --- |
 | 1 来源基准与 MVP 文档 | `source.json`、来源测试、本文；锁定原包与核心文件哈希，记录 UNKNOWN | 已完成 |
-| 2 真实地图与原始碰撞 | `maps.json`、8 份 pathing、提取器测试；8 图、JASS 区域/锚点、原始 WPM、地图 5 扩展区 | 待开始 |
+| 2 真实地图与原始碰撞 | `maps.json`、8 份 pathing、提取器测试；8 图、JASS 区域/锚点、原始 WPM、地图 5 扩展区 | 已完成 |
 | 3 会话化地图状态 | `SessionContext`、真实 pathing 加载；切图/重开不串状态，32 单位移动视线、128 单位建造格 | 待开始 |
 | 4 八图临时视觉 | `placeholder.ts`、浏览器清单；真实几何和锚点加载，无旧自绘背景/碰撞 | 待开始 |
 | 5 核心规则数据化 | `rules.json`、MVP 适配层；白名单记录均有来源，`OLD + SINGLE` 数值迁移 | 待开始 |
@@ -72,6 +72,18 @@
 - GREEN：实现后执行同一命令，1 passed / 0 failed。
 - 提交前基线：`npm run check:tve4` 44 passed；`npm run check:data` 8 passed。
 - `git diff --check` 通过。测试运行存在 Node `UNDICI-EHPA` experimental 环境警告，不影响退出码或断言结果。
+
+### Task 2 验证记录
+
+- 实现：`tools/tve4_source/extract_core_maps.py` 校验 Task 1 的 JASS/WPM/W3E/DOO/W3I 大小与哈希，解析 8 图区域、相机、小地图、预置单位锚点、W3E tile 与 DOO；每图写入完整原始 WPM，不修改碰撞、不清出生点、不挖走廊。
+- 几何坐标：W3I 可玩区为 372×276 tile，JASS `cameraAll` 给出同一范围，中心为 `(-5120, 256)`；385×289 W3E 网格以该中心对齐，原点为 `(-29760, -18240)`。旧研究按 `(0, 0)` 居中会移动全部 tile 并裁掉地图 5/6 左侧；WPM 为 384×288 个 terrain cell，旧预览生成器的 pathing 原点相应为 `(-29696, -17920)`。
+- 产物：`maps.json` 7,113,157 bytes；8 份 pathing 各 1,769,488 bytes，逐字节等于来源 `war3map.wpm`，SHA-256 均为 `0ec395397888d611c1c9a1d4107f16e38482273c69ca3e8c169e3a1b0631e399`。
+- 几何数量（terrain/doodads）：`12390/913`、`16256/1339`、`6320/337`、`2928/188`、`4224/160`、`12800/600`、`13520/600`、`15104/746`。
+- RED：首次 Python 测试因提取器模块不存在而失败；几何回归测试以错误原点运行后 8 个地图子测试全部失败（tile ID 错配），随后按 W3I/JASS 中心修正实现。
+- GREEN：`python -m unittest tools.tve4_source.tests.test_core_maps -v`，5 passed；`npx tsx scripts/tve4/check_maps.ts`，7 checks passed，包含本地来源 WPM 逐字节比对。
+- 回归：`npm run check:tve4` 44 passed；`npm run check:data` 8 passed；Python `py_compile` 通过；旧生成器 8 图边界与来源精灵锚点检查通过（未重写旧资产）。
+- 地图 5：`MAP_5_AREA_EXTRA = (-26688,-3264,-16448,6752)` 完整保留；天使 `(-21507.5,-3956.7)` 位于基础区与扩展区之间，不断言其属于扩展区。
+- 旧生成器仅保留预览兼容，已删除 `clear_rect()`、`carve_to_main()`、`choose_elf_spawn()` 及生产调用；地图 5 预览使用基础区与官方扩展区的并集，元数据仍分别保留两区。
 
 ## 6. 后续原作资产阶段（本轮不实施）
 
