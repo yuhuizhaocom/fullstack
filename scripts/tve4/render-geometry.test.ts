@@ -67,6 +67,22 @@ test("render geometry rejects any runtimeBounds mismatch with the simulation ses
   }
 });
 
+test("render geometry hash works in insecure HTTP contexts without crypto.subtle", async () => {
+  const geometry = validateRenderGeometry(
+    JSON.parse(
+      readFileSync(new URL("../../public/tve4/geometry/map-0.json", import.meta.url), "utf8"),
+    ),
+  );
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "crypto");
+  Object.defineProperty(globalThis, "crypto", { value: {}, configurable: true });
+  try {
+    assert.equal(await computeGeometryHash(geometry), geometry.geometryHash);
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, "crypto", descriptor);
+    else Reflect.deleteProperty(globalThis, "crypto");
+  }
+});
+
 test("render geometry rejects a tampered payload instead of trusting its hash", async () => {
   const geometry = validateRenderGeometry(
     JSON.parse(

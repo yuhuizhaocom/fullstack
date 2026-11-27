@@ -75,4 +75,5 @@
 - [x] 浏览器终局测试仅用页面内临时 rAF 时间加速缩短等待，不改产品代码、不改规则数值；AI 决策与战斗仍走真实 `stepGame`。
 - [x] `再来一局` 可点击并重新运行同配置对局。
 - [x] 上述流程 Console error/warn 为 0；浏览器测试结束后已停止开发服务器。
+- [x] 修复后补测内网 HTTP：`http://10.2.5.199:3000/tve4` 在 390×844 下 `isSecureContext=false`、`crypto.subtle=undefined`，选择精灵进入地图 0 后 `data-tve4-ready=true`、`data-fog-enabled=true`，无 `digest` 报错；哈希仍按原 SHA-256 校验，未跳过。
 - [x] 自动化补充：`scripts/tve4/ai_vision.test.ts` 5 项通过，包括“视野外不可见”“已探索建筑记忆”“隐身/显影/暴露规则”“真实地图 3 AI 到达并结束对局”。
