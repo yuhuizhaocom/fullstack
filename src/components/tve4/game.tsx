@@ -39,6 +39,13 @@ import { HeroModelPicker } from "./hero-model-picker";
 
 const FIXED = 1 / 30;
 type Sheet = "build" | "skill" | "shop" | null;
+
+function resourceProgress(gold: number, wood: number, cost: number, woodCost: number): string {
+  const parts: string[] = [];
+  if (cost > 0) parts.push(`${Math.floor(gold)}/${cost}`);
+  if (woodCost > 0) parts.push(`${Math.floor(wood)}/${woodCost}`);
+  return parts.join(" | ");
+}
 const MAP_SWATCHES = [
   "#d7e2df",
   "#638454",
@@ -702,7 +709,7 @@ export function Tve4Game() {
                     : snapshot.wallUpgrade.reason}
                   onClick={() => { const s = stateRef.current; if (s) { upgradeKind(s, "wall"); sync(); } }}
                 >
-                  升墙{snapshot.wallUpgrade.ok ? ` ${snapshot.wallUpgrade.cost}` : ""}
+                  升墙{snapshot.wallUpgrade.cost > 0 || snapshot.wallUpgrade.wood > 0 ? ` ${resourceProgress(snapshot.gold, snapshot.wood, snapshot.wallUpgrade.cost, snapshot.wallUpgrade.wood)}` : ""}
                 </button>
                 <button
                   className="pointer-events-auto rounded-lg bg-amber-800 px-2 py-3 text-[11px] text-white disabled:opacity-40"
@@ -712,7 +719,7 @@ export function Tve4Game() {
                     : snapshot.houseUpgrade.reason}
                   onClick={() => { const s = stateRef.current; if (s) { upgradeKind(s, "tent"); sync(); } }}
                 >
-                  升房{snapshot.houseUpgrade.ok ? ` ${snapshot.houseUpgrade.cost}` : ""}
+                  升房{snapshot.houseUpgrade.cost > 0 || snapshot.houseUpgrade.wood > 0 ? ` ${resourceProgress(snapshot.gold, snapshot.wood, snapshot.houseUpgrade.cost, snapshot.houseUpgrade.wood)}` : ""}
                 </button>
                 <button
                   className="pointer-events-auto rounded-lg bg-emerald-800 px-2 py-3 text-[11px] text-white"
