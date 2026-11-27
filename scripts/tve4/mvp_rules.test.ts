@@ -100,6 +100,54 @@ test("skill IDs and source-default cooldowns are corrected without changing web 
   assert.equal(ruleEvidence("farSight", "cooldown").confidence, "INFERRED");
 });
 
+test("A067 scalar evidence defaults to level-1 SLK rather than higher-level W3A", () => {
+  const cases = [
+    ["cooldown", "Cool1", 30],
+    ["originalCooldown", "Cool1", 30],
+    ["manaCost", "Cost1", 20],
+    ["defaultDuration", "HeroDur1", 15],
+  ] as const;
+  for (const [field, sourceField, value] of cases) {
+    assert.deepEqual(ruleEvidence("haste", field), {
+      file: "Units/AbilityData.slk",
+      objectId: "A067",
+      field: sourceField,
+      level: 1,
+      value,
+      confidence: "VERIFIED",
+      priority: 10,
+    }, `${field} must resolve from the level-1 SLK layer`);
+  }
+});
+
+test("A067 original duration evidence defaults to the level-1 JASS runtime override", () => {
+  assert.deepEqual(ruleEvidence("haste", "originalDuration"), {
+    file: "war3map.j",
+    field: "YDWESetUnitAbilityDataReal/A067/102",
+    jassLine: 68965,
+    value: 6,
+    level: 1,
+    confidence: "VERIFIED",
+    priority: 30,
+  });
+});
+
+test("A067 evidence selects a W3A layer at an explicit higher ability level", () => {
+  assert.deepEqual(ruleEvidence("haste", "cooldown", 16), {
+    file: "war3map.w3a",
+    objectId: "A067",
+    field: "acdn",
+    level: 16,
+    value: 30,
+    priority: 20,
+    confidence: "VERIFIED",
+  });
+});
+
+test("A067 evidence rejects an ability level with no applicable layer", () => {
+  assert.throws(() => ruleEvidence("haste", "cooldown", 3), /haste\.cooldown.*level 3/);
+});
+
 test("A067 original duration preserves SLK to W3A to JASS precedence", () => {
   const chain = rules.skills.find((record) => record.id === "haste")?.evidence?.originalDuration;
   assert.ok(Array.isArray(chain), "A067 duration must be a layered chain");

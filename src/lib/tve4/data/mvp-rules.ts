@@ -78,12 +78,14 @@ export function ruleValue(id: string, field: string): string | number | boolean 
   return ruleRecord(id).values[field];
 }
 
-export function ruleEvidence(id: string, field: string): CoreRuleSource {
+export function ruleEvidence(id: string, field: string, level = 1): CoreRuleSource {
   const record = ruleRecord(id);
   const evidence = record.evidence?.[field];
   if (!evidence) throw new Error(`Missing MVP evidence: ${id}.${field}`);
   const layers = Array.isArray(evidence) ? evidence : [evidence];
-  return layers.reduce((selected, candidate) =>
+  const applicable = layers.filter((candidate) => candidate.level === undefined || candidate.level === level);
+  if (applicable.length === 0) throw new Error(`Missing applicable MVP evidence: ${id}.${field} at level ${level}`);
+  return applicable.reduce((selected, candidate) =>
     !selected || (candidate.priority ?? 0) > (selected.priority ?? 0) ? candidate : selected,
   );
 }
