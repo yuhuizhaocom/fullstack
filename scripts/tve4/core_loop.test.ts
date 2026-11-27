@@ -152,6 +152,35 @@ test("continuous 32-unit WPM checks reject thin walls and blocked segments", () 
   assert.equal(runtimePathingSegmentClear(map, state.session.pathing32, left, y, right, y), false);
 });
 
+test("player-built walls block their owner's body and line of sight", () => {
+  const state = createGame({ mapId: 0, seed: 12, testMode: true, playerFaction: "elf" });
+  openMap(state);
+  const elf = state.heroes.find((h) => h.isPlayer)!;
+  const troll = state.heroes.find((h) => h.faction === "troll")!;
+  const spawn = state.session.spawns.elf!;
+  elf.gold = 1000;
+  const wallGx = spawn.gx + 4;
+  for (let dy = -2; dy <= 2; dy += 1) {
+    assert.equal(tryBuild(state, "wall", wallGx, spawn.gy + dy, "elf"), true);
+    state.buildings.at(-1)!.buildTimer = 0;
+  }
+  elf.x = (wallGx - 2) * TILE;
+  elf.y = (spawn.gy + 0.5) * TILE;
+  troll.x = elf.x + 500;
+  troll.y = elf.y + 500;
+  run(state, 2, 1, 0);
+  assert.ok(elf.x < wallGx * TILE, "owner must not walk through a player-built wall");
+
+  troll.x = (wallGx + 2) * TILE;
+  troll.y = elf.y;
+  troll.hp = 750;
+  troll.invuln = 0;
+  elf.cd = 0;
+  const before = troll.hp;
+  stepGame(state, FIXED, { mx: 0, my: 0 });
+  assert.equal(troll.hp, before, "owner wall must block line of sight");
+});
+
 test("real WPM paths remain traversable for both hero radii, including troll radius 22", () => {
   for (const mapId of [0, 1, 2, 3, 5, 7]) {
     const state = createGame({ mapId, seed: 3, playerFaction: "elf" });

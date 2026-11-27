@@ -113,6 +113,7 @@ export interface Building {
   noHitTimer: number;
   flash: number;
   cd: number;
+  system?: boolean;
 }
 
 export interface Projectile {

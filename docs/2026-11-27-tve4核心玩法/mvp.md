@@ -123,7 +123,7 @@
 - 实现：新增 `sim/rng.ts`（固定种子 Mulberry32）与 `sim/pathing.ts`（32 单位 WPM 查询、连续段视线、128 单位 A*）；`GameState` 保存 RNG，`engine.ts` 移除全部 `Math.random`，新增 `stateHash`，移动与视线均连续校验原始 WPM。
 - 确定性：固定种子 30 秒两次运行状态哈希一致，不同种子不一致；状态哈希排除纯展示的 `effects/floats/hint`，包含 RNG、AI 路径、实体、资源与地图碰撞。
 - 碰撞裁定：H020 在 `UnitData.slk` 没有 collision-radius 字段，`radius=22` 继续是 INFERRED 展示/战斗值；WPM 是路径权威，不用未证明半径额外阻断路径。地图 0/1/2/3/5/7 的精灵↔巨魔双向路径在 radius 22 调用的公开判定下连通，未改 WPM。
-- 自动验证：`npx tsx --test scripts/tve4/core_loop.test.ts` 7/7；MVP 17/17；Python 6/6；`npm run check:tve4` 45；`npm run check:data` 8；`npx tsc --noEmit` 与 diff 检查均通过。
+- 自动验证：`npx tsx --test scripts/tve4/core_loop.test.ts` 8/8；MVP 17/17；Python 6/6；`npm run check:tve4` 45；`npm run check:data` 8；`npx tsc --noEmit` 与 diff 检查均通过。
 - 终局：精灵清空、巨魔清空、巨魔 16 万力量三条路径都有直接测试；未用网页固定计时器代替原作条件。
 - 独立审查：原子计费日限额导致子代理中断且未留下代码，本轮由主会话顺序实现并自审；独立 Task 6 审查尚未执行，已作为遗留项记录，未伪称已完成。
 - Task 6 提交：`11c80c5`；未 push、未 amend。未做浏览器实测，完整移动端单局验收属于 Task 8。
@@ -134,7 +134,7 @@
 - 边界：冷却、法力不足、目标超距/无视线、巨魔之眼无目标均失败且不扣蓝、不进冷却；急速/纠缠/沉默/疾风步/狂战士/巨魔之眼/传送均验证效果到期或读条。
 - 规则：`farSight` 运行持续时间统一为实际 15 秒，来源默认 8 秒仍是 blocking unknown；四条 blocking 技能差异未被伪报为已解决。
 - 图标：新增代码内占位图标 `render/icons.ts`，技能/商店 UI 显示图标与法力消耗，未引用原作图。
-- 自动验证：`skills_items` 8/8；`core_loop` 7/7；MVP 17/17；Python 6/6；`npm run check:tve4` 45；`npm run check:data` 8；`npx tsc --noEmit` 与 diff 检查通过。
+- 自动验证：`skills_items` 8/8；`core_loop` 8/8；MVP 17/17；Python 6/6；`npm run check:tve4` 45；`npm run check:data` 8；`npx tsc --noEmit` 与 diff 检查通过。
 - 浏览器：Chrome DevTools 实测精灵/巨魔技能图标、闪烁扣蓝 200→180 与 25 秒冷却、法力状态栏、巨魔商店 81 件物品占位图标；Console error/warn 为 0，随后停止开发服务器。
 - 独立审查：子代理计费限额仍未恢复，本轮主会话实现并自审；独立 Task 7 审查与 Task 6 审查一并列为遗留，不伪造已完成。
 - Task 7 提交：`397bba7`；未 push、未 amend。
@@ -144,19 +144,20 @@
 - 感知：新增 `ai/perception.ts`，英雄视野取 SLK `sight`（H010 1200、H020 1400 源单位），建筑提供 MVP 近似视野；支持疾风步隐身、显影、无作坊暴露和已探索建筑记忆。玩家侧感知不写 AI 记忆。
 - AI：精灵只追踪可见巨魔；巨魔只使用可见英雄/建筑、已探索记忆与最后目击点，视线/A* 阻挡也改用已知建筑。修复粗网格地形 1 格余量导致地图 3 AI 卡住的问题；地形改由 32 单位 WPM 校验，建筑保留缓冲。
 - 表现：`stage.ts` 新增屏幕空间基础迷雾和 `data-fog-enabled`/`data-zoom`；`game.tsx` 新增双指缩放、safe-area 摇杆与按钮、建造/技能面板换行。
-- 自动验证：`ai_vision` 6/6；`core_loop` 7/7；`skills_items` 8/8；MVP 17/17；Python 6/6；`npm run check:tve4` 45；`npm run check:data` 8；`npx tsc --noEmit` 与 diff 检查通过。
+- 自动验证：`ai_vision` 6/6；`core_loop` 8/8；`skills_items` 8/8；MVP 17/17；Python 6/6；`npm run check:tve4` 45；`npm run check:data` 8；`npx tsc --noEmit` 与 diff 检查通过。
 - 浏览器：`390x844` 与 `844x390` 无溢出；竖屏摇杆移动、建造面板、双指缩放 1.150→1.253、切后台恢复均通过；地图 3 受限 AI 在真实 WPM 上到达并 9 秒结束对局，显示失败/再来一局；Console error/warn 为 0。浏览器仅临时加速 rAF，不改产品代码。
 - 独立审查：Task 6/7/8 的独立子代理审查均因计费日限额未执行；已用主会话自审、自动测试与浏览器证据替代，并保留为后续质量遗留。
 - Task 8 提交：`f9ae8fb`；未 push、未 amend。
 - 内网 HTTP 修复：移动端经内网 IP 访问时 `crypto.subtle` 不存在，地图几何哈希改为优先 Web Crypto、缺失时使用纯 TypeScript SHA-256 回退；8 图哈希、篡改拒绝与 `390x844` 内网实测均通过，未跳过完整性校验。
 - UI 反馈修复：`更多` 从底栏移到右上独立按钮，竖屏面板固定在其下方、横屏面板移至左侧，两种朝向与面板外按钮重叠均为 0；随后按清晰度反馈移除 WPM 阻挡色块、地形条纹、树木/岩石与网格，仅保留墙体高亮边界。
+- 建造交互修复：选择建筑后自动收起建造面板，便于直接落位；`Building` 增加 `system` 标记，系统商店/小屋仅豁免同阵营碰撞，玩家建造的墙/建筑正常参与身体与视线碰撞。
 
 ### 英雄模型接入与地图净化
 
 - 开局新增“阵营 → 英雄模型 → 地图”步骤：精灵仅保留 6 个原始贴图模型（m022/m024/m025/m027/m028/m029，移除 m020），巨魔仅保留 m004/m005/m015/m016/m017，保留默认几何；模型预览直接复用 `/tve4-model-demo` 的 MDX 查看器和原始贴图，缺贴图显示灰模，不使用程序化上色。
 - 玩家英雄使用独立透明 WebGL canvas 覆盖渲染，按玩家位置同步，待机/移动/攻击/死亡动作由 `HeroModelViewer` 驱动；AI、建筑、数值、碰撞和状态哈希不受外观选择影响。每个模型通过可见 geoset 投影计算脚底与顶部锚点，脚底对齐玩家世界坐标，血条固定在模型顶部上方 10px；m025/m028/m029/m015/m016/m017 的模型自带地板 geoset 已分别隐藏，避免地板干扰锚点与画面。
 - 地图显示改为统一底色，移除地形条纹、树木/岩石装饰、网格和阻挡色块，仅保留建筑/单位与 WPM 阻挡区边界线；边界线只描绘不可通行与可通行区域的交界，不填色。源 W3E/DOO/WPM 数据仍完整保留，未改模拟。底色使用柔和灰绿 `#36413c`，墙体填充使用浅石色 `#eadbb8`，加深色外框、亮色内框与低透明度暖色外晕，确保墙体清晰但不刺眼。
-- 自动验证：`hero-model` 4/4；`render-geometry` 6/6；`ai_vision` 6/6；`core_loop` 7/7；`skills_items` 8/8；MVP 17/17；Python 6/6；`check:tve4` 45；`check:data` 8；`tsc --noEmit` 通过。
+- 自动验证：`hero-model` 5/5；`render-geometry` 6/6；`ai_vision` 6/6；`core_loop` 8/8；`skills_items` 8/8；MVP 17/17；Python 6/6；`check:tve4` 45；`check:data` 8；`tsc --noEmit` 通过。
 - 浏览器：390×844 下完成精灵/巨魔选模、默认几何、`m022 Oldelf` 与 `m004 Mr.War3_ZhangfeiZ` 进图；模型跟随、`stand → walk → stand`、净化地图均通过，Console error/warn 为 0。迷雾后续改为径向渐变，消除硬边黑框；MDX 覆盖层改用 Phaser 相机视图矩阵锚定，缩放 1.150 与 1.785 时模型中心与玩家屏幕坐标偏差均小于 0.02px。剩余 6 个精灵模型与 5 个巨魔模型逐模实测脚底对齐误差 0、血条距模型顶部 10px；m029 缩放至 1.881 后仍保持。m025/m028/m029/m015/m016/m017 的黑色发光地板 geoset 已隐藏，截图确认地板消失且锚点仍准确。
 - 英雄模型选择：开局前新增独立选择页，按阵营展示 6 个精灵/5 个巨魔稳定编号模型，标注原始贴图/灰模与动作完整性；默认优先动作完整且有原始贴图的模型，可选默认几何。
 - 玩家英雄 MDX：新增透明 `HeroModelViewer`，仅替换玩家英雄占位渲染，按玩家屏幕位置同步并切换待机/移动/攻击/死亡动作；AI、建筑、碰撞和数值不变。外观不进入 `stateHash`，同种子模拟结果保持一致。

@@ -819,6 +819,8 @@ export function Tve4Game() {
                         className={`min-w-[84px] rounded-lg border px-3 py-2 text-xs ${snapshot.placing === kind ? "border-emerald-400 bg-emerald-900" : "border-white/10 bg-white/5"}`}
                         onClick={() => {
                           placingRef.current = placingRef.current === kind ? null : kind;
+                          sheetRef.current = null;
+                          setSheet(null);
                           sync();
                         }}
                       >

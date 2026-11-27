@@ -192,11 +192,11 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
 function createTrollInfrastructure(state: GameState): void {
   // u03D 原版由系统创建，玩家不能自建
   const base = state.session.trollBase;
-  state.buildings.push(makeBuilding(state, "trollHouse", "troll", base.gx - 1, base.gy - 1, 0));
+  state.buildings.push(makeBuilding(state, "trollHouse", "troll", base.gx - 1, base.gy - 1, 0, true));
   for (const [ox, oy] of EQUIPMENT_RULE.shopOffsets) {
     state.buildings.push(makeBuilding(
       state, "market", "troll",
-      base.gx + Math.round(ox * 0.5), base.gy + Math.round(oy * 0.5), 0,
+      base.gx + Math.round(ox * 0.5), base.gy + Math.round(oy * 0.5), 0, true,
     ));
   }
 }
@@ -223,7 +223,7 @@ function spawnTroll(state: GameState): void {
   addEffect(state, p.x, p.y, 90, "#ff8a5c");
 }
 
-function makeBuilding(state: GameState, kind: BuildKind, faction: Faction, gx: number, gy: number, buildTimer: number): Building {
+function makeBuilding(state: GameState, kind: BuildKind, faction: Faction, gx: number, gy: number, buildTimer: number, system = false): Building {
   const def = BUILDINGS[kind];
   return {
     id: state.nextId++, kind, faction,
@@ -231,6 +231,7 @@ function makeBuilding(state: GameState, kind: BuildKind, faction: Faction, gx: n
     gx0: gx, gy0: gy, size: def.size, level: 1,
     hp: def.levels[0].hp, maxHp: def.levels[0].hp,
     alive: true, buildTimer, demolishTimer: 0, eyeMarked: 0, noHitTimer: 0, flash: 0, cd: 0,
+    system,
   };
 }
 
@@ -261,8 +262,8 @@ export function getPlayer(state: GameState): Hero | undefined {
 function occupiedByBuilding(state: GameState, x: number, y: number, r: number, faction?: Faction): boolean {
   for (const b of state.buildings) {
     if (!b.alive || b.buildTimer > 0) continue;
-    // 同阵营建筑不阻挡自己（否则出生点的系统商店/小屋会把巨魔围死）
-    if (faction && b.faction === faction) continue;
+    // 系统建筑不阻挡同阵营英雄，避免出生点商店/小屋把巨魔围死；玩家建筑正常碰撞。
+    if (faction && b.faction === faction && b.system) continue;
     const half = (b.size * TILE) / 2;
     if (Math.abs(x - b.x) < half + r * 0.5 && Math.abs(y - b.y) < half + r * 0.5) return true;
   }
@@ -521,7 +522,7 @@ function hasLineOfSight(
     const gy = Math.floor(py / TILE);
     // 建筑同样阻挡视线（原版墙体是实体）
     for (const b of buildings) {
-      if (!b.alive || b.buildTimer > 0 || b.id === ignoreId || (faction && b.faction === faction)) continue;
+      if (!b.alive || b.buildTimer > 0 || b.id === ignoreId || (faction && b.faction === faction && b.system)) continue;
       if (gx >= b.gx0 && gx < b.gx0 + b.size && gy >= b.gy0 && gy < b.gy0 + b.size) return false;
     }
   }
@@ -537,7 +538,7 @@ function cellWalkable(state: GameState, gx: number, gy: number, faction: Faction
       const nx = gx + dx;
       const ny = gy + dy;
       for (const b of buildings) {
-        if (!b.alive || b.buildTimer > 0 || b.faction === faction) continue;
+        if (!b.alive || b.buildTimer > 0 || (b.faction === faction && b.system)) continue;
         if (nx >= b.gx0 && nx < b.gx0 + b.size && ny >= b.gy0 && ny < b.gy0 + b.size) return false;
       }
     }
@@ -1187,7 +1188,7 @@ export function stateHash(state: GameState): string {
       gx0: b.gx0, gy0: b.gy0, size: b.size, level: b.level, hp: b.hp,
       maxHp: b.maxHp, alive: b.alive, buildTimer: b.buildTimer,
       demolishTimer: b.demolishTimer, eyeMarked: b.eyeMarked,
-      noHitTimer: b.noHitTimer, cd: b.cd,
+      noHitTimer: b.noHitTimer, cd: b.cd, system: b.system ?? false,
     })),
     projectiles: state.projectiles.map((p) => ({
       id: p.id, faction: p.faction, x: p.x, y: p.y, tx: p.tx, ty: p.ty,
