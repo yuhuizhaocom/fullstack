@@ -115,6 +115,7 @@ export function Tve4Game() {
   const [preMap, setPreMap] = useState<number>(DEFAULT_MAP_ID);
   const [preTest, setPreTest] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stageAttempt, setStageAttempt] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
 
@@ -223,6 +224,8 @@ export function Tve4Game() {
         setLoading(false);
         sync();
       } catch (e) {
+        if (cancelled) return;
+        stateRef.current = null;
         setError(e instanceof Error ? e.message : "初始化失败");
         setLoading(false);
       }
@@ -232,7 +235,7 @@ export function Tve4Game() {
       stageRef.current?.destroy();
       stageRef.current = null;
     };
-  }, [preMap, startFaction, sync]);
+  }, [preMap, startFaction, stageAttempt, sync]);
 
   useEffect(() => {
     let last = performance.now();
@@ -437,6 +440,24 @@ export function Tve4Game() {
   }, []);
   toggleSheetRef.current = toggleSheet;
 
+  const retryStage = useCallback(() => {
+    stateRef.current = null;
+    setSnapshot(null);
+    setError(null);
+    setLoading(true);
+    setStageAttempt((attempt) => attempt + 1);
+  }, []);
+
+  const returnToSelection = useCallback(() => {
+    stateRef.current = null;
+    keysRef.current.clear();
+    setSnapshot(null);
+    setSheet(null);
+    setError(null);
+    setLoading(false);
+    setStartFaction(null);
+  }, []);
+
   const restart = useCallback((testMode = testModeRef.current, mode = modeRef.current, rule = ruleRef.current) => {
     testModeRef.current = testMode;
     modeRef.current = mode;
@@ -448,6 +469,7 @@ export function Tve4Game() {
       rule,
       playerFaction: stateRef.current?.playerFaction ?? startFaction ?? "elf",
     });
+    stageRef.current?.updateSession(next.session);
     stateRef.current = next;
     selectedRef.current = null;
     moveTargetRef.current = null;
@@ -550,7 +572,15 @@ export function Tve4Game() {
           {toast}
         </div>
       ) : null}
-      {error ? <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/85 text-sm text-rose-200">{error}</div> : null}
+      {error ? (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-black/85 px-6 text-sm text-rose-200" role="alert">
+          <p>{error}</p>
+          <div className="flex gap-3">
+            <button className="rounded-lg bg-white/10 px-4 py-2 text-white" onClick={returnToSelection}>返回重选</button>
+            <button className="rounded-lg bg-emerald-700 px-4 py-2 text-white" onClick={retryStage}>重试</button>
+          </div>
+        </div>
+      ) : null}
 
       {snapshot ? (
         <>

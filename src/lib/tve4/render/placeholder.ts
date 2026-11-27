@@ -118,6 +118,8 @@ const TERRAIN_PALETTE = [
 
 /** Finite W3E tile-type palette; no map image or texture is involved. */
 export function terrainColor(tileId: number): string {
+  if (tileId === 7) return TERRAIN_PALETTE[7];
+  if (tileId === 8 || tileId === 9) return TERRAIN_PALETTE[8];
   if (tileId <= 0) return TERRAIN_PALETTE[0];
   if (tileId < 16) return TERRAIN_PALETTE[1];
   if (tileId < 32) return TERRAIN_PALETTE[2];

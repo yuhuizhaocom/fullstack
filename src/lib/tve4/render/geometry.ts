@@ -54,8 +54,16 @@ function requireRecord(value: unknown, label: string): Record<string, unknown> {
   return value;
 }
 
+export function assertRuntimeBoundsMatch(renderBounds: RenderBounds, sessionBounds: readonly number[]): void {
+  if (sessionBounds.length !== 4 || renderBounds.some((value, index) => value !== sessionBounds[index])) {
+    throw new Error(
+      `地图渲染几何 runtimeBounds 与模拟会话不一致: ${JSON.stringify(renderBounds)} != ${JSON.stringify(sessionBounds)}`,
+    );
+  }
+}
+
 /** Validate lazy-loaded render data before any geometry reaches Phaser. */
-export function validateRenderGeometry(value: unknown): RenderGeometry {
+export function validateRenderGeometry(value: unknown, sessionBounds?: readonly number[]): RenderGeometry {
   const geometry = requireRecord(value, "地图渲染几何");
   if (geometry.version !== 1) throw new Error("不支持的地图渲染几何版本");
   if (!isInteger(geometry.mapId) || geometry.mapId < 0 || geometry.mapId > 7) {
@@ -77,6 +85,10 @@ export function validateRenderGeometry(value: unknown): RenderGeometry {
     || bounds[3] <= bounds[1]
   ) {
     throw new Error("地图渲染几何 runtimeBounds 未按 128 源单位对齐");
+  }
+
+  if (sessionBounds) {
+    assertRuntimeBoundsMatch([bounds[0], bounds[1], bounds[2], bounds[3]], sessionBounds);
   }
 
   const coordinateSystem = requireRecord(geometry.coordinateSystem, "coordinateSystem");

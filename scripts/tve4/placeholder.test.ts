@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -8,6 +9,10 @@ import {
   terrainColor,
 } from "../../src/lib/tve4/render/placeholder";
 import type { Faction } from "../../src/lib/tve4/types";
+
+const maps = JSON.parse(
+  readFileSync(new URL("../../data/tve4/mvp/maps.json", import.meta.url), "utf8"),
+) as Array<{ terrain: Array<{ tileId: number }> }>;
 
 function recordingContext() {
   const calls: Array<{ op: string; args: unknown[] }> = [];
@@ -68,4 +73,8 @@ test("terrain tile types use a small deterministic palette", () => {
   assert.ok(colors.size <= 12, `expected a limited palette, got ${colors.size}`);
   assert.equal(terrainColor(34), terrainColor(34));
   assert.notEqual(terrainColor(0), terrainColor(197));
+  assert.equal(terrainColor(7), "#355f66");
+  assert.equal(terrainColor(8), "#d7e2df");
+  assert.equal(terrainColor(9), "#d7e2df");
+  assert.ok(maps.some((map) => map.terrain.some((tile) => tile.tileId === 7)));
 });

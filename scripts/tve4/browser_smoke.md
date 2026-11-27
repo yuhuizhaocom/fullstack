@@ -22,6 +22,7 @@
 
 - [x] 地图 0–5、7：至少以一方阵营开局，确认英雄几何、建筑几何和阵营色显示。
 - [x] 地图 4 默认 `OLD`：确认精灵出生点为 `null`，不显示虚构精灵出生标记。
+- [x] 地图 4 `OLD` 巨魔开局后在“更多”切到 `DEFEND`：同一 canvas 的 `data-spawns` 更新为 `elf {29,42}`，`data-spawn-markers` 从 1 增至 2，全图截图可见双方出生标记。
 - [x] 地图 4 `DEFEND`：确认使用 JASS `elf0` 锚点。
 - [x] 地图 6：确认没有精灵出生点；选择巨魔可开局，选择精灵应被明确拒绝，不显示虚构精灵标记。
 - [x] 确认出生格与 JASS 锚点转换结果一致：`gx=floor((anchor.x-runtimeBounds.minX)/128)`、`gy=floor((anchor.y-runtimeBounds.minY)/128)`。
@@ -51,5 +52,13 @@
 | 5 | troll | 844x390 | 12800 / 600 | `{17,15}` / `{41,39}` | `-16,-16,1344x1424` | 无 | 保留 gap |
 | 6 | troll；elf 拒绝 | 844x390 | 13520 / 600 | `null / {41,128}` | `-16,-80,1344x2880` | 无 | elf 开局明确报错且未请求几何 |
 | 7 | elf | 844x390；390x844；844x390 mobile | 15104 / 746 | `{56,11}` / `{60,55}` | `-272,-480,2368x2368` | 无 | 双 viewport 代表验证通过 |
+
+## 修复轮 1 回归（Chrome DevTools）
+
+- [x] 地图 4 `OLD` 巨魔 → “更多”切 `DEFEND`：Stage/canvas 未重建；`data-spawns` 从 `{"elf":null,"troll":{"gx":56,"gy":55}}` 更新为 `{"elf":{"gx":29,"gy":42},"troll":{"gx":56,"gy":55}}`，`data-spawn-markers` `1 -> 2`；按 M 全图后截图可见“巨魔出生点”“精灵出生点”。
+- [x] 用初始化脚本让地图 0 geometry 的 XHR/fetch 请求失败：约 2523ms 出现“地图渲染几何加载失败”错误页，提供“返回重选”“重试”；返回重选后再次失败，再关闭拦截并点“重试”，同一 canvas 恢复 `data-tve4-ready=true`、`data-map-id=0`，canvas 数量始终为 1。
+- [x] 另开正常地图 1：geometry 200，`terrainTiles=16256`、`doodads=1339`、`spawnMarkers=2`，无回归。
+- [x] 上述定向回归 Network 无 404；Console 无 error/warn，仅既有两个 select 缺 `id`/`name` 的 a11y issue。
+- [x] `runtimeBounds` 四个坐标分别篡改 +128 的单元测试均被拒绝；水色 `7=#355f66`、冰雪 `8/9=#d7e2df`，源数据含 tileId 7。
 
 所有地图单图几何加载耗时约 1.58–1.68 秒。Network 无 404，旧 TVE4 PNG/spritesheet 请求为 0；Console 无 error/warn，仅有既存表单字段 a11y issue（两个 select 缺 `id`/`name`，不阻断）。Node 检查输出保留环境基线 `UNDICI-EHPA` experimental warning。

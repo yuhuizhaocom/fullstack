@@ -51,6 +51,22 @@ test("all eight render-only geometry files preserve W3E/DOO source coordinates a
   }
 });
 
+test("render geometry rejects any runtimeBounds mismatch with the simulation session", () => {
+  const value = JSON.parse(
+    readFileSync(new URL("../../public/tve4/geometry/map-4.json", import.meta.url), "utf8"),
+  ) as { runtimeBounds: [number, number, number, number] };
+  const sessionBounds = value.runtimeBounds;
+  for (let index = 0; index < 4; index += 1) {
+    const runtimeBounds: [number, number, number, number] = [...sessionBounds];
+    runtimeBounds[index] += 128;
+    assert.throws(
+      () => validateRenderGeometry({ ...value, runtimeBounds }, sessionBounds),
+      /runtimeBounds 与模拟会话不一致/,
+      `runtimeBounds[${index}] must match the session`,
+    );
+  }
+});
+
 test("render geometry rejects a tampered payload instead of trusting its hash", async () => {
   const geometry = validateRenderGeometry(
     JSON.parse(

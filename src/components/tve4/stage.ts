@@ -5,6 +5,7 @@ import * as Phaser from "phaser";
 import { BUILDINGS, TILE } from "@/lib/tve4/config";
 import { cellCenter } from "@/lib/tve4/map";
 import {
+  assertRuntimeBoundsMatch,
   cameraBoundsToWeb,
   computeGeometryHash,
   sourceToWebPoint,
@@ -22,6 +23,7 @@ import {
 import type { GameState, Interaction } from "@/lib/tve4/types";
 
 export interface Stage4 {
+  updateSession(session: GameState["session"]): void;
   render(state: GameState): void;
   setInteraction(info: Interaction): void;
   zoomBy(factor: number): void;
@@ -51,7 +53,8 @@ class Tve4Scene extends Phaser.Scene {
   private geometry!: RenderGeometry;
 
   private readonly map: GameState["session"]["map"];
-  private readonly spawns: GameState["session"]["spawns"];
+  private spawns: GameState["session"]["spawns"];
+  private spawnLabels: Phaser.GameObjects.Text[] = [];
   private readonly catalogVersion: string;
   private readonly worldWidth: number;
   private readonly worldHeight: number;
@@ -85,6 +88,9 @@ class Tve4Scene extends Phaser.Scene {
 
   preload(): void {
     const url = `/tve4/geometry/map-${this.map.id}.json?v=${encodeURIComponent(this.catalogVersion)}`;
+    this.load.on("loaderror", (file: Phaser.Loader.File) => {
+      this.readyReject(new Error(`地图渲染几何加载失败: ${file.url}`));
+    });
     this.load.json("render-geometry", url);
   }
 
@@ -95,7 +101,7 @@ class Tve4Scene extends Phaser.Scene {
   }
 
   private async initialize(): Promise<void> {
-    const geometry = validateRenderGeometry(this.cache.json.get("render-geometry"));
+    const geometry = validateRenderGeometry(this.cache.json.get("render-geometry"), this.runtimeBounds);
     if (geometry.mapId !== this.map.id) {
       throw new Error(`地图渲染几何 mapId 不符: ${geometry.mapId} != ${this.map.id}`);
     }
@@ -165,7 +171,6 @@ class Tve4Scene extends Phaser.Scene {
     canvas.dataset.cameraBounds = JSON.stringify(this.cameraRect);
     canvas.dataset.terrainTiles = String(geometry.terrain.length);
     canvas.dataset.doodads = String(geometry.doodads.length);
-    canvas.dataset.spawns = JSON.stringify(this.spawns);
     this.readyResolve();
   }
 
@@ -184,20 +189,25 @@ class Tve4Scene extends Phaser.Scene {
   }
 
   private drawSpawnMarkers(): void {
+    this.markers.clear();
+    for (const label of this.spawnLabels) label.destroy();
+    this.spawnLabels = [];
     const marker = (gx: number, gy: number, color: number, label: string, radius: number): void => {
       const point = cellCenter(gx, gy);
       this.markers.lineStyle(2, color, 0.95);
       this.markers.strokeCircle(point.x, point.y, radius);
-      this.add
-        .text(point.x, point.y - radius - 10, label, {
-          fontFamily: "system-ui, sans-serif",
-          fontSize: "13px",
-          color: `#${color.toString(16).padStart(6, "0")}`,
-          stroke: "#050d0a",
-          strokeThickness: 3,
-        })
-        .setOrigin(0.5)
-        .setDepth(3);
+      this.spawnLabels.push(
+        this.add
+          .text(point.x, point.y - radius - 10, label, {
+            fontFamily: "system-ui, sans-serif",
+            fontSize: "13px",
+            color: `#${color.toString(16).padStart(6, "0")}`,
+            stroke: "#050d0a",
+            strokeThickness: 3,
+          })
+          .setOrigin(0.5)
+          .setDepth(3),
+      );
     };
 
     if (this.spawns.troll) marker(this.spawns.troll.gx, this.spawns.troll.gy, 0xff7a5c, "巨魔出生点", 20);
@@ -212,6 +222,17 @@ class Tve4Scene extends Phaser.Scene {
       this.markers.fillStyle(0xbdaea0, 0.85);
       this.markers.fillCircle(point.x, point.y, 6);
     }
+    this.game.canvas.dataset.spawns = JSON.stringify(this.spawns);
+    this.game.canvas.dataset.spawnMarkers = String(this.spawnLabels.length);
+  }
+
+  updateSession(session: GameState["session"]): void {
+    if (session.map !== this.map || session.mapId !== this.map.id || session.catalogVersion !== this.catalogVersion) {
+      throw new Error("Stage4 会话更新仅允许相同地图与 catalogVersion");
+    }
+    assertRuntimeBoundsMatch(this.runtimeBounds, session.grid.bounds);
+    this.spawns = session.spawns;
+    this.drawSpawnMarkers();
   }
 
   setInteractionInfo(info: Interaction): void {
@@ -440,13 +461,23 @@ export async function createStage4(canvas: HTMLCanvasElement, width: number, hei
     render: { antialias: true },
     scene: [scene],
   } as Phaser.Types.Core.GameConfig);
-  await Promise.race([
-    scene.readyPromise,
-    new Promise<void>((_, reject) => {
-      window.setTimeout(() => reject(new Error("渲染器初始化超时，请检查浏览器 WebGL 支持")), 15000);
-    }),
-  ]);
+  let timeoutId: number | undefined;
+  try {
+    await Promise.race([
+      scene.readyPromise,
+      new Promise<void>((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error("渲染器初始化超时，请检查浏览器 WebGL 支持")), 15000);
+      }),
+    ]);
+  } catch (error) {
+    delete canvas.dataset.tve4Ready;
+    game.destroy(false);
+    throw error;
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
   return {
+    updateSession: (session) => scene.updateSession(session),
     render: (state) => scene.apply(state),
     setInteraction: (info) => scene.setInteractionInfo(info),
     zoomBy: (factor) => scene.setZoomBy(factor),
