@@ -1,5 +1,7 @@
 // tve4 全新规则层：实体与状态类型。
 
+import type { SessionContext } from "./sim/session";
+
 export type Faction = "elf" | "troll";
 
 export type BuildKind =
@@ -30,6 +32,8 @@ export interface GameOptions {
   testMode?: boolean;
   playerFaction?: Faction;
   mapId?: number;
+  seed?: number;
+  catalogVersion?: string;
 }
 
 export type SkillKey =
@@ -152,6 +156,9 @@ export interface GameState {
   mode: Mode;
   rule: Rule;
   mapId: number;
+  seed: number;
+  catalogVersion: string;
+  session: SessionContext;
   playerFaction: Faction;
   testMode: boolean;
   trollStrength: number;

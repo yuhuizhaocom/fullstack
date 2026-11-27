@@ -2,7 +2,7 @@
 
 import * as Phaser from "phaser";
 
-import { ACTIVE_MAP, BUILDINGS, GRID_H, GRID_W, SPAWNS, TILE, WORLD_H, WORLD_W } from "@/lib/tve4/config";
+import { BUILDINGS, TILE } from "@/lib/tve4/config";
 import { cellCenter } from "@/lib/tve4/map";
 import type { GameState, Interaction } from "@/lib/tve4/types";
 
@@ -47,23 +47,34 @@ class Tve4Scene extends Phaser.Scene {
   private ghost!: Phaser.GameObjects.Image;
   private texts: Phaser.GameObjects.Text[] = [];
 
-  private camX = WORLD_W / 2;
-  private camY = WORLD_H / 2;
+  private readonly map: GameState["session"]["map"];
+  private readonly spawns: GameState["session"]["spawns"];
+  private readonly worldWidth: number;
+  private readonly worldHeight: number;
+
+  private camX: number;
+  private camY: number;
   private zoom = 1.15;
   private zoomTarget = 1.15;
   private fullMap = false;
   private forceAttack = false;
   private panning = false;
 
-  constructor() {
+  constructor(initialState: GameState) {
     super("tve4");
+    this.map = initialState.session.map;
+    this.spawns = initialState.session.spawns;
+    this.worldWidth = initialState.session.grid.world[0];
+    this.worldHeight = initialState.session.grid.world[1];
+    this.camX = this.worldWidth / 2;
+    this.camY = this.worldHeight / 2;
     this.readyPromise = new Promise<void>((resolve) => {
       this.readyResolve = resolve;
     });
   }
 
   preload(): void {
-    this.load.image("mapbg", ACTIVE_MAP.background);
+    this.load.image("mapbg", this.map.background);
     this.load.image("b_wall", "/tve4/b_wall.png");
     this.load.image("b_tower", "/tve4/b_tower.png");
     this.load.image("b_mine", "/tve4/b_mine.png");
@@ -74,7 +85,7 @@ class Tve4Scene extends Phaser.Scene {
   }
 
   create(): void {
-    this.add.image(0, 0, "mapbg").setOrigin(0).setDisplaySize(WORLD_W, WORLD_H).setDepth(0);
+    this.add.image(0, 0, "mapbg").setOrigin(0).setDisplaySize(this.worldWidth, this.worldHeight).setDepth(0);
     this.drawSpawnMarkers();
 
     this.ground = this.add.graphics().setDepth(2);
@@ -101,7 +112,7 @@ class Tve4Scene extends Phaser.Scene {
     }
 
     const camera = this.cameras.main;
-    camera.setBounds(0, 0, WORLD_W, WORLD_H);
+    camera.setBounds(0, 0, this.worldWidth, this.worldHeight);
     camera.setZoom(this.zoom);
     camera.centerOn(this.camX, this.camY);
 
@@ -109,11 +120,11 @@ class Tve4Scene extends Phaser.Scene {
     keyboard?.on("keydown-M", () => {
       this.fullMap = !this.fullMap;
       this.zoomTarget = this.fullMap
-        ? Math.min(this.scale.width / WORLD_W, this.scale.height / WORLD_H) * 0.95
+        ? Math.min(this.scale.width / this.worldWidth, this.scale.height / this.worldHeight) * 0.95
         : 1.15;
       if (this.fullMap) {
-        this.camX = WORLD_W / 2;
-        this.camY = WORLD_H / 2;
+        this.camX = this.worldWidth / 2;
+        this.camY = this.worldHeight / 2;
       }
     });
     keyboard?.on("keydown-K", () => (this.forceAttack = true));
@@ -132,8 +143,8 @@ class Tve4Scene extends Phaser.Scene {
   }
 
   panBy(dx: number, dy: number): void {
-    this.camX = Phaser.Math.Clamp(this.camX + dx, 0, WORLD_W);
-    this.camY = Phaser.Math.Clamp(this.camY + dy, 0, WORLD_H);
+    this.camX = Phaser.Math.Clamp(this.camX + dx, 0, this.worldWidth);
+    this.camY = Phaser.Math.Clamp(this.camY + dy, 0, this.worldHeight);
     this.fullMap = false;
   }
 
@@ -163,14 +174,14 @@ class Tve4Scene extends Phaser.Scene {
         .setDepth(3);
     };
 
-    marker(SPAWNS.troll.gx, SPAWNS.troll.gy, 0xff7a5c, "巨魔出生点", 20);
-    marker(SPAWNS.elf.gx, SPAWNS.elf.gy, 0x7ee08a, "精灵出生点", 16);
-    if (ACTIVE_MAP.angel) {
-      const p = cellCenter(ACTIVE_MAP.angel.gx, ACTIVE_MAP.angel.gy);
+    marker(this.spawns.troll!.gx, this.spawns.troll!.gy, 0xff7a5c, "巨魔出生点", 20);
+    if (this.spawns.elf) marker(this.spawns.elf.gx, this.spawns.elf.gy, 0x7ee08a, "精灵出生点", 16);
+    if (this.map.angel) {
+      const p = cellCenter(this.map.angel.gx, this.map.angel.gy);
       g.lineStyle(2, 0xf1dfa0, 0.8);
       g.strokeCircle(p.x, p.y, 14);
     }
-    for (const stone of ACTIVE_MAP.stones) {
+    for (const stone of this.map.stones) {
       const p = cellCenter(stone.gx, stone.gy);
       g.fillStyle(0xbdaea0, 0.85);
       g.fillCircle(p.x, p.y, 6);
@@ -195,12 +206,14 @@ class Tve4Scene extends Phaser.Scene {
     this.bars.clear();
 
     // 网格（只画房间附近的可通行格，弱化显示）
+    const { grid } = state.session;
+    const [worldWidth, worldHeight] = grid.world;
     this.ground.lineStyle(1, 0xffffff, 0.035);
-    for (let gy = 0; gy < GRID_H; gy += 2) {
-      this.ground.lineBetween(0, gy * TILE, WORLD_W, gy * TILE);
+    for (let gy = 0; gy < grid.height; gy += 2) {
+      this.ground.lineBetween(0, gy * TILE, worldWidth, gy * TILE);
     }
-    for (let gx = 0; gx < GRID_W; gx += 2) {
-      this.ground.lineBetween(gx * TILE, 0, gx * TILE, WORLD_H);
+    for (let gx = 0; gx < grid.width; gx += 2) {
+      this.ground.lineBetween(gx * TILE, 0, gx * TILE, worldHeight);
     }
 
     // 建筑
@@ -385,8 +398,8 @@ class Tve4Scene extends Phaser.Scene {
   }
 }
 
-export async function createStage4(canvas: HTMLCanvasElement, width: number, height: number): Promise<Stage4> {
-  const scene = new Tve4Scene();
+export async function createStage4(canvas: HTMLCanvasElement, width: number, height: number, initialState: GameState): Promise<Stage4> {
+  const scene = new Tve4Scene(initialState);
   const game = new Phaser.Game({
     type: Phaser.WEBGL,
     canvas,

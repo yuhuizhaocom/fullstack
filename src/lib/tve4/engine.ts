@@ -1,12 +1,8 @@
 // tve4 规则引擎：数值与机制来自 data/game/game-rules.json（已从原版解包文件核对）。
 
 import {
-  ACTIVE_MAP,
   ALL_SKILL_KEYS,
   BUILDINGS,
-  ELF_START,
-  GRID_H,
-  GRID_W,
   HERO_STATS,
   LIVES,
   MODE_START_GOLD,
@@ -16,10 +12,6 @@ import {
   START_GOLD,
   START_WOOD,
   TILE,
-  TROLL_START,
-  WORLD_H,
-  WORLD_W,
-  setActiveMap,
 } from "./config";
 import {
   BOUNTY_RULE,
@@ -34,6 +26,7 @@ import {
   SCENARIO_RULE,
   VISION_RULE,
 } from "./rules";
+import { createSession, requireSpawn } from "./sim/session";
 import type {
   Buffs,
   BuildKind,
@@ -68,23 +61,25 @@ function gridToWorld(gx: number, gy: number) {
 }
 
 function cellBlocked(state: GameState, gx: number, gy: number): boolean {
-  if (gx < 0 || gy < 0 || gx >= GRID_W || gy >= GRID_H) return true;
-  return state.blocked[gy * GRID_W + gx] === 1;
+  const grid = state.session.grid;
+  if (gx < 0 || gy < 0 || gx >= grid.width || gy >= grid.height) return true;
+  return state.blocked[gy * grid.width + gx] === 1;
+}
+
+/** Movement/LOS use the full 32-unit source WPM, not the coarse build grid. */
+function pathingBlocked(state: GameState, x: number, y: number): boolean {
+  const { grid, pathing, pathing32 } = state.session;
+  const sourceX = grid.bounds[0] + x / RULES.scale;
+  const sourceY = grid.bounds[1] + y / RULES.scale;
+  const gx = Math.floor((sourceX - pathing.origin[0]) / pathing.cellUnits);
+  const gy = Math.floor((sourceY - pathing.origin[1]) / pathing.cellUnits);
+  if (gx < 0 || gy < 0 || gx >= pathing.width || gy >= pathing.height) return true;
+  return (pathing32[gy * pathing.width + gx] & 0x02) !== 0;
 }
 
 export function setBlocked(state: GameState, data: Uint8Array): void {
   for (let i = 0; i < Math.min(state.blocked.length, data.length); i += 1) {
     state.blocked[i] = data[i] > 0 ? 1 : 0;
-  }
-  clearSpawn(state, ELF_START.gx, ELF_START.gy);
-  clearSpawn(state, TROLL_START.gx, TROLL_START.gy);
-}
-
-function clearSpawn(state: GameState, gx: number, gy: number): void {
-  for (let y = gy - 2; y <= gy + 2; y += 1) {
-    for (let x = gx - 2; x <= gx + 2; x += 1) {
-      if (x >= 0 && y >= 0 && x < GRID_W && y < GRID_H) state.blocked[y * GRID_W + x] = 0;
-    }
   }
 }
 
@@ -105,15 +100,18 @@ function setHint(state: GameState, text: string): void {
 // ---------------------------------------------------------------- 创建 / 死亡
 
 export function createGame(options: GameOptions = {}): GameState {
-  if (options.mapId !== undefined) setActiveMap(options.mapId);
-  const mode: Mode = options.mode ?? "OLD";
-  const rule: Rule = options.rule ?? "SINGLE";
+  const session = createSession(options);
+  const mode: Mode = session.mode;
+  const rule: Rule = session.rule;
   const testMode = options.testMode ?? false;
-  const playerFaction: Faction = options.playerFaction ?? "elf";
+  const playerFaction: Faction = session.playerFaction;
   const state: GameState = {
     mode,
     rule,
-    mapId: ACTIVE_MAP.id,
+    mapId: session.mapId,
+    seed: session.seed,
+    catalogVersion: session.catalogVersion,
+    session,
     playerFaction,
     testMode,
     trollStrength: 0,
@@ -140,14 +138,14 @@ export function createGame(options: GameOptions = {}): GameState {
     effects: [],
     floats: [],
     hint: null,
-    blocked: new Uint8Array(GRID_W * GRID_H),
+    blocked: new Uint8Array(session.blocked128),
     trollSpawned: false,
     incomeAcc: 0,
     aiTimer: 2,
     nextId: 1,
     stats: { kills: 0, destroyed: 0, goldEarned: 0, damage: 0 },
   };
-  const playerPoint = playerFaction === "elf" ? ELF_START : TROLL_START;
+  const playerPoint = requireSpawn(session, playerFaction);
   const pp = gridToWorld(playerPoint.gx, playerPoint.gy);
   state.heroes.push(makeHero(state, playerFaction, true, pp.x, pp.y));
   if (playerFaction === "troll") createTrollInfrastructure(state);
@@ -184,11 +182,12 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
 
 function createTrollInfrastructure(state: GameState): void {
   // u03D 原版由系统创建，玩家不能自建
-  state.buildings.push(makeBuilding(state, "trollHouse", "troll", TROLL_START.gx - 1, TROLL_START.gy - 1, 0));
+  const spawn = requireSpawn(state.session, "troll");
+  state.buildings.push(makeBuilding(state, "trollHouse", "troll", spawn.gx - 1, spawn.gy - 1, 0));
   for (const [ox, oy] of EQUIPMENT_RULE.shopOffsets) {
     state.buildings.push(makeBuilding(
       state, "market", "troll",
-      TROLL_START.gx + Math.round(ox * 0.5), TROLL_START.gy + Math.round(oy * 0.5), 0,
+      spawn.gx + Math.round(ox * 0.5), spawn.gy + Math.round(oy * 0.5), 0,
     ));
   }
 }
@@ -197,11 +196,13 @@ function spawnTroll(state: GameState): void {
   let p: { x: number; y: number };
   if (state.playerFaction === "troll") {
     // 玩家是巨魔：此时出现的是 AI 精灵
-    p = gridToWorld(ELF_START.gx, ELF_START.gy);
+    const elfSpawn = requireSpawn(state.session, "elf");
+    p = gridToWorld(elfSpawn.gx, elfSpawn.gy);
     state.heroes.push(makeHero(state, "elf", false, p.x, p.y));
     setHint(state, "精灵对手已出现");
   } else {
-    p = gridToWorld(TROLL_START.gx, TROLL_START.gy);
+    const trollSpawn = requireSpawn(state.session, "troll");
+    p = gridToWorld(trollSpawn.gx, trollSpawn.gy);
     const troll = makeHero(state, "troll", false, p.x, p.y);
     troll.invuln = RULES.trollInvulnerableSeconds;
     state.heroes.push(troll);
@@ -226,7 +227,7 @@ function makeBuilding(state: GameState, kind: BuildKind, faction: Faction, gx: n
 
 function respawnHero(state: GameState, h: Hero): void {
   const s = HERO_STATS[h.faction];
-  const point = h.faction === "elf" ? ELF_START : TROLL_START;
+  const point = requireSpawn(state.session, h.faction);
   const p = gridToWorld(point.gx, point.gy);
   h.alive = true;
   h.hp = h.maxHp;
@@ -259,15 +260,16 @@ function occupiedByBuilding(state: GameState, x: number, y: number, r: number, f
 }
 
 function positionFree(state: GameState, x: number, y: number, r: number, faction?: Faction): boolean {
-  if (x < r || y < r || x > WORLD_W - r || y > WORLD_H - r) return false;
+  const [worldWidth, worldHeight] = state.session.grid.world;
+  if (x < r || y < r || x > worldWidth - r || y > worldHeight - r) return false;
   // 圆形采样：周向 + 中心，避免 AABB 角点把 1 格墙误判成可穿过，同时允许斜向挤过窄口
   for (let i = 0; i < 16; i += 1) {
     const a = (i / 16) * Math.PI * 2;
     const px = x + Math.cos(a) * r;
     const py = y + Math.sin(a) * r;
-    if (cellBlocked(state, Math.floor(px / TILE), Math.floor(py / TILE))) return false;
+    if (pathingBlocked(state, px, py)) return false;
   }
-  if (cellBlocked(state, Math.floor(x / TILE), Math.floor(y / TILE))) return false;
+  if (pathingBlocked(state, x, y)) return false;
   return !occupiedByBuilding(state, x, y, r, faction);
 }
 
@@ -316,7 +318,7 @@ export function canBuild(
   const def = BUILDINGS[kind];
   if (!def) return { ok: false, reason: "未知建筑" };
   const size = def.size;
-  if (gx < 0 || gy < 0 || gx + size > GRID_W || gy + size > GRID_H) return { ok: false, reason: "超出地图" };
+  if (gx < 0 || gy < 0 || gx + size > state.session.grid.width || gy + size > state.session.grid.height) return { ok: false, reason: "超出地图" };
   if (!cellsFreeForBuilding(state, gx, gy, size)) return { ok: false, reason: "地块不可用" };
   // 原版「同时只能有一座作坊」，死亡时解除（通过存活计数自然实现）
   if (kind === "tent" && state.buildings.some((b) => b.alive && b.kind === "tent" && b.faction === faction)) {
@@ -496,14 +498,15 @@ function hasLineOfSight(
   ignoreId?: number, faction?: Faction,
 ): boolean {
   const dist = Math.hypot(x2 - x1, y2 - y1);
-  const steps = Math.max(1, Math.ceil(dist / (TILE / 2)));
+  const sampleUnits = state.session.pathing.cellUnits * RULES.scale;
+  const steps = Math.max(1, Math.ceil(dist / (sampleUnits / 2)));
   for (let i = 1; i < steps; i += 1) {
     const t = i / steps;
     const px = x1 + (x2 - x1) * t;
     const py = y1 + (y2 - y1) * t;
+    if (pathingBlocked(state, px, py)) return false;
     const gx = Math.floor(px / TILE);
     const gy = Math.floor(py / TILE);
-    if (cellBlocked(state, gx, gy)) return false;
     // 建筑同样阻挡视线（原版墙体是实体）
     for (const b of state.buildings) {
       if (!b.alive || b.buildTimer > 0 || b.id === ignoreId || (faction && b.faction === faction)) continue;
@@ -538,8 +541,8 @@ function findPath(
 ): Array<{ x: number; y: number }> {
   const startX = Math.floor(sx / TILE);
   const startY = Math.floor(sy / TILE);
-  let goalX = Math.max(0, Math.min(GRID_W - 1, Math.floor(gx / TILE)));
-  let goalY = Math.max(0, Math.min(GRID_H - 1, Math.floor(gy / TILE)));
+  let goalX = Math.max(0, Math.min(state.session.grid.width - 1, Math.floor(gx / TILE)));
+  let goalY = Math.max(0, Math.min(state.session.grid.height - 1, Math.floor(gy / TILE)));
   if (!cellWalkable(state, goalX, goalY, faction)) {
     let found = false;
     for (let r = 1; r <= 6 && !found; r += 1) {
@@ -557,9 +560,9 @@ function findPath(
     }
     if (!found) return [];
   }
-  const total = GRID_W * GRID_H;
-  const start = startY * GRID_W + startX;
-  const goal = goalY * GRID_W + goalX;
+  const total = state.session.grid.width * state.session.grid.height;
+  const start = startY * state.session.grid.width + startX;
+  const goal = goalY * state.session.grid.width + goalX;
   if (start === goal) return [];
   const parent = new Int32Array(total).fill(-1);
   const queue = new Int32Array(total);
@@ -567,17 +570,17 @@ function findPath(
   let tail = 0;
   parent[start] = start;
   queue[tail++] = start;
-  const dirs = [1, -1, GRID_W, -GRID_W];
+  const dirs = [1, -1, state.session.grid.width, -state.session.grid.width];
   while (head < tail && parent[goal] < 0) {
     const cur = queue[head++];
     for (const d of dirs) {
       const next = cur + d;
       if (next < 0 || next >= total) continue;
       if (parent[next] >= 0) continue;
-      if (d === 1 && next % GRID_W === 0) continue;
-      if (d === -1 && cur % GRID_W === 0) continue;
-      const nx = next % GRID_W;
-      const ny = Math.floor(next / GRID_W);
+      if (d === 1 && next % state.session.grid.width === 0) continue;
+      if (d === -1 && cur % state.session.grid.width === 0) continue;
+      const nx = next % state.session.grid.width;
+      const ny = Math.floor(next / state.session.grid.width);
       if (!cellWalkable(state, nx, ny, faction)) continue;
       parent[next] = cur;
       queue[tail++] = next;
@@ -592,8 +595,8 @@ function findPath(
   }
   cells.reverse();
   return cells.map((c) => ({
-    x: ((c % GRID_W) + 0.5) * TILE,
-    y: (Math.floor(c / GRID_W) + 0.5) * TILE,
+    x: ((c % state.session.grid.width) + 0.5) * TILE,
+    y: (Math.floor(c / state.session.grid.width) + 0.5) * TILE,
   }));
 }
 
@@ -728,7 +731,8 @@ function updateTimers(state: GameState, dt: number): void {
       h.channelTime -= dt;
       if (h.channelTime <= 0) {
         h.channelTime = 0;
-        const p = gridToWorld(TROLL_START.gx, TROLL_START.gy);
+        const spawn = requireSpawn(state.session, "troll");
+        const p = gridToWorld(spawn.gx, spawn.gy);
         h.x = p.x;
         h.y = p.y;
         h.invuln = 1;
@@ -903,8 +907,9 @@ function updateProjectiles(state: GameState, dt: number): void {
 }
 
 function nearShop(state: GameState, troll: Hero): boolean {
-  const spawn = gridToWorld(TROLL_START.gx, TROLL_START.gy);
-  return Math.hypot(troll.x - spawn.x, troll.y - spawn.y) <= EQUIPMENT_RULE.purchaseRadius;
+  const spawn = requireSpawn(state.session, "troll");
+  const point = gridToWorld(spawn.gx, spawn.gy);
+  return Math.hypot(troll.x - point.x, troll.y - point.y) <= EQUIPMENT_RULE.purchaseRadius;
 }
 
 function updateElfAI(state: GameState, dt: number, elf: Hero): void {
@@ -926,13 +931,14 @@ function updateElfAI(state: GameState, dt: number, elf: Hero): void {
   state.aiTimer -= dt;
   if (state.aiTimer > 0) return;
   state.aiTimer = 4 + Math.random() * 3;
+  const elfSpawn = requireSpawn(state.session, "elf");
   const have = (kind: BuildKind) => state.buildings.some((b) => b.alive && b.faction === "elf" && b.kind === kind);
   const tryPlace = (kind: BuildKind): boolean => {
     for (let r = 2; r <= 9; r += 1) {
       for (let a = 0; a < 12; a += 1) {
         const ang = (a / 12) * Math.PI * 2;
-        const gx = Math.round(ELF_START.gx + Math.cos(ang) * r);
-        const gy = Math.round(ELF_START.gy + Math.sin(ang) * r);
+        const gx = Math.round(elfSpawn.gx + Math.cos(ang) * r);
+        const gy = Math.round(elfSpawn.gy + Math.sin(ang) * r);
         if (canBuild(state, kind, gx, gy, "elf").ok) return tryBuild(state, kind, gx, gy, "elf");
       }
     }
@@ -964,9 +970,10 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
   let tx: number;
   let ty: number;
   if (nextItem && troll.gold >= nextItem.gold && troll.hp > troll.maxHp * 0.5) {
-    const spawn = gridToWorld(TROLL_START.gx, TROLL_START.gy);
-    tx = spawn.x;
-    ty = spawn.y;
+    const spawn = requireSpawn(state.session, "troll");
+    const point = gridToWorld(spawn.gx, spawn.gy);
+    tx = point.x;
+    ty = point.y;
   } else if (house && troll.hp < troll.maxHp * 0.35) {
     tx = house.x;
     ty = house.y;
@@ -1285,8 +1292,8 @@ export function buyStrengthBook(state: GameState, key: string): boolean {
 // ---------------------------------------------------------------- 技能
 
 function findOpenNear(state: GameState, x: number, y: number): { x: number; y: number } {
-  const clampedX = Math.max(TILE, Math.min(WORLD_W - TILE, x));
-  const clampedY = Math.max(TILE, Math.min(WORLD_H - TILE, y));
+  const clampedX = Math.max(TILE, Math.min(state.session.grid.world[0] - TILE, x));
+  const clampedY = Math.max(TILE, Math.min(state.session.grid.world[1] - TILE, y));
   if (positionFree(state, clampedX, clampedY, 14)) return { x: clampedX, y: clampedY };
   for (let ring = 1; ring <= 8; ring += 1) {
     for (let a = 0; a < 16; a += 1) {

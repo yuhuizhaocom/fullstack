@@ -5,14 +5,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BUILDINGS,
   BUILD_KINDS,
-  GRID_H,
-  GRID_W,
   MODE_LABEL,
   RULE_LABEL,
   RULE_PREP,
   SKILLS,
   TILE,
-  setActiveMap,
 } from "@/lib/tve4/config";
 import { DEFAULT_MAP_ID, MAP_DEFINITIONS, MAP_ORDER } from "@/lib/tve4/maps.generated";
 import {
@@ -28,7 +25,6 @@ import {
   getPlayer,
   relocateElf,
   repairWall,
-  setBlocked,
   stepGame,
   toggleMobileDev,
   upgradeKind,
@@ -36,7 +32,6 @@ import {
   tryBuild,
   tryUpgrade,
 } from "@/lib/tve4/engine";
-import { buildBlocked } from "@/lib/tve4/map";
 import { EQUIPMENT_RULE, MARKET_RULE, RULES, SCENARIO_RULE } from "@/lib/tve4/rules";
 import type { BuildKind, Faction, GameState, Interaction, Mode, Rule, SkillKey } from "@/lib/tve4/types";
 
@@ -204,17 +199,16 @@ export function Tve4Game() {
     (async () => {
       try {
         const { createStage4 } = await import("./stage");
-        const stage = await createStage4(canvas, box.clientWidth, box.clientHeight);
+        const testMode = testModeRef.current;
+        const mode = modeRef.current;
+        const rule = ruleRef.current;
+        const state = createGame({ mapId: preMap, testMode, mode, rule, playerFaction: startFaction });
+        const stage = await createStage4(canvas, box.clientWidth, box.clientHeight, state);
         if (cancelled) {
           stage.destroy();
           return;
         }
         stageRef.current = stage;
-        const testMode = testModeRef.current;
-        const mode = modeRef.current;
-        const rule = ruleRef.current;
-        const state = createGame({ testMode, mode, rule, playerFaction: startFaction });
-        setBlocked(state, buildBlocked());
         stateRef.current = state;
         setLoading(false);
         sync();
@@ -228,7 +222,7 @@ export function Tve4Game() {
       stageRef.current?.destroy();
       stageRef.current = null;
     };
-  }, [sync, startFaction]);
+  }, [preMap, startFaction, sync]);
 
   useEffect(() => {
     let last = performance.now();
@@ -284,8 +278,9 @@ export function Tve4Game() {
       const interaction: Interaction = { placing, selectedId: selectedRef.current, hover, gx: 0, gy: 0, valid: false };
       if (placing && hover) {
         const size = BUILDINGS[placing].size;
-        const gx = Math.max(0, Math.min(GRID_W - size, Math.floor(hover.x / TILE - (size - 1) / 2)));
-        const gy = Math.max(0, Math.min(GRID_H - size, Math.floor(hover.y / TILE - (size - 1) / 2)));
+        const { grid } = state.session;
+        const gx = Math.max(0, Math.min(grid.width - size, Math.floor(hover.x / TILE - (size - 1) / 2)));
+        const gy = Math.max(0, Math.min(grid.height - size, Math.floor(hover.y / TILE - (size - 1) / 2)));
         interaction.gx = gx;
         interaction.gy = gy;
         interaction.valid = canBuild(state, placing, gx, gy).ok;
@@ -436,8 +431,13 @@ export function Tve4Game() {
     testModeRef.current = testMode;
     modeRef.current = mode;
     ruleRef.current = rule;
-    const next = createGame({ testMode, mode, rule, playerFaction: stateRef.current?.playerFaction ?? startFaction ?? "elf" });
-    setBlocked(next, buildBlocked());
+    const next = createGame({
+      mapId: stateRef.current?.session.mapId ?? preMap,
+      testMode,
+      mode,
+      rule,
+      playerFaction: stateRef.current?.playerFaction ?? startFaction ?? "elf",
+    });
     stateRef.current = next;
     selectedRef.current = null;
     moveTargetRef.current = null;
@@ -446,7 +446,7 @@ export function Tve4Game() {
     sheetRef.current = null;
     setSheet(null);
     sync();
-  }, [sync]);
+  }, [preMap, startFaction, sync]);
 
   return (
     <div ref={boxRef} className="relative h-dvh w-full overflow-hidden bg-[#07100b]">
@@ -506,7 +506,6 @@ export function Tve4Game() {
                 modeRef.current = preMode;
                 ruleRef.current = preRule;
                 testModeRef.current = preTest;
-                setActiveMap(preMap);
                 setLoading(true);
                 setStartFaction("elf");
               }}
@@ -520,7 +519,6 @@ export function Tve4Game() {
                 modeRef.current = preMode;
                 ruleRef.current = preRule;
                 testModeRef.current = preTest;
-                setActiveMap(preMap);
                 setLoading(true);
                 setStartFaction("troll");
               }}

@@ -1,37 +1,18 @@
 // tve4 配置：地图常量 + 从规则文件派生的数值。
 // 规则文件已从原版解包文件核对（见 data/game/game-rules.json）。
 
-import { DEFAULT_MAP_ID, MAP_DEFINITIONS, type MapDefinition } from "./maps.generated";
+import { MAP_DEFINITIONS } from "./maps.generated";
 import { BUILDING_RULES, RULES } from "./rules";
-import type { BuildKind, Faction, Mode, Rule } from "./types";
+import type { BuildKind, Mode, Rule } from "./types";
 
 export const TILE = 16;
 
-// 原版一张 w3x 内含 8 张可选地图（war3map.j GameMap_load 的 MAP_0..MAP_7）。
-// 这些绑定在开局前由 setActiveMap() 更新，导入方读取到的始终是当前地图。
-export let ACTIVE_MAP: MapDefinition = MAP_DEFINITIONS[DEFAULT_MAP_ID];
-export let GRID_W = ACTIVE_MAP.grid[0];
-export let GRID_H = ACTIVE_MAP.grid[1];
-export let WORLD_W = GRID_W * TILE;
-export let WORLD_H = GRID_H * TILE;
-export let ELF_START = ACTIVE_MAP.spawns.elf;
-export let TROLL_START = ACTIVE_MAP.spawns.troll;
-export let SPAWNS: Record<Faction, { gx: number; gy: number }> = {
-  elf: ELF_START,
-  troll: TROLL_START,
-};
-
+/**
+ * UI migration adapter only. Simulation state is created by createSession and
+ * must never depend on a process-wide active map.
+ */
 export function setActiveMap(id: number): void {
-  const map = MAP_DEFINITIONS[id];
-  if (!map) throw new Error(`未知地图: ${id}`);
-  ACTIVE_MAP = map;
-  GRID_W = map.grid[0];
-  GRID_H = map.grid[1];
-  WORLD_W = GRID_W * TILE;
-  WORLD_H = GRID_H * TILE;
-  ELF_START = map.spawns.elf;
-  TROLL_START = map.spawns.troll;
-  SPAWNS = { elf: ELF_START, troll: TROLL_START };
+  if (!MAP_DEFINITIONS[id]) throw new Error(`未知地图: ${id}`);
 }
 
 export const START_GOLD = RULES.startGold;

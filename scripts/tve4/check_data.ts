@@ -2,7 +2,9 @@
 // 校验规则文件与 8 张原版地图数据没有被改坏，且关键 VERIFIED 数值未被单机缩放。
 import assert from "node:assert/strict";
 
-import { DEFAULT_MAP_ID, MAP_DEFINITIONS, MAP_ORDER } from "../../src/lib/tve4/maps.generated";
+import { DEFAULT_MAP_ID, MAP_DEFINITIONS, MAP_ORDER, MAP_CATALOG_VERSION } from "../../src/lib/tve4/maps.generated";
+import { buildPathing32 } from "../../src/lib/tve4/map";
+import { WPM_PATHING } from "../../src/lib/tve4/pathing.generated";
 import { RULES } from "../../src/lib/tve4/rules";
 
 let passed = 0;
@@ -63,12 +65,24 @@ check("原版 8 张地图齐全且元数据一致", () => {
     assert.equal(map.grid[0] * map.grid[1] > 0, true);
     assert.equal(map.world[0], map.grid[0] * RULES.scale * 128);
     assert.equal(map.world[1], map.grid[1] * RULES.scale * 128);
-    assert.equal(map.blockedBase64.length > 0, true);
-    assert.equal(map.spawns.elf.gx >= 0 && map.spawns.elf.gx < map.grid[0], true);
-    assert.equal(map.spawns.troll.gx >= 0 && map.spawns.troll.gx < map.grid[0], true);
-    assert.ok(map.elfDistance > 0);
+    assert.equal(map.pathing.width, 1_536);
+    assert.equal(map.pathing.height, 1_152);
+    assert.equal(map.pathing.cellUnits, 32);
+    assert.deepEqual(map.pathing.origin, [-29_696, -17_920]);
+    assert.equal(map.pathing.sha256, WPM_PATHING.sha256);
+    assert.equal(buildPathing32(map).length, 1_536 * 1_152);
+    if (map.spawns.elf) {
+      assert.equal(map.spawns.elf.gx >= 0 && map.spawns.elf.gx < map.grid[0], true);
+      assert.equal(map.spawns.elf.gy >= 0 && map.spawns.elf.gy < map.grid[1], true);
+    } else {
+      assert.ok(id === 4 || id === 6, "只有地图 4/6 允许缺少通用精灵出生点");
+    }
+    assert.ok(map.spawns.troll);
+    assert.equal(map.spawns.troll!.gx >= 0 && map.spawns.troll!.gx < map.grid[0], true);
+    assert.equal(map.spawns.troll!.gy >= 0 && map.spawns.troll!.gy < map.grid[1], true);
   }
   assert.ok(MAP_DEFINITIONS[DEFAULT_MAP_ID]);
+  assert.match(MAP_CATALOG_VERSION, /^[a-f0-9]{64}$/);
 });
 
 console.log(`${passed} checks passed`);

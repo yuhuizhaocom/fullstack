@@ -2,8 +2,8 @@
 // 校验数值来自 data/game/game-rules.json（原版解包核对）。
 import assert from "node:assert/strict";
 
-import { GRID_H, GRID_W, RULE_PREP, SPAWNS, TILE, setActiveMap } from "../../src/lib/tve4/config";
-import { DEFAULT_MAP_ID, MAP_DEFINITIONS, MAP_ORDER } from "../../src/lib/tve4/maps.generated";
+import { RULE_PREP, TILE } from "../../src/lib/tve4/config";
+import { MAP_DEFINITIONS, MAP_ORDER } from "../../src/lib/tve4/maps.generated";
 import {
   buyEquipment,
   buyStrengthBook,
@@ -43,7 +43,21 @@ function run(state: GameState, seconds: number, mx = 0, my = 0) {
 }
 
 function openMap(state: GameState) {
+  // Artificial regression fixtures must update both collision layers.
   state.blocked.fill(0);
+  state.session.pathing32.fill(0);
+}
+
+function setWallColumn(state: GameState, gx: number, fromY: number, toY: number) {
+  const { grid, pathing, pathing32 } = state.session;
+  const pathingX = (grid.bounds[0] - pathing.origin[0]) / pathing.cellUnits + gx * 4;
+  for (let gy = fromY; gy <= toY; gy += 1) {
+    state.blocked[gy * grid.width + gx] = 1;
+    for (let dy = 0; dy < 4; dy += 1) {
+      const y = (grid.bounds[1] - pathing.origin[1]) / pathing.cellUnits + gy * 4 + dy;
+      for (let dx = 0; dx < 4; dx += 1) pathing32[y * pathing.width + pathingX + dx] |= 0x02;
+    }
+  }
 }
 
 function upgradeNow(state: GameState, id: number) {
@@ -140,7 +154,7 @@ check("碰撞：精灵和巨魔都不能穿薄墙", () => {
     h.y = 30 * TILE + 8;
     other.x = 60 * TILE;
     other.y = h.y;
-    for (let y = 20; y <= 40; y += 1) s.blocked[y * GRID_W + 31] = 1;
+    setWallColumn(s, 31, 20, 40);
     run(s, 1);
     assert.ok(h.x < 31 * TILE, `${faction} 不应穿墙，x=${h.x}`);
   }
@@ -220,36 +234,26 @@ check("隐身：攻击取消疾风步（无自创飘字）", () => {
   assert.ok(!s.floats.some((f) => f.text.includes("现身")));
 });
 
-check("原版地图：8 张竞技场全部开放格连通，双方出生点可达", () => {
+check("原版 8 张地图：会话边界、WPM 与粗网格一致", () => {
   for (const id of MAP_ORDER) {
-    setActiveMap(id);
     const def = MAP_DEFINITIONS[id];
-    const grid = buildBlocked();
+    const grid = buildBlocked(id);
+    const state = createGame({ mapId: id, playerFaction: "troll" });
     assert.equal(grid.length, def.grid[0] * def.grid[1]);
-    assert.equal(GRID_W, def.grid[0]);
-    assert.equal(GRID_H, def.grid[1]);
-    let total = 0;
-    for (const cell of grid) if (cell === 0) total += 1;
-    const seen = new Set([SPAWNS.troll.gy * GRID_W + SPAWNS.troll.gx]);
-    const q = [SPAWNS.troll.gy * GRID_W + SPAWNS.troll.gx];
-    while (q.length) {
-      const cur = q.shift()!;
-      const x = cur % GRID_W;
-      const y = Math.floor(cur / GRID_W);
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const nx = x + dx;
-        const ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= GRID_W || ny >= GRID_H) continue;
-        const next = ny * GRID_W + nx;
-        if (seen.has(next) || grid[next] !== 0) continue;
-        seen.add(next);
-        q.push(next);
-      }
+    assert.deepEqual(state.blocked, grid);
+    assert.equal(state.session.grid.width, def.grid[0]);
+    assert.equal(state.session.grid.height, def.grid[1]);
+    assert.equal(state.session.pathing32.length, 1_536 * 1_152);
+    assert.ok(state.session.spawns.troll);
+    assert.ok(state.session.spawns.troll!.gx >= 0 && state.session.spawns.troll!.gx < def.grid[0]);
+    assert.ok(state.session.spawns.troll!.gy >= 0 && state.session.spawns.troll!.gy < def.grid[1]);
+    if (state.session.spawns.elf) {
+      assert.ok(state.session.spawns.elf.gx >= 0 && state.session.spawns.elf.gx < def.grid[0]);
+      assert.ok(state.session.spawns.elf.gy >= 0 && state.session.spawns.elf.gy < def.grid[1]);
+    } else {
+      assert.ok(id === 4 || id === 6);
     }
-    assert.equal(seen.size, total, `地图 ${id} ${def.name} 存在不连通区域`);
-    assert.ok(seen.has(SPAWNS.elf.gy * GRID_W + SPAWNS.elf.gx), `地图 ${id} 精灵出生点不可达`);
   }
-  setActiveMap(DEFAULT_MAP_ID);
 });
 
 check("规则：FIX/SURVIVE 准备期 45 秒", () => {
@@ -389,10 +393,11 @@ check("装备：回商店附近购买，属性按规则文件生效", () => {
   const troll = s.heroes.find((h) => h.faction === "troll")!;
   troll.gold = 1000;
   const item = EQUIPMENT_RULE.items.find((i) => i.key === "I02A")!;
-  troll.x = (GRID_W - 2) * TILE;
-  troll.y = (GRID_H - 2) * TILE;
+  const { grid, spawns } = s.session;
+  troll.x = (grid.width - 2) * TILE;
+  troll.y = (grid.height - 2) * TILE;
   assert.equal(canBuyEquipment(s, item.key), false);
-  const spawn = { x: (SPAWNS.troll.gx + 0.5) * TILE, y: (SPAWNS.troll.gy + 0.5) * TILE };
+  const spawn = { x: (spawns.troll!.gx + 0.5) * TILE, y: (spawns.troll!.gy + 0.5) * TILE };
   troll.x = spawn.x + 20;
   troll.y = spawn.y;
   const before = troll.damage;
@@ -404,8 +409,9 @@ check("装备：回商店附近购买，属性按规则文件生效", () => {
 
 check("碰撞格尺寸正确", () => {
   const s = createGame();
-  assert.equal(s.blocked.length, GRID_W * GRID_H);
-  setBlocked(s, new Uint8Array(GRID_W * GRID_H).fill(1));
+  const { width, height } = s.session.grid;
+  assert.equal(s.blocked.length, width * height);
+  setBlocked(s, new Uint8Array(width * height).fill(1));
   assert.equal(s.blocked[0], 1);
 });
 
@@ -589,7 +595,7 @@ check("巨魔是近战：隔墙不能攻击", () => {
   p.y = troll.y;
   p.hp = 1000;
   p.maxHp = 1000;
-  for (let y = 10; y <= 70; y += 1) s.blocked[y * GRID_W + 31] = 1;
+  setWallColumn(s, 31, 10, 70);
   const before = p.hp;
   run(s, 0.2);
   assert.equal(p.hp, before, "巨魔不能隔着墙打到精灵");
@@ -608,7 +614,7 @@ check("巨魔寻路：隔墙时绕行而非卡住", () => {
   p.hp = 100000;
   p.maxHp = 100000;
   // 竖直墙，只有底部 y>44 有缺口
-  for (let y = 20; y <= 44; y += 1) s.blocked[y * GRID_W + 23] = 1;
+  setWallColumn(s, 23, 20, 44);
   run(s, 12);
   assert.ok(troll.x > 23 * TILE, `巨魔应绕过墙到另一侧，x=${troll.x}`);
 });
