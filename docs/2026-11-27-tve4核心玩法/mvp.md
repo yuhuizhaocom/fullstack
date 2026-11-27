@@ -43,8 +43,8 @@
 | 3 会话化地图状态 | `SessionContext`、真实 pathing 加载；切图/重开不串状态，32 单位移动视线、128 单位建造格 | 已完成 |
 | 4 八图临时视觉 | `placeholder.ts`、浏览器清单；真实几何和锚点加载，无旧自绘背景/碰撞 | 已完成 |
 | 5 核心规则数据化 | `rules.json`、MVP 适配层；白名单记录均有来源，`OLD + SINGLE` 数值迁移 | 已完成 |
-| 6 核心单局闭环 | 确定性 RNG/状态哈希、经济/建造/战斗/胜负；固定种子复现，实际进入终局 | 进行中 |
-| 7 技能与装备 | 8 技能、81 物品购买与基础效果；施放边界、未实现效果明确记录 | 待开始 |
+| 6 核心单局闭环 | 确定性 RNG/状态哈希、经济/建造/战斗/胜负；固定种子复现，实际进入终局 | 已完成 |
+| 7 技能与装备 | 8 技能、81 物品购买与基础效果；施放边界、未实现效果明确记录 | 进行中 |
 | 8 视野、AI 与移动端 | `Perception`、迷雾、AI 查询约束、浏览器 golden path；AI 不读全图，双朝向触控通过 | 待开始 |
 
 ## 4. 来源约束与已知未知
@@ -117,6 +117,16 @@
 - 自动验证：`npx tsx --test scripts/tve4/mvp_rules.test.ts` 17/17；Python 6/6；`npm run check:tve4` 45；`npm run check:data` 8；`npx tsc --noEmit`、确定性生成、`python -O` 校验与 diff 检查均通过。来源测试要求设置 `TVE4_EXTRACTED_ROOT`。
 - 独立审查：首轮 4 Important / 2 Minor，修复轮 1 全部解决但发现 1 个新 Important（证据查询未按技能等级过滤）；修复轮 2 后定向复审全部 ADDRESSED，无新增 Critical/Important。
 - Task 5 提交：`25431af`（实现）、`51d6d6c`（来源优先级/unknown/可移植性修复）、`e6f6ea9`（证据等级过滤修复）；未 push、未 amend。`HERO_STATS.troll.radius = 22` 仍未取得原作语义证明，继续作为 Task 6 阻塞遗留，不得通过改 WPM 掩盖。
+
+### Task 6 验证记录
+
+- 实现：新增 `sim/rng.ts`（固定种子 Mulberry32）与 `sim/pathing.ts`（32 单位 WPM 查询、连续段视线、128 单位 A*）；`GameState` 保存 RNG，`engine.ts` 移除全部 `Math.random`，新增 `stateHash`，移动与视线均连续校验原始 WPM。
+- 确定性：固定种子 30 秒两次运行状态哈希一致，不同种子不一致；状态哈希排除纯展示的 `effects/floats/hint`，包含 RNG、AI 路径、实体、资源与地图碰撞。
+- 碰撞裁定：H020 在 `UnitData.slk` 没有 collision-radius 字段，`radius=22` 继续是 INFERRED 展示/战斗值；WPM 是路径权威，不用未证明半径额外阻断路径。地图 0/1/2/3/5/7 的精灵↔巨魔双向路径在 radius 22 调用的公开判定下连通，未改 WPM。
+- 自动验证：`npx tsx --test scripts/tve4/core_loop.test.ts` 7/7；MVP 17/17；Python 6/6；`npm run check:tve4` 45；`npm run check:data` 8；`npx tsc --noEmit` 与 diff 检查均通过。
+- 终局：精灵清空、巨魔清空、巨魔 16 万力量三条路径都有直接测试；未用网页固定计时器代替原作条件。
+- 独立审查：原子计费日限额导致子代理中断且未留下代码，本轮由主会话顺序实现并自审；独立 Task 6 审查尚未执行，已作为遗留项记录，未伪称已完成。
+- Task 6 提交：`11c80c5`；未 push、未 amend。未做浏览器实测，完整移动端单局验收属于 Task 8。
 
 ## 6. 后续原作资产阶段（本轮不实施）
 
