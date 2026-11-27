@@ -8,6 +8,20 @@ export interface VisibleModelBounds {
   max: [number, number, number];
 }
 
+export interface HeroModelAnchor {
+  groundY: number;
+  topY: number;
+}
+
+// Measured from m022's rendered alpha bounds; its staff makes geometry extents unsuitable for UI anchors.
+const PIXEL_ANCHORS: Record<string, HeroModelAnchor> = {
+  m022: { groundY: 0.3273, topY: -0.0545 },
+};
+
+export function calibrateHeroModelAnchor(modelId: string | null, groundY: number, topY: number): HeroModelAnchor {
+  return PIXEL_ANCHORS[modelId ?? ""] ?? { groundY, topY };
+}
+
 // These geosets are ground/glow planes embedded in the imported MDX. They are
 // not part of the hero and distort both the visual anchor and the health bar.
 const HIDDEN_GEOSETS: Record<string, readonly number[]> = {

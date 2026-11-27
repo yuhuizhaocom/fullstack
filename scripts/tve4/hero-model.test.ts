@@ -9,7 +9,7 @@ import {
   heroModelsForFaction,
   modelActionFor,
 } from "../../src/lib/tve4/model-catalog";
-import { filterHeroModelGeosets, visibleModelBounds } from "../../src/lib/tve4/render/hero-model-geosets";
+import { calibrateHeroModelAnchor, filterHeroModelGeosets, visibleModelBounds } from "../../src/lib/tve4/render/hero-model-geosets";
 import { createGame, stateHash } from "../../src/lib/tve4/engine";
 import type { ModelDemoEntry } from "../../src/lib/tve4-model-demo/manifest";
 import type { ActionKey } from "../../src/lib/tve4-model-demo/sequences";
@@ -141,6 +141,11 @@ test("model floor geosets are removed per model before anchor calibration", () =
   assert.deepEqual(filterHeroModelGeosets(geosets(6), "m054").Geosets.map((geoset) => geoset.MinimumExtent[2]), [0, 1, 2]);
   assert.deepEqual(filterHeroModelGeosets(geosets(9), "m055").Geosets.map((geoset) => geoset.MinimumExtent[2]), [1, 2, 3, 4, 5, 6, 7, 8]);
   assert.deepEqual(filterHeroModelGeosets(geosets(8), "m056").Geosets.map((geoset) => geoset.MinimumExtent[2]), [1, 2, 3, 4, 5, 6, 7]);
+});
+
+test("m022 uses rendered pixel bounds for its health bar and ground anchor", () => {
+  assert.deepEqual(calibrateHeroModelAnchor("m022", 0.427, -1.4686), { groundY: 0.3273, topY: -0.0545 });
+  assert.deepEqual(calibrateHeroModelAnchor("m024", 0.427, -1.4686), { groundY: 0.427, topY: -1.4686 });
 });
 
 test("hero appearance is render-only and does not change deterministic state hash", () => {

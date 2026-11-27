@@ -140,7 +140,8 @@
 ## m022 单独复核（Chrome DevTools）
 
 - [x] 常规模式选择精灵 `m022 Oldelf` 进入地图 1；Phaser canvas 与透明 MDX canvas 同时就绪，Console 无 error/warn。
-- [x] 初始缩放 `1.150`：`playerScreenY=groundScreenY=444.50px`，`groundError=0px`；`modelTopScreenY=235.23px`、`heroBarScreenY=225.23px`，`barGap=10px`。
-- [x] 连点两次“＋”后缩放 `1.743`：`groundError=0px`、`barGap=10px`；模型 canvas 从 `110.4x110.4` 调整为 `167.94x167.94`，锚点未漂移。
-- [x] WebGL 像素探针：初始采样 757 点中 26 点非透明，放大后采样 1744 点中 72 点非透明，`gl.getError()=0`；截图确认模型可见且无嵌入式地板。
+- [x] 初始缩放 `1.150`：`playerScreenY=groundScreenY=422.00px`，`groundError=0px`；血条距实际可见顶部 `9.98px`，脚底距地面 `0.02px`。
+- [x] 连点两次“＋”后缩放 `1.792`：血条距实际可见顶部 `10.36px`，脚底距地面 `0.32px`；模型 canvas 从 `110.4x110.4` 调整为 `172.03x172.03`，锚点未漂移。
+- [x] WebGL alpha 边界复核：初始可见像素范围 `x=31..61, y=19..60`，放大后 `x=58..97, y=30..94`；血条与落地均按真实像素边界校准，不再使用包含长杆的几何顶部。
 - [x] MDX 几何审计：m022 共 5 个可见 geoset，bounds `[-201.1,-110.4,-51.7] .. [105.4,119.7,456.3]`，地板候选为空；无需新增 `HIDDEN_GEOSETS` 规则。
+- [x] 自动化回归：`hero-model.test.ts` 新增 m022 像素锚点用例，先确认失败后通过；其他模型保持原锚点计算不变。

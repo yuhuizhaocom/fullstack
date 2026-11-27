@@ -5,7 +5,7 @@ import { decodeBlpMipmaps } from "../../tve4-model-demo/blp";
 import { disposeRenderer } from "../../tve4-model-demo/dispose";
 import type { ModelDemoEntry } from "../../tve4-model-demo/manifest";
 import { advanceFrame } from "../../tve4-model-demo/playback";
-import { filterHeroModelGeosets, visibleModelBounds, type VisibleModelBounds } from "./hero-model-geosets";
+import { calibrateHeroModelAnchor, filterHeroModelGeosets, visibleModelBounds, type VisibleModelBounds } from "./hero-model-geosets";
 
 /** Small transparent MDX renderer used only for the player's hero overlay. */
 export class HeroModelViewer {
@@ -155,8 +155,13 @@ export class HeroModelViewer {
     mat4.scale(view, view, [this.modelScale, this.modelScale, this.modelScale]);
     const ground = projectPoint(this.center[0], this.center[1], this.visibleMin[2], view, projection, width, height);
     const top = projectPoint(this.center[0], this.center[1], this.visibleMax[2], view, projection, width, height);
-    this.anchorGroundY = (ground.y - height / 2) / height;
-    this.anchorTopY = (top.y - height / 2) / height;
+    const anchor = calibrateHeroModelAnchor(
+      this.entry?.id ?? null,
+      (ground.y - height / 2) / height,
+      (top.y - height / 2) / height,
+    );
+    this.anchorGroundY = anchor.groundY;
+    this.anchorTopY = anchor.topY;
   }
 
   private async preloadTextures(entry: ModelDemoEntry, token: number): Promise<void> {
