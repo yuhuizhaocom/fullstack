@@ -2,9 +2,10 @@
 
 import * as Phaser from "phaser";
 
+import { createPerception } from "@/lib/tve4/ai/perception";
 import { playTve4Sfx } from "@/lib/tve4/audio";
 import { collectTve4AudioEvents, type Tve4AudioEventState } from "@/lib/tve4/audio-events";
-import { fogDisplaySize, heroVisionRadius } from "@/lib/tve4/vision";
+import { fogDisplaySize, heroVisionRadius, isEntityVisibleToPlayer } from "@/lib/tve4/vision";
 import { BUILDINGS, TILE } from "@/lib/tve4/config";
 import { cellCenter } from "@/lib/tve4/map";
 import {
@@ -145,9 +146,9 @@ class Tve4Scene extends Phaser.Scene {
     const gradient = fogContext.createRadialGradient(256, 256, 0, 256, 256, 256);
     gradient.addColorStop(0, "rgba(2,6,10,0)");
     gradient.addColorStop(0.2, "rgba(2,6,10,0)");
-    gradient.addColorStop(0.42, "rgba(2,6,10,0.72)");
-    gradient.addColorStop(0.7, "rgba(2,6,10,0.86)");
-    gradient.addColorStop(1, "rgba(2,6,10,0.92)");
+    gradient.addColorStop(0.42, "rgba(2,6,10,0.78)");
+    gradient.addColorStop(0.7, "rgba(2,6,10,0.94)");
+    gradient.addColorStop(1, "rgba(2,6,10,1)");
     fogContext.fillStyle = gradient;
     fogContext.fillRect(0, 0, 512, 512);
     fogTexture.refresh();
@@ -399,6 +400,10 @@ class Tve4Scene extends Phaser.Scene {
     for (const event of collectTve4AudioEvents(this.audioEventState, audioState)) playTve4Sfx(event);
     this.audioEventState = audioState;
 
+    const perception = createPerception(state, state.playerFaction);
+    const visibleEnemyHeroIds = new Set(perception.visibleEnemies().map((hero) => hero.id));
+    const visibleEnemyBuildingIds = new Set(perception.visibleBuildings().map((building) => building.id));
+
     const camera = this.cameras.main;
     const player = state.heroes.find((hero) => hero.isPlayer && hero.alive);
     if (player) {
@@ -436,6 +441,7 @@ class Tve4Scene extends Phaser.Scene {
 
     for (const building of state.buildings) {
       if (!building.alive) continue;
+      if (!isEntityVisibleToPlayer(building.faction, state.playerFaction, visibleEnemyBuildingIds, building.id)) continue;
       const pixels = building.size * TILE;
       const definition = BUILDINGS[building.kind];
       const alpha = building.buildTimer > 0 && building.kind !== "wall" ? 0.55 : 1;
@@ -497,12 +503,14 @@ class Tve4Scene extends Phaser.Scene {
     }
 
     for (const projectile of state.projectiles) {
+      if (projectile.faction !== state.playerFaction && !perception.canSee(projectile.x, projectile.y)) continue;
       this.effects.fillStyle(0xffe08a, 1);
       this.effects.fillCircle(projectile.x, projectile.y, 4);
     }
 
     for (const hero of state.heroes) {
       if (!hero.alive && hero.deathTimer <= 0) continue;
+      if (!isEntityVisibleToPlayer(hero.faction, state.playerFaction, visibleEnemyHeroIds, hero.id)) continue;
       const moved = hero.vx !== 0 || hero.vy !== 0;
       const heroState: PlaceholderUnitState = !hero.alive
         ? "dead"

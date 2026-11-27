@@ -1,7 +1,7 @@
 import { TILE } from "./config";
 import { ruleNumber } from "./data/mvp-rules";
 import { RULES } from "./rules";
-import type { Hero } from "./types";
+import type { Faction, Hero } from "./types";
 
 export const HERO_VISION_SCALE = 0.8;
 export const BUILDING_VISION_TILES = 4;
@@ -23,6 +23,15 @@ export function fogDisplaySize(
 ): number {
   const clearRadius = Math.max(1, visionRadius * zoom);
   const visionSize = (clearRadius * 2) / FOG_CLEAR_RATIO;
-  const coverSize = Math.hypot(viewportWidth, viewportHeight) * 1.05;
+  const coverSize = Math.hypot(viewportWidth, viewportHeight) * 2.1;
   return Math.max(visionSize, coverSize);
+}
+
+export function isEntityVisibleToPlayer(
+  faction: Faction,
+  playerFaction: Faction,
+  visibleIds: ReadonlySet<number>,
+  id: number,
+): boolean {
+  return faction === playerFaction || visibleIds.has(id);
 }
