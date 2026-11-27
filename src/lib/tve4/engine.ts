@@ -27,6 +27,9 @@ import {
   VISION_RULE,
 } from "./rules";
 import { createSession, requireSpawn } from "./sim/session";
+import { createRng, randomRange } from "./sim/rng";
+import { findGridPath, hasWorldLineOfSight, isWorldPositionFree, isWorldSegmentClear, type PathingGrid } from "./sim/pathing";
+import { createRuntimePathing } from "./map";
 import type {
   Buffs,
   BuildKind,
@@ -43,6 +46,16 @@ import type {
 } from "./types";
 
 const SCALE = RULES.scale;
+const PATHING_VIEWS = new WeakMap<GameState, PathingGrid>();
+
+function pathingView(state: GameState): PathingGrid {
+  let view = PATHING_VIEWS.get(state);
+  if (!view) {
+    view = createRuntimePathing(state.session.map, state.session.pathing32);
+    PATHING_VIEWS.set(state, view);
+  }
+  return view;
+}
 
 // ---------------------------------------------------------------- 工具
 
@@ -64,17 +77,6 @@ function cellBlocked(state: GameState, gx: number, gy: number): boolean {
   const grid = state.session.grid;
   if (gx < 0 || gy < 0 || gx >= grid.width || gy >= grid.height) return true;
   return state.blocked[gy * grid.width + gx] === 1;
-}
-
-/** Movement/LOS use the full 32-unit source WPM, not the coarse build grid. */
-function pathingBlocked(state: GameState, x: number, y: number): boolean {
-  const { grid, pathing, pathing32 } = state.session;
-  const sourceX = grid.bounds[0] + x / RULES.scale;
-  const sourceY = grid.bounds[1] + y / RULES.scale;
-  const gx = Math.floor((sourceX - pathing.origin[0]) / pathing.cellUnits);
-  const gy = Math.floor((sourceY - pathing.origin[1]) / pathing.cellUnits);
-  if (gx < 0 || gy < 0 || gx >= pathing.width || gy >= pathing.height) return true;
-  return (pathing32[gy * pathing.width + gx] & 0x02) !== 0;
 }
 
 export function setBlocked(state: GameState, data: Uint8Array): void {
@@ -112,6 +114,7 @@ export function createGame(options: GameOptions = {}): GameState {
     seed: session.seed,
     catalogVersion: session.catalogVersion,
     session,
+    rng: createRng(session.seed),
     playerFaction,
     testMode,
     trollStrength: 0,
@@ -261,32 +264,30 @@ function occupiedByBuilding(state: GameState, x: number, y: number, r: number, f
 
 /** Shared world/WPM clearance used by movement and real-map reachability checks. */
 export function isPathingPositionFree(state: GameState, x: number, y: number, radius: number): boolean {
-  const [worldWidth, worldHeight] = state.session.grid.world;
-  if (x < radius || y < radius || x > worldWidth - radius || y > worldHeight - radius) return false;
-  // 圆形采样：周向 + 中心，避免 AABB 角点把 1 格墙误判成可穿过，同时允许斜向挤过窄口
-  for (let i = 0; i < 16; i += 1) {
-    const a = (i / 16) * Math.PI * 2;
-    const px = x + Math.cos(a) * radius;
-    const py = y + Math.sin(a) * radius;
-    if (pathingBlocked(state, px, py)) return false;
-  }
-  return !pathingBlocked(state, x, y);
+  // WPM is the pathing authority. Radius is only an INFERRED display/combat value
+  // and must not invent body-clearance that falsely blocks official map paths.
+  return isWorldPositionFree(pathingView(state), x, y, radius);
 }
 
 function positionFree(state: GameState, x: number, y: number, r: number, faction?: Faction): boolean {
   return isPathingPositionFree(state, x, y, r) && !occupiedByBuilding(state, x, y, r, faction);
 }
 
+function canMoveTo(state: GameState, h: Hero, nx: number, ny: number): boolean {
+  return isWorldSegmentClear(pathingView(state), h.x, h.y, nx, ny)
+    && positionFree(state, nx, ny, h.radius, h.faction);
+}
+
 function moveWithCollision(state: GameState, h: Hero, dx: number, dy: number): void {
   const nx = h.x + dx;
   const ny = h.y + dy;
-  if (positionFree(state, nx, ny, h.radius, h.faction)) {
+  if (canMoveTo(state, h, nx, ny)) {
     h.x = nx;
     h.y = ny;
     return;
   }
-  if (positionFree(state, nx, h.y, h.radius, h.faction)) h.x = nx;
-  if (positionFree(state, h.x, ny, h.radius, h.faction)) h.y = ny;
+  if (canMoveTo(state, h, nx, h.y)) h.x = nx;
+  if (canMoveTo(state, h, h.x, ny)) h.y = ny;
 }
 
 function cellsFreeForBuilding(state: GameState, gx: number, gy: number, size: number): boolean {
@@ -501,14 +502,14 @@ function hasLineOfSight(
   x1: number, y1: number, x2: number, y2: number,
   ignoreId?: number, faction?: Faction,
 ): boolean {
+  if (!hasWorldLineOfSight(pathingView(state), x1, y1, x2, y2)) return false;
   const dist = Math.hypot(x2 - x1, y2 - y1);
-  const sampleUnits = state.session.pathing.cellUnits * RULES.scale;
+  const sampleUnits = state.session.pathing.cellUnits * SCALE;
   const steps = Math.max(1, Math.ceil(dist / (sampleUnits / 2)));
   for (let i = 1; i < steps; i += 1) {
     const t = i / steps;
     const px = x1 + (x2 - x1) * t;
     const py = y1 + (y2 - y1) * t;
-    if (pathingBlocked(state, px, py)) return false;
     const gx = Math.floor(px / TILE);
     const gy = Math.floor(py / TILE);
     // 建筑同样阻挡视线（原版墙体是实体）
@@ -564,43 +565,16 @@ function findPath(
     }
     if (!found) return [];
   }
-  const total = state.session.grid.width * state.session.grid.height;
-  const start = startY * state.session.grid.width + startX;
-  const goal = goalY * state.session.grid.width + goalX;
-  if (start === goal) return [];
-  const parent = new Int32Array(total).fill(-1);
-  const queue = new Int32Array(total);
-  let head = 0;
-  let tail = 0;
-  parent[start] = start;
-  queue[tail++] = start;
-  const dirs = [1, -1, state.session.grid.width, -state.session.grid.width];
-  while (head < tail && parent[goal] < 0) {
-    const cur = queue[head++];
-    for (const d of dirs) {
-      const next = cur + d;
-      if (next < 0 || next >= total) continue;
-      if (parent[next] >= 0) continue;
-      if (d === 1 && next % state.session.grid.width === 0) continue;
-      if (d === -1 && cur % state.session.grid.width === 0) continue;
-      const nx = next % state.session.grid.width;
-      const ny = Math.floor(next / state.session.grid.width);
-      if (!cellWalkable(state, nx, ny, faction)) continue;
-      parent[next] = cur;
-      queue[tail++] = next;
-    }
-  }
-  if (parent[goal] < 0) return [];
-  const cells: number[] = [];
-  let cur = goal;
-  while (cur !== start && cells.length < 4096) {
-    cells.push(cur);
-    cur = parent[cur];
-  }
-  cells.reverse();
-  return cells.map((c) => ({
-    x: ((c % state.session.grid.width) + 0.5) * TILE,
-    y: (Math.floor(c / state.session.grid.width) + 0.5) * TILE,
+  const cells = findGridPath({
+    width: state.session.grid.width,
+    height: state.session.grid.height,
+    start: { gx: startX, gy: startY },
+    goal: { gx: goalX, gy: goalY },
+    isWalkable: (x, y) => cellWalkable(state, x, y, faction),
+  });
+  return cells.map((cell) => ({
+    x: (cell.gx + 0.5) * TILE,
+    y: (cell.gy + 0.5) * TILE,
   }));
 }
 
@@ -934,7 +908,7 @@ function updateElfAI(state: GameState, dt: number, elf: Hero): void {
   }
   state.aiTimer -= dt;
   if (state.aiTimer > 0) return;
-  state.aiTimer = 4 + Math.random() * 3;
+  state.aiTimer = randomRange(state.rng, 4, 7);
   const elfSpawn = requireSpawn(state.session, "elf");
   const have = (kind: BuildKind) => state.buildings.some((b) => b.alive && b.faction === "elf" && b.kind === kind);
   const tryPlace = (kind: BuildKind): boolean => {
@@ -962,7 +936,7 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
   }
   state.aiTimer -= dt;
   if (state.aiTimer <= 0) {
-    state.aiTimer = 3 + Math.random() * 2;
+    state.aiTimer = randomRange(state.rng, 3, 5);
     if (troll.cooldowns.berserk <= 0 && troll.hp < troll.maxHp * 0.7) castSkillFor(state, troll, "berserk");
     else if (troll.cooldowns.windwalk <= 0) castSkillFor(state, troll, "windwalk");
     else if (troll.cooldowns.farSight <= 0) castSkillFor(state, troll, "farSight");
@@ -1132,6 +1106,102 @@ function checkResult(state: GameState): void {
   }
   if (trollOut) elfWins();
   else if (elfOut) trollWins("所有精灵被消灭");
+}
+
+/** Stable 64-bit FNV-style hash, independent of visual-only arrays. */
+export function stateHash(state: GameState): string {
+  const payload = {
+    version: 1,
+    identity: {
+      mode: state.mode,
+      rule: state.rule,
+      mapId: state.mapId,
+      seed: state.seed,
+      catalogVersion: state.catalogVersion,
+      playerFaction: state.playerFaction,
+      testMode: state.testMode,
+    },
+    rng: state.rng.state,
+    trollStrength: state.trollStrength,
+    mobileDev: state.mobileDev,
+    mageSummoned: state.mageSummoned,
+    endLock: state.endLock,
+    relocateCd: state.relocateCd,
+    aiPath: state.aiPath,
+    aiPathIdx: state.aiPathIdx,
+    pathTimer: state.pathTimer,
+    stuckX: state.stuckX,
+    stuckY: state.stuckY,
+    stuckTimer: state.stuckTimer,
+    elfShared: state.elfShared,
+    elfExposed: state.elfExposed,
+    woodPriceIn: state.woodPriceIn,
+    woodPriceOut: state.woodPriceOut,
+    time: state.time,
+    phase: state.phase,
+    result: state.result,
+    trollSpawned: state.trollSpawned,
+    incomeAcc: state.incomeAcc,
+    aiTimer: state.aiTimer,
+    nextId: state.nextId,
+    stats: state.stats,
+    blocked: hashBytes(state.blocked),
+    heroes: state.heroes.map((h) => ({
+      id: h.id, faction: h.faction, isPlayer: h.isPlayer, isWolf: h.isWolf,
+      isAlly: h.isAlly, alive: h.alive, lives: h.lives, x: h.x, y: h.y,
+      vx: h.vx, vy: h.vy, facing: h.facing, invuln: h.invuln, hp: h.hp,
+      maxHp: h.maxHp, damage: h.damage, interval: h.interval, range: h.range,
+      speed: h.speed, radius: h.radius, cd: h.cd, channelTime: h.channelTime,
+      deathTimer: h.deathTimer, gold: h.gold, wood: h.wood, items: h.items,
+      bonusIncome: h.bonusIncome, bonusLifesteal: h.bonusLifesteal,
+      cooldowns: h.cooldowns, buffs: h.buffs,
+    })),
+    buildings: state.buildings.map((b) => ({
+      id: b.id, kind: b.kind, faction: b.faction, x: b.x, y: b.y,
+      gx0: b.gx0, gy0: b.gy0, size: b.size, level: b.level, hp: b.hp,
+      maxHp: b.maxHp, alive: b.alive, buildTimer: b.buildTimer,
+      demolishTimer: b.demolishTimer, eyeMarked: b.eyeMarked,
+      noHitTimer: b.noHitTimer, cd: b.cd,
+    })),
+    projectiles: state.projectiles.map((p) => ({
+      id: p.id, faction: p.faction, x: p.x, y: p.y, tx: p.tx, ty: p.ty,
+      speed: p.speed, damage: p.damage, t: p.t,
+    })),
+  };
+  return hashText(canonical(payload));
+}
+
+function canonical(value: unknown): string {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record).sort().filter((key) => record[key] !== undefined)
+      .map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`).join(",")}}`;
+  }
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "null";
+  return JSON.stringify(value);
+}
+
+function hashText(text: string): string {
+  let first = 0x811c9dc5;
+  let second = 0x9e3779b9;
+  for (let i = 0; i < text.length; i += 1) {
+    const code = text.charCodeAt(i);
+    first = Math.imul(first ^ code, 0x01000193);
+    second = Math.imul(second ^ code, 0x85ebca6b);
+  }
+  return `${(first >>> 0).toString(16).padStart(8, "0")}${(second >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+function hashBytes(bytes: Uint8Array): string {
+  let first = 0x811c9dc5;
+  let second = 0x9e3779b9;
+  for (let i = 0; i < bytes.length; i += 1) {
+    first = Math.imul(first ^ bytes[i], 0x01000193);
+    second = Math.imul(second ^ bytes[i], 0x85ebca6b);
+  }
+  return `${(first >>> 0).toString(16).padStart(8, "0")}${(second >>> 0).toString(16).padStart(8, "0")}`;
 }
 
 export function stepGame(state: GameState, dt: number, input: InputState): void {

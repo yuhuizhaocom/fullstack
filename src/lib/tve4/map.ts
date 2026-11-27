@@ -10,6 +10,15 @@ import {
   type PathingMetadata,
 } from "./maps.generated";
 import { WPM_PACKBITS_BASE64, WPM_PATHING } from "./pathing.generated";
+import { RULES } from "./rules";
+import {
+  createPathingGrid,
+  hasWorldLineOfSight,
+  isWorldBlocked,
+  isWorldPositionFree,
+  isWorldSegmentClear,
+  type PathingGrid,
+} from "./sim/pathing";
 
 export const BUILD_CELL_UNITS = 128;
 export const PATHING_CELL_UNITS = 32;
@@ -148,6 +157,58 @@ export function buildBlocked(mapOrId: number | MvpMap = DEFAULT_MAP_ID): Uint8Ar
     throw new Error(`地图 ${map.id} 碰撞数据尺寸不符: ${grid.length}`);
   }
   return grid;
+}
+
+/** Query view over a session's decoded 32-unit WPM and web-world bounds. */
+export type RuntimePathing = PathingGrid;
+
+export function createRuntimePathing(map: MvpMap, pathing32: Uint8Array): RuntimePathing {
+  validatePathing(map);
+  const bounds = runtimeBounds(map);
+  const sourceUnitsPerWeb = 1 / RULES.scale;
+  return createPathingGrid(
+    pathing32,
+    map.pathing.width,
+    map.pathing.height,
+    map.pathing.cellUnits,
+    map.pathing.origin,
+    bounds,
+    [
+      (bounds[2] - bounds[0]) / sourceUnitsPerWeb,
+      (bounds[3] - bounds[1]) / sourceUnitsPerWeb,
+    ],
+    sourceUnitsPerWeb,
+  );
+}
+
+export function runtimePathingBlockedAt(map: MvpMap, pathing32: Uint8Array, x: number, y: number): boolean {
+  return isWorldBlocked(createRuntimePathing(map, pathing32), x, y);
+}
+
+export function runtimePathingFree(map: MvpMap, pathing32: Uint8Array, x: number, y: number, radius = 0): boolean {
+  return isWorldPositionFree(createRuntimePathing(map, pathing32), x, y, radius);
+}
+
+export function runtimePathingSegmentClear(
+  map: MvpMap,
+  pathing32: Uint8Array,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+): boolean {
+  return isWorldSegmentClear(createRuntimePathing(map, pathing32), x1, y1, x2, y2);
+}
+
+export function runtimePathingLineOfSight(
+  map: MvpMap,
+  pathing32: Uint8Array,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+): boolean {
+  return hasWorldLineOfSight(createRuntimePathing(map, pathing32), x1, y1, x2, y2);
 }
 
 /** Web-render tile center for a coarse grid cell. */

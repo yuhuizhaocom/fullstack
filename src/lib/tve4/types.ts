@@ -1,6 +1,7 @@
 // tve4 全新规则层：实体与状态类型。
 
 import type { SessionContext } from "./sim/session";
+import type { Rng } from "./sim/rng";
 
 export type Faction = "elf" | "troll";
 
@@ -159,6 +160,7 @@ export interface GameState {
   seed: number;
   catalogVersion: string;
   session: SessionContext;
+  rng: Rng;
   playerFaction: Faction;
   testMode: boolean;
   trollStrength: number;
