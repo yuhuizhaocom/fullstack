@@ -16,6 +16,7 @@ export async function loadHeroModelManifest(): Promise<ModelDemoEntry[]> {
 export function heroModelsForFaction(models: ModelDemoEntry[], faction: Faction): ModelDemoEntry[] {
   return models
     .filter((entry) => entry.group === (faction as ModelGroup))
+    .filter((entry) => faction === "troll" || (entry.id !== "m020" && hasAvailableTexture(entry)))
     .sort((a, b) => a.number - b.number);
 }
 

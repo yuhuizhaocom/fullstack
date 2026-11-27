@@ -1,4 +1,4 @@
-import { mat4, quat, vec3 } from "gl-matrix";
+import { mat4, quat, vec3, vec4 } from "gl-matrix";
 import { ModelRenderer, parseMDX, type model } from "war3-model";
 
 import { decodeBlpMipmaps } from "../../tve4-model-demo/blp";
@@ -24,6 +24,8 @@ export class HeroModelViewer {
   private speed = 1;
   private center = vec3.create();
   private modelScale = 1;
+  private anchorGroundY = 0;
+  private anchorTopY = 0;
   private cameraPhi = -Math.PI / 2;
   private cameraTheta = 0.24;
   private cameraDistance = 360;
@@ -44,6 +46,10 @@ export class HeroModelViewer {
 
   get ready(): boolean {
     return Boolean(this.renderer && this.model);
+  }
+
+  getAnchorMetrics(): { groundY: number; topY: number } {
+    return { groundY: this.anchorGroundY, topY: this.anchorTopY };
   }
 
   async load(entry: ModelDemoEntry): Promise<void> {
@@ -114,6 +120,31 @@ export class HeroModelViewer {
     vec3.set(this.center, (min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2);
     const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]) || 1;
     this.modelScale = 180 / size;
+    this.updateAnchorMetrics(parsed);
+  }
+
+  private updateAnchorMetrics(parsed: model.Model): void {
+    const width = this.canvas.width;
+    const height = this.canvas.height;
+    const projection = mat4.create();
+    const view = mat4.create();
+    mat4.perspective(projection, Math.PI / 4, width / Math.max(1, height), 0.1, 5000);
+    const eye = vec3.create();
+    vec3.set(
+      eye,
+      this.center[0] + Math.cos(this.cameraTheta) * Math.cos(this.cameraPhi) * this.cameraDistance,
+      this.center[1] + Math.cos(this.cameraTheta) * Math.sin(this.cameraPhi) * this.cameraDistance,
+      this.center[2] + Math.sin(this.cameraTheta) * this.cameraDistance,
+    );
+    mat4.lookAt(view, eye, this.center, [0, 0, 1]);
+    mat4.translate(view, view, [-this.center[0], -this.center[1], -this.center[2]]);
+    mat4.scale(view, view, [this.modelScale, this.modelScale, this.modelScale]);
+    const min = parsed.Info.MinimumExtent;
+    const max = parsed.Info.MaximumExtent;
+    const ground = projectPoint(this.center[0], this.center[1], min[2], view, projection, width, height);
+    const top = projectPoint(this.center[0], this.center[1], max[2], view, projection, width, height);
+    this.anchorGroundY = (ground.y - height / 2) / height;
+    this.anchorTopY = (top.y - height / 2) / height;
   }
 
   private async preloadTextures(entry: ModelDemoEntry, token: number): Promise<void> {
@@ -225,6 +256,27 @@ export class HeroModelViewer {
     if (this.canvas.width !== width || this.canvas.height !== height) {
       this.canvas.width = width;
       this.canvas.height = height;
+      if (this.model) this.updateAnchorMetrics(this.model);
     }
   }
+}
+
+function projectPoint(
+  x: number,
+  y: number,
+  z: number,
+  view: mat4,
+  projection: mat4,
+  width: number,
+  height: number,
+): { x: number; y: number } {
+  const clip = vec4.create();
+  vec4.set(clip, x, y, z, 1);
+  vec4.transformMat4(clip, clip, view);
+  vec4.transformMat4(clip, clip, projection);
+  const inverseW = 1 / clip[3];
+  return {
+    x: (clip[0] * inverseW * 0.5 + 0.5) * width,
+    y: (-clip[1] * inverseW * 0.5 + 0.5) * height,
+  };
 }

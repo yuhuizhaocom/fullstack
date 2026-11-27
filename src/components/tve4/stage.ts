@@ -19,6 +19,7 @@ import {
   type PlaceholderUnitState,
 } from "@/lib/tve4/render/placeholder";
 import { HeroModelViewer } from "@/lib/tve4/render/hero-model-viewer";
+import { shouldFlipHeroModel } from "@/lib/tve4/render/hero-model-facing";
 import { buildPathingBoundarySegments } from "@/lib/tve4/render/pathing-boundary";
 import { actionSequenceIndex, loadHeroModelManifest, modelActionFor } from "@/lib/tve4/model-catalog";
 import type { ModelDemoEntry } from "@/lib/tve4-model-demo/manifest";
@@ -272,13 +273,21 @@ class Tve4Scene extends Phaser.Scene {
     }
     const camera = this.cameras.main;
     const screenPoint = camera.getViewMatrix(true).transformPoint(player.x, player.y);
+    const metrics = viewer.getAnchorMetrics();
     const baseSize = player.faction === "troll" ? 120 : 96;
     const size = Phaser.Math.Clamp(baseSize * this.zoom, 72, 180);
     canvas.style.display = "block";
     canvas.style.width = `${size}px`;
     canvas.style.height = `${size}px`;
     canvas.style.left = `${screenPoint.x - size / 2}px`;
-    canvas.style.top = `${screenPoint.y - size / 2}px`;
+    canvas.style.top = `${screenPoint.y - metrics.groundY * size - size / 2}px`;
+    const flipX = shouldFlipHeroModel(player.facing);
+    canvas.style.transform = flipX ? "scaleX(-1)" : "scaleX(1)";
+    canvas.dataset.heroModelFlipX = String(flipX);
+    canvas.dataset.modelGroundY = metrics.groundY.toFixed(4);
+    canvas.dataset.modelTopY = metrics.topY.toFixed(4);
+    canvas.dataset.modelGroundScreenY = screenPoint.y.toFixed(2);
+    canvas.dataset.modelTopScreenY = (screenPoint.y + (metrics.topY - metrics.groundY) * size).toFixed(2);
     const action = modelActionFor(entry, {
       alive: player.alive,
       moving: player.vx !== 0 || player.vy !== 0,
@@ -501,7 +510,12 @@ class Tve4Scene extends Phaser.Scene {
       if (hero.alive && (hero.isPlayer || hero.hp < hero.maxHp)) {
         const height = hero.faction === "troll" ? 30 : 24;
         const barWidth = hero.faction === "troll" ? 68 : 46;
-        this.drawBar(hero.x, hero.y - height - 14, barWidth, hero.hp / hero.maxHp, hero.faction === "elf" ? 0x7ee08a : 0xff7a5c);
+        const barY = this.heroBarY(hero, height);
+        this.drawBar(hero.x, barY, barWidth, hero.hp / hero.maxHp, hero.faction === "elf" ? 0x7ee08a : 0xff7a5c);
+        if (hero.isPlayer) {
+          const barScreen = this.cameras.main.getViewMatrix(true).transformPoint(hero.x, barY);
+          this.game.canvas.dataset.heroBarScreenY = barScreen.y.toFixed(2);
+        }
       }
       if (hero.buffs.root > 0) {
         this.overlays.lineStyle(2, 0x9be7ff, 0.9);
@@ -568,6 +582,19 @@ class Tve4Scene extends Phaser.Scene {
     const size = Math.max(camera.width, camera.height) * 2.2;
     this.fog.setPosition(screenPoint.x, screenPoint.y);
     this.fog.setDisplaySize(size, size);
+  }
+
+  private heroBarY(hero: GameState["heroes"][number], height: number): number {
+    const fallback = hero.y - height - 14;
+    if (!hero.isPlayer || !this.heroModelViewer || !this.heroModelEntry) return fallback;
+    const camera = this.cameras.main;
+    const screenPoint = camera.getViewMatrix(true).transformPoint(hero.x, hero.y);
+    const baseSize = hero.faction === "troll" ? 120 : 96;
+    const size = Phaser.Math.Clamp(baseSize * this.zoom, 72, 180);
+    const metrics = this.heroModelViewer.getAnchorMetrics();
+    const modelTopScreenY = screenPoint.y + (metrics.topY - metrics.groundY) * size;
+    const desiredBarScreenY = modelTopScreenY - 10;
+    return hero.y - (screenPoint.y - desiredBarScreenY) / this.zoom;
   }
 
   private drawBar(x: number, y: number, width: number, ratio: number, color: number): void {

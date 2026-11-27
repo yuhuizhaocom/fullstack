@@ -50,15 +50,18 @@ function model(
   };
 }
 
-test("hero model catalog filters by selected faction and keeps stable numbering", () => {
+test("hero model catalog filters by faction and keeps only textured non-m020 elves", () => {
   const models = [
-    model("m020", 20, "troll"),
     model("m001", 1, "elf"),
     model("m002", 2, "elf"),
+    model("m004", 4, "elf", ["stand", "walk", "attack", "death"], false),
+    model("m020", 20, "elf"),
+    model("m005", 5, "elf"),
+    model("m030", 30, "troll"),
   ];
-  assert.deepEqual(heroModelsForFaction(models, "elf").map((entry) => entry.id), ["m001", "m002"]);
-  assert.deepEqual(heroModelsForFaction(models, "troll").map((entry) => entry.id), ["m020"]);
-  assert.deepEqual(heroModelsForFaction(models, "elf").map((entry) => entry.number), [1, 2]);
+  assert.deepEqual(heroModelsForFaction(models, "elf").map((entry) => entry.id), ["m001", "m002", "m005"]);
+  assert.deepEqual(heroModelsForFaction(models, "troll").map((entry) => entry.id), ["m030"]);
+  assert.deepEqual(heroModelsForFaction(models, "elf").map((entry) => entry.number), [1, 2, 5]);
 });
 
 test("default hero model prefers complete actions and original textures", () => {
@@ -68,7 +71,8 @@ test("default hero model prefers complete actions and original textures", () => 
   assert.equal(hasCompleteActions(incompleteTextured), false);
   assert.equal(hasAvailableTexture(completeGray), false);
   assert.equal(defaultHeroModel([incompleteTextured, completeGray, completeTextured], "elf")?.id, "m003");
-  assert.equal(defaultHeroModel([completeGray], "elf")?.id, "m002");
+  assert.equal(defaultHeroModel([completeGray], "elf"), null);
+  assert.equal(defaultHeroModel([model("m030", 30, "troll", ["stand", "walk", "attack", "death"], false)], "troll")?.id, "m030");
   assert.equal(defaultHeroModel([], "elf"), null);
 });
 
