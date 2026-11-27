@@ -1,5 +1,5 @@
 {
-  "catalogVersion": "a55255d95dbab9b572692c0db6cb54be74a85b6b5815ea66750a04865fbaa454",
+  "catalogVersion": "e9c4f37025f19a69d8f87f01f7d359d25a19befe362b80056728d1939eec5716",
   "primarySource": "data/tve4/mvp/source.json",
   "modeSingle": [
     {
@@ -72,6 +72,8 @@
         "radius": 14,
         "mana": 200,
         "manaRegen": 2,
+        "originalSight": 1200,
+        "originalNightSight": 1400,
         "originalHp": 10,
         "originalSpeed": 250,
         "originalRange": 100
@@ -174,6 +176,20 @@
           "value": 2,
           "confidence": "VERIFIED"
         },
+        "originalSight": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "H010",
+          "field": "sight",
+          "value": 1200,
+          "confidence": "VERIFIED"
+        },
+        "originalNightSight": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "H010",
+          "field": "nsight",
+          "value": 1400,
+          "confidence": "VERIFIED"
+        },
         "originalHp": {
           "file": "Units/UnitBalance.slk",
           "objectId": "H010",
@@ -210,6 +226,8 @@
         "radius": 22,
         "mana": 200,
         "manaRegen": 1,
+        "originalSight": 1400,
+        "originalNightSight": 1100,
         "originalHp": 750,
         "originalSpeed": 350,
         "originalRange": 80
@@ -310,6 +328,20 @@
           "objectId": "H020",
           "field": "regenMana",
           "value": 1,
+          "confidence": "VERIFIED"
+        },
+        "originalSight": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "H020",
+          "field": "sight",
+          "value": 1400,
+          "confidence": "VERIFIED"
+        },
+        "originalNightSight": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "H020",
+          "field": "nsight",
+          "value": 1100,
           "confidence": "VERIFIED"
         },
         "originalHp": {

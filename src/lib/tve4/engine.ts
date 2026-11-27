@@ -30,6 +30,7 @@ import { createSession, requireSpawn } from "./sim/session";
 import { createRng, randomRange } from "./sim/rng";
 import { findGridPath, hasWorldLineOfSight, isWorldPositionFree, isWorldSegmentClear, type PathingGrid } from "./sim/pathing";
 import { createRuntimePathing } from "./map";
+import { createPerception } from "./ai/perception";
 import type {
   Buffs,
   BuildKind,
@@ -107,6 +108,8 @@ export function createGame(options: GameOptions = {}): GameState {
   const rule: Rule = session.rule;
   const testMode = options.testMode ?? false;
   const playerFaction: Faction = session.playerFaction;
+  const playerSpawn = session.spawns[playerFaction];
+  const lastSeen = playerSpawn ? gridToWorld(playerSpawn.gx, playerSpawn.gy) : null;
   const state: GameState = {
     mode,
     rule,
@@ -115,6 +118,7 @@ export function createGame(options: GameOptions = {}): GameState {
     catalogVersion: session.catalogVersion,
     session,
     rng: createRng(session.seed),
+    aiMemory: { lastSeen, buildingIds: [] },
     playerFaction,
     testMode,
     trollStrength: 0,
@@ -502,7 +506,7 @@ interface DamageTarget {
 function hasLineOfSight(
   state: GameState,
   x1: number, y1: number, x2: number, y2: number,
-  ignoreId?: number, faction?: Faction,
+  ignoreId?: number, faction?: Faction, buildings: Building[] = state.buildings,
 ): boolean {
   if (!hasWorldLineOfSight(pathingView(state), x1, y1, x2, y2)) return false;
   const dist = Math.hypot(x2 - x1, y2 - y1);
@@ -515,7 +519,7 @@ function hasLineOfSight(
     const gx = Math.floor(px / TILE);
     const gy = Math.floor(py / TILE);
     // 建筑同样阻挡视线（原版墙体是实体）
-    for (const b of state.buildings) {
+    for (const b of buildings) {
       if (!b.alive || b.buildTimer > 0 || b.id === ignoreId || (faction && b.faction === faction)) continue;
       if (gx >= b.gx0 && gx < b.gx0 + b.size && gy >= b.gy0 && gy < b.gy0 + b.size) return false;
     }
@@ -523,14 +527,15 @@ function hasLineOfSight(
   return true;
 }
 
-function cellWalkable(state: GameState, gx: number, gy: number, faction: Faction): boolean {
-  // 为英雄半径留出 1 格余量：相邻格也不通行，否则会贴墙卡住
+function cellWalkable(state: GameState, gx: number, gy: number, faction: Faction, buildings: Building[] = state.buildings): boolean {
+  if (cellBlocked(state, gx, gy)) return false;
+  // Buildings still need a one-cell buffer; terrain is handled by the 32-unit
+  // WPM movement checks, so adding a terrain margin here falsely closes real paths.
   for (let dy = -1; dy <= 1; dy += 1) {
     for (let dx = -1; dx <= 1; dx += 1) {
       const nx = gx + dx;
       const ny = gy + dy;
-      if (cellBlocked(state, nx, ny)) return false;
-      for (const b of state.buildings) {
+      for (const b of buildings) {
         if (!b.alive || b.buildTimer > 0 || b.faction === faction) continue;
         if (nx >= b.gx0 && nx < b.gx0 + b.size && ny >= b.gy0 && ny < b.gy0 + b.size) return false;
       }
@@ -545,19 +550,20 @@ function findPath(
   sx: number, sy: number,
   gx: number, gy: number,
   faction: Faction,
+  buildings: Building[] = state.buildings,
 ): Array<{ x: number; y: number }> {
   const startX = Math.floor(sx / TILE);
   const startY = Math.floor(sy / TILE);
   let goalX = Math.max(0, Math.min(state.session.grid.width - 1, Math.floor(gx / TILE)));
   let goalY = Math.max(0, Math.min(state.session.grid.height - 1, Math.floor(gy / TILE)));
-  if (!cellWalkable(state, goalX, goalY, faction)) {
+  if (!cellWalkable(state, goalX, goalY, faction, buildings)) {
     let found = false;
     for (let r = 1; r <= 6 && !found; r += 1) {
       for (let dy = -r; dy <= r && !found; dy += 1) {
         for (let dx = -r; dx <= r && !found; dx += 1) {
           const nx = goalX + dx;
           const ny = goalY + dy;
-          if (cellWalkable(state, nx, ny, faction)) {
+          if (cellWalkable(state, nx, ny, faction, buildings)) {
             goalX = nx;
             goalY = ny;
             found = true;
@@ -572,7 +578,7 @@ function findPath(
     height: state.session.grid.height,
     start: { gx: startX, gy: startY },
     goal: { gx: goalX, gy: goalY },
-    isWalkable: (x, y) => cellWalkable(state, x, y, faction),
+    isWalkable: (x, y) => cellWalkable(state, x, y, faction, buildings),
   });
   return cells.map((cell) => ({
     x: (cell.gx + 0.5) * TILE,
@@ -585,6 +591,7 @@ function heroTarget(state: GameState, h: Hero, maxRange: number): DamageTarget |
   let bestD = Infinity;
   for (const other of state.heroes) {
     if (!other.alive || other.faction === h.faction || other.invuln > 0) continue;
+    if (other.buffs.windwalk > 0 && other.buffs.revealed <= 0) continue;
     if (!hasLineOfSight(state, h.x, h.y, other.x, other.y, undefined, h.faction)) continue;
     const d = Math.hypot(other.x - h.x, other.y - h.y) - other.radius;
     if (d <= maxRange && d < bestD) {
@@ -894,7 +901,7 @@ function nearShop(state: GameState, troll: Hero): boolean {
 }
 
 function updateElfAI(state: GameState, dt: number, elf: Hero): void {
-  const troll = state.heroes.find((h) => h.faction === "troll" && h.alive);
+  const troll = createPerception(state, "elf").visibleEnemies().find((h) => h.faction === "troll");
   const danger = !!troll && Math.hypot(troll.x - elf.x, troll.y - elf.y) < 260;
   if (danger) {
     // 巨魔前期来袭：向远处房间转移，不硬拼
@@ -931,6 +938,8 @@ function updateElfAI(state: GameState, dt: number, elf: Hero): void {
 }
 
 function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
+  const perception = createPerception(state, "troll");
+  const visibleBuildings = perception.visibleBuildings();
   const nextItem = EQUIPMENT_RULE.items.find((i) => !troll.items.includes(i.key));
   if (nextItem && nearShop(state, troll)) buyEquipment(state, nextItem.key);
   if (nearShop(state, troll) && troll.gold > 0) {
@@ -942,11 +951,17 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
     state.aiTimer = randomRange(state.rng, 3, 5);
     if (troll.cooldowns.berserk <= 0 && troll.hp < troll.maxHp * 0.7) castSkillFor(state, troll, "berserk");
     else if (troll.cooldowns.windwalk <= 0) castSkillFor(state, troll, "windwalk");
-    else if (troll.cooldowns.farSight <= 0) castSkillFor(state, troll, "farSight");
+    else if (troll.cooldowns.farSight <= 0 && visibleBuildings[0]) {
+      castSkillFor(state, troll, "farSight", { x: visibleBuildings[0].x, y: visibleBuildings[0].y });
+    }
     const house = state.buildings.find((b) => b.alive && b.kind === "trollHouse");
     if (house && troll.gold > BUILDINGS.trollHouse.levels[house.level]?.cost) tryUpgrade(state, house.id);
   }
-  const elf = state.heroes.find((h) => h.faction === "elf" && h.alive);
+  const elf = perception.visibleEnemies().find((h) => h.faction === "elf");
+  const knownBuildings = perception.exploredResources();
+  if (visibleBuildings.length) {
+    state.aiMemory.lastSeen = { x: visibleBuildings[0].x, y: visibleBuildings[0].y };
+  }
   const house = state.buildings.find((b) => b.alive && b.kind === "trollHouse");
   let tx: number;
   let ty: number;
@@ -959,16 +974,16 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
     tx = house.x;
     ty = house.y;
   } else if (elf) {
-    // 有墙先拆墙：挡住视线或比精灵更近时优先攻击墙体
-    const blocker = state.buildings
-      .filter((b) => b.alive && b.faction === "elf" && b.buildTimer <= 0)
+    // 有墙先拆墙：只看当前视野与已探索建筑
+    const blocker = knownBuildings
+      .filter((b) => b.buildTimer <= 0)
       .sort((a, b) => {
         const ak = a.kind === "wall" ? 0 : 1;
         const bk = b.kind === "wall" ? 0 : 1;
         return ak - bk || Math.hypot(a.x - troll.x, a.y - troll.y) - Math.hypot(b.x - troll.x, b.y - troll.y);
       })[0];
     const elfDist = Math.hypot(elf.x - troll.x, elf.y - troll.y);
-    const losBlocked = !hasLineOfSight(state, troll.x, troll.y, elf.x, elf.y, undefined, "troll");
+    const losBlocked = !hasLineOfSight(state, troll.x, troll.y, elf.x, elf.y, undefined, "troll", knownBuildings);
     if (blocker && (losBlocked || Math.hypot(blocker.x - troll.x, blocker.y - troll.y) < elfDist)) {
       tx = blocker.x;
       ty = blocker.y;
@@ -976,15 +991,18 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
       tx = elf.x;
       ty = elf.y;
     }
+  } else if (knownBuildings.length) {
+    const nearest = [...knownBuildings]
+      .sort((a, b) => Math.hypot(a.x - troll.x, a.y - troll.y) - Math.hypot(b.x - troll.x, b.y - troll.y))[0];
+    tx = nearest.x;
+    ty = nearest.y;
+  } else if (state.aiMemory.lastSeen) {
+    tx = state.aiMemory.lastSeen.x;
+    ty = state.aiMemory.lastSeen.y;
   } else {
-    const b = state.buildings.find((x) => x.alive && x.faction === "elf");
-    if (!b) {
-      troll.vx = 0;
-      troll.vy = 0;
-      return;
-    }
-    tx = b.x;
-    ty = b.y;
+    troll.vx = 0;
+    troll.vy = 0;
+    return;
   }
   const dx = tx - troll.x;
   const dy = ty - troll.y;
@@ -1002,9 +1020,9 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
     if (state.stuckTimer > 1.2) {
       state.stuckTimer = 0;
       state.pathTimer = 0;
-      // 贴墙时先尝试拆掉最近的精灵建筑
-      const wall = state.buildings
-        .filter((b) => b.alive && b.faction === "elf" && b.buildTimer <= 0)
+      // 贴墙时先尝试拆掉最近的已探索精灵建筑
+      const wall = [...knownBuildings]
+        .filter((b) => b.buildTimer <= 0)
         .sort((a, b) => Math.hypot(a.x - troll.x, a.y - troll.y) - Math.hypot(b.x - troll.x, b.y - troll.y))[0];
       if (wall) {
         tx = wall.x;
@@ -1013,7 +1031,7 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
     }
     if (state.pathTimer <= 0 || state.aiPath.length === 0) {
       state.pathTimer = 0.6;
-      state.aiPath = findPath(state, troll.x, troll.y, tx, ty, "troll");
+      state.aiPath = findPath(state, troll.x, troll.y, tx, ty, "troll", knownBuildings);
       state.aiPathIdx = 0;
     }
     while (
@@ -1042,9 +1060,11 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
 }
 
 function updateAI(state: GameState, dt: number): void {
-  // 召唤的大法师自动追杀巨魔
+  // 召唤的大法师自动追杀当前可见巨魔
   const mage = state.heroes.find((h) => h.isAlly && h.alive);
-  const troll = state.heroes.find((h) => h.faction === "troll" && !h.isAlly && h.alive);
+  const troll = mage
+    ? createPerception(state, "elf").visibleEnemies().find((h) => h.faction === "troll")
+    : undefined;
   if (mage && troll) {
     const dx = troll.x - mage.x;
     const dy = troll.y - mage.y;
@@ -1125,6 +1145,7 @@ export function stateHash(state: GameState): string {
       testMode: state.testMode,
     },
     rng: state.rng.state,
+    aiMemory: state.aiMemory,
     trollStrength: state.trollStrength,
     mobileDev: state.mobileDev,
     mageSummoned: state.mageSummoned,

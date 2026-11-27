@@ -62,3 +62,17 @@
 - [x] `runtimeBounds` 四个坐标分别篡改 +128 的单元测试均被拒绝；水色 `7=#355f66`、冰雪 `8/9=#d7e2df`，源数据含 tileId 7。
 
 所有地图单图几何加载耗时约 1.58–1.68 秒。Network 无 404，旧 TVE4 PNG/spritesheet 请求为 0；Console 无 error/warn，仅有既存表单字段 a11y issue（两个 select 缺 `id`/`name`，不阻断）。Node 检查输出保留环境基线 `UNDICI-EHPA` experimental warning。
+
+## Task 8 视野、AI 与移动端回归（Chrome DevTools）
+
+- [x] `390x844x3 mobile/touch`：地图 3 精灵测试模式开局；`data-fog-enabled=true`，canvas、HUD、摇杆、底部按钮均在 viewport 内，`scrollWidth=390`、`scrollHeight=844`。
+- [x] 竖屏摇杆：合成 pointerdown/move/up 后玩家 `(280,104) -> (262.322,86.322)`，说明触控摇杆持续驱动移动。
+- [x] 竖屏建造面板：6 个建筑按钮全部可见且无溢出；面板改为换行后不再需要横向滚动。
+- [x] `844x390x3 mobile/touch landscape`：同一局切横屏后 canvas `844x390`、摇杆 `112x112`、所有按钮无溢出。
+- [x] 双指缩放：合成双指距离 `200 -> 350`，`data-zoom` 从 `1.150` 变为 `1.253`；缩放后 `data-tve4-ready=true`。
+- [x] 切后台恢复：新开标签页再返回游戏页，canvas 保持 ready、游戏状态/结果层未丢失、无错误页。
+- [x] 真实地图 AI 终局：地图 3 精灵静止，AI 巨魔在真实 WPM 上自行寻路接近，9 秒击杀精灵；页面显示“所有精灵被消灭，失败”“坚守 9 秒”和“再来一局”。
+- [x] 浏览器终局测试仅用页面内临时 rAF 时间加速缩短等待，不改产品代码、不改规则数值；AI 决策与战斗仍走真实 `stepGame`。
+- [x] `再来一局` 可点击并重新运行同配置对局。
+- [x] 上述流程 Console error/warn 为 0；浏览器测试结束后已停止开发服务器。
+- [x] 自动化补充：`scripts/tve4/ai_vision.test.ts` 5 项通过，包括“视野外不可见”“已探索建筑记忆”“隐身/显影/暴露规则”“真实地图 3 AI 到达并结束对局”。

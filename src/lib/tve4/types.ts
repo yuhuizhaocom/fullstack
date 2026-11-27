@@ -156,6 +156,11 @@ export interface InputState {
   aim?: { x: number; y: number } | null;
 }
 
+export interface AiMemory {
+  lastSeen: { x: number; y: number } | null;
+  buildingIds: number[];
+}
+
 export interface GameState {
   mode: Mode;
   rule: Rule;
@@ -164,6 +169,7 @@ export interface GameState {
   catalogVersion: string;
   session: SessionContext;
   rng: Rng;
+  aiMemory: AiMemory;
   playerFaction: Faction;
   testMode: boolean;
   trollStrength: number;

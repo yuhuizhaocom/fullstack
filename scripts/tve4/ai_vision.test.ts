@@ -1,0 +1,105 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { createPerception } from "../../src/lib/tve4/ai/perception";
+import { TILE } from "../../src/lib/tve4/config";
+import { createGame, stepGame } from "../../src/lib/tve4/engine";
+import type { Building, GameState } from "../../src/lib/tve4/types";
+
+function testState(): GameState {
+  return createGame({ mapId: 0, seed: 11, testMode: true, playerFaction: "elf" });
+}
+
+function placeTrollAtElf(state: GameState, distance: number) {
+  const elf = state.heroes.find((h) => h.isPlayer)!;
+  const troll = state.heroes.find((h) => h.faction === "troll")!;
+  troll.x = elf.x + distance;
+  troll.y = elf.y;
+  troll.invuln = 0;
+  return { elf, troll };
+}
+
+function wallNear(state: GameState, x: number, y: number): Building {
+  const gx0 = Math.floor(x / TILE);
+  const gy0 = Math.floor(y / TILE);
+  const wall: Building = {
+    id: state.nextId++, kind: "wall", faction: "elf",
+    x: (gx0 + 0.5) * TILE, y: (gy0 + 0.5) * TILE,
+    gx0, gy0, size: 1, level: 1, hp: 100, maxHp: 100,
+    alive: true, buildTimer: 0, demolishTimer: 0, eyeMarked: 0,
+    noHitTimer: 0, flash: 0, cd: 0,
+  };
+  state.buildings.push(wall);
+  return wall;
+}
+
+test("AI does not see an enemy outside its own vision", () => {
+  const state = testState();
+  const elf = state.heroes.find((h) => h.isPlayer)!;
+  const trollPerception = createPerception(state, "troll");
+  assert.deepEqual(trollPerception.visibleEnemies().filter((h) => h.faction === "elf"), []);
+  assert.equal(trollPerception.canSee(elf.x, elf.y), false);
+});
+
+test("vision follows current positions and remembers explored buildings", () => {
+  const state = testState();
+  const { elf, troll } = placeTrollAtElf(state, 40);
+  const near = createPerception(state, "troll");
+  assert.equal(near.canSee(elf.x, elf.y), true);
+  assert.deepEqual(near.visibleEnemies().filter((h) => h.faction === "elf"), [elf]);
+
+  const wall = wallNear(state, elf.x + 20, elf.y + 20);
+  troll.x = elf.x + 40;
+  troll.y = elf.y;
+  const seesWall = createPerception(state, "troll");
+  assert.ok(seesWall.visibleBuildings().some((b) => b.id === wall.id));
+
+  troll.x = elf.x + 1200;
+  troll.y = elf.y + 900;
+  const far = createPerception(state, "troll");
+  assert.equal(far.canSee(elf.x, elf.y), false);
+  assert.equal(far.visibleBuildings().some((b) => b.id === wall.id), false);
+  assert.equal(far.exploredResources().some((b) => b.id === wall.id), true);
+});
+
+test("windwalk hides a hero until revealed, and the expose rule overrides distance", () => {
+  const state = testState();
+  const { elf, troll } = placeTrollAtElf(state, 30);
+  troll.buffs.windwalk = 5;
+  troll.buffs.revealed = 0;
+  const elfPerception = createPerception(state, "elf");
+  assert.equal(elfPerception.visibleEnemies().includes(troll), false);
+  troll.buffs.revealed = 1;
+  assert.equal(createPerception(state, "elf").visibleEnemies().includes(troll), true);
+
+  troll.buffs.revealed = 0;
+  troll.x = elf.x + 2000;
+  troll.y = elf.y + 2000;
+  const beforeExpose = createPerception(state, "troll");
+  assert.equal(beforeExpose.visibleEnemies().includes(elf), false);
+  state.elfExposed = true;
+  assert.equal(createPerception(state, "troll").visibleEnemies().includes(elf), true);
+});
+
+test("vision sources use source hero sight and do not expose the full map", () => {
+  const state = testState();
+  const troll = state.heroes.find((h) => h.faction === "troll")!;
+  const ai = createPerception(state, "troll");
+  const sight = 1400 * 0.125;
+  assert.equal(ai.canSee(troll.x + sight - 2, troll.y), true);
+  assert.equal(ai.canSee(troll.x + sight + 20, troll.y), false);
+});
+
+test("player-side perception never overwrites AI memory", () => {
+  const state = testState();
+  state.aiMemory = { lastSeen: { x: 1, y: 2 }, buildingIds: [999] };
+  createPerception(state, "elf");
+  assert.deepEqual(state.aiMemory, { lastSeen: { x: 1, y: 2 }, buildingIds: [999] });
+});
+
+test("vision-constrained AI navigates real WPM and finishes a stationary map-3 game", () => {
+  const state = createGame({ mapId: 3, seed: 11, testMode: true, playerFaction: "elf" });
+  for (let i = 0; i < 30 * 30 && !state.result; i += 1) stepGame(state, 1 / 30, { mx: 0, my: 0 });
+  assert.equal(state.result, "lose");
+  assert.equal(state.heroes.find((h) => h.faction === "elf")!.alive, false);
+});

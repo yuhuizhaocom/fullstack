@@ -48,6 +48,7 @@ class Tve4Scene extends Phaser.Scene {
   private entities!: Phaser.GameObjects.Graphics;
   private effects!: Phaser.GameObjects.Graphics;
   private overlays!: Phaser.GameObjects.Graphics;
+  private fog!: Phaser.GameObjects.Graphics;
   private bars!: Phaser.GameObjects.Graphics;
   private texts: Phaser.GameObjects.Text[] = [];
   private geometry!: RenderGeometry;
@@ -121,6 +122,7 @@ class Tve4Scene extends Phaser.Scene {
     this.entities = this.add.graphics().setDepth(10);
     this.effects = this.add.graphics().setDepth(32);
     this.overlays = this.add.graphics().setDepth(36);
+    this.fog = this.add.graphics().setDepth(38).setScrollFactor(0);
     this.bars = this.add.graphics().setDepth(42);
 
     this.drawTerrain();
@@ -171,6 +173,7 @@ class Tve4Scene extends Phaser.Scene {
     canvas.dataset.cameraBounds = JSON.stringify(this.cameraRect);
     canvas.dataset.terrainTiles = String(geometry.terrain.length);
     canvas.dataset.doodads = String(geometry.doodads.length);
+    canvas.dataset.fogEnabled = "true";
     this.readyResolve();
   }
 
@@ -276,11 +279,13 @@ class Tve4Scene extends Phaser.Scene {
     this.zoom += (this.zoomTarget - this.zoom) * 0.12;
     camera.setZoom(this.zoom);
     camera.centerOn(this.camX, this.camY);
+    this.game.canvas.dataset.zoom = this.zoom.toFixed(3);
 
     this.shadows.clear();
     this.entities.clear();
     this.effects.clear();
     this.overlays.clear();
+    this.fog.clear();
     this.bars.clear();
 
     const { grid } = state.session;
@@ -433,6 +438,36 @@ class Tve4Scene extends Phaser.Scene {
       this.overlays.lineStyle(2, color, 0.9);
       this.overlays.strokeRect(this.interaction.gx * TILE, this.interaction.gy * TILE, definition.size * TILE, definition.size * TILE);
     }
+
+    this.drawFog(player);
+  }
+
+  private drawFog(player: GameState["heroes"][number] | undefined): void {
+    this.fog.clear();
+    if (this.fullMap) return;
+    const camera = this.cameras.main;
+    const width = camera.width;
+    const height = camera.height;
+    const fogColor = 0x02060a;
+    if (!player) {
+      this.fog.fillStyle(fogColor, 0.72);
+      this.fog.fillRect(0, 0, width, height);
+      return;
+    }
+    const viewLeft = this.camX - width / (2 * this.zoom);
+    const viewTop = this.camY - height / (2 * this.zoom);
+    const screenX = (player.x - viewLeft) * this.zoom;
+    const screenY = (player.y - viewTop) * this.zoom;
+    const radius = Math.max(120, Math.min(width, height) * 0.34);
+    const left = Math.max(0, screenX - radius);
+    const right = Math.min(width, screenX + radius);
+    const top = Math.max(0, screenY - radius);
+    const bottom = Math.min(height, screenY + radius);
+    this.fog.fillStyle(fogColor, 0.58);
+    this.fog.fillRect(0, 0, width, top);
+    this.fog.fillRect(0, bottom, width, height - bottom);
+    this.fog.fillRect(0, top, left, bottom - top);
+    this.fog.fillRect(right, top, width - right, bottom - top);
   }
 
   private drawBar(x: number, y: number, width: number, ratio: number, color: number): void {

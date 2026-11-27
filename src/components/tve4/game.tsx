@@ -103,6 +103,8 @@ export function Tve4Game() {
   const pendingSkillRef = useRef<SkillKey | null>(null);
   const migrateRef = useRef(false);
   const dragRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ distance: number } | null>(null);
   const testModeRef = useRef(false);
   const modeRef = useRef<Mode>("OLD");
   const ruleRef = useRef<Rule>("SINGLE");
@@ -367,6 +369,14 @@ export function Tve4Game() {
   }, []);
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointersRef.current.size >= 2) {
+      const [a, b] = [...pointersRef.current.values()];
+      pinchRef.current = { distance: Math.hypot(a.x - b.x, a.y - b.y) };
+      dragRef.current = null;
+      stageRef.current?.setPanning(false);
+      return;
+    }
     dragRef.current = { x: e.clientX, y: e.clientY, moved: false };
     const stage = stageRef.current;
     if (!stage) return;
@@ -376,6 +386,21 @@ export function Tve4Game() {
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const stage = stageRef.current;
     if (!stage) return;
+    if (pointersRef.current.has(e.pointerId)) {
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+    if (pointersRef.current.size >= 2) {
+      const [a, b] = [...pointersRef.current.values()];
+      const distance = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinchRef.current && distance > 0) {
+        const ratio = distance / pinchRef.current.distance;
+        if (Math.abs(ratio - 1) > 0.01) stage.zoomBy(ratio);
+        pinchRef.current.distance = distance;
+      } else {
+        pinchRef.current = { distance };
+      }
+      return;
+    }
     hoverRef.current = stage.screenToWorld(e.clientX, e.clientY);
     const drag = dragRef.current;
     if (!drag) return;
@@ -391,6 +416,14 @@ export function Tve4Game() {
   }, []);
 
   const onPointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const wasPinching = pinchRef.current !== null || pointersRef.current.size > 1;
+    pointersRef.current.delete(e.pointerId);
+    if (pointersRef.current.size < 2) pinchRef.current = null;
+    if (wasPinching) {
+      dragRef.current = null;
+      stageRef.current?.setPanning(false);
+      return;
+    }
     const drag = dragRef.current;
     dragRef.current = null;
     stageRef.current?.setPanning(false);
@@ -591,7 +624,7 @@ export function Tve4Game() {
         <>
           <div
             ref={joystickRef}
-            className="pointer-events-auto absolute bottom-5 left-4 z-30 h-28 w-28 touch-none select-none rounded-full border border-white/20 bg-black/40"
+            className="pointer-events-auto absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-30 h-24 w-24 touch-none select-none rounded-full border border-white/20 bg-black/40 sm:h-28 sm:w-28"
             onPointerDown={startJoystick}
             onPointerMove={moveJoystick}
             onPointerUp={endJoystick}
@@ -612,7 +645,7 @@ export function Tve4Game() {
               className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400/70"
             />
           </div>
-          <div className="pointer-events-none absolute left-3 top-3 rounded-lg bg-black/50 px-2 py-1 text-xs text-white">
+          <div className="pointer-events-none absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] rounded-lg bg-black/50 px-2 py-1 text-xs text-white">
             {snapshot.phase === "prep"
               ? `准备 ${Math.max(0, RULE_PREP[snapshot.rule] - snapshot.time).toFixed(0)}s`
               : `${snapshot.time.toFixed(0)}s`}
@@ -639,7 +672,7 @@ export function Tve4Game() {
               </div>
             </div>
           ) : null}
-          <div className="pointer-events-none absolute bottom-5 left-36 right-3 z-30 flex flex-wrap justify-end gap-2">
+          <div className="pointer-events-none absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-28 right-2 z-30 flex flex-wrap justify-end gap-1.5 sm:left-36 sm:right-3 sm:gap-2">
             <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => toggleSheet(snapshot.faction === "elf" ? "build" : "shop")}>
               {snapshot.faction === "elf" ? "建造" : "商店"}
             </button>
@@ -714,7 +747,7 @@ export function Tve4Game() {
             ) : null}
             <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => setShowMore(!showMore)}>更多</button>
           </div>
-          <div className="pointer-events-none absolute right-3 top-3 rounded-lg bg-black/60 px-3 py-2 text-right text-xs text-white">
+          <div className="pointer-events-none absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] rounded-lg bg-black/60 px-3 py-2 text-right text-xs text-white">
             <div>金币 {Math.floor(snapshot.gold)} · 木材 {Math.floor(snapshot.wood)}</div>
             <div>生命 {Math.max(0, snapshot.hp).toFixed(0)}/{snapshot.maxHp} · 法力 {Math.floor(snapshot.mana)}/{snapshot.maxMana} · 剩余 {snapshot.lives}</div>
             <div className="text-white/60">击杀 {snapshot.stats.kills} · 摧毁 {snapshot.stats.destroyed}</div>
@@ -764,7 +797,7 @@ export function Tve4Game() {
           {sheet ? (
             <div className="absolute bottom-24 left-1/2 z-20 max-w-[95vw] -translate-x-1/2 overflow-x-auto rounded-xl border border-white/10 bg-neutral-900/95 p-3 text-white">
               {sheet === "build" ? (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {BUILD_KINDS.map((kind) => {
                     const def = BUILDINGS[kind];
                     return (
@@ -839,7 +872,7 @@ export function Tve4Game() {
                   ))}
                 </div>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {SKILLS[snapshot.faction].map((spec) => (
                     <button
                       key={spec.key}

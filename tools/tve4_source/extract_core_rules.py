@@ -250,12 +250,14 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
             hp_sources = [slk_evidence("UnitBalance.slk", object_id, "HP", "INFERRED"), legacy_evidence(key, "hp")]
         if parsed_interval != old["interval"]:
             interval_sources = [slk_evidence("UnitWeapons.slk", object_id, "cool1", "INFERRED"), legacy_evidence(key, "interval")]
-        values = {"objectId": object_id, "hp": old["hp"], "damage": old["attack"], "interval": old["interval"], "range": runtime_ranges[key], "worldRange": old["range"], "speed": old["speed"], "radius": old["radius"], "mana": number(balance[object_id]["manaN"]), "manaRegen": number(balance[object_id]["regenMana"]), "originalHp": parsed_hp, "originalSpeed": number(balance[object_id]["spd"]), "originalRange": number(weapons[object_id]["rangeN1"])}
+        values = {"objectId": object_id, "hp": old["hp"], "damage": old["attack"], "interval": old["interval"], "range": runtime_ranges[key], "worldRange": old["range"], "speed": old["speed"], "radius": old["radius"], "mana": number(balance[object_id]["manaN"]), "manaRegen": number(balance[object_id]["regenMana"]), "originalSight": number(balance[object_id]["sight"]), "originalNightSight": number(balance[object_id]["nsight"]), "originalHp": parsed_hp, "originalSpeed": number(balance[object_id]["spd"]), "originalRange": number(weapons[object_id]["rangeN1"])}
         sources = {
             "hp": hp_sources,
             "interval": interval_sources,
             "mana": [slk_evidence("UnitBalance.slk", object_id, "manaN", value=number(balance[object_id]["manaN"]))],
             "manaRegen": [slk_evidence("UnitBalance.slk", object_id, "regenMana", value=number(balance[object_id]["regenMana"]))],
+            "originalSight": [slk_evidence("UnitBalance.slk", object_id, "sight", value=number(balance[object_id]["sight"]))],
+            "originalNightSight": [slk_evidence("UnitBalance.slk", object_id, "nsight", value=number(balance[object_id]["nsight"]))],
             "originalHp": [slk_evidence("UnitBalance.slk", object_id, "HP", value=parsed_hp)],
             "originalSpeed": [slk_evidence("UnitBalance.slk", object_id, "spd", value=number(balance[object_id]["spd"]))],
             "originalRange": [slk_evidence("UnitWeapons.slk", object_id, "rangeN1", value=number(weapons[object_id]["rangeN1"]))],
