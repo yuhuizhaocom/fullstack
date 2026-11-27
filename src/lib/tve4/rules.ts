@@ -6,6 +6,9 @@ export interface EquipmentItem {
   key: string;
   label: string;
   gold: number;
+  wood?: number;
+  shop?: string;
+  note?: string;
   allStats?: number;
   strength?: number;
   agility?: number;
@@ -18,10 +21,13 @@ export interface EquipmentItem {
 
 export interface RuleFile {
   version: number;
+  confidence?: string;
+  basedOn?: string;
   scale: number;
   modes: Record<string, string>;
   rules: Record<string, string>;
   startGold: { elf: number; troll: number };
+  modeStartGold: Record<string, { elf: number; troll: number }>;
   startWood: number;
   trollAppear: { withPrepare: number; fixSurvive: number };
   trollInvulnerableSeconds: number;

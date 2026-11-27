@@ -16,7 +16,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "check:tve4": "tsx scripts/tve4/check_rules.ts"
+    "check:tve4": "tsx scripts/tve4/check_rules.ts",
+    "check:data": "tsx scripts/tve4/check_data.ts"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

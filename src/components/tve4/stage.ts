@@ -2,8 +2,8 @@
 
 import * as Phaser from "phaser";
 
-import { BUILDINGS, GRID_H, GRID_W, TILE, WORLD_H, WORLD_W } from "@/lib/tve4/config";
-import { CHOKEPOINTS, insideAnyRoom, ROOM_ELEMENTS, roomCenterWorld, gateCells } from "@/lib/tve4/map";
+import { ACTIVE_MAP, BUILDINGS, GRID_H, GRID_W, SPAWNS, TILE, WORLD_H, WORLD_W } from "@/lib/tve4/config";
+import { cellCenter } from "@/lib/tve4/map";
 import type { GameState, Interaction } from "@/lib/tve4/types";
 
 export interface Stage4 {
@@ -63,7 +63,7 @@ class Tve4Scene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image("snow", "/tve4/snow.png");
+    this.load.image("mapbg", ACTIVE_MAP.background);
     this.load.image("b_wall", "/tve4/b_wall.png");
     this.load.image("b_tower", "/tve4/b_tower.png");
     this.load.image("b_mine", "/tve4/b_mine.png");
@@ -74,8 +74,8 @@ class Tve4Scene extends Phaser.Scene {
   }
 
   create(): void {
-    this.add.image(0, 0, "snow").setOrigin(0).setDisplaySize(WORLD_W, WORLD_H).setDepth(0);
-    this.drawMapElements();
+    this.add.image(0, 0, "mapbg").setOrigin(0).setDisplaySize(WORLD_W, WORLD_H).setDepth(0);
+    this.drawSpawnMarkers();
 
     this.ground = this.add.graphics().setDepth(2);
     this.shadows = this.add.graphics().setDepth(4);
@@ -145,72 +145,36 @@ class Tve4Scene extends Phaser.Scene {
     return this.zoom;
   }
 
-  private drawMapElements(): void {
+  private drawSpawnMarkers(): void {
     const g = this.add.graphics().setDepth(1);
-    const paint = (gx: number, gy: number): void => {
-      const x = gx * TILE;
-      const y = gy * TILE;
-      g.fillStyle(0x46545e, 1);
-      g.fillRect(x, y, TILE, TILE);
-      g.fillStyle(0x788894, 1);
-      g.fillRect(x + 1, y + 1, TILE - 2, TILE * 0.42);
-      g.fillStyle(0xeaf4f8, 0.85);
-      g.fillRect(x, y, TILE, 3);
-    };
-
-    for (const room of ROOM_ELEMENTS) {
-      const skip = new Set(gateCells(room).map(([x, y]) => `${x},${y}`));
-      for (let x = room.x0; x <= room.x1; x += 1) {
-        for (const y of [room.y0, room.y1]) {
-          if (!skip.has(`${x},${y}`)) paint(x, y);
-        }
-      }
-      for (let y = room.y0; y <= room.y1; y += 1) {
-        for (const x of [room.x0, room.x1]) {
-          if (!skip.has(`${x},${y}`)) paint(x, y);
-        }
-      }
-    }
-
-    for (const seg of CHOKEPOINTS) {
-      const dx = Math.sign(seg.x2 - seg.x1);
-      const dy = Math.sign(seg.y2 - seg.y1);
-      const steps = Math.max(Math.abs(seg.x2 - seg.x1), Math.abs(seg.y2 - seg.y1));
-      for (let i = 0; i <= steps; i += 1) {
-        const x = seg.x1 + dx * i;
-        const y = seg.y1 + dy * i;
-        if (!insideAnyRoom(x, y)) paint(x, y);
-      }
-    }
-
-    for (const room of ROOM_ELEMENTS) {
-      const p = roomCenterWorld(room);
-      g.lineStyle(2, 0xde3838, 0.9);
-      g.strokeCircle(p.x, p.y, 16);
+    const marker = (gx: number, gy: number, color: number, label: string, radius: number): void => {
+      const p = cellCenter(gx, gy);
+      g.lineStyle(2, color, 0.95);
+      g.strokeCircle(p.x, p.y, radius);
       this.add
-        .text(p.x, p.y, String(room.label), {
+        .text(p.x, p.y - radius - 10, label, {
           fontFamily: "system-ui, sans-serif",
-          fontSize: "15px",
-          color: "#de3838",
+          fontSize: "13px",
+          color: `#${color.toString(16).padStart(6, "0")}`,
+          stroke: "#050d0a",
+          strokeThickness: 3,
         })
         .setOrigin(0.5)
         .setDepth(3);
+    };
+
+    marker(SPAWNS.troll.gx, SPAWNS.troll.gy, 0xff7a5c, "巨魔出生点", 20);
+    marker(SPAWNS.elf.gx, SPAWNS.elf.gy, 0x7ee08a, "精灵出生点", 16);
+    if (ACTIVE_MAP.angel) {
+      const p = cellCenter(ACTIVE_MAP.angel.gx, ACTIVE_MAP.angel.gy);
+      g.lineStyle(2, 0xf1dfa0, 0.8);
+      g.strokeCircle(p.x, p.y, 14);
     }
-    // 巨魔出生点：无墙标记
-    const tx = (64 + 0.5) * TILE;
-    const ty = (42 + 0.5) * TILE;
-    g.lineStyle(2, 0xff7a5c, 0.95);
-    g.strokeCircle(tx, ty, 18);
-    this.add
-      .text(tx, ty - 26, "巨魔出生点", {
-        fontFamily: "system-ui, sans-serif",
-        fontSize: "13px",
-        color: "#ff7a5c",
-        stroke: "#050d0a",
-        strokeThickness: 3,
-      })
-      .setOrigin(0.5)
-      .setDepth(3);
+    for (const stone of ACTIVE_MAP.stones) {
+      const p = cellCenter(stone.gx, stone.gy);
+      g.fillStyle(0xbdaea0, 0.85);
+      g.fillCircle(p.x, p.y, 6);
+    }
   }
 
   apply(state: GameState): void {

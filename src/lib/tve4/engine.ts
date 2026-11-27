@@ -1,6 +1,7 @@
 // tve4 规则引擎：数值与机制来自 data/game/game-rules.json（已从原版解包文件核对）。
 
 import {
+  ACTIVE_MAP,
   ALL_SKILL_KEYS,
   BUILDINGS,
   ELF_START,
@@ -8,6 +9,7 @@ import {
   GRID_W,
   HERO_STATS,
   LIVES,
+  MODE_START_GOLD,
   REQUIREMENTS,
   RULE_PREP,
   SKILLS,
@@ -17,6 +19,7 @@ import {
   TROLL_START,
   WORLD_H,
   WORLD_W,
+  setActiveMap,
 } from "./config";
 import {
   BOUNTY_RULE,
@@ -102,6 +105,7 @@ function setHint(state: GameState, text: string): void {
 // ---------------------------------------------------------------- 创建 / 死亡
 
 export function createGame(options: GameOptions = {}): GameState {
+  if (options.mapId !== undefined) setActiveMap(options.mapId);
   const mode: Mode = options.mode ?? "OLD";
   const rule: Rule = options.rule ?? "SINGLE";
   const testMode = options.testMode ?? false;
@@ -109,11 +113,13 @@ export function createGame(options: GameOptions = {}): GameState {
   const state: GameState = {
     mode,
     rule,
+    mapId: ACTIVE_MAP.id,
     playerFaction,
     testMode,
     trollStrength: 0,
     mobileDev: false,
     mageSummoned: false,
+    endLock: null,
     relocateCd: 0,
     aiPath: [],
     aiPathIdx: 0,
@@ -170,7 +176,7 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
     hp: s.hp, maxHp: s.hp, damage: s.damage, interval: s.interval, range: s.range,
     speed: s.speed, radius: s.radius,
     cd: 0, channelTime: 0, deathTimer: 0,
-    gold: START_GOLD[faction], wood: START_WOOD,
+    gold: (MODE_START_GOLD[state.mode] ?? START_GOLD)[faction], wood: START_WOOD,
     items: [], bonusIncome: 0, bonusLifesteal: 0,
     cooldowns: emptyCooldowns(), buffs: emptyBuffs(),
   };
@@ -1094,8 +1100,12 @@ function checkResult(state: GameState): void {
     state.phase = "over";
     setHint(state, state.playerFaction === "troll" ? `${reason}，胜利！` : `${reason}，失败`);
   };
-  // 巨魔 16 万力量暴涨属性获胜（PROPOSED 玩法线）
-  if (state.trollStrength >= SCENARIO_RULE.troll.strengthWin) {
+  // VERIFIED：16 万力量胜利与 66 座 h096 召唤大法师由 OldEndLock 互斥，先触发者封印对方。
+  if (
+    state.endLock !== "elf" &&
+    state.trollStrength >= SCENARIO_RULE.troll.strengthWin
+  ) {
+    state.endLock = "troll";
     const h = troll;
     if (h) {
       h.maxHp *= 10;
@@ -1170,7 +1180,7 @@ export function canBuyEquipment(state: GameState, key: string): boolean {
   const item = EQUIPMENT_RULE.items.find((i) => i.key === key);
   if (!troll || !item || troll.items.includes(key)) return false;
   if (!nearShop(state, troll)) return false;
-  return troll.gold >= item.gold;
+  return troll.gold >= item.gold && troll.wood >= (item.wood ?? 0);
 }
 
 export function buyEquipment(state: GameState, key: string): boolean {
@@ -1178,6 +1188,7 @@ export function buyEquipment(state: GameState, key: string): boolean {
   const item = EQUIPMENT_RULE.items.find((i) => i.key === key)!;
   const troll = state.heroes.find((h) => h.faction === "troll" && h.alive)!;
   troll.gold -= item.gold;
+  troll.wood -= item.wood ?? 0;
   troll.items.push(key);
   if (item.damage) troll.damage += item.damage;
   if (item.allStats || item.strength) troll.maxHp += (item.strength ?? 0) * 10 + (item.allStats ?? 0) * 10;
@@ -1196,15 +1207,17 @@ export function buyEquipment(state: GameState, key: string): boolean {
 
 /** 精灵后期：66 座终极塔后召唤精灵大法师协助击杀巨魔。 */
 export function canSummonMage(state: GameState): boolean {
+  if (state.mageSummoned || state.endLock === "troll") return false;
+  // VERIFIED：只有 h096 终极塔（tower Lv8）计入 OldFinalTowerManager 的 66 座统计。
   const towers = state.buildings.filter(
-    (b) => b.alive && b.faction === "elf" && b.kind === "tower" && b.buildTimer <= 0,
+    (b) => b.alive && b.faction === "elf" && b.kind === "tower" && b.level >= 8 && b.buildTimer <= 0,
   ).length;
-  return !state.mageSummoned && towers >= SCENARIO_RULE.elf.ultimateTowerCount;
+  return towers >= SCENARIO_RULE.elf.ultimateTowerCount;
 }
 
 export function summonArchmage(state: GameState): boolean {
   if (!canSummonMage(state)) {
-    setHint(state, `需要 ${SCENARIO_RULE.elf.ultimateTowerCount} 座塔才能召唤大法师`);
+    setHint(state, `需要 ${SCENARIO_RULE.elf.ultimateTowerCount} 座 h096 终极塔才能召唤大法师`);
     return false;
   }
   const spec = SCENARIO_RULE.elf.archmage;
@@ -1217,6 +1230,7 @@ export function summonArchmage(state: GameState): boolean {
   mage.interval = spec.interval;
   state.heroes.push(mage);
   state.mageSummoned = true;
+  state.endLock = "elf";
   addEffect(state, mage.x, mage.y, 120, "#bfe9ff");
   setHint(state, "精灵大法师已召唤！");
   return true;

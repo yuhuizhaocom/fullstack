@@ -7,7 +7,6 @@ export type BuildKind =
   | "tower"
   | "mine"
   | "tent"
-  | "farm"
   | "market"
   | "reveal"
   | "trollHouse";
@@ -30,6 +29,7 @@ export interface GameOptions {
   rule?: Rule;
   testMode?: boolean;
   playerFaction?: Faction;
+  mapId?: number;
 }
 
 export type SkillKey =
@@ -151,11 +151,14 @@ export interface InputState {
 export interface GameState {
   mode: Mode;
   rule: Rule;
+  mapId: number;
   playerFaction: Faction;
   testMode: boolean;
   trollStrength: number;
   mobileDev: boolean;
   mageSummoned: boolean;
+  /** VERIFIED：OldEndLock 互斥锁，先触发者封印对方的终结条件。 */
+  endLock: "elf" | "troll" | null;
   relocateCd: number;
   aiPath: Array<{ x: number; y: number }>;
   aiPathIdx: number;

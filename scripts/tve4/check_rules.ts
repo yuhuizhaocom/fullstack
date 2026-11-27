@@ -2,12 +2,14 @@
 // 校验数值来自 data/game/game-rules.json（原版解包核对）。
 import assert from "node:assert/strict";
 
-import { GRID_H, GRID_W, RULE_PREP, TILE } from "../../src/lib/tve4/config";
+import { GRID_H, GRID_W, RULE_PREP, SPAWNS, TILE, setActiveMap } from "../../src/lib/tve4/config";
+import { DEFAULT_MAP_ID, MAP_DEFINITIONS, MAP_ORDER } from "../../src/lib/tve4/maps.generated";
 import {
   buyEquipment,
   buyStrengthBook,
   canBuyEquipment,
   canBuild,
+  canSummonMage,
   canDemolish,
   castSkill,
   createGame,
@@ -22,8 +24,8 @@ import {
   tryBuild,
   tryUpgrade,
 } from "../../src/lib/tve4/engine";
-import { buildBlocked, gateCells, ROOM_ELEMENTS, SPAWNS } from "../../src/lib/tve4/map";
-import { EQUIPMENT_RULE, MARKET_RULE, RULES, SCENARIO_RULE } from "../../src/lib/tve4/rules";
+import { buildBlocked } from "../../src/lib/tve4/map";
+import { EQUIPMENT_RULE, MARKET_RULE, RULES, SCENARIO_RULE, VISION_RULE } from "../../src/lib/tve4/rules";
 import type { GameState } from "../../src/lib/tve4/types";
 
 const FIXED = 1 / 30;
@@ -60,6 +62,20 @@ check("初始状态：OLD 初始 30/70 金、木材 0", () => {
   assert.equal(s.heroes.length, 1);
   assert.equal(getPlayer(s)?.gold, 30);
   assert.equal(getPlayer(s)?.wood, 0);
+});
+
+check("VERIFIED：MIDDLE 初始 10/50，OLD 30/70", () => {
+  assert.equal(getPlayer(createGame({ mode: "OLD" }))?.gold, 30);
+  assert.equal(getPlayer(createGame({ mode: "MIDDLE" }))?.gold, 10);
+  const oldTroll = createGame({ mode: "OLD", playerFaction: "troll" });
+  const midTroll = createGame({ mode: "MIDDLE", playerFaction: "troll" });
+  assert.equal(getPlayer(oldTroll)?.gold, 70);
+  assert.equal(getPlayer(midTroll)?.gold, 50);
+});
+
+check("VERIFIED：视野绝对时间 335 / 635 秒", () => {
+  assert.equal(VISION_RULE.elfShareAtSeconds, 335);
+  assert.equal(VISION_RULE.exposeAtSeconds, 635);
 });
 
 check(`准备期 ${RULE_PREP.SINGLE} 秒后才出现巨魔`, () => {
@@ -204,35 +220,36 @@ check("隐身：攻击取消疾风步（无自创飘字）", () => {
   assert.ok(!s.floats.some((f) => f.text.includes("现身")));
 });
 
-check("显式地图：房间入口开放、外墙封闭、全图连通", () => {
-  const grid = buildBlocked();
-  for (const room of ROOM_ELEMENTS) {
-    const skip = new Set(gateCells(room).map(([x, y]) => `${x},${y}`));
-    for (const [x, y] of gateCells(room)) assert.equal(grid[y * GRID_W + x], 0);
-    for (let x = room.x0; x <= room.x1; x += 1) {
-      for (const y of [room.y0, room.y1]) {
-        if (!skip.has(`${x},${y}`)) assert.equal(grid[y * GRID_W + x], 1);
+check("原版地图：8 张竞技场全部开放格连通，双方出生点可达", () => {
+  for (const id of MAP_ORDER) {
+    setActiveMap(id);
+    const def = MAP_DEFINITIONS[id];
+    const grid = buildBlocked();
+    assert.equal(grid.length, def.grid[0] * def.grid[1]);
+    assert.equal(GRID_W, def.grid[0]);
+    assert.equal(GRID_H, def.grid[1]);
+    let total = 0;
+    for (const cell of grid) if (cell === 0) total += 1;
+    const seen = new Set([SPAWNS.troll.gy * GRID_W + SPAWNS.troll.gx]);
+    const q = [SPAWNS.troll.gy * GRID_W + SPAWNS.troll.gx];
+    while (q.length) {
+      const cur = q.shift()!;
+      const x = cur % GRID_W;
+      const y = Math.floor(cur / GRID_W);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= GRID_W || ny >= GRID_H) continue;
+        const next = ny * GRID_W + nx;
+        if (seen.has(next) || grid[next] !== 0) continue;
+        seen.add(next);
+        q.push(next);
       }
     }
+    assert.equal(seen.size, total, `地图 ${id} ${def.name} 存在不连通区域`);
+    assert.ok(seen.has(SPAWNS.elf.gy * GRID_W + SPAWNS.elf.gx), `地图 ${id} 精灵出生点不可达`);
   }
-  const open = (x: number, y: number) =>
-    x >= 0 && y >= 0 && x < GRID_W && y < GRID_H && grid[y * GRID_W + x] === 0;
-  let total = 0;
-  for (let i = 0; i < grid.length; i += 1) if (grid[i] === 0) total += 1;
-  const seen = new Set([`${SPAWNS.elf.gx},${SPAWNS.elf.gy}`]);
-  const q = [[SPAWNS.elf.gx, SPAWNS.elf.gy]];
-  while (q.length) {
-    const [x, y] = q.shift()!;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = x + dx;
-      const ny = y + dy;
-      const key = `${nx},${ny}`;
-      if (seen.has(key) || !open(nx, ny)) continue;
-      seen.add(key);
-      q.push([nx, ny]);
-    }
-  }
-  assert.equal(seen.size, total);
+  setActiveMap(DEFAULT_MAP_ID);
 });
 
 check("规则：FIX/SURVIVE 准备期 45 秒", () => {
@@ -371,11 +388,11 @@ check("装备：回商店附近购买，属性按规则文件生效", () => {
   openMap(s);
   const troll = s.heroes.find((h) => h.faction === "troll")!;
   troll.gold = 1000;
-  const item = EQUIPMENT_RULE.items.find((i) => i.key === "sword1")!;
-  troll.x = 120 * TILE;
-  troll.y = 80 * TILE;
+  const item = EQUIPMENT_RULE.items.find((i) => i.key === "I02A")!;
+  troll.x = (GRID_W - 2) * TILE;
+  troll.y = (GRID_H - 2) * TILE;
   assert.equal(canBuyEquipment(s, item.key), false);
-  const spawn = { x: (64 + 0.5) * TILE, y: (42 + 0.5) * TILE };
+  const spawn = { x: (SPAWNS.troll.gx + 0.5) * TILE, y: (SPAWNS.troll.gy + 0.5) * TILE };
   troll.x = spawn.x + 20;
   troll.y = spawn.y;
   const before = troll.damage;
@@ -454,11 +471,11 @@ check("巨魔玩法：力量达 16 万即获胜", () => {
 check("巨魔玩法：力量之书按规则文件增加力量", () => {
   const s = createGame({ playerFaction: "troll", testMode: true });
   const troll = getPlayer(s)!;
-  troll.gold = 100000;
   const book = SCENARIO_RULE.troll.strengthBooks[0];
+  troll.gold = book.gold;
   assert.equal(buyStrengthBook(s, book.key), true);
   assert.equal(s.trollStrength, book.strength);
-  assert.equal(troll.gold, 100000 - book.gold);
+  assert.equal(troll.gold, 0);
 });
 
 check("精灵玩法：66 座塔召唤大法师", () => {
@@ -470,13 +487,39 @@ check("精灵玩法：66 座塔召唤大法师", () => {
     s.buildings.push({
       id: s.nextId++, kind: "tower", faction: "elf",
       x: gx * TILE, y: gy * TILE, gx0: gx, gy0: gy, size: 2,
-      level: 7, hp: 200, maxHp: 200, alive: true, buildTimer: 0,
+      level: 8, hp: 250000, maxHp: 250000, alive: true, buildTimer: 0,
       demolishTimer: 0, eyeMarked: 0, flash: 0, cd: 0,
     });
   }
   assert.equal(summonArchmage(s), true);
   assert.equal(s.heroes.filter((h) => h.isAlly).length, 1);
+  assert.equal(s.endLock, "elf");
   assert.equal(summonArchmage(s), false);
+});
+
+check("终极塔：普通箭塔 Lv7 不算 h096，66 座才触发", () => {
+  const s = createGame({ testMode: true });
+  openMap(s);
+  for (let i = 0; i < SCENARIO_RULE.elf.ultimateTowerCount; i += 1) {
+    s.buildings.push({
+      id: s.nextId++, kind: "tower", faction: "elf",
+      x: (5 + (i % 20) * 8) * TILE, y: (5 + Math.floor(i / 20) * 8) * TILE,
+      gx0: 5 + (i % 20) * 8, gy0: 5 + Math.floor(i / 20) * 8, size: 2,
+      level: 7, hp: 200, maxHp: 200, alive: true, buildTimer: 0,
+      demolishTimer: 0, eyeMarked: 0, noHitTimer: 0, flash: 0, cd: 0,
+    });
+  }
+  assert.equal(canSummonMage(s), false);
+});
+
+check("OldEndLock：大法师封印巨魔力量胜利", () => {
+  const s = createGame({ testMode: true, playerFaction: "troll" });
+  openMap(s);
+  s.trollStrength = SCENARIO_RULE.troll.strengthWin;
+  s.endLock = "elf";
+  run(s, 0.1);
+  assert.equal(s.result, null);
+  assert.equal(s.phase !== "over", true);
 });
 
 check("精灵玩法：迁移保留作坊等级并有冷却", () => {
@@ -614,7 +657,7 @@ check("大法师：66 座塔后自动召唤，无需按钮", () => {
       id: s.nextId++, kind: "tower", faction: "elf",
       x: (5 + (i % 20) * 8) * TILE, y: (5 + Math.floor(i / 20) * 8) * TILE,
       gx0: 5 + (i % 20) * 8, gy0: 5 + Math.floor(i / 20) * 8, size: 2,
-      level: 7, hp: 200, maxHp: 200, alive: true, buildTimer: 0,
+      level: 8, hp: 250000, maxHp: 250000, alive: true, buildTimer: 0,
       demolishTimer: 0, eyeMarked: 0, noHitTimer: 0, flash: 0, cd: 0,
     });
   }

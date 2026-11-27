@@ -54,5 +54,33 @@
 - 规则真实名称：单魔群战/双魔群战/定点群战/竞赛规则/防守规则/单挑规则/2v2规则/人机规则/复活群战
 - 巨魔出现后 **2 秒无敌**
 
-## 9. 当前 tve4 仍未实现（UNKNOWN 或缺失）
+## 9. 终极塔 / 精灵魔法师 / 16 万力量（VERIFIED）
+- `war3map.j:3428`：`OLD_FINAL_TOWER_ENOUGH_COUNT = 66`
+- `war3map.j:3429`：`OLD_ELVE_MAGICER_TYPE = 'e00Y'`（精灵魔法师）
+- `war3map.j:74394-74399` / `144107` / `175408`：终极塔数量达到 **66** 时，`OldEndLock_ifElveWillTrigger` 成功后清除全部终极塔并**生成精灵魔法师**；数量 ≥30 时系统播报"终极塔数量是 N"（`J:74400`）。
+- `war3map.j:104125-104134`：力量书购买逻辑，每本 990000 金 → `bookCount*8000` 力量；**力量 ≥ 160000** 时通过 `OldEndLock_ifTrollWillTrigger` 触发巨魔结算。
+- `war3map.j:124350-124373`：`OldEndLock` 是**互斥锁**——精灵先触发（锁=1）则巨魔不能再触发，巨魔先触发（锁=2）则精灵不能再触发。即"66 塔召唤魔法师"与"16 万力量"互相封印。
+- 物品描述交叉验证：`ItemFunc.txt` 的 `I0AD` / `I0AI` 明确写"若你到达 16 万力量，且精灵未合成精灵魔法师，你会获得额外的 16 万力量和敏捷度"。
+- 因此用户描述的这两条核心玩法线属于**原版机制（VERIFIED）**，不是 PROPOSED。
+- `CampaignUnitFunc.txt:23604-23609`：`[e00Y] Name=精灵魔法师`、`Ubertip=精灵最厉害的单位,可以终结巨魔.或者,被巨魔终结...`。
+- `CampaignUnitFunc.txt:4289-4294`：`[h096] Name=终级神秘之塔`、`Requires=u00X`（需真视塔前置）。终极塔由箭塔链 `h000→...→h006→h096` 改造/升级而来（`A06G` 处理）。
+- `UnitBalance.slk` 直读：`h096` 费用 **1,000,000 金 + 1,000,000 木**、HP **250,000**；`e00Y` 精灵魔法师费用 **135 金 / 20 木**、HP **5,120,000**、移速 500、视野 1400。当前 tve4 的塔链只到 7 级（h006），尚未包含 h096 与魔法师的真实数值。
+
+## 9.5 视野时序精确值（VERIFIED，纠正此前推断）
+- `war3map.j:63660-63672`：SINGLE 循环顺序为 `... CreateElves → ElveWait → CreateTrolls → ElveShare → ForceExpose → FinalizeGame`。
+- `war3map.j:21959-21965`：`SingleParamProvider_getElveShareVisionTime = 300`、`getElveExposeVisionTime = 300`（各自是**相对上一段的间隔**，不是绝对时间点）。
+- `war3map.j:69179-69189`：巨魔出现后启动 300 秒定时器才进入 ElveShare；`s__SingleElveShare_execute`（`:69259`）开启精灵↔天使互享视野，并再启动 300 秒定时器进入 ForceExpose；`bSingleElveShare___syscToSystemTimer`（`:69242`）提示"无房暴露视野"。
+- 因此绝对时序约为：巨魔出现（5+30=35s）→ **335s** 精灵共享视野 → **635s** 无作坊精灵向巨魔暴露。tve4 当前 `VISION_RULE` 的 300/600 少了 35s 偏移，需按此为准确值。
+- `getTrollAppearWar3Time = 21.00`（`:21968`）是巨魔出现时设置的 WC3 游戏内**昼夜时间**，不是倒计时。
+
+## 10. 打包作坊 A06F 与物品自动合成（VERIFIED）
+- `war3map.j:58129-58184`：A06F「打包」技能（快捷键 W），只能以**精灵作坊**为目标；条件与 A02P 类似：1240 范围内无敌对英雄、1800 范围内无巨魔之眼，否则提示"附近有敌方英雄/被巨魔之眼照到的单位暂时无法打包"。
+- 冷却 300 秒；SURVIVE 氪石玩家 225 秒。Ubertip 明确："允许将作坊暂时收入物品栏，**会提供收入**。可以无视**无房暴露视野 40 秒**，已暴露视野则推迟结算。"
+- `war3map.j:58040-58062`：打包时生成对应作坊等级的物品 `packId`，设置 **40 层充能**（`SetItemCharges(createItem,40)`），并加入 `PackElveGroup`；作坊与"马甲单位"随后被移除。
+- `war3map.j:58051-58057`：若背包满则移除物品并取消；打包期间作坊仍提供收入（见 `ForGroup(packElveGroup, ...)` 的结算）。
+- `war3map.j:65431-65439`（交叉引用）：`I0C4..I0CD` 对应 `u00Y..u017` 的打包物品 ID。
+- `war3map.j:58786`：`gg_trg_Commandauto` 注册聊天指令 `-auto`；`:59783` 提示"你可以输入 -auto 来切换是否要自动合成物品"。
+- 使用打包物品时（`:189313`）消耗一层充能并在 `SOLO_MAJIA_X/Y` 生成对应科技单位 `u000..u009` 供重建（`:65450`）。
+
+## 11. 当前 tve4 仍未实现（UNKNOWN 或缺失）
 狼/天使角色与皮肤、单位训练、打包 A06F、塔改造 A06G、巨魔之眼侦察、SURVIVE 轮次、RACE 双队计分、前置科技链、商店精确交互半径。

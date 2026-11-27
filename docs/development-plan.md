@@ -1,5 +1,8 @@
 # 开发计划（按用户 2026-11-26 调整）
 
+> **已过时**：本文档包含已删除的旧实现（`tve-classic`、`/ws-tve` 等）记录，仅保留作历史。
+> 当前实施计划见 [`docs/tve4-development-plan.md`](./tve4-development-plan.md)（2026-11-27）。
+
 ## 里程碑总览
 
 | 阶段 | 状态 | 说明 |

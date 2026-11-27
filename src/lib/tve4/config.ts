@@ -1,24 +1,46 @@
 // tve4 配置：地图常量 + 从规则文件派生的数值。
 // 规则文件已从原版解包文件核对（见 data/game/game-rules.json）。
 
-import { BUILDING_RULES } from "./rules";
-import type { BuildKind, Mode, Rule } from "./types";
+import { DEFAULT_MAP_ID, MAP_DEFINITIONS, type MapDefinition } from "./maps.generated";
+import { BUILDING_RULES, RULES } from "./rules";
+import type { BuildKind, Faction, Mode, Rule } from "./types";
 
-export const GRID_W = 168;
-export const GRID_H = 96;
 export const TILE = 16;
-export const WORLD_W = GRID_W * TILE;
-export const WORLD_H = GRID_H * TILE;
 
-export const GAME_LIMIT = 300;        // 仅用于 300 秒精灵共享视野事件
-export const START_GOLD = { elf: 30, troll: 70 };
-export const START_WOOD = 0;
+// 原版一张 w3x 内含 8 张可选地图（war3map.j GameMap_load 的 MAP_0..MAP_7）。
+// 这些绑定在开局前由 setActiveMap() 更新，导入方读取到的始终是当前地图。
+export let ACTIVE_MAP: MapDefinition = MAP_DEFINITIONS[DEFAULT_MAP_ID];
+export let GRID_W = ACTIVE_MAP.grid[0];
+export let GRID_H = ACTIVE_MAP.grid[1];
+export let WORLD_W = GRID_W * TILE;
+export let WORLD_H = GRID_H * TILE;
+export let ELF_START = ACTIVE_MAP.spawns.elf;
+export let TROLL_START = ACTIVE_MAP.spawns.troll;
+export let SPAWNS: Record<Faction, { gx: number; gy: number }> = {
+  elf: ELF_START,
+  troll: TROLL_START,
+};
+
+export function setActiveMap(id: number): void {
+  const map = MAP_DEFINITIONS[id];
+  if (!map) throw new Error(`未知地图: ${id}`);
+  ACTIVE_MAP = map;
+  GRID_W = map.grid[0];
+  GRID_H = map.grid[1];
+  WORLD_W = GRID_W * TILE;
+  WORLD_H = GRID_H * TILE;
+  ELF_START = map.spawns.elf;
+  TROLL_START = map.spawns.troll;
+  SPAWNS = { elf: ELF_START, troll: TROLL_START };
+}
+
+export const START_GOLD = RULES.startGold;
+// VERIFIED：OLD 30/70，MIDDLE 10/50；BALANCE/FAST 沿用 OLD（PROPOSED 回退）。
+export const MODE_START_GOLD = RULES.modeStartGold;
+export const START_WOOD = RULES.startWood;
 export const LIVES = 1;               // 网页模拟用；原版按 force 判定，无生命数
 export const RESPAWN = 6;             // PROPOSED 网页模拟复活时间
 export const BOUNTY_MAX = 1_000_000;  // VERIFIED 赏金上限
-
-export const ELF_START = { gx: 54, gy: 59 };
-export const TROLL_START = { gx: 64, gy: 42 };
 
 // VERIFIED：5 秒精灵生成 + 30 秒等待 = 35 秒；FIX/SURVIVE 45 秒
 export const RULE_PREP: Record<Rule, number> = {
@@ -82,8 +104,8 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     levels: levels("wall"),
   },
   tower: {
-    label: "基础箭塔", desc: "h000 箭塔链，可升级 7 级", size: 2, texture: "b_tower", buildTime: 1.5,
-    levels: levels("tower", [96, 112, 128, 144, 160, 176, 192]),
+    label: "基础箭塔", desc: "h000 箭塔链 7 级 + h096 终极塔", size: 2, texture: "b_tower", buildTime: 1.5,
+    levels: levels("tower", [96, 112, 128, 144, 160, 176, 192, 208]),
   },
   mine: {
     label: "闹鬼金矿", desc: "e00H 金矿链，每秒金币", size: 2, texture: "b_mine", buildTime: 2,

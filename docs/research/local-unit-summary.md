@@ -1,0 +1,29 @@
+# 原版单位数值（UnitBalance.slk / UnitUI.slk 直读）
+
+- **H010** shasure_H010 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H020** shasure_H020 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **u00Y** shasure_u00Y {'goldcost': None, 'lumbercost': None, 'HP': '10', 'spd': None, 'sight': '1600'}
+- **e00H** shasure_e00H {'goldcost': '90', 'lumbercost': None, 'HP': '50', 'spd': None, 'sight': '900'}
+- **u03D** shasure_u03D {'goldcost': '200', 'lumbercost': None, 'HP': '550', 'spd': None, 'sight': '1000'}
+- **u04B** shasure_u04B {'goldcost': '128', 'lumbercost': None, 'HP': '320', 'spd': None, 'sight': '1600'}
+- **u01X** shasure_u01X {'goldcost': '120', 'lumbercost': None, 'HP': '300', 'spd': None, 'sight': '1600'}
+- **u030** shasure_u030 {'goldcost': '144', 'lumbercost': None, 'HP': '360', 'spd': None, 'sight': '1600'}
+- **h000** shasure_h000 {'goldcost': '4', 'lumbercost': None, 'HP': '10', 'spd': None, 'sight': '800'}
+- **h001** shasure_h001 {'goldcost': '16', 'lumbercost': None, 'HP': '15', 'spd': None, 'sight': '1600'}
+- **h002** shasure_h002 {'goldcost': '32', 'lumbercost': None, 'HP': '30', 'spd': None, 'sight': '1600'}
+- **h003** shasure_h003 {'goldcost': '64', 'lumbercost': None, 'HP': '50', 'spd': None, 'sight': '1600'}
+- **h004** shasure_h004 {'goldcost': '128', 'lumbercost': None, 'HP': '80', 'spd': None, 'sight': '1600'}
+- **h005** shasure_h005 {'goldcost': '256', 'lumbercost': None, 'HP': '140', 'spd': None, 'sight': '1600'}
+- **h006** shasure_h006 {'goldcost': '512', 'lumbercost': '16', 'HP': '200', 'spd': None, 'sight': '1600'}
+- **h096** shasure_h096 {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '250000', 'spd': None, 'sight': '1600'}
+- **u010** shasure_u010 {'goldcost': '100', 'lumbercost': None, 'HP': '40', 'spd': None, 'sight': '1600'}
+- **e020** shasure_e020 {'goldcost': None, 'lumbercost': '800', 'HP': '50', 'spd': None, 'sight': '900'}
+- **u011** shasure_u011 {'goldcost': '200', 'lumbercost': None, 'HP': '80', 'spd': None, 'sight': '1600'}
+- **u01C** shasure_u01C {'goldcost': '32', 'lumbercost': None, 'HP': '25', 'spd': None, 'sight': '1600'}
+- **u01F** shasure_u01F {'goldcost': '4', 'lumbercost': None, 'HP': '50', 'spd': None, 'sight': '800'}
+- **u018** shasure_u018 {'goldcost': '64', 'lumbercost': None, 'HP': '50', 'spd': None, 'sight': '1600'}
+- **u01B** shasure_u01B {'goldcost': None, 'lumbercost': '512', 'HP': '400', 'spd': None, 'sight': '1600'}
+- **u01E** shasure_u01E {'goldcost': None, 'lumbercost': '256', 'HP': '10', 'spd': None, 'sight': '1200'}
+- **u01D** shasure_u01D {'goldcost': '256', 'lumbercost': None, 'HP': '100', 'spd': None, 'sight': '1600'}
+- **u06P** shasure_u06P {'goldcost': '8', 'lumbercost': None, 'HP': '10', 'spd': None, 'sight': '1600'}
+- **e00Y** shasure_e00Y {'goldcost': '135', 'lumbercost': '20', 'HP': '5120000', 'spd': '500', 'sight': '1400'}

@@ -12,7 +12,9 @@ import {
   RULE_PREP,
   SKILLS,
   TILE,
+  setActiveMap,
 } from "@/lib/tve4/config";
+import { DEFAULT_MAP_ID, MAP_DEFINITIONS, MAP_ORDER } from "@/lib/tve4/maps.generated";
 import {
   buyEquipment,
   buyStrengthBook,
@@ -48,6 +50,8 @@ interface Snapshot {
   phase: string;
   mode: Mode;
   rule: Rule;
+  mapName: string;
+  endLock: "elf" | "troll" | null;
   faction: Faction;
   testMode: boolean;
   canSummon: boolean;
@@ -103,6 +107,7 @@ export function Tve4Game() {
   const [startFaction, setStartFaction] = useState<Faction | null>(null);
   const [preMode, setPreMode] = useState<Mode>("OLD");
   const [preRule, setPreRule] = useState<Rule>("SINGLE");
+  const [preMap, setPreMap] = useState<number>(DEFAULT_MAP_ID);
   const [preTest, setPreTest] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -127,6 +132,8 @@ export function Tve4Game() {
       phase: s.phase,
       mode: s.mode,
       rule: s.rule,
+      mapName: MAP_DEFINITIONS[s.mapId]?.name ?? "未知地图",
+      endLock: s.endLock,
       faction: s.playerFaction,
       testMode: s.testMode,
       canSummon: canSummonMage(s),
@@ -468,6 +475,30 @@ export function Tve4Game() {
               {preTest ? "测试模式" : "常规模式"}
             </button>
           </div>
+          <div className="w-full max-w-2xl">
+            <div className="mb-2 text-center text-xs text-white/60">选择地图（原版 8 张竞技场）</div>
+            <div className="grid max-h-40 grid-cols-4 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-4">
+              {MAP_ORDER.map((id) => {
+                const map = MAP_DEFINITIONS[id];
+                return (
+                  <button
+                    key={id}
+                    className={`rounded-lg border p-1 text-left text-xs transition ${
+                      preMap === id ? "border-amber-400 bg-amber-500/20 text-amber-100" : "border-white/15 bg-white/5 text-white/70 hover:bg-white/10"
+                    }`}
+                    onClick={() => setPreMap(id)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={map.thumb} alt={map.name} className="mb-1 h-9 w-full rounded object-cover" />
+                    <div className="truncate">{map.name}</div>
+                    <div className="text-[10px] text-white/40">{map.grid[0]}×{map.grid[1]}</div>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-1 text-center text-[11px] text-white/45">{MAP_DEFINITIONS[preMap].description}</div>
+            <div className="mt-1 text-center text-[10px] text-amber-200/60">数值按原版解包文件；单机 1v1 简化，部分模式/单位/物品仍在实现</div>
+          </div>
           <div className="flex w-full max-w-md flex-col gap-3">
             <button
               className="rounded-xl border border-emerald-500/50 bg-emerald-900/40 p-4 text-left"
@@ -475,6 +506,7 @@ export function Tve4Game() {
                 modeRef.current = preMode;
                 ruleRef.current = preRule;
                 testModeRef.current = preTest;
+                setActiveMap(preMap);
                 setLoading(true);
                 setStartFaction("elf");
               }}
@@ -488,6 +520,7 @@ export function Tve4Game() {
                 modeRef.current = preMode;
                 ruleRef.current = preRule;
                 testModeRef.current = preTest;
+                setActiveMap(preMap);
                 setLoading(true);
                 setStartFaction("troll");
               }}
@@ -535,7 +568,10 @@ export function Tve4Game() {
             {snapshot.phase === "prep"
               ? `准备 ${Math.max(0, RULE_PREP[snapshot.rule] - snapshot.time).toFixed(0)}s`
               : `${snapshot.time.toFixed(0)}s`}
-            <span className="ml-2 text-[10px] text-white/60">{MODE_LABEL[snapshot.mode]} · {RULE_LABEL[snapshot.rule]}</span>
+            <span className="ml-2 text-[10px] text-white/60">
+              {snapshot.mapName} · {MODE_LABEL[snapshot.mode]} · {RULE_LABEL[snapshot.rule]}
+              {snapshot.endLock ? ` · 封印:${snapshot.endLock === "elf" ? "精灵" : "巨魔"}` : ""}
+            </span>
           </div>
           {showMore ? (
             <div className="pointer-events-none absolute bottom-24 right-3 z-30 flex w-56 flex-col gap-2 rounded-xl border border-white/10 bg-neutral-900/95 p-2 text-xs text-white">
@@ -696,24 +732,33 @@ export function Tve4Game() {
                   })}
                 </div>
               ) : sheet === "shop" ? (
-                <div className="flex max-w-[90vw] flex-wrap gap-2">
-                  {EQUIPMENT_RULE.items.map((item) => (
-                    <button
-                      key={item.key}
-                      className="min-w-[92px] rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs"
-                      disabled={snapshot.trollItems.includes(item.key)}
-                      onClick={() => {
-                        const s = stateRef.current;
-                        if (s) {
-                          const ok = buyEquipment(s, item.key);
-                          if (!ok) setHintLocal("需回到巨魔商店附近且金币足够");
-                          sync();
-                        }
-                      }}
-                    >
-                      <div className="font-semibold">{item.label}</div>
-                      <div className="text-white/60">{item.gold} 金</div>
-                    </button>
+                <div className="max-h-[45vh] max-w-[92vw] overflow-y-auto pr-1">
+                  {Array.from(new Set(EQUIPMENT_RULE.items.map((i) => i.shop ?? "其他"))).map((group) => (
+                    <div key={group} className="mb-3">
+                      <div className="mb-1 text-[11px] font-semibold text-amber-200/80">{group}</div>
+                      <div className="flex flex-wrap gap-2">
+                        {EQUIPMENT_RULE.items.filter((i) => (i.shop ?? "其他") === group).map((item) => (
+                          <button
+                            key={item.key}
+                            className="min-w-[92px] max-w-[150px] rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-left text-xs"
+                            disabled={snapshot.trollItems.includes(item.key)}
+                            title={item.note}
+                            onClick={() => {
+                              const s = stateRef.current;
+                              if (s) {
+                                const ok = buyEquipment(s, item.key);
+                                if (!ok) setHintLocal("需回到巨魔商店附近且资源足够");
+                                sync();
+                              }
+                            }}
+                          >
+                            <div className="font-semibold">{item.label}</div>
+                            <div className="text-white/60">{item.gold} 金{item.wood ? ` · ${item.wood} 木` : ""}</div>
+                            {item.note ? <div className="mt-1 text-[9px] text-amber-200/60">原版效果未实现</div> : null}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                   {SCENARIO_RULE.troll.strengthBooks.map((book) => (
                     <button

@@ -1,0 +1,57 @@
+# 原版技能字段（war3map.w3a v2 直读）
+
+version=2, total=50。仅列出关键字段，等级 1~3。
+
+## A067
+- L4 bsk1 = 1.1
+- L5 bsk1 = 1.1
+- L6 bsk1 = 1.1
+- L7 bsk1 = 1.1
+- L8 bsk1 = 1.1
+- L9 bsk1 = 1.1
+- L10 bsk1 = 1.1
+- L11 bsk1 = 1.1
+- L12 bsk1 = 1.1
+- L13 bsk1 = 1.1
+- L14 bsk1 = 1.1
+- L15 bsk1 = 1.1
+- L16 bsk1 = 1.1
+- L4 acdn = 30.0
+- L5 acdn = 30.0
+- L6 acdn = 30.0
+- L7 acdn = 30.0
+- L8 acdn = 30.0
+- L9 acdn = 30.0
+- L10 acdn = 30.0
+- L11 acdn = 30.0
+- L12 acdn = 30.0
+- L13 acdn = 30.0
+- L14 acdn = 30.0
+- L15 acdn = 30.0
+- L16 acdn = 30.0
+- L4 adur = 15.0
+- L5 adur = 15.0
+- L6 adur = 15.0
+- L7 adur = 15.0
+- L8 adur = 15.0
+- L9 adur = 15.0
+- L10 adur = 15.0
+- L11 adur = 15.0
+- L12 adur = 15.0
+- L13 adur = 15.0
+- L14 adur = 15.0
+- L15 adur = 15.0
+- L16 adur = 15.0
+- L4 amcs = 20
+- L5 amcs = 20
+- L6 amcs = 20
+- L7 amcs = 20
+- L8 amcs = 20
+- L9 amcs = 20
+- L10 amcs = 20
+- L11 amcs = 20
+- L12 amcs = 20
+- L13 amcs = 20
+- L14 amcs = 20
+- L15 amcs = 20
+- L16 amcs = 20

@@ -23,7 +23,29 @@
     "SURVIVE": "人机规则",
     "REVIVE": "复活群战"
   },
-  "startGold": { "elf": 30, "troll": 70 },
+  "startGold": {
+    "elf": 30,
+    "troll": 70
+  },
+  "modeStartGold": {
+    "note": "VERIFIED：SingleParamProvider_getElveInitGold/getTrollInitGold（war3map.j:132532-132557）。BALANCE/FAST 原版未单独核对，沿用 OLD（PROPOSED 回退）。",
+    "OLD": {
+      "elf": 30,
+      "troll": 70
+    },
+    "MIDDLE": {
+      "elf": 10,
+      "troll": 50
+    },
+    "BALANCE": {
+      "elf": 30,
+      "troll": 70
+    },
+    "FAST": {
+      "elf": 30,
+      "troll": 70
+    }
+  },
   "startWood": 0,
   "trollAppear": {
     "withPrepare": 35,
@@ -32,36 +54,187 @@
   },
   "trollInvulnerableSeconds": 2,
   "heroes": {
-    "elf": { "hp": 10, "speed": 125, "attack": 7, "range": 112, "interval": 2.2, "radius": 14 },
-    "troll": { "hp": 750, "speed": 175, "attack": 7, "range": 90, "interval": 1.5, "radius": 22 }
+    "elf": {
+      "hp": 10,
+      "speed": 125,
+      "attack": 7,
+      "range": 112,
+      "interval": 2.2,
+      "radius": 14
+    },
+    "troll": {
+      "hp": 750,
+      "speed": 175,
+      "attack": 7,
+      "range": 90,
+      "interval": 1.5,
+      "radius": 22
+    }
   },
   "buildings": {
     "tent": {
       "note": "VERIFIED：10 级作坊链，收入 1..512，费用含木材，返还=全部累计升级花费",
-      "gold": [0, 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800],
-      "wood": [0, 0, 0, 0, 0, 30, 60, 128, 256, 512],
-      "hp": [10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120],
-      "income": [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+      "gold": [
+        0,
+        50,
+        100,
+        200,
+        400,
+        800,
+        1600,
+        3200,
+        6400,
+        12800
+      ],
+      "wood": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        30,
+        60,
+        128,
+        256,
+        512
+      ],
+      "hp": [
+        10,
+        20,
+        40,
+        80,
+        160,
+        320,
+        640,
+        1280,
+        2560,
+        5120
+      ],
+      "income": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512
+      ]
     },
     "wall": {
       "note": "VERIFIED：u01F 石墙主链 L1-L5，L6-L10 按翻倍规律 INFERRED",
-      "gold": [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048],
-      "wood": [0, 0, 0, 0, 0, 30, 60, 128, 256, 512],
-      "hp": [50, 80, 140, 200, 250, 500, 1000, 2000, 4000, 8000]
+      "gold": [
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048
+      ],
+      "wood": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        30,
+        60,
+        128,
+        256,
+        512
+      ],
+      "hp": [
+        50,
+        80,
+        140,
+        200,
+        250,
+        500,
+        1000,
+        2000,
+        4000,
+        8000
+      ]
     },
     "tower": {
-      "note": "VERIFIED：h000 主链 7 级",
-      "gold": [4, 16, 32, 64, 128, 256, 512],
-      "wood": [0, 0, 0, 0, 0, 0, 16],
-      "hp": [10, 15, 30, 50, 80, 140, 200],
-      "damage": [4, 6, 9, 13, 18, 26, 38]
+      "note": "VERIFIED：h000 主链 7 级；第 8 级为 h096 终极塔（1,000,000 金 + 1,000,000 木，HP 250,000），damage/range 为 PROPOSED 近似",
+      "gold": [
+        4,
+        16,
+        32,
+        64,
+        128,
+        256,
+        512,
+        1000000
+      ],
+      "wood": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        16,
+        1000000
+      ],
+      "hp": [
+        10,
+        15,
+        30,
+        50,
+        80,
+        140,
+        200,
+        250000
+      ],
+      "damage": [
+        4,
+        6,
+        9,
+        13,
+        18,
+        26,
+        38,
+        38
+      ]
     },
     "mine": {
       "note": "VERIFIED：e00H 金矿链，后期以木材支付",
-      "gold": [90, 0, 0, 0, 0],
-      "wood": [0, 24, 200, 800, 3200],
-      "hp": [50, 50, 50, 50, 50],
-      "income": [1, 2, 8, 32, 128]
+      "gold": [
+        90,
+        0,
+        0,
+        0,
+        0
+      ],
+      "wood": [
+        0,
+        24,
+        200,
+        800,
+        3200
+      ],
+      "hp": [
+        50,
+        50,
+        50,
+        50,
+        50
+      ],
+      "income": [
+        1,
+        2,
+        8,
+        32,
+        128
+      ]
     },
     "reveal": {
       "note": "VERIFIED：u01E 真视之塔 256 木，反隐 900 世界单位",
@@ -72,10 +245,34 @@
     },
     "trollHouse": {
       "note": "VERIFIED：系统创建、玩家只能升级；收入 3/5/9/17/1250；升级价 UNKNOWN",
-      "gold": [200, 400, 800, 1600, 3200],
-      "wood": [0, 0, 0, 0, 8],
-      "hp": [550, 700, 900, 1200, 1600],
-      "income": [3, 5, 9, 17, 1250],
+      "gold": [
+        200,
+        400,
+        800,
+        1600,
+        3200
+      ],
+      "wood": [
+        0,
+        0,
+        0,
+        0,
+        8
+      ],
+      "hp": [
+        550,
+        700,
+        900,
+        1200,
+        1600
+      ],
+      "income": [
+        3,
+        5,
+        9,
+        17,
+        1250
+      ],
       "heal": 0.06,
       "auraRange": 500
     }
@@ -98,61 +295,757 @@
     "note": "VERIFIED：全局动态价格，每次交易买卖价各 ±5；交易 10 木"
   },
   "equipmentShop": {
-    "note": "VERIFIED：6 座固定商店围绕巨魔房屋生成；必须走到商店旁购买（WC3 原生商店交互半径 UNKNOWN，网页用 240px 近似 PROPOSED）",
+    "note": "VERIFIED：ItemData.slk 81 件物品的价格（金/木）与 Ubertip 数值（AbilityData.slk 占位符直读）。网页端只实现 damage/armor/speed/全属性/力量/敏捷/魔法免疫；HP、攻速、分裂、治疗等原版效果记录在 note，未伪造实现。",
     "purchaseRadius": 240,
-    "shopOffsets": [[-128, 256], [-256, 0], [-128, -256], [128, 256], [256, 0], [128, -256]],
+    "shopOffsets": [
+      [
+        -128,
+        256
+      ],
+      [
+        -256,
+        0
+      ],
+      [
+        -128,
+        -256
+      ],
+      [
+        128,
+        256
+      ],
+      [
+        256,
+        0
+      ],
+      [
+        128,
+        -256
+      ]
+    ],
     "items": [
-      { "key": "branch", "label": "铁树枝干", "gold": 75, "allStats": 1 },
-      { "key": "ring", "label": "能量之戒", "gold": 200, "strength": 2, "agility": 5 },
-      { "key": "sword1", "label": "生锈的铁剑", "gold": 100, "damage": 2 },
-      { "key": "sword2", "label": "磨快的铁剑", "gold": 200, "damage": 4 },
-      { "key": "sword3", "label": "青铜剑", "gold": 400, "damage": 8 },
-      { "key": "sword4", "label": "水晶剑", "gold": 800, "damage": 16 },
-      { "key": "shield1", "label": "木制盾牌", "gold": 400, "heroDamage": 3 },
-      { "key": "shield2", "label": "铜制盾牌", "gold": 800, "armor": 8 },
-      { "key": "boots1", "label": "青铜便靴", "gold": 200, "speed": 120 },
-      { "key": "boots2", "label": "匡威便靴", "gold": 400, "speed": 135 },
-      { "key": "boots3", "label": "闪避长靴", "gold": 800, "speed": 150 },
-      { "key": "potion", "label": "魔法免疫药水", "gold": 800, "magicImmune": true }
+      {
+        "key": "I0A9",
+        "label": "I0A9 提高英雄  点的全属性",
+        "gold": 75,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1",
+        "allStats": 1
+      },
+      {
+        "key": "I0AA",
+        "label": "I0AA 提高英雄  点力量和  点敏捷度",
+        "gold": 200,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1",
+        "strength": 7
+      },
+      {
+        "key": "I02N",
+        "label": "I02N 在计算护甲前",
+        "gold": 400,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1",
+        "note": "damageReduce: A00E.DataC1=3（未实现）"
+      },
+      {
+        "key": "I02O",
+        "label": "I02O 提高英雄  点护甲",
+        "gold": 800,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1",
+        "armor": 8
+      },
+      {
+        "key": "I02A",
+        "label": "I02A 提高英雄  点攻击力",
+        "gold": 100,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1",
+        "damage": 2
+      },
+      {
+        "key": "I02B",
+        "label": "I02B 提高英雄  点攻击力",
+        "gold": 200,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1",
+        "damage": 4
+      },
+      {
+        "key": "I02C",
+        "label": "I02C 提高英雄  点攻击力",
+        "gold": 400,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1",
+        "damage": 8
+      },
+      {
+        "key": "I02D",
+        "label": "I02D 提高英雄  点攻击力",
+        "gold": 800,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1",
+        "damage": 16
+      },
+      {
+        "key": "I03K",
+        "label": "I03K 提高英雄  点移动速度",
+        "gold": 200,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1",
+        "speed": 120,
+        "agility": 2
+      },
+      {
+        "key": "I03L",
+        "label": "I03L 提高英雄  点移动速度",
+        "gold": 400,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1",
+        "speed": 135,
+        "agility": 4
+      },
+      {
+        "key": "I03M",
+        "label": "I03M 提高英雄  点移动速度",
+        "gold": 800,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1",
+        "speed": 150,
+        "agility": 8
+      },
+      {
+        "key": "I01P",
+        "label": "I01P 使英雄在  秒内对所有的魔法免疫",
+        "gold": 800,
+        "wood": 0,
+        "shop": "u03I 巨魔装备商店 1"
+      },
+      {
+        "key": "I02P",
+        "label": "I02P 提高英雄  点护甲",
+        "gold": 1600,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2",
+        "armor": 16
+      },
+      {
+        "key": "I02Q",
+        "label": "I02Q 提高英雄  点护甲",
+        "gold": 3200,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2",
+        "armor": 32
+      },
+      {
+        "key": "I02R",
+        "label": "I02R 提高英雄  点护甲",
+        "gold": 6400,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2",
+        "armor": 64
+      },
+      {
+        "key": "I02S",
+        "label": "I02S 提高英雄  点护甲",
+        "gold": 12800,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2",
+        "armor": 128
+      },
+      {
+        "key": "I02E",
+        "label": "I02E 提高英雄  点攻击力",
+        "gold": 1600,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2",
+        "damage": 32
+      },
+      {
+        "key": "I02F",
+        "label": "I02F 提高英雄  点攻击力",
+        "gold": 3200,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2",
+        "damage": 64
+      },
+      {
+        "key": "I02G",
+        "label": "I02G 提高英雄  点攻击力",
+        "gold": 6400,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2",
+        "damage": 128
+      },
+      {
+        "key": "I02H",
+        "label": "I02H 提高英雄  点攻击力",
+        "gold": 12800,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2",
+        "damage": 256
+      },
+      {
+        "key": "I01Q",
+        "label": "I01Q 将英雄传送到指定的一个己方或者友军城",
+        "gold": 0,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2"
+      },
+      {
+        "key": "I01R",
+        "label": "I01R 让英雄和周围的单位拥有最快的移动速度",
+        "gold": 50,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2",
+        "speed": 15
+      },
+      {
+        "key": "I01S",
+        "label": "I01S 将英雄传送到指定的一个己方或者友军城",
+        "gold": 75,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2"
+      },
+      {
+        "key": "I01T",
+        "label": "I01T 放置一个守卫来治疗周围的单位每秒 %",
+        "gold": 10000,
+        "wood": 0,
+        "shop": "u03J 巨魔装备商店 2",
+        "note": "hp: A023.Dur1=30（未实现）"
+      },
+      {
+        "key": "I02T",
+        "label": "I02T 提高英雄  点护甲",
+        "gold": 0,
+        "wood": 1,
+        "shop": "u03K 巨魔装备商店 3",
+        "armor": 640
+      },
+      {
+        "key": "I02U",
+        "label": "I02U 提高英雄  点护甲",
+        "gold": 0,
+        "wood": 2,
+        "shop": "u03K 巨魔装备商店 3",
+        "armor": 1280
+      },
+      {
+        "key": "I02V",
+        "label": "I02V 提高英雄  点护甲",
+        "gold": 0,
+        "wood": 8,
+        "shop": "u03K 巨魔装备商店 3",
+        "armor": 5120
+      },
+      {
+        "key": "I02W",
+        "label": "I02W 提高英雄  点护甲",
+        "gold": 0,
+        "wood": 32,
+        "shop": "u03K 巨魔装备商店 3",
+        "armor": 20480
+      },
+      {
+        "key": "I02I",
+        "label": "I02I 提高英雄  点攻击力",
+        "gold": 0,
+        "wood": 1,
+        "shop": "u03K 巨魔装备商店 3",
+        "damage": 1280
+      },
+      {
+        "key": "I02J",
+        "label": "I02J 提高英雄  点攻击力",
+        "gold": 0,
+        "wood": 2,
+        "shop": "u03K 巨魔装备商店 3",
+        "damage": 2560
+      },
+      {
+        "key": "I02K",
+        "label": "I02K 提高英雄  点攻击力",
+        "gold": 0,
+        "wood": 8,
+        "shop": "u03K 巨魔装备商店 3",
+        "damage": 10240
+      },
+      {
+        "key": "I02L",
+        "label": "I02L 提高英雄  点攻击力",
+        "gold": 0,
+        "wood": 32,
+        "shop": "u03K 巨魔装备商店 3",
+        "damage": 40960
+      },
+      {
+        "key": "I02X",
+        "label": "I02X 提高英雄  点护甲",
+        "gold": 0,
+        "wood": 128,
+        "shop": "u03K 巨魔装备商店 3",
+        "armor": 81920
+      },
+      {
+        "key": "I02M",
+        "label": "I02M 提高英雄  点攻击力",
+        "gold": 0,
+        "wood": 128,
+        "shop": "u03K 巨魔装备商店 3",
+        "damage": 163840,
+        "note": "A00D.Area1=200"
+      },
+      {
+        "key": "I0A8",
+        "label": "I0A8 提高英雄  点最大生命值 提高英雄 ",
+        "gold": 0,
+        "wood": 80,
+        "shop": "u03K 巨魔装备商店 3",
+        "note": "hp: A010.DataA1=1000000（未实现）"
+      },
+      {
+        "key": "I040",
+        "label": "I040 使英雄对魔法免疫",
+        "gold": 0,
+        "wood": 32,
+        "shop": "u03K 巨魔装备商店 3"
+      },
+      {
+        "key": "I039",
+        "label": "I039 提高英雄  点全属性",
+        "gold": 500,
+        "wood": 0,
+        "shop": "u03L 巨魔饰品商店 1",
+        "allStats": 5
+      },
+      {
+        "key": "I03A",
+        "label": "I03A 提高英雄  点全属性",
+        "gold": 1100,
+        "wood": 0,
+        "shop": "u03L 巨魔饰品商店 1",
+        "allStats": 10
+      },
+      {
+        "key": "I03B",
+        "label": "I03B 提高英雄  点全属性",
+        "gold": 2000,
+        "wood": 0,
+        "shop": "u03L 巨魔饰品商店 1",
+        "allStats": 15
+      },
+      {
+        "key": "I03C",
+        "label": "I03C 提高英雄  点生命回复速度",
+        "gold": 800,
+        "wood": 0,
+        "shop": "u03L 巨魔饰品商店 1",
+        "note": "regen: A015.DataA1=32（未实现）"
+      },
+      {
+        "key": "I02Y",
+        "label": "I02Y 提高英雄  点最大生命值",
+        "gold": 100,
+        "wood": 0,
+        "shop": "u03L 巨魔饰品商店 1",
+        "note": "hp: A00P.DataA1=250（未实现）"
+      },
+      {
+        "key": "I02Z",
+        "label": "I02Z 提高英雄  点最大生命值",
+        "gold": 200,
+        "wood": 0,
+        "shop": "u03L 巨魔饰品商店 1",
+        "note": "hp: A00Q.DataA1=500（未实现）"
+      },
+      {
+        "key": "I030",
+        "label": "I030 提高英雄  点最大生命值",
+        "gold": 400,
+        "wood": 0,
+        "shop": "u03L 巨魔饰品商店 1",
+        "note": "hp: A00R.DataA1=1000（未实现）"
+      },
+      {
+        "key": "I031",
+        "label": "I031 提高英雄  点最大生命值",
+        "gold": 800,
+        "wood": 0,
+        "shop": "u03L 巨魔饰品商店 1",
+        "note": "hp: A00S.DataA1=2000（未实现）"
+      },
+      {
+        "key": "I03P",
+        "label": "I03P 提高英雄 % 的攻击速度",
+        "gold": 125,
+        "wood": 0,
+        "shop": "u03L 巨魔饰品商店 1"
+      },
+      {
+        "key": "I03Q",
+        "label": "I03Q 提高英雄 % 的攻击速度",
+        "gold": 250,
+        "wood": 0,
+        "shop": "u03L 巨魔饰品商店 1"
+      },
+      {
+        "key": "I03R",
+        "label": "I03R 提高英雄 % 的攻击速度",
+        "gold": 500,
+        "wood": 0,
+        "shop": "u03L 巨魔饰品商店 1"
+      },
+      {
+        "key": "I01V",
+        "label": "I01V 可以在指定区域创造一个巫毒商店",
+        "gold": 0,
+        "wood": 16,
+        "shop": "u03L 巨魔饰品商店 1"
+      },
+      {
+        "key": "I03D",
+        "label": "I03D 提高英雄  点生命回复速度",
+        "gold": 1600,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2",
+        "note": "regen: A016.DataA1=64（未实现）"
+      },
+      {
+        "key": "I03E",
+        "label": "I03E 提高英雄  点生命回复速度",
+        "gold": 3200,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2",
+        "note": "regen: A017.DataA1=128（未实现）"
+      },
+      {
+        "key": "I03F",
+        "label": "I03F 提高英雄  点生命回复速度",
+        "gold": 6400,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2",
+        "note": "regen: A018.DataA1=256（未实现）"
+      },
+      {
+        "key": "I03G",
+        "label": "I03G 提高英雄  点生命回复速度",
+        "gold": 12800,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2",
+        "note": "regen: A019.DataA1=512（未实现）"
+      },
+      {
+        "key": "I032",
+        "label": "I032 提高英雄  点最大生命值",
+        "gold": 1600,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2",
+        "note": "hp: A00T.DataA1=4000（未实现）"
+      },
+      {
+        "key": "I033",
+        "label": "I033 提高英雄  点最大生命值",
+        "gold": 3200,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2",
+        "note": "hp: A00U.DataA1=8000（未实现）"
+      },
+      {
+        "key": "I034",
+        "label": "I034 提高英雄  点最大生命值",
+        "gold": 6400,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2",
+        "note": "hp: A00V.DataA1=16000（未实现）"
+      },
+      {
+        "key": "I035",
+        "label": "I035 提高英雄  点最大生命值",
+        "gold": 12800,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2",
+        "note": "hp: A00W.DataA1=32000（未实现）"
+      },
+      {
+        "key": "I03S",
+        "label": "I03S 提高英雄 % 的攻击速度",
+        "gold": 1000,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2"
+      },
+      {
+        "key": "I03T",
+        "label": "I03T 提高英雄 % 的攻击速度",
+        "gold": 2000,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2"
+      },
+      {
+        "key": "I03U",
+        "label": "I03U 提高英雄 % 的攻击速度",
+        "gold": 4000,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2"
+      },
+      {
+        "key": "I03V",
+        "label": "I03V 提高英雄 % 的攻击速度",
+        "gold": 8000,
+        "wood": 0,
+        "shop": "u03M 巨魔饰品商店 2"
+      },
+      {
+        "key": "I03H",
+        "label": "I03H 提高英雄  点生命回复速度",
+        "gold": 0,
+        "wood": 1,
+        "shop": "u03N 巨魔饰品商店 3",
+        "note": "regen: A01A.DataA1=2560（未实现）"
+      },
+      {
+        "key": "I03I",
+        "label": "I03I 提高英雄  点生命回复速度",
+        "gold": 0,
+        "wood": 2,
+        "shop": "u03N 巨魔饰品商店 3",
+        "note": "regen: A01B.DataA1=5120（未实现）"
+      },
+      {
+        "key": "I03J",
+        "label": "I03J 提高英雄  点生命回复速度",
+        "gold": 0,
+        "wood": 8,
+        "shop": "u03N 巨魔饰品商店 3",
+        "note": "regen: A01C.DataA1=20480（未实现）"
+      },
+      {
+        "key": "I01W",
+        "label": "I01W 在英雄死后让其复活",
+        "gold": 0,
+        "wood": 1,
+        "shop": "u03N 巨魔饰品商店 3"
+      },
+      {
+        "key": "I036",
+        "label": "I036 提高英雄  点最大生命值",
+        "gold": 0,
+        "wood": 1,
+        "shop": "u03N 巨魔饰品商店 3",
+        "note": "hp: A00X.DataA1=160000（未实现）"
+      },
+      {
+        "key": "I037",
+        "label": "I037 提高英雄  点最大生命值",
+        "gold": 0,
+        "wood": 2,
+        "shop": "u03N 巨魔饰品商店 3",
+        "note": "hp: A00Y.DataA1=320000（未实现）"
+      },
+      {
+        "key": "I038",
+        "label": "I038 提高英雄  点最大生命值",
+        "gold": 0,
+        "wood": 8,
+        "shop": "u03N 巨魔饰品商店 3",
+        "note": "hp: A00Z.DataA1=500000（未实现）"
+      },
+      {
+        "key": "I03N",
+        "label": "I03N 提高英雄  点移动速度",
+        "gold": 5000,
+        "wood": 0,
+        "shop": "u03N 巨魔饰品商店 3",
+        "speed": 150,
+        "allStats": 6
+      },
+      {
+        "key": "I0AB",
+        "label": "I0AB 给予玩家  个单位的木材",
+        "gold": 64000,
+        "wood": 0,
+        "shop": "u03N 巨魔饰品商店 3",
+        "note": "A026.DataA1=1"
+      },
+      {
+        "key": "I0AC",
+        "label": "I0AC 给予玩家  个单位的木材",
+        "gold": 500000,
+        "wood": 0,
+        "shop": "u03N 巨魔饰品商店 3",
+        "note": "A027.DataA1=8"
+      },
+      {
+        "key": "I0AD",
+        "label": "I0AD 能永久性地提高英雄  点的力量",
+        "gold": 990000,
+        "wood": 0,
+        "shop": "u03N 巨魔饰品商店 3",
+        "strength": 4000
+      },
+      {
+        "key": "I0AE",
+        "label": "I0AE 能永久性地提高英雄  点的敏捷度",
+        "gold": 990000,
+        "wood": 0,
+        "shop": "u03N 巨魔饰品商店 3",
+        "agility": 2000
+      },
+      {
+        "key": "I0AF",
+        "label": "I0AF 让英雄对魔法免疫",
+        "gold": 0,
+        "wood": 16,
+        "shop": "o003 巫毒商店"
+      },
+      {
+        "key": "I0AG",
+        "label": "I0AG 每隔  秒就阻止敌人向自己的英雄施放",
+        "gold": 3200,
+        "wood": 0,
+        "shop": "o003 巫毒商店",
+        "note": "A02C.Cool1=60"
+      },
+      {
+        "key": "I023",
+        "label": "I023 使用后显示整个地图  秒",
+        "gold": 0,
+        "wood": 1,
+        "shop": "o003 巫毒商店",
+        "note": "A02J.Dur1=5"
+      },
+      {
+        "key": "I0AH",
+        "label": "I0AH 阻止一定区域内所有敌人施放魔法",
+        "gold": 3200,
+        "wood": 0,
+        "shop": "o003 巫毒商店",
+        "note": "A02E.Dur1=5"
+      },
+      {
+        "key": "I0AI",
+        "label": "I0AI 能永久性地提高英雄  点的力量",
+        "gold": 990000,
+        "wood": 0,
+        "shop": "o003 巫毒商店",
+        "strength": 8000
+      },
+      {
+        "key": "I0AJ",
+        "label": "I0AJ 能永久性地提高英雄  点的敏捷度",
+        "gold": 990000,
+        "wood": 0,
+        "shop": "o003 巫毒商店",
+        "agility": 4000
+      },
+      {
+        "key": "I0BU",
+        "label": "I0BU 立刻摧毁这个单位或建筑",
+        "gold": 0,
+        "wood": 0,
+        "shop": "o003 巫毒商店"
+      },
+      {
+        "key": "I027",
+        "label": "I027 在  秒内放置一个哨兵守卫来监视一定",
+        "gold": 200,
+        "wood": 0,
+        "shop": "o003 巫毒商店",
+        "note": "A02F.Dur1=300"
+      },
+      {
+        "key": "I0AK",
+        "label": "I0AK 提高英雄和附近单位的 % 攻击速度和",
+        "gold": 10000,
+        "wood": 0,
+        "shop": "o003 巫毒商店"
+      }
     ]
   },
   "skills": {
-    "windwalk": { "duration": 20, "cooldown": 30, "speedBonus": 0.5, "breakDamage": 1, "id": "A061" },
-    "berserk": { "duration": 10, "cooldown": 120, "attackSpeed": 1.0, "speedBonus": 0.5, "damageTaken": 0.5, "id": "A0H0" },
-    "teleport": { "cooldown": 45, "channel": 2, "searchRange": 1600, "landingInvuln": 1, "id": "A024" }
+    "windwalk": {
+      "duration": 20,
+      "cooldown": 30,
+      "speedBonus": 0.5,
+      "breakDamage": 1,
+      "id": "A061"
+    },
+    "berserk": {
+      "duration": 10,
+      "cooldown": 120,
+      "attackSpeed": 1.0,
+      "speedBonus": 0.5,
+      "damageTaken": 0.5,
+      "id": "A0H0"
+    },
+    "teleport": {
+      "cooldown": 45,
+      "channel": 2,
+      "searchRange": 1600,
+      "landingInvuln": 1,
+      "id": "A024"
+    }
   },
   "combat": {
     "damageGold": "R2I(damage)",
     "lifesteal": 0.22,
     "lifestealSkill": "A070",
-    "lifestealModes": ["OLD"],
+    "lifestealModes": [
+      "OLD"
+    ],
     "noNegativeDamageFloat": true
   },
   "bounty": {
     "goldRatio": 0.5,
     "woodMultiplier": 8,
     "middleRatio": 0.5,
-    "angelStoleGoldPerMinute": [1, 2, 4, 7, 11, 16, 23, 32, 45, 62, 75, 93, 113],
+    "angelStoleGoldPerMinute": [
+      1,
+      2,
+      4,
+      7,
+      11,
+      16,
+      23,
+      32,
+      45,
+      62,
+      75,
+      93,
+      113
+    ],
     "angelStoleCapIndex": 60,
     "minMultiplier": 25,
     "max": 1000000
   },
   "vision": {
-    "elfShareAtSeconds": 300,
-    "exposeAtSeconds": 600,
-    "note": "VERIFIED：300 秒精灵互享视野；600 秒让没有作坊（tent Lv<5）的精灵暴露给巨魔；均不使巨魔显形"
+    "elfShareAtSeconds": 335,
+    "exposeAtSeconds": 635,
+    "note": "VERIFIED：触发点为巨魔出现后 +300/+300；巨魔实际出现时间 35 秒（5 秒精灵生成 + 30 秒等待），故绝对时间 335/635 秒；均不使巨魔显形"
   },
   "respawn": {
     "elfCleanup": 2,
     "wolf": 20,
     "angel": 10,
     "duetElf": 60,
-    "reviveTrollVote": [5, 10, 5]
+    "reviveTrollVote": [
+      5,
+      10,
+      5
+    ]
   },
   "repair": {
     "source": "Units/AbilityData.slk A02R-A02W + CampaignAbilityStrings.txt:14971",
     "note": "VERIFIED：修理建筑无需消耗资源，修理时间比率 4/2.5/1.5/1/0.5/0.25",
-    "timeRatios": [4, 2.5, 1.5, 1, 0.5, 0.25],
+    "timeRatios": [
+      4,
+      2.5,
+      1.5,
+      1,
+      0.5,
+      0.25
+    ],
     "baseHpPerSecond": 20,
     "delayAfterHit": 3
   },
@@ -160,21 +1053,46 @@
     "note": "PROPOSED：按用户描述的两条核心玩法线",
     "elf": {
       "ultimateTowerCount": 66,
-      "archmage": { "hp": 3000, "damage": 120, "range": 200, "interval": 0.6 },
+      "archmage": {
+        "hp": 5120000,
+        "damage": 120,
+        "range": 200,
+        "interval": 0.6,
+        "hpNote": "VERIFIED：UnitBalance.slk e00Y HP 5,120,000；damage/range/interval 仍为 PROPOSED 网页近似"
+      },
       "relocateCooldown": 120,
       "mobileDevGoldPenalty": 0.5
     },
     "troll": {
       "strengthWin": 160000,
       "strengthBooks": [
-        { "key": "str1", "label": "力量之书 +1万", "gold": 5000, "strength": 10000 },
-        { "key": "str2", "label": "力量之书 +3万", "gold": 20000, "strength": 30000 },
-        { "key": "str3", "label": "力量之书 +8万", "gold": 60000, "strength": 80000 }
+        {
+          "key": "str",
+          "label": "力量之书 +8000",
+          "gold": 990000,
+          "strength": 8000,
+          "note": "VERIFIED：原版每本 990,000 金、+8,000 力量，可反复购买；16 万力量触发 OldEndLock 互斥胜利。未做单机缩放（按用户要求沿用原版数值）。"
+        }
       ]
     }
   },
-  "implementedModes": ["OLD", "BALANCE", "FAST", "MIDDLE"],
-  "implementedRules": ["SINGLE", "DOUBLE", "FIX", "RACE", "DEFEND", "SOLO", "DUET", "SURVIVE", "REVIVE"],
+  "implementedModes": [
+    "OLD",
+    "BALANCE",
+    "FAST",
+    "MIDDLE"
+  ],
+  "implementedRules": [
+    "SINGLE",
+    "DOUBLE",
+    "FIX",
+    "RACE",
+    "DEFEND",
+    "SOLO",
+    "DUET",
+    "SURVIVE",
+    "REVIVE"
+  ],
   "missingOriginalSystems": [
     "wolfAndAngelRoles",
     "skins",

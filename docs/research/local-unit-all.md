@@ -1,0 +1,2011 @@
+# 原版单位数值（UnitBalance.slk + UnitUI.slk 完整导出）
+
+columns=61, units=2007
+
+- **Hamg** archmage {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Hblm** bloodmage {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '300', 'sight': '1800'}
+- **Hmkg** mountainking {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hpal** paladin {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **hbot** humantransportship {'goldcost': '170', 'lumbercost': '50', 'HP': '1500', 'spd': '320', 'sight': '1400'}
+- **hbsh** humanbattleship {'goldcost': '500', 'lumbercost': '200', 'HP': '1000', 'spd': '270', 'sight': '1600'}
+- **hdes** humandestroyer {'goldcost': '250', 'lumbercost': '100', 'HP': '575', 'spd': '350', 'sight': '1500'}
+- **hdhw** dragonhawk {'goldcost': '235', 'lumbercost': '40', 'HP': '575', 'spd': '350', 'sight': '1600'}
+- **hfoo** footman {'goldcost': '135', 'HP': '420', 'spd': '270', 'sight': '1400'}
+- **hgry** gryphonrider {'goldcost': '280', 'lumbercost': '70', 'HP': '825', 'spd': '320', 'sight': '1600'}
+- **hgyr** flyingmachine {'goldcost': '90', 'lumbercost': '30', 'HP': '175', 'spd': '400', 'sight': '1800'}
+- **hkni** knight {'goldcost': '245', 'lumbercost': '60', 'HP': '800', 'spd': '350', 'sight': '1400'}
+- **hmil** militia {'goldcost': '75', 'HP': '220', 'spd': '270', 'sight': '1400'}
+- **hmpr** priest {'goldcost': '135', 'lumbercost': '10', 'HP': '290', 'spd': '270', 'sight': '1400'}
+- **hmtm** mortarteam {'goldcost': '180', 'lumbercost': '70', 'HP': '360', 'spd': '270', 'sight': '1400'}
+- **hmtt** siegeengine {'goldcost': '195', 'lumbercost': '60', 'HP': '700', 'spd': '220', 'sight': '1400'}
+- **hpea** peasant {'goldcost': '75', 'HP': '220', 'sight': '800'}
+- **hphx** phoenix {'HP': '1250', 'spd': '320', 'sight': '1600'}
+- **hpxe** phoenixegg {'HP': '200', 'sight': '600'}
+- **hrif** rifleman {'goldcost': '205', 'lumbercost': '30', 'HP': '520', 'spd': '270', 'sight': '1400'}
+- **hrtt** rocketengine {'goldcost': '195', 'lumbercost': '60', 'HP': '700', 'spd': '220', 'sight': '1400'}
+- **hsor** sorceress {'goldcost': '155', 'lumbercost': '20', 'HP': '325', 'spd': '270', 'sight': '1400'}
+- **hspt** spellbreaker {'goldcost': '215', 'lumbercost': '30', 'HP': '650', 'spd': '300', 'sight': '1400'}
+- **hwat** waterelemental1 {'HP': '450', 'spd': '220', 'sight': '1200'}
+- **hwt2** waterelemental2 {'HP': '675', 'spd': '220', 'sight': '1200'}
+- **hwt3** waterelemental3 {'HP': '900', 'spd': '220', 'sight': '1200'}
+- **nlv1** lavaspawn {'HP': '425', 'spd': '300', 'sight': '1200'}
+- **nlv2** lavaspawn2 {'HP': '575', 'spd': '300', 'sight': '1200'}
+- **nlv3** lavaspawn3 {'HP': '700', 'spd': '300', 'sight': '1200'}
+- **halt** altarofkings {'goldcost': '180', 'lumbercost': '50', 'HP': '900', 'sight': '900'}
+- **harm** workshop {'goldcost': '140', 'lumbercost': '140', 'HP': '1200', 'sight': '900'}
+- **hars** arcanesanctum {'goldcost': '150', 'lumbercost': '140', 'HP': '1050', 'sight': '900'}
+- **hatw** humanarcanetower {'goldcost': '80', 'lumbercost': '60', 'HP': '500', 'sight': '1600'}
+- **hbar** humanbarracks {'goldcost': '160', 'lumbercost': '60', 'HP': '1500', 'sight': '900'}
+- **hbla** blacksmith {'goldcost': '140', 'lumbercost': '60', 'HP': '1200', 'sight': '900'}
+- **hcas** castle {'goldcost': '380', 'lumbercost': '230', 'HP': '2500', 'sight': '900'}
+- **hctw** cannontower {'goldcost': '170', 'lumbercost': '100', 'HP': '600', 'sight': '1600'}
+- **hgra** gryphonaviary {'goldcost': '120', 'lumbercost': '240', 'HP': '1200', 'sight': '900'}
+- **hgtw** guardtower {'goldcost': '80', 'lumbercost': '60', 'HP': '500', 'sight': '1600'}
+- **hhou** farm {'HP': '500', 'sight': '900'}
+- **hkee** keep {'goldcost': '320', 'lumbercost': '210', 'HP': '2000', 'sight': '900'}
+- **hlum** humanlumbermill {'goldcost': '145', 'HP': '900', 'sight': '900'}
+- **hshy** humanshipyard {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **htow** townhall {'goldcost': '385', 'lumbercost': '205', 'HP': '1500', 'sight': '900'}
+- **hvlt** arcanevault {'goldcost': '130', 'lumbercost': '30', 'HP': '485', 'sight': '1000'}
+- **hwtw** scouttower {'goldcost': '30', 'lumbercost': '20', 'HP': '500', 'sight': '1600'}
+- **Obla** blademaster {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '300', 'sight': '1800'}
+- **Ofar** farseer {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Oshd** shadowhunter {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Otch** taurenchieftain {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '250', 'sight': '1800'}
+- **ncat** demolisherdraenei {'goldcost': '220', 'lumbercost': '50', 'HP': '425', 'spd': '220', 'sight': '1400'}
+- **nsw1** spiritbeast {'HP': '200', 'spd': '350', 'sight': '1200'}
+- **nsw2** spiritbeast2 {'HP': '300', 'spd': '350', 'sight': '1200'}
+- **nsw3** spiritbeast3 {'HP': '400', 'spd': '350', 'sight': '1200'}
+- **nwad** watcherward {'HP': '200', 'sight': '1600'}
+- **obot** orcishtransportship {'goldcost': '170', 'lumbercost': '50', 'HP': '1500', 'spd': '320', 'sight': '1400'}
+- **ocat** demolisher {'goldcost': '220', 'lumbercost': '50', 'HP': '425', 'spd': '220', 'sight': '1400'}
+- **odes** orcishdestroyer {'goldcost': '250', 'lumbercost': '100', 'HP': '575', 'spd': '350', 'sight': '1500'}
+- **odoc** witchdoctor {'goldcost': '145', 'lumbercost': '25', 'HP': '315', 'spd': '270', 'sight': '1400'}
+- **oeye** sentryward {'HP': '200', 'sight': '1600'}
+- **ogru** grunt {'goldcost': '200', 'HP': '700', 'spd': '270', 'sight': '1400'}
+- **ohun** headhunter {'goldcost': '135', 'lumbercost': '20', 'HP': '350', 'spd': '270', 'sight': '1400'}
+- **ohwd** healingward {'HP': '5', 'sight': '600'}
+- **okod** kotobeast {'goldcost': '255', 'lumbercost': '60', 'HP': '1000', 'spd': '220', 'sight': '1400'}
+- **opeo** peon {'goldcost': '75', 'HP': '250', 'spd': '190', 'sight': '800'}
+- **orai** wolfrider {'goldcost': '180', 'lumbercost': '40', 'HP': '610', 'spd': '350', 'sight': '1400'}
+- **oshm** shaman {'goldcost': '130', 'lumbercost': '20', 'HP': '335', 'spd': '270', 'sight': '1400'}
+- **osp1** serpentward1 {'HP': '75', 'sight': '1200'}
+- **osp2** serpentward2 {'HP': '135', 'sight': '1200'}
+- **osp3** serpentward3 {'HP': '135', 'sight': '1200'}
+- **osp4** serpentward4 {'HP': '135', 'sight': '1200'}
+- **ospm** spiritwalkermorph {'goldcost': '195', 'lumbercost': '35', 'HP': '500', 'spd': '270', 'sight': '1400'}
+- **ospw** spiritwalker {'goldcost': '195', 'lumbercost': '35', 'HP': '500', 'spd': '270', 'sight': '1400'}
+- **osw1** spiritwolf1 {'HP': '200', 'spd': '350', 'sight': '1200'}
+- **osw2** spiritwolf2 {'HP': '300', 'spd': '350', 'sight': '1200'}
+- **osw3** spiritwolf3 {'HP': '400', 'spd': '350', 'sight': '1200'}
+- **otau** tauren {'goldcost': '280', 'lumbercost': '80', 'HP': '1300', 'spd': '270', 'sight': '1400'}
+- **otbk** berserker {'goldcost': '135', 'lumbercost': '20', 'HP': '450', 'spd': '270', 'sight': '1400'}
+- **otbr** trollbatrider {'goldcost': '160', 'lumbercost': '40', 'HP': '500', 'spd': '320', 'sight': '1400'}
+- **otot** stasistraptotem {'HP': '100', 'sight': '600'}
+- **owyv** windrider {'goldcost': '265', 'lumbercost': '40', 'HP': '600', 'spd': '350', 'sight': '1600'}
+- **oalt** altarofstorms {'goldcost': '180', 'lumbercost': '50', 'HP': '900', 'sight': '900'}
+- **obar** orcbarracks {'goldcost': '180', 'lumbercost': '50', 'HP': '1200', 'sight': '900'}
+- **obea** beastiary {'goldcost': '145', 'lumbercost': '140', 'HP': '1100', 'sight': '900'}
+- **ofor** warmill {'goldcost': '205', 'HP': '1000', 'sight': '900'}
+- **ofrt** fortress {'goldcost': '345', 'lumbercost': '210', 'HP': '2500', 'sight': '900'}
+- **ogre** greathall {'goldcost': '385', 'lumbercost': '185', 'HP': '1500', 'sight': '900'}
+- **oshy** orcshipyard {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **osld** spiritlodge {'goldcost': '150', 'lumbercost': '150', 'HP': '800', 'sight': '900'}
+- **ostr** stronghold {'goldcost': '315', 'lumbercost': '190', 'HP': '2000', 'sight': '900'}
+- **otrb** trollburrow {'goldcost': '160', 'lumbercost': '40', 'HP': '600', 'sight': '800'}
+- **otto** taurentotem {'goldcost': '90', 'lumbercost': '200', 'HP': '1200', 'sight': '900'}
+- **ovln** voodoolounge {'goldcost': '130', 'lumbercost': '30', 'HP': '500', 'sight': '1000'}
+- **owtw** watchtower {'goldcost': '110', 'lumbercost': '80', 'HP': '500', 'sight': '1600'}
+- **Edem** demonhunter {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Edmm** demonhuntermorphed {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Ekee** keeperofthegrove {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Emoo** priestessofthemoon {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Ewar** warden {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **earc** archer {'goldcost': '130', 'lumbercost': '10', 'HP': '310', 'spd': '270', 'sight': '1400'}
+- **ebal** glaivethrower {'goldcost': '210', 'lumbercost': '65', 'HP': '300', 'spd': '220', 'sight': '1400'}
+- **ebsh** nightelfbattleship {'goldcost': '500', 'lumbercost': '200', 'HP': '1000', 'spd': '270', 'sight': '1600'}
+- **echm** chimaera {'goldcost': '330', 'lumbercost': '70', 'HP': '1000', 'spd': '270', 'sight': '1600'}
+- **edcm** druidoftheclawmorphed {'goldcost': '255', 'lumbercost': '80', 'HP': '810', 'spd': '270', 'sight': '1400'}
+- **edes** nightelfdestroyer {'goldcost': '250', 'lumbercost': '100', 'HP': '575', 'spd': '350', 'sight': '1500'}
+- **edoc** druidoftheclaw {'goldcost': '255', 'lumbercost': '80', 'HP': '430', 'spd': '270', 'sight': '1400'}
+- **edot** druidofthetalon {'goldcost': '135', 'lumbercost': '20', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **edry** dryad {'goldcost': '145', 'lumbercost': '60', 'HP': '435', 'spd': '350', 'sight': '1400'}
+- **edtm** druidofthetalonmorphed {'goldcost': '135', 'lumbercost': '20', 'HP': '300', 'spd': '350', 'sight': '1600'}
+- **efdr** faeriedragon {'goldcost': '155', 'lumbercost': '25', 'HP': '450', 'spd': '350', 'sight': '1600'}
+- **efon** forceofnature {'HP': '300', 'spd': '220', 'sight': '1200'}
+- **ehip** hippogryph {'goldcost': '160', 'lumbercost': '20', 'HP': '525', 'spd': '400', 'sight': '1600'}
+- **ehpr** riddenhippogryph {'goldcost': '290', 'lumbercost': '30', 'HP': '835', 'spd': '350', 'sight': '1600'}
+- **emtg** mountaingiant {'goldcost': '425', 'lumbercost': '100', 'HP': '1400', 'spd': '270', 'sight': '1200'}
+- **esen** huntress {'goldcost': '195', 'lumbercost': '20', 'HP': '575', 'spd': '350', 'sight': '1400'}
+- **espv** spiritofvengeance {'HP': '1200', 'spd': '320', 'sight': '1200'}
+- **even** vengeance {'HP': '500', 'spd': '270', 'sight': '1200'}
+- **ewsp** wisp {'goldcost': '60', 'HP': '120', 'spd': '270', 'sight': '1000'}
+- **eaoe** ancientoflore {'goldcost': '155', 'lumbercost': '145', 'HP': '900', 'spd': '40', 'sight': '900'}
+- **eaom** ancientofwar {'goldcost': '150', 'lumbercost': '60', 'HP': '1000', 'spd': '40', 'sight': '900'}
+- **eaow** ancientofwind {'goldcost': '150', 'lumbercost': '140', 'HP': '900', 'spd': '40', 'sight': '900'}
+- **eate** altarofelders {'goldcost': '180', 'lumbercost': '50', 'HP': '900', 'sight': '900'}
+- **eden** ancientofwonders {'goldcost': '90', 'lumbercost': '30', 'HP': '450', 'spd': '40', 'sight': '1000'}
+- **edob** huntershall {'goldcost': '210', 'lumbercost': '100', 'HP': '1100', 'sight': '900'}
+- **edos** chimaeraroost {'goldcost': '100', 'lumbercost': '230', 'HP': '1200', 'sight': '900'}
+- **egol** entangledgoldmine {'HP': '800', 'sight': '900'}
+- **emow** moonwell {'goldcost': '180', 'lumbercost': '40', 'HP': '600', 'sight': '900'}
+- **eshy** nightelfshipyard {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **etoa** treeofages {'goldcost': '320', 'lumbercost': '180', 'HP': '1700', 'spd': '40', 'sight': '900'}
+- **etoe** treeofeternity {'goldcost': '350', 'lumbercost': '220', 'HP': '2000', 'spd': '40', 'sight': '900'}
+- **etol** treeoflife {'goldcost': '340', 'lumbercost': '185', 'HP': '1300', 'spd': '40', 'sight': '900'}
+- **etrp** ancientprotector {'goldcost': '135', 'lumbercost': '80', 'HP': '600', 'spd': '40', 'sight': '1900'}
+- **Ucrl** cryptlord {'goldcost': '425', 'lumbercost': '100', 'HP': '25', 'spd': '270', 'sight': '1800'}
+- **Udea** deathknight {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Udre** dreadlord {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Ulic** lich {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **uabo** abomination {'goldcost': '240', 'lumbercost': '70', 'HP': '1080', 'spd': '270', 'sight': '1400'}
+- **uaco** acolyte {'goldcost': '75', 'HP': '220', 'spd': '220', 'sight': '800'}
+- **uban** banshee {'goldcost': '155', 'lumbercost': '30', 'HP': '285', 'spd': '270', 'sight': '1400'}
+- **ubsp** obsidiandestroyer {'goldcost': '100', 'lumbercost': '50', 'HP': '900', 'spd': '320', 'sight': '1400'}
+- **ucrm** cryptfiendmorph {'goldcost': '215', 'lumbercost': '40', 'HP': '550', 'sight': '1400'}
+- **ucry** cryptfiend {'goldcost': '215', 'lumbercost': '40', 'HP': '550', 'spd': '270', 'sight': '1400'}
+- **ucs1** carrionscarab1 {'HP': '140', 'spd': '270', 'sight': '1200'}
+- **ucs2** carrionscarab2 {'HP': '275', 'spd': '270', 'sight': '1200'}
+- **ucs3** carrionscarab3 {'HP': '410', 'spd': '270', 'sight': '1200'}
+- **ucsB** carrionscarabburrowed2 {'HP': '275', 'sight': '1200'}
+- **ucsC** carrionscarabburrowed3 {'HP': '410', 'sight': '1200'}
+- **ufro** frostwyrm {'goldcost': '385', 'lumbercost': '120', 'HP': '1350', 'spd': '270', 'sight': '1600'}
+- **ugar** gargoyle {'goldcost': '185', 'lumbercost': '30', 'HP': '410', 'spd': '350', 'sight': '1600'}
+- **ugho** ghoul {'goldcost': '120', 'HP': '330', 'spd': '270', 'sight': '1400'}
+- **ugrm** gargoylemorphed {'goldcost': '185', 'lumbercost': '30', 'HP': '410', 'sight': '1600'}
+- **uloc** locust {'HP': '65', 'spd': '400'}
+- **umtw** meatwagon {'goldcost': '230', 'lumbercost': '50', 'HP': '380', 'spd': '220', 'sight': '1400'}
+- **unec** necromancer {'goldcost': '145', 'lumbercost': '20', 'HP': '305', 'spd': '270', 'sight': '1400'}
+- **uobs** obsidianstatue {'goldcost': '200', 'lumbercost': '35', 'HP': '800', 'spd': '270', 'sight': '1200'}
+- **uplg** plagueward {'HP': '100'}
+- **ushd** shade {'HP': '125', 'spd': '350', 'sight': '1900'}
+- **uske** skeletonwarrior {'HP': '180', 'spd': '270', 'sight': '800'}
+- **uskm** skeletalmage {'HP': '230', 'spd': '270', 'sight': '1400'}
+- **uubs** undeadbattleship {'goldcost': '500', 'lumbercost': '200', 'HP': '1000', 'spd': '270', 'sight': '1600'}
+- **uaod** altarofdarkness {'goldcost': '180', 'lumbercost': '50', 'HP': '900', 'sight': '900'}
+- **ubon** boneyard {'goldcost': '125', 'lumbercost': '250', 'HP': '1500', 'sight': '900'}
+- **ugol** undeadgoldmine2 {'goldcost': '255', 'lumbercost': '220', 'HP': '950', 'sight': '900'}
+- **ugrv** graveyard {'goldcost': '215', 'HP': '900', 'sight': '900'}
+- **unp1** necropolis1 {'goldcost': '320', 'lumbercost': '210', 'HP': '1750', 'sight': '1200'}
+- **unp2** necropolis2 {'goldcost': '345', 'lumbercost': '250', 'HP': '2000', 'sight': '1200'}
+- **unpl** necropolis {'goldcost': '255', 'HP': '1500', 'sight': '900'}
+- **usap** sacrificialpit {'goldcost': '75', 'lumbercost': '150', 'HP': '900', 'sight': '900'}
+- **usep** crypt {'goldcost': '200', 'lumbercost': '50', 'HP': '1300', 'sight': '900'}
+- **ushp** undeadshipyard {'goldcost': '50', 'HP': '750', 'sight': '500'}
+- **uslh** slaughterhouse {'goldcost': '140', 'lumbercost': '135', 'HP': '1200', 'sight': '900'}
+- **utod** templeofthedamned {'goldcost': '155', 'lumbercost': '140', 'HP': '1100', 'sight': '900'}
+- **utom** tombofrelics {'goldcost': '130', 'lumbercost': '30', 'HP': '475', 'sight': '1000'}
+- **uzg1** ziggurat1 {'goldcost': '145', 'lumbercost': '40', 'HP': '550', 'sight': '1600'}
+- **uzg2** frosttower {'goldcost': '100', 'lumbercost': '20', 'HP': '550', 'sight': '1600'}
+- **uzig** ziggurat {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **Nal2** alchemistmorph2 {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '400', 'sight': '1800'}
+- **Nal3** alchemistmorph3 {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '400', 'sight': '1800'}
+- **Nalc** alchemist {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Nalm** alchemistmorph {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '400', 'sight': '1800'}
+- **Nbrn** darkranger {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Nbst** beastmaster {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Nfir** firelord {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Nngs** seawitch {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Npbm** pandarenbrewmaster {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Nplh** pitlord {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '300', 'sight': '1800'}
+- **Nrob** robogoblintinker {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Ntin** tinker {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **ncg1** clockwerkgoblin2 {'HP': '125', 'spd': '270', 'sight': '1800'}
+- **ncg2** clockwerkgoblin3 {'HP': '125', 'spd': '270', 'sight': '1800'}
+- **ncg3** clockwerkgoblin4 {'HP': '125', 'spd': '270', 'sight': '1800'}
+- **ncgb** clockwerkgoblin1 {'HP': '125', 'spd': '270', 'sight': '1800'}
+- **ndr1** darkminion1 {'HP': '200', 'spd': '270', 'sight': '800'}
+- **ndr2** darkminion2 {'HP': '260', 'spd': '300', 'sight': '800'}
+- **ndr3** darkminion3 {'HP': '320', 'spd': '330', 'sight': '800'}
+- **nfa1** pocketfactory2 {'HP': '400', 'sight': '800'}
+- **nfa2** pocketfactory3 {'HP': '500', 'sight': '800'}
+- **nfac** pocketfactory {'HP': '300', 'sight': '800'}
+- **ngz1** grizzlybear1 {'HP': '600', 'spd': '320', 'sight': '1400'}
+- **ngz2** grizzlybear2 {'HP': '900', 'spd': '320', 'sight': '1400'}
+- **ngz3** grizzlybear3 {'HP': '1200', 'spd': '350', 'sight': '1400'}
+- **ngz4** misha4 {'HP': '2250', 'spd': '370', 'sight': '1400'}
+- **ngzc** misha1 {'HP': '900', 'spd': '320', 'sight': '1400'}
+- **ngzd** misha2 {'HP': '1200', 'spd': '320', 'sight': '1400'}
+- **npn1** panda1 {'HP': '900', 'spd': '300', 'sight': '1800'}
+- **npn2** panda2 {'HP': '1000', 'spd': '300', 'sight': '1800'}
+- **npn3** panda3 {'HP': '1500', 'spd': '300', 'sight': '1800'}
+- **npn4** panda4 {'HP': '1350', 'spd': '300', 'sight': '1800'}
+- **npn5** panda5 {'HP': '1500', 'spd': '300', 'sight': '1800'}
+- **npn6** panda6 {'HP': '2250', 'spd': '300', 'sight': '1800'}
+- **nqb1** quillbeast1 {'HP': '425', 'spd': '300', 'sight': '1400'}
+- **nqb2** quillbeast2 {'HP': '515', 'spd': '300', 'sight': '1400'}
+- **nqb3** quillbeast3 {'HP': '600', 'spd': '300', 'sight': '1400'}
+- **nqb4** quillbeast4 {'HP': '700', 'spd': '300', 'sight': '1400'}
+- **nwe1** wareagle1 {'HP': '300', 'spd': '350', 'sight': '1600'}
+- **nwe2** wareagle2 {'HP': '625', 'spd': '350', 'sight': '1600'}
+- **nwe3** wareagle3 {'HP': '875', 'spd': '350', 'sight': '1600'}
+- **nadk** azuredrake {'goldcost': '290', 'lumbercost': '80', 'HP': '950', 'spd': '350', 'sight': '1400'}
+- **nadr** azuredragon {'goldcost': '595', 'lumbercost': '200', 'HP': '2200', 'spd': '300', 'sight': '1400'}
+- **nadw** azuredragonwhelp {'goldcost': '170', 'lumbercost': '20', 'HP': '340', 'spd': '350', 'sight': '1400'}
+- **nahy** ancienthydra {'goldcost': '595', 'lumbercost': '200', 'HP': '1600', 'spd': '270', 'sight': '1400'}
+- **nanb** barbedarachnathid {'goldcost': '75', 'lumbercost': '5', 'HP': '200', 'spd': '300', 'sight': '1400'}
+- **nanc** crystalarachnathid {'goldcost': '85', 'HP': '200', 'spd': '300', 'sight': '1400'}
+- **nane** earthborerarachnathid {'goldcost': '120', 'lumbercost': '10', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nanm** barbedarachnathidmerc {'goldcost': '75', 'lumbercost': '5', 'HP': '200', 'spd': '300', 'sight': '1400'}
+- **nano** overlordarachnathid {'goldcost': '205', 'lumbercost': '30', 'HP': '750', 'spd': '300', 'sight': '1400'}
+- **nanw** warriorarachnathid {'goldcost': '170', 'lumbercost': '20', 'HP': '375', 'spd': '300', 'sight': '1400'}
+- **narg** battlegolem {'goldcost': '155', 'lumbercost': '10', 'HP': '500', 'spd': '240', 'sight': '1400'}
+- **nass** assassin {'goldcost': '200', 'lumbercost': '30', 'HP': '450', 'spd': '300', 'sight': '1400'}
+- **nba2** doomguardsummoned {'goldcost': '340', 'lumbercost': '100', 'HP': '1600', 'spd': '270', 'sight': '1400'}
+- **nbal** doomguard {'goldcost': '340', 'lumbercost': '100', 'HP': '1350', 'spd': '270', 'sight': '1400'}
+- **nban** bandit {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nbda** bluedragonspawnapprentice {'goldcost': '155', 'lumbercost': '10', 'HP': '350', 'spd': '270', 'sight': '1400'}
+- **nbdk** blackdrake {'goldcost': '290', 'lumbercost': '80', 'HP': '950', 'spd': '350', 'sight': '1400'}
+- **nbdm** bluedragonspawnmeddler {'goldcost': '115', 'HP': '500', 'spd': '300', 'sight': '1400'}
+- **nbdo** bluedragonspawnoverseer {'goldcost': '205', 'lumbercost': '30', 'HP': '1000', 'spd': '300', 'sight': '1400'}
+- **nbdr** blackdragonwhelp {'goldcost': '170', 'lumbercost': '20', 'HP': '340', 'spd': '350', 'sight': '1400'}
+- **nbds** bluedragonspawnsorceror {'goldcost': '290', 'lumbercost': '80', 'HP': '675', 'spd': '270', 'sight': '1400'}
+- **nbdw** bluedragonspawnwarrior {'goldcost': '205', 'lumbercost': '30', 'HP': '775', 'spd': '300', 'sight': '1400'}
+- **nbld** banditlord {'goldcost': '340', 'lumbercost': '100', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nbnb** barbedarachnathidburrowed {'goldcost': '75', 'lumbercost': '5', 'HP': '200', 'sight': '1400'}
+- **nbot** transportship {'goldcost': '170', 'lumbercost': '50', 'HP': '1500', 'spd': '320', 'sight': '1400'}
+- **nbrg** brigand {'goldcost': '120', 'lumbercost': '10', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **nbwm** blackdragon {'goldcost': '595', 'lumbercost': '200', 'HP': '2200', 'spd': '300', 'sight': '1400'}
+- **nbzd** bronzedragon {'goldcost': '595', 'lumbercost': '200', 'HP': '2200', 'spd': '300', 'sight': '1400'}
+- **nbzk** bronzedrake {'goldcost': '290', 'lumbercost': '80', 'HP': '950', 'spd': '350', 'sight': '1400'}
+- **nbzw** bronzedragonwhelp {'goldcost': '170', 'lumbercost': '20', 'HP': '340', 'spd': '350', 'sight': '1400'}
+- **ncea** centaurarcher {'goldcost': '120', 'lumbercost': '10', 'HP': '300', 'spd': '350', 'sight': '1400'}
+- **ncen** centauroutrunner {'goldcost': '155', 'HP': '550', 'spd': '350', 'sight': '1400'}
+- **ncer** centaurdrudge {'goldcost': '120', 'lumbercost': '10', 'HP': '300', 'spd': '350', 'sight': '1400'}
+- **ncfs** wateryminioncliffrunner {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nchp** chaplain {'goldcost': '135', 'lumbercost': '10', 'HP': '370', 'spd': '270', 'sight': '1400'}
+- **ncim** centaurimpaler {'goldcost': '205', 'lumbercost': '30', 'HP': '350', 'spd': '350', 'sight': '1400'}
+- **ncks** centaursorceror {'goldcost': '255', 'lumbercost': '50', 'HP': '600', 'spd': '350', 'sight': '1400'}
+- **ncnk** centaurkhan {'goldcost': '385', 'lumbercost': '120', 'HP': '900', 'spd': '320', 'sight': '1400'}
+- **ndqn** succubus {'goldcost': '180', 'lumbercost': '40', 'HP': '400', 'spd': '320', 'sight': '1400'}
+- **ndqp** maidenofpain {'goldcost': '180', 'lumbercost': '40', 'HP': '1050', 'spd': '320', 'sight': '1400'}
+- **ndqs** queenofsuffering {'goldcost': '180', 'lumbercost': '40', 'HP': '1600', 'spd': '320', 'sight': '1400'}
+- **ndqt** viletemptress {'goldcost': '180', 'lumbercost': '40', 'HP': '750', 'spd': '320', 'sight': '1400'}
+- **ndqv** viletormentor {'goldcost': '180', 'lumbercost': '40', 'HP': '510', 'spd': '320', 'sight': '1400'}
+- **ndrv** revenantofthedepths {'goldcost': '205', 'lumbercost': '30', 'HP': '1000', 'spd': '270', 'sight': '1400'}
+- **ndtb** darktrollberserker {'goldcost': '205', 'lumbercost': '30', 'HP': '450', 'spd': '270', 'sight': '1400'}
+- **ndth** darktrollhighpriest {'goldcost': '205', 'lumbercost': '30', 'HP': '450', 'spd': '270', 'sight': '1400'}
+- **ndtp** darktrollshadowpriest {'goldcost': '155', 'lumbercost': '10', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **ndtr** darktroll {'goldcost': '120', 'lumbercost': '10', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **ndtt** darktrolltrapper {'goldcost': '170', 'lumbercost': '20', 'HP': '340', 'spd': '300', 'sight': '1400'}
+- **ndtw** darktrollwarlord {'goldcost': '290', 'lumbercost': '80', 'HP': '750', 'spd': '320', 'sight': '1400'}
+- **nehy** elderhydra {'goldcost': '205', 'lumbercost': '30', 'HP': '850', 'spd': '270', 'sight': '1400'}
+- **nelb** bereserkelemental {'goldcost': '385', 'lumbercost': '120', 'HP': '1100', 'spd': '270', 'sight': '1400'}
+- **nele** enragedelemental {'goldcost': '205', 'lumbercost': '30', 'HP': '550', 'spd': '220', 'sight': '1400'}
+- **nenc** corruptedent {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nenf** enforcer {'goldcost': '170', 'lumbercost': '20', 'HP': '500', 'spd': '270', 'sight': '1400'}
+- **nenp** poisonent {'goldcost': '170', 'lumbercost': '20', 'HP': '290', 'spd': '270', 'sight': '1400'}
+- **nepl** plagueent {'goldcost': '255', 'lumbercost': '50', 'HP': '600', 'spd': '270', 'sight': '1400'}
+- **nerd** eredardiabolist {'goldcost': '85', 'HP': '630', 'spd': '270', 'sight': '1400'}
+- **ners** eredarsorceror {'goldcost': '85', 'HP': '425', 'spd': '270', 'sight': '1400'}
+- **nerw** eredarwarlock {'goldcost': '85', 'HP': '1350', 'spd': '270', 'sight': '1400'}
+- **nfel** felstalker {'goldcost': '255', 'lumbercost': '50', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **nfgb** bloodfiend {'goldcost': '135', 'HP': '450', 'spd': '270', 'sight': '1400'}
+- **nfgo** forgottenone {'goldcost': '595', 'lumbercost': '250', 'HP': '4000', 'sight': '1400'}
+- **nfgt** tentacle {'HP': '200', 'sight': '1200'}
+- **nfgu** felguard {'goldcost': '135', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **nfod** facelessonedeathbringer {'goldcost': '595', 'lumbercost': '200', 'HP': '1900', 'spd': '300', 'sight': '1400'}
+- **nfor** facelessonetrickster {'goldcost': '205', 'lumbercost': '30', 'HP': '675', 'spd': '300', 'sight': '1400'}
+- **nfot** facelessoneterror {'goldcost': '385', 'lumbercost': '120', 'HP': '1150', 'spd': '300', 'sight': '1400'}
+- **nfov** overlord {'goldcost': '135', 'HP': '775', 'spd': '270', 'sight': '1400'}
+- **nfpc** polarfurbolgchampion {'goldcost': '340', 'lumbercost': '100', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nfpe** polarfurbolgeldershaman {'goldcost': '385', 'lumbercost': '120', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nfpl** polarfurbolg {'goldcost': '205', 'lumbercost': '30', 'HP': '550', 'spd': '300', 'sight': '1400'}
+- **nfps** polarfurbolgshaman {'goldcost': '220', 'lumbercost': '30', 'HP': '550', 'spd': '270', 'sight': '1400'}
+- **nfpt** polarfurbolgtracker {'goldcost': '290', 'lumbercost': '80', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nfpu** polarfurbolgursawarrior {'goldcost': '385', 'lumbercost': '120', 'HP': '1100', 'spd': '320', 'sight': '1400'}
+- **nfra** furbolgancient {'goldcost': '385', 'lumbercost': '120', 'HP': '1100', 'spd': '320', 'sight': '1400'}
+- **nfrb** furbolgtracker {'goldcost': '290', 'lumbercost': '80', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nfre** furbolgeldershaman {'goldcost': '340', 'lumbercost': '100', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nfrg** furbolgchampion {'goldcost': '340', 'lumbercost': '100', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nfrl** furbolg {'goldcost': '205', 'lumbercost': '30', 'HP': '550', 'spd': '300', 'sight': '1400'}
+- **nfrp** furbolgpanda {'goldcost': '205', 'lumbercost': '30', 'HP': '550', 'spd': '300', 'sight': '1400'}
+- **nfrs** furbolgshaman {'goldcost': '205', 'lumbercost': '30', 'HP': '550', 'spd': '270', 'sight': '1400'}
+- **nfsh** foresttrollhighpriest {'goldcost': '245', 'lumbercost': '40', 'HP': '450', 'spd': '270', 'sight': '1400'}
+- **nfsp** foresttrollshadowpriest {'goldcost': '155', 'lumbercost': '10', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nftb** foresttrollberserker {'goldcost': '195', 'lumbercost': '30', 'HP': '450', 'spd': '270', 'sight': '1400'}
+- **nftk** foresttrollking {'goldcost': '290', 'lumbercost': '80', 'HP': '750', 'spd': '320', 'sight': '1400'}
+- **nftr** foresttroll {'goldcost': '120', 'lumbercost': '10', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **nftt** foresttrolltrapper {'goldcost': '170', 'lumbercost': '20', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **ngdk** greendrake {'goldcost': '290', 'lumbercost': '80', 'HP': '950', 'spd': '350', 'sight': '1400'}
+- **nggr** granitegolem {'goldcost': '435', 'lumbercost': '150', 'HP': '1500', 'spd': '270', 'sight': '1400'}
+- **ngh1** ghost {'goldcost': '170', 'lumbercost': '20', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **ngh2** wraith {'goldcost': '290', 'lumbercost': '80', 'HP': '750', 'spd': '270', 'sight': '1400'}
+- **ngir** goblinshredder {'goldcost': '375', 'lumbercost': '100', 'HP': '600', 'spd': '240', 'sight': '1400'}
+- **nglm** goblinlandmine {'HP': '100'}
+- **ngna** gnollpoacher {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **ngnb** gnollbrute {'goldcost': '170', 'lumbercost': '20', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **ngno** gnoll1 {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **ngns** gnollassassin {'goldcost': '170', 'lumbercost': '20', 'HP': '320', 'spd': '270', 'sight': '1400'}
+- **ngnv** gnollking {'goldcost': '245', 'lumbercost': '35', 'HP': '750', 'spd': '270', 'sight': '1400'}
+- **ngnw** gnoll3 {'goldcost': '170', 'lumbercost': '20', 'HP': '330', 'spd': '270', 'sight': '1400'}
+- **ngrd** greendragon {'goldcost': '595', 'lumbercost': '200', 'HP': '2200', 'spd': '300', 'sight': '1400'}
+- **ngrk** mudgolem {'goldcost': '115', 'lumbercost': '10', 'HP': '240', 'spd': '240', 'sight': '1400'}
+- **ngrw** greendragonwhelp {'goldcost': '170', 'lumbercost': '20', 'HP': '340', 'spd': '350', 'sight': '1400'}
+- **ngsp** goblinsapper {'goldcost': '215', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1400'}
+- **ngst** rockgolem {'goldcost': '290', 'lumbercost': '80', 'HP': '675', 'spd': '270', 'sight': '1400'}
+- **ngza** misha3 {'HP': '1800', 'spd': '350', 'sight': '1200'}
+- **nhar** harpyscout {'goldcost': '120', 'HP': '210', 'spd': '270', 'sight': '1400'}
+- **nhdc** deceiver {'goldcost': '170', 'lumbercost': '20', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **nhfp** fallenpriest {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nhhr** heretic {'goldcost': '255', 'lumbercost': '50', 'HP': '600', 'spd': '270', 'sight': '1400'}
+- **nhrh** harpyhag {'goldcost': '255', 'lumbercost': '50', 'HP': '600', 'spd': '350', 'sight': '1400'}
+- **nhrq** harpyqueen {'goldcost': '290', 'lumbercost': '80', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **nhrr** harpyrogue {'goldcost': '170', 'lumbercost': '20', 'HP': '340', 'spd': '350', 'sight': '1400'}
+- **nhrw** harpywitch {'goldcost': '190', 'lumbercost': '30', 'HP': '280', 'spd': '350', 'sight': '1400'}
+- **nhyc** campaignturtle {'goldcost': '320', 'lumbercost': '65', 'HP': '750', 'spd': '270', 'sight': '1400'}
+- **nhyd** hydra {'goldcost': '205', 'lumbercost': '30', 'HP': '575', 'spd': '270', 'sight': '1400'}
+- **nhyh** hydrahatchling {'goldcost': '205', 'lumbercost': '30', 'HP': '350', 'spd': '270', 'sight': '1400'}
+- **nhym** hydromancer {'goldcost': '155', 'lumbercost': '20', 'HP': '405', 'spd': '270', 'sight': '1400'}
+- **nina** infernaljuggernaut {'goldcost': '220', 'lumbercost': '50', 'HP': '1500', 'spd': '180', 'sight': '1400'}
+- **ninc** infernalcontraption {'goldcost': '220', 'lumbercost': '50', 'HP': '600', 'spd': '180', 'sight': '1400'}
+- **ninf** infernal {'goldcost': '385', 'lumbercost': '120', 'HP': '1500', 'spd': '320', 'sight': '1400'}
+- **ninm** infernalmachine {'goldcost': '220', 'lumbercost': '50', 'HP': '1200', 'spd': '180', 'sight': '1400'}
+- **nith** icetrollhighpriest {'goldcost': '205', 'lumbercost': '30', 'HP': '450', 'spd': '300', 'sight': '1400'}
+- **nitp** icetrollshadowpriest {'goldcost': '155', 'lumbercost': '10', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nitr** icetroll {'goldcost': '120', 'lumbercost': '10', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **nits** icetrollberserker {'goldcost': '195', 'lumbercost': '30', 'HP': '450', 'spd': '300', 'sight': '1400'}
+- **nitt** icetrolltrapper {'goldcost': '160', 'lumbercost': '20', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nitw** icetrollwarlord {'goldcost': '290', 'lumbercost': '80', 'HP': '750', 'spd': '320', 'sight': '1400'}
+- **njg1** junglestalker {'goldcost': '170', 'lumbercost': '20', 'HP': '400', 'spd': '320', 'sight': '1400'}
+- **njga** elderjunglestalker {'goldcost': '300', 'HP': '900', 'spd': '320', 'sight': '1400'}
+- **njgb** enrangedjunglestalker {'goldcost': '435', 'lumbercost': '150', 'HP': '1600', 'spd': '320', 'sight': '1400'}
+- **nkob** kobold {'goldcost': '70', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nkog** koboldgeomancer {'goldcost': '205', 'lumbercost': '30', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **nkol** koboldtaskmaster {'goldcost': '255', 'lumbercost': '50', 'HP': '650', 'spd': '270', 'sight': '1400'}
+- **nkot** kobolttunneler {'goldcost': '170', 'lumbercost': '20', 'HP': '325', 'spd': '270', 'sight': '1400'}
+- **nlds** lobstrokkdeepseer {'goldcost': '400', 'lumbercost': '100', 'HP': '480', 'spd': '270', 'sight': '1400'}
+- **nlkl** lobstrokktidallord {'goldcost': '85', 'HP': '800', 'spd': '270', 'sight': '1400'}
+- **nlpd** lobstrokkpooldweller {'goldcost': '85', 'HP': '210', 'spd': '270', 'sight': '1400'}
+- **nlpr** lobstrokkprawn {'goldcost': '85', 'HP': '170', 'spd': '270', 'sight': '1400'}
+- **nlps** lobstrokkprawnsummoned {'goldcost': '85', 'HP': '170', 'spd': '270', 'sight': '1400'}
+- **nlrv** deeplordrevenant {'goldcost': '595', 'lumbercost': '200', 'HP': '2100', 'spd': '270', 'sight': '1400'}
+- **nlsn** lobstrokksnapper {'goldcost': '250', 'HP': '620', 'spd': '270', 'sight': '1400'}
+- **nltc** lobstrokktidecaller {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nltl** lightninglizard {'goldcost': '155', 'lumbercost': '10', 'HP': '280', 'spd': '270', 'sight': '1400'}
+- **nlur** monsterlure {'HP': '200', 'sight': '1600'}
+- **nmam** mammoth {'goldcost': '205', 'lumbercost': '30', 'HP': '450', 'spd': '300', 'sight': '1400'}
+- **nmbg** murgulbloodgill {'goldcost': '85', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **nmcf** murgulcliffrunner {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nmdr** diremammoth {'goldcost': '385', 'lumbercost': '120', 'HP': '1550', 'spd': '300', 'sight': '1400'}
+- **nmfs** murlocflesheater {'goldcost': '110', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nmgd** magnataurdestroyer {'goldcost': '595', 'lumbercost': '200', 'HP': '2100', 'spd': '300', 'sight': '1400'}
+- **nmgr** magnataurreaver {'goldcost': '205', 'lumbercost': '30', 'HP': '1500', 'spd': '300', 'sight': '1400'}
+- **nmgw** magnataurwarrior {'goldcost': '270', 'lumbercost': '15', 'HP': '900', 'spd': '300', 'sight': '1400'}
+- **nmit** icetuskmammoth {'goldcost': '205', 'lumbercost': '30', 'HP': '925', 'spd': '300', 'sight': '1400'}
+- **nmmu** murlocmutant {'goldcost': '290', 'lumbercost': '80', 'HP': '750', 'spd': '270', 'sight': '1400'}
+- **nmpg** murlocplaguebearer {'goldcost': '85', 'HP': '180', 'spd': '270', 'sight': '1400'}
+- **nmrl** murloctiderunner {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nmrm** murlocnightcrawler {'goldcost': '170', 'lumbercost': '20', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nmrr** murlochuntsman {'goldcost': '120', 'lumbercost': '10', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **nmrv** murgulreaver {'goldcost': '85', 'HP': '1000', 'spd': '270', 'sight': '1400'}
+- **nmsc** murgulshadowcaster {'goldcost': '85', 'HP': '1000', 'spd': '270', 'sight': '1400'}
+- **nmsn** murgulsnarecaster {'goldcost': '170', 'lumbercost': '20', 'HP': '375', 'spd': '270', 'sight': '1400'}
+- **nmtw** murgultidewarrior {'goldcost': '85', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nmyr** nagamyrmidon {'goldcost': '225', 'lumbercost': '55', 'HP': '1080', 'spd': '270', 'sight': '1400'}
+- **nmys** nagamyrmidonmorph {'goldcost': '225', 'lumbercost': '55', 'HP': '1080', 'sight': '1400'}
+- **nndk** netherdrake {'goldcost': '290', 'lumbercost': '80', 'HP': '950', 'spd': '350', 'sight': '1400'}
+- **nndr** netherdragon {'goldcost': '595', 'lumbercost': '200', 'HP': '2200', 'spd': '350', 'sight': '1400'}
+- **nnht** netherdragonhatchling {'goldcost': '170', 'lumbercost': '20', 'HP': '340', 'spd': '350', 'sight': '1400'}
+- **nnmg** nagamurgul {'goldcost': '120', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nnrg** nagaroyalguard {'goldcost': '300', 'lumbercost': '100', 'HP': '1350', 'spd': '320', 'sight': '1600'}
+- **nnrs** nagaroyalguardmorph {'goldcost': '300', 'lumbercost': '100', 'HP': '1350', 'sight': '1600'}
+- **nnsu** summoner {'goldcost': '130', 'lumbercost': '20', 'HP': '350', 'spd': '270', 'sight': '1400'}
+- **nnsw** siren {'goldcost': '130', 'lumbercost': '20', 'HP': '350', 'spd': '270', 'sight': '1400'}
+- **nnwa** nerubianwarrior {'goldcost': '170', 'HP': '400', 'spd': '320', 'sight': '1400'}
+- **nnwl** nerubianwebspinner {'goldcost': '140', 'lumbercost': '25', 'HP': '350', 'spd': '320', 'sight': '1400'}
+- **nnwq** nerubianqueen {'goldcost': '340', 'lumbercost': '100', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nnwr** nerubianseer {'goldcost': '255', 'lumbercost': '50', 'HP': '600', 'spd': '320', 'sight': '1400'}
+- **nnws** nerubianspiderlord {'goldcost': '255', 'lumbercost': '50', 'HP': '750', 'spd': '320', 'sight': '1400'}
+- **noga** stonemaulwarchief {'goldcost': '600', 'lumbercost': '150', 'HP': '3300', 'spd': '320', 'sight': '1400'}
+- **nogl** ogrelord {'goldcost': '340', 'lumbercost': '100', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nogm** ogre2 {'goldcost': '240', 'HP': '850', 'spd': '270', 'sight': '1400'}
+- **nogn** stonemaulmagi {'goldcost': '360', 'lumbercost': '40', 'HP': '1060', 'spd': '270', 'sight': '1400'}
+- **nogo** stonemaulogre {'goldcost': '300', 'HP': '1060', 'spd': '270', 'sight': '1400'}
+- **nogr** ogre1 {'goldcost': '120', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nomg** ogremagi {'goldcost': '255', 'lumbercost': '50', 'HP': '600', 'spd': '270', 'sight': '1400'}
+- **nowb** owlbear {'goldcost': '155', 'HP': '550', 'spd': '300', 'sight': '1400'}
+- **nowe** enragedowlbear {'goldcost': '290', 'lumbercost': '80', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nowk** berserkowlbear {'goldcost': '385', 'lumbercost': '120', 'HP': '1100', 'spd': '320', 'sight': '1400'}
+- **npfl** purplefelstalker {'goldcost': '125', 'HP': '390', 'spd': '350', 'sight': '1400'}
+- **npfm** felravager {'goldcost': '255', 'lumbercost': '50', 'HP': '950', 'spd': '350', 'sight': '1400'}
+- **nplb** polarbear {'goldcost': '155', 'HP': '475', 'spd': '300', 'sight': '1400'}
+- **nplg** giantpolarbear {'goldcost': '290', 'lumbercost': '80', 'HP': '900', 'spd': '320', 'sight': '1400'}
+- **nqbh** quillboarhunter {'goldcost': '170', 'lumbercost': '20', 'HP': '375', 'spd': '270', 'sight': '1400'}
+- **nrdk** reddragonwhelp {'goldcost': '170', 'lumbercost': '20', 'HP': '400', 'spd': '350', 'sight': '1400'}
+- **nrdr** reddrake {'goldcost': '290', 'lumbercost': '80', 'HP': '950', 'spd': '350', 'sight': '1400'}
+- **nrel** reefelemental {'goldcost': '135', 'HP': '300', 'spd': '220', 'sight': '1200'}
+- **nrog** rogue {'goldcost': '120', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nrvd** deathrevenant {'goldcost': '435', 'lumbercost': '150', 'HP': '1500', 'spd': '320', 'sight': '1400'}
+- **nrvf** firerevenant {'goldcost': '170', 'lumbercost': '20', 'HP': '340', 'spd': '270', 'sight': '1400'}
+- **nrvi** icerevenant {'goldcost': '385', 'lumbercost': '120', 'HP': '1100', 'spd': '270', 'sight': '1400'}
+- **nrvl** lightningrevenant {'goldcost': '290', 'lumbercost': '80', 'HP': '750', 'spd': '270', 'sight': '1400'}
+- **nrvs** frostrevenant {'goldcost': '205', 'lumbercost': '30', 'HP': '450', 'spd': '270', 'sight': '1400'}
+- **nrwm** reddragon {'goldcost': '595', 'lumbercost': '200', 'HP': '2200', 'spd': '300', 'sight': '1400'}
+- **nrzb** razormanebrute {'goldcost': '170', 'lumbercost': '20', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nrzg** razormanechieftain {'goldcost': '340', 'lumbercost': '100', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nrzm** razormanemedicineman {'goldcost': '280', 'lumbercost': '60', 'HP': '600', 'spd': '270', 'sight': '1400'}
+- **nrzs** razormanescout {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nrzt** quillboar {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nsat** satyrtrickster {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nsbm** broodmother {'goldcost': '290', 'lumbercost': '80', 'HP': '750', 'spd': '320', 'sight': '1400'}
+- **nsbs** snapdragonmorph {'goldcost': '200', 'lumbercost': '25', 'HP': '500', 'sight': '1400'}
+- **nsc2** spidercrab2 {'goldcost': '120', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nsc3** spidercrab3 {'goldcost': '240', 'HP': '850', 'spd': '270', 'sight': '1400'}
+- **nsca** skeletalarchersummoned {'goldcost': '85', 'HP': '180', 'spd': '270', 'sight': '1400'}
+- **nscb** spidercrab {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nsce** skeletonsummoned {'goldcost': '85', 'HP': '180', 'spd': '270', 'sight': '800'}
+- **nsel** seaelemental {'goldcost': '135', 'HP': '550', 'spd': '220', 'sight': '1200'}
+- **nsgb** seagiantbehemoth {'goldcost': '210', 'lumbercost': '85', 'HP': '1000', 'spd': '200', 'sight': '1200'}
+- **nsgg** siegegolem {'goldcost': '435', 'lumbercost': '150', 'HP': '1900', 'spd': '270', 'sight': '1400'}
+- **nsgh** seagianthunter {'goldcost': '210', 'lumbercost': '85', 'HP': '725', 'spd': '200', 'sight': '1200'}
+- **nsgn** seagiant {'goldcost': '210', 'lumbercost': '85', 'HP': '350', 'spd': '200', 'sight': '1200'}
+- **nsgt** giantspider {'goldcost': '205', 'lumbercost': '30', 'HP': '550', 'spd': '300', 'sight': '1400'}
+- **nska** skeletalarcher {'goldcost': '85', 'HP': '180', 'spd': '270', 'sight': '1400'}
+- **nske** skeleton {'goldcost': '85', 'HP': '180', 'spd': '270', 'sight': '800'}
+- **nskf** burningarcher {'goldcost': '180', 'lumbercost': '25', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **nskg** giantskeleton {'goldcost': '130', 'HP': '380', 'spd': '270', 'sight': '800'}
+- **nskm** skeletalmarksman {'goldcost': '170', 'lumbercost': '20', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **nsko** skeletalorc {'goldcost': '70', 'HP': '375', 'spd': '270', 'sight': '800'}
+- **nslf** sludgeflinger {'goldcost': '205', 'lumbercost': '30', 'HP': '340', 'spd': '270', 'sight': '1400'}
+- **nslh** salamanderhatchling {'goldcost': '170', 'lumbercost': '20', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nsll** salamanderlord {'goldcost': '595', 'lumbercost': '200', 'HP': '1800', 'spd': '270', 'sight': '1400'}
+- **nslm** sludgeminion {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nsln** sludgemonstrosity {'goldcost': '255', 'lumbercost': '50', 'HP': '600', 'spd': '270', 'sight': '1400'}
+- **nslr** salamander {'goldcost': '255', 'lumbercost': '50', 'HP': '600', 'spd': '270', 'sight': '1400'}
+- **nslv** salamandervizier {'goldcost': '340', 'lumbercost': '100', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nsnp** snapdragon {'goldcost': '200', 'lumbercost': '25', 'HP': '500', 'spd': '350', 'sight': '1400'}
+- **nsns** wateryminionsnarecaster {'goldcost': '255', 'lumbercost': '50', 'HP': '375', 'spd': '270', 'sight': '1400'}
+- **nsoc** skeletalorcchampion {'goldcost': '70', 'HP': '1100', 'spd': '270', 'sight': '800'}
+- **nsog** skeletalorcgrunt {'goldcost': '240', 'HP': '850', 'spd': '270', 'sight': '800'}
+- **nspb** spiderblack {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nspd** spiderling {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nspg** forestspider {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nspp** spiritpig {'HP': '200', 'spd': '350', 'sight': '1200'}
+- **nspr** spider {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nsqa** ancientsasquatch {'goldcost': '435', 'lumbercost': '150', 'HP': '1200', 'spd': '320', 'sight': '1400'}
+- **nsqe** eldersasquatch {'goldcost': '290', 'lumbercost': '80', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nsqo** sasquatchoracle {'goldcost': '340', 'lumbercost': '100', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nsqt** sasquatch {'goldcost': '255', 'lumbercost': '50', 'HP': '750', 'spd': '270', 'sight': '1400'}
+- **nsra** stormreaverapprentice {'goldcost': '85', 'lumbercost': '5', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nsrh** stormreaverhermit {'goldcost': '145', 'lumbercost': '20', 'HP': '340', 'spd': '270', 'sight': '1400'}
+- **nsrn** stormreavernecrolyte {'goldcost': '145', 'lumbercost': '20', 'HP': '675', 'spd': '270', 'sight': '1400'}
+- **nsrv** revenantoftheseas {'goldcost': '205', 'lumbercost': '30', 'HP': '900', 'spd': '270', 'sight': '1400'}
+- **nsrw** stormreaverwarlock {'goldcost': '145', 'lumbercost': '20', 'HP': '1500', 'spd': '270', 'sight': '1400'}
+- **nssp** spittingspider {'goldcost': '170', 'lumbercost': '20', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nsth** satyrhellcaller {'goldcost': '385', 'lumbercost': '120', 'HP': '1100', 'spd': '320', 'sight': '1400'}
+- **nstl** satyrsoulstealer {'goldcost': '255', 'lumbercost': '50', 'HP': '600', 'spd': '270', 'sight': '1400'}
+- **nsts** satyrshadowdancer {'goldcost': '205', 'lumbercost': '30', 'HP': '340', 'spd': '270', 'sight': '1400'}
+- **nstw** stormwyrm {'goldcost': '435', 'lumbercost': '150', 'HP': '1500', 'spd': '270', 'sight': '1400'}
+- **nsty** satyr {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nthl** thunderlizard {'goldcost': '290', 'lumbercost': '80', 'HP': '750', 'spd': '270', 'sight': '1400'}
+- **ntka** tuskarrspearman {'goldcost': '120', 'lumbercost': '10', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **ntkc** tuskarrchieftain {'goldcost': '340', 'lumbercost': '100', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **ntkf** tuskarrfighter {'goldcost': '135', 'HP': '250', 'spd': '300', 'sight': '1400'}
+- **ntkh** tuskarrhealer {'goldcost': '170', 'lumbercost': '20', 'HP': '300', 'spd': '270', 'sight': '1400'}
+- **ntks** tuskarrsorceror {'goldcost': '155', 'lumbercost': '10', 'HP': '475', 'spd': '270', 'sight': '1400'}
+- **ntkt** tuskarrtrapper {'goldcost': '225', 'lumbercost': '40', 'HP': '475', 'spd': '270', 'sight': '1400'}
+- **ntkw** tuskarrwarrior {'goldcost': '205', 'lumbercost': '30', 'HP': '475', 'spd': '300', 'sight': '1400'}
+- **ntor** tornado {'HP': '500', 'spd': '60', 'sight': '1200'}
+- **ntrd** dragonturtle {'goldcost': '595', 'lumbercost': '200', 'HP': '2000', 'spd': '270', 'sight': '1400'}
+- **ntrg** gargantuanseaturtle {'goldcost': '205', 'lumbercost': '30', 'HP': '1250', 'spd': '270', 'sight': '1400'}
+- **ntrh** seaturtlehatchling {'goldcost': '85', 'HP': '220', 'spd': '270', 'sight': '1400'}
+- **ntrs** seaturtle {'goldcost': '205', 'lumbercost': '30', 'HP': '250', 'spd': '270', 'sight': '1400'}
+- **ntrt** giantseaturtle {'goldcost': '235', 'lumbercost': '35', 'HP': '375', 'spd': '270', 'sight': '1400'}
+- **ntrv** revenantofthetides {'goldcost': '205', 'lumbercost': '30', 'HP': '375', 'spd': '270', 'sight': '1400'}
+- **ntws** wateryminiontidewarrior {'goldcost': '85', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **nubk** unbrokendarkhunter {'goldcost': '120', 'lumbercost': '10', 'HP': '250', 'spd': '300', 'sight': '1400'}
+- **nubr** unbrokenrager {'goldcost': '205', 'lumbercost': '30', 'HP': '475', 'spd': '300', 'sight': '1400'}
+- **nubw** unbrokendarkweaver {'goldcost': '205', 'lumbercost': '30', 'HP': '600', 'spd': '300', 'sight': '1400'}
+- **nvde** eldervoidwalker {'goldcost': '85', 'HP': '1500', 'spd': '270', 'sight': '1400'}
+- **nvdg** greatervoidwalker {'goldcost': '240', 'lumbercost': '45', 'HP': '750', 'spd': '270', 'sight': '1400'}
+- **nvdl** lesservoidwalker {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nvdw** voidwalker {'goldcost': '125', 'lumbercost': '15', 'HP': '365', 'spd': '270', 'sight': '1400'}
+- **nwen** wendigo1 {'goldcost': '205', 'lumbercost': '30', 'HP': '550', 'spd': '320', 'sight': '1400'}
+- **nwgs** nagacoutl {'goldcost': '235', 'lumbercost': '30', 'HP': '525', 'spd': '350', 'sight': '1600'}
+- **nwiz** apprenticewizard {'goldcost': '85', 'HP': '180', 'spd': '270', 'sight': '1400'}
+- **nwld** direwolf {'goldcost': '290', 'lumbercost': '80', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **nwlg** giantwolf {'goldcost': '205', 'lumbercost': '30', 'HP': '550', 'spd': '350', 'sight': '1400'}
+- **nwlt** timberwolf {'goldcost': '120', 'lumbercost': '10', 'HP': '300', 'spd': '350', 'sight': '1400'}
+- **nwna** ancientwendigo {'goldcost': '435', 'lumbercost': '150', 'HP': '1200', 'spd': '320', 'sight': '1400'}
+- **nwnr** elderwendigo {'goldcost': '290', 'lumbercost': '80', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nwns** wendigoshaman {'goldcost': '340', 'lumbercost': '100', 'HP': '950', 'spd': '320', 'sight': '1400'}
+- **nwrg** wargolem {'goldcost': '290', 'lumbercost': '80', 'HP': '1000', 'spd': '270', 'sight': '1400'}
+- **nws1** windserpent {'goldcost': '280', 'lumbercost': '70', 'HP': '700', 'spd': '270', 'sight': '1600'}
+- **nwwd** whitedirewolf {'goldcost': '290', 'lumbercost': '80', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **nwwf** whitewolf {'goldcost': '120', 'lumbercost': '10', 'HP': '300', 'spd': '350', 'sight': '1400'}
+- **nwwg** giantwhitewolf {'goldcost': '205', 'lumbercost': '30', 'HP': '550', 'spd': '350', 'sight': '1400'}
+- **nwzd** darkwizard {'goldcost': '385', 'lumbercost': '120', 'HP': '1200', 'spd': '320', 'sight': '1400'}
+- **nwzg** renegadewizard {'goldcost': '255', 'lumbercost': '50', 'HP': '600', 'spd': '270', 'sight': '1400'}
+- **nwzr** roguewizard {'goldcost': '170', 'lumbercost': '20', 'HP': '340', 'spd': '270', 'sight': '1400'}
+- **nzep** goblinzeppelin {'goldcost': '240', 'lumbercost': '60', 'HP': '500', 'spd': '270', 'sight': '1400'}
+- **nzom** zombie {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nalb** albatross {'HP': '15', 'spd': '100', 'sight': '350'}
+- **ncrb** crab {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nder** deer {'HP': '15', 'spd': '190', 'sight': '350'}
+- **ndog** dog {'HP': '15', 'spd': '190', 'sight': '350'}
+- **ndwm** duneworm {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nech** chicken {'HP': '15', 'spd': '100', 'sight': '350'}
+- **necr** rabbit {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nfbr** felboar {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nfro** frog {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nhmc** hermitcrab {'HP': '15', 'spd': '100', 'sight': '350'}
+- **now2** owl2 {'HP': '40', 'spd': '350', 'sight': '1500'}
+- **now3** owl3 {'HP': '40', 'spd': '400', 'sight': '2200'}
+- **nowl** owl {'HP': '40', 'spd': '270', 'sight': '1000'}
+- **npig** pig {'HP': '15', 'spd': '100', 'sight': '350'}
+- **npng** penguin {'HP': '15', 'spd': '100', 'sight': '350'}
+- **npnw** waterpenguin {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nrac** raccoon {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nrat** rat {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nsea** seal {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nsha** amphibioussheep {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nshe** sheep {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nshf** flyingsheep {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nshw** watersheep {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nskk** skink {'HP': '15', 'spd': '200', 'sight': '350'}
+- **nsno** snowyowl {'HP': '15', 'spd': '100', 'sight': '350'}
+- **nvil** villagerman {'HP': '60', 'spd': '190', 'sight': '600'}
+- **nvk2** villagerkid2 {'HP': '15', 'spd': '190', 'sight': '600'}
+- **nvl2** villagerman2 {'HP': '60', 'spd': '190', 'sight': '600'}
+- **nvlk** villagerkid {'HP': '15', 'spd': '190', 'sight': '600'}
+- **nvlw** villagerwoman {'HP': '60', 'spd': '190', 'sight': '600'}
+- **nvul** vulture {'HP': '15', 'spd': '100', 'sight': '350'}
+- **ncb0** citybuildingSmall 0 {'HP': '400', 'sight': '600'}
+- **ncb1** citybuildingSmall 1 {'HP': '400', 'sight': '600'}
+- **ncb2** citybuildingSmall 2 {'HP': '400', 'sight': '600'}
+- **ncb3** citybuildingSmall 3 {'HP': '400', 'sight': '600'}
+- **ncb4** citybuildingSmall 4 {'HP': '400', 'sight': '600'}
+- **ncb5** citybuildingSmall 5 {'HP': '400', 'sight': '600'}
+- **ncb6** citybuildingSmall 6 {'HP': '400', 'sight': '600'}
+- **ncb7** citybuildingSmall 7 {'HP': '400', 'sight': '600'}
+- **ncb8** citybuildingSmall 8 {'HP': '400', 'sight': '600'}
+- **ncb9** citybuildingSmall 9 {'HP': '400', 'sight': '600'}
+- **ncba** citybuildingSmall a {'HP': '400', 'sight': '600'}
+- **ncbb** citybuildingSmall b {'HP': '400', 'sight': '600'}
+- **ncbc** CityBuildingLarge 0 {'HP': '400', 'sight': '600'}
+- **ncbd** CityBuildingLarge 1 {'HP': '400', 'sight': '600'}
+- **ncbe** CityBuildingLarge 2 {'HP': '400', 'sight': '600'}
+- **ncbf** CityBuildingLarge 3 {'HP': '400', 'sight': '600'}
+- **ncnt** centaurtent {'HP': '125'}
+- **ncop** circleofpower {'HP': '150000', 'sight': '200'}
+- **ncp2** circleofpowermedium {'HP': '150000', 'sight': '300'}
+- **ncp3** circleofpowerlarge {'HP': '150000', 'sight': '400'}
+- **nct1** centaurtent1 {'HP': '125'}
+- **nct2** centaurtent2 {'HP': '125'}
+- **ndch** chieftainhut {'HP': '125'}
+- **ndh0** draneihut0 {'HP': '125'}
+- **ndh1** draneihut1 {'HP': '125'}
+- **ndh2** draeneihaven {'goldcost': '400', 'lumbercost': '195', 'HP': '1500', 'sight': '1600'}
+- **ndh3** draeneiwarriorshall {'goldcost': '170', 'lumbercost': '55', 'HP': '1250', 'sight': '1600'}
+- **ndh4** draeneiseerden {'goldcost': '100', 'lumbercost': '140', 'HP': '1150', 'sight': '1600'}
+- **ndrg** greendragonroost {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **ndrk** blackdragonroost {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **ndro** outlanddragonroost {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **ndrr** reddragonroost {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **ndru** bluedragonroost {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **ndrz** bronzedragonroost {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **nfh0** foresttrollhut0 {'HP': '125'}
+- **nfh1** foresttrollhut1 {'HP': '125'}
+- **nfoh** fountainofhealth {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nfr1** furbolghut1 {'HP': '125'}
+- **nfr2** furbolghut2 {'HP': '125'}
+- **ngad** goblinammodump {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **ngme** goblinmerchant {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **ngnh** gnollhut {'HP': '125'}
+- **ngni** granaryinfected {'HP': '500', 'sight': '500'}
+- **ngol** goldmine {'HP': '150000'}
+- **ngt2** gnollhut2 {'HP': '125'}
+- **ngwr** grainwarehouse {'HP': '400', 'sight': '600'}
+- **nhns** harpynest {'HP': '125', 'sight': '500'}
+- **nmer** mercenarycampl {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmg0** murgulhut0 {'HP': '125'}
+- **nmg1** murgulhut1 {'HP': '125'}
+- **nmh0** murlochut0 {'HP': '125'}
+- **nmh1** murlochut1 {'HP': '125'}
+- **nmoo** fountainofmana {'goldcost': '50', 'HP': '150000'}
+- **nmr0** mercenarycampv {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmr2** mercenarycampf {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmr3** mercenarycampw {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmr4** mercenarycampb {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmr5** mercenarycampa {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmr6** mercenarycampc {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmr7** mercenarycampn {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmr8** mercenarycampy {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmr9** mercenarycampx {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmra** mercenarycampd {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmrb** mercenarycampg {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmrc** mercenarycampz {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmrd** mercenarycampi {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmre** mercenarycampo {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmrf** mercenarycampk {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nmrk** marketplace {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nnzg** nerubianziggurat {'HP': '125', 'sight': '900'}
+- **nshp** goblinshipyard {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **ntav** cantina {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **nten** tent {'HP': '75'}
+- **nth0** icetrollhut0 {'HP': '125'}
+- **nth1** icetrollhut1 {'HP': '125'}
+- **ntn2** tent2 {'HP': '75'}
+- **ntnt** taurentent {'HP': '125'}
+- **ntt2** taurentent2 {'HP': '125'}
+- **nwgt** waygate {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **Ecen** cenarius {'goldcost': '425', 'lumbercost': '100', 'HP': '2675', 'spd': '400', 'sight': '1800'}
+- **Eevi** evilillidan {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Eevm** evilillidandemonform {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Efur** furion {'goldcost': '425', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Eidm** illidandemonform {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Eill** illidan {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Eilm** illidanmorphed {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Ekgg** keeperofthegroveghost {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Emfr** malfurion {'goldcost': '425', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Emns** malfurionnostag {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Etyr** tyrande {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Ewrd** maiev {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Hant** antonidus {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Hapm** admiralproudmoore {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Harf** arthaswithfrostmourne {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hart** arthas {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hdgo** dagren {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hgam** ghostlyarchmage {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Hhkl** halahk {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hjai** jaina {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hkal** kael {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hlgr** lordgarithos {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hmbr** muradinbronzebeard {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hmgd** margoth {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hpb1** paladinboss1 {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hpb2** paladinboss2 {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Huth** uther {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hvsh** ladyvashj {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Hvwd** sylvanuswindrunner {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '350', 'sight': '1800'}
+- **Naka** akama {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Nbbc** blackrockblademaster {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Nkjx** kiljaedencinematic {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Nklj** kiljaeden {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Nmag** magtheridon {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Nman** mannoroth {'goldcost': '425', 'lumbercost': '100', 'HP': '4250', 'spd': '250', 'sight': '1800'}
+- **Npld** oldpitlord {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '250', 'sight': '1800'}
+- **Nsjs** sinjostormstout {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Ocb2** cairnebloodhoofexp {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '250', 'sight': '1800'}
+- **Ocbh** cairnebloodhoof {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '250', 'sight': '1800'}
+- **Odrt** drekthar {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Ogld** guldan {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Ogrh** gromhellscream {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Opgh** possessedgromhellscream {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Orex** rexxar {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Orkn** rokhan {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Osam** samuro {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '300', 'sight': '1800'}
+- **Otcc** cairnebloodhoofcinematic {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '250', 'sight': '1800'}
+- **Othr** thrall {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Uanb** anubarak {'goldcost': '425', 'lumbercost': '100', 'HP': '25', 'spd': '270', 'sight': '1800'}
+- **Ubal** balnazzar {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Uclc** kelthuzadlichcinematic {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Udth** detheroc {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Uear** evilarthas {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Uktl** kelthuzadlich {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Umal** malganis {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Usyl** evilsylvanas {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '320', 'sight': '1800'}
+- **Utic** tichondrius {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Uvar** varimathras {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Uvng** vengyr {'goldcost': '425', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1800'}
+- **Uwar** archimonde {'goldcost': '425', 'lumbercost': '100', 'HP': '2000', 'spd': '320', 'sight': '1800'}
+- **eilw** illidanwagon {'goldcost': '195', 'lumbercost': '35', 'HP': '330', 'spd': '180', 'sight': '1400'}
+- **enec** nightelfrunner {'HP': '15', 'spd': '190', 'sight': '1400'}
+- **ensh** naisha {'goldcost': '195', 'lumbercost': '20', 'HP': '700', 'spd': '350', 'sight': '1400'}
+- **eshd** shandris {'goldcost': '215', 'lumbercost': '20', 'HP': '450', 'spd': '270', 'sight': '1400'}
+- **etrs** nightelftransportship {'goldcost': '170', 'lumbercost': '50', 'HP': '1500', 'spd': '320', 'sight': '1400'}
+- **hbew** bloodelfwagon {'goldcost': '195', 'lumbercost': '35', 'HP': '600', 'spd': '180', 'sight': '1400'}
+- **hcth** thecaptain {'goldcost': '130', 'HP': '600', 'spd': '270', 'sight': '1400'}
+- **hhdl** riderlesshorse {'goldcost': '240', 'lumbercost': '40', 'HP': '100', 'spd': '320', 'sight': '1400'}
+- **hhes** highelvenswordsman {'goldcost': '135', 'HP': '420', 'spd': '270', 'sight': '1400'}
+- **hprt** shimmeringportal {'HP': '100', 'sight': '600'}
+- **hrdh** packhorse {'goldcost': '240', 'lumbercost': '40', 'HP': '100', 'spd': '320', 'sight': '1400'}
+- **nbee** bloodelfengineer {'goldcost': '75', 'HP': '220', 'spd': '240', 'sight': '800'}
+- **nbel** bloodelflieutenant {'goldcost': '155', 'lumbercost': '20', 'HP': '750', 'spd': '270', 'sight': '1400'}
+- **nbsp** battleship {'HP': '500', 'spd': '40', 'sight': '900'}
+- **nchg** chaosgrunt {'goldcost': '200', 'HP': '780', 'spd': '270', 'sight': '1400'}
+- **nchr** chaoswolfrider {'goldcost': '180', 'lumbercost': '40', 'HP': '690', 'spd': '350', 'sight': '1400'}
+- **nchw** chaoswarlock {'goldcost': '220', 'HP': '360', 'spd': '270', 'sight': '1400'}
+- **nckb** chaoskotobeast {'goldcost': '255', 'lumbercost': '60', 'HP': '900', 'spd': '220', 'sight': '1400'}
+- **ncpn** chaospeon {'goldcost': '70', 'HP': '320', 'spd': '190', 'sight': '800'}
+- **ndmu** dalaranmutant {'goldcost': '120', 'HP': '330', 'spd': '270', 'sight': '1400'}
+- **ndrd** draeneidarkslayer {'goldcost': '260', 'lumbercost': '40', 'HP': '525', 'spd': '320', 'sight': '1400'}
+- **ndrf** draeneiguardian {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **ndrh** draeneiharbinger {'goldcost': '165', 'lumbercost': '20', 'HP': '450', 'spd': '270', 'sight': '1400'}
+- **ndrj** dalaranreject {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **ndrl** draeneilaborer {'goldcost': '75', 'HP': '280', 'spd': '200', 'sight': '800'}
+- **ndrm** draeneidisciple {'goldcost': '155', 'lumbercost': '15', 'HP': '280', 'spd': '270', 'sight': '1400'}
+- **ndrn** draeneivindicator {'goldcost': '225', 'lumbercost': '15', 'HP': '900', 'spd': '270', 'sight': '1400'}
+- **ndrp** draeneiprotector {'goldcost': '135', 'HP': '325', 'spd': '270', 'sight': '1400'}
+- **ndrs** draeneiseer {'goldcost': '210', 'lumbercost': '30', 'HP': '775', 'spd': '270', 'sight': '1400'}
+- **ndrt** draeneistalker {'goldcost': '270', 'lumbercost': '30', 'HP': '465', 'spd': '270', 'sight': '1400'}
+- **ndrw** draeneiwatcher {'goldcost': '135', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **ndsa** draeneisalamander {'goldcost': '215', 'lumbercost': '40', 'HP': '625', 'spd': '270', 'sight': '1400'}
+- **negz** engineergazlowe {'goldcost': '215', 'lumbercost': '100', 'HP': '100', 'spd': '270', 'sight': '1400'}
+- **nemi** emissary {'goldcost': '205', 'HP': '220', 'spd': '270', 'sight': '1400'}
+- **nfgl** fleshgolem {'goldcost': '500', 'lumbercost': '150', 'HP': '5600', 'spd': '270', 'sight': '1400'}
+- **ngbl** goblinblaster {'goldcost': '375', 'lumbercost': '100', 'HP': '600', 'spd': '240', 'sight': '1400'}
+- **nhea** highelvenarcher {'goldcost': '130', 'lumbercost': '10', 'HP': '310', 'spd': '270', 'sight': '1400'}
+- **nhef** highelvenfemale {'HP': '15', 'spd': '190', 'sight': '1400'}
+- **nhem** highelvenmale {'HP': '15', 'spd': '190', 'sight': '1400'}
+- **nhew** bloodelfworker {'goldcost': '75', 'HP': '220', 'spd': '190', 'sight': '800'}
+- **njks** jailorkassan {'goldcost': '85', 'HP': '240', 'spd': '270', 'sight': '1400'}
+- **nmdm** medivhmorphed {'goldcost': '185', 'HP': '280', 'spd': '240', 'sight': '1400'}
+- **nmed** medivh {'goldcost': '185', 'HP': '280', 'spd': '240', 'sight': '1400'}
+- **nmpe** murgulslave {'goldcost': '75', 'HP': '250', 'spd': '190', 'sight': '800'}
+- **nmsh** misha {'goldcost': '155', 'HP': '475', 'spd': '300', 'sight': '1400'}
+- **nser** searinox {'goldcost': '510', 'lumbercost': '120', 'HP': '1250', 'spd': '280', 'sight': '1400'}
+- **nspc** supportcolumn {'goldcost': '50', 'HP': '50', 'sight': '900'}
+- **nssn** nightelfassassin {'goldcost': '195', 'lumbercost': '20', 'HP': '550', 'spd': '300', 'sight': '1400'}
+- **nthr** tharifas {'goldcost': '510', 'lumbercost': '150', 'HP': '800', 'spd': '300', 'sight': '1400'}
+- **nw2w** war2warlock {'goldcost': '215', 'HP': '250', 'spd': '270', 'sight': '1400'}
+- **nwat** watcher {'goldcost': '140', 'HP': '300', 'spd': '280', 'sight': '1400'}
+- **nzlc** lichking {'HP': '100', 'sight': '600'}
+- **odkt** drakthul {'goldcost': '145', 'lumbercost': '20', 'HP': '675', 'spd': '270', 'sight': '1400'}
+- **ogrk** garthok {'goldcost': '200', 'HP': '700', 'spd': '270', 'sight': '1400'}
+- **ojgn** juggernaut {'goldcost': '500', 'lumbercost': '200', 'HP': '1000', 'spd': '270', 'sight': '1600'}
+- **omtg** mathog {'goldcost': '130', 'HP': '340', 'spd': '240', 'sight': '1400'}
+- **onzg** nazgrel {'goldcost': '180', 'lumbercost': '40', 'HP': '610', 'spd': '350', 'sight': '1400'}
+- **oosc** kotobeastnorider {'goldcost': '195', 'lumbercost': '35', 'HP': '330', 'spd': '180', 'sight': '1400'}
+- **oswy** spiritwyvern {'goldcost': '130', 'HP': '520', 'spd': '350', 'sight': '1400'}
+- **ovlj** voljin {'goldcost': '145', 'lumbercost': '25', 'HP': '315', 'spd': '270', 'sight': '1400'}
+- **owar** chaoswarlord {'goldcost': '130', 'HP': '340', 'spd': '240', 'sight': '1400'}
+- **ownr** riderlesswyvern {'goldcost': '130', 'HP': '520', 'spd': '350', 'sight': '1400'}
+- **uabc** abominationcinematic {'goldcost': '240', 'lumbercost': '70', 'HP': '1080', 'spd': '270', 'sight': '1400'}
+- **uarb** airbarge {'goldcost': '240', 'lumbercost': '60', 'HP': '500', 'spd': '270', 'sight': '1400'}
+- **ubdd** azurelordfrostwyrm {'goldcost': '385', 'lumbercost': '120', 'HP': '1100', 'spd': '270', 'sight': '1600'}
+- **ubdr** azureloredragon {'goldcost': '595', 'lumbercost': '200', 'HP': '1800', 'spd': '300', 'sight': '1400'}
+- **ubot** undeadtransportship {'goldcost': '170', 'lumbercost': '50', 'HP': '1500', 'spd': '320', 'sight': '1400'}
+- **udes** undeaddestroyer {'goldcost': '250', 'lumbercost': '100', 'HP': '575', 'spd': '350', 'sight': '1500'}
+- **uktg** kelthuzadghost {'goldcost': '195', 'HP': '280', 'spd': '240', 'sight': '1400'}
+- **uktn** kelthuzadnecro {'goldcost': '195', 'HP': '280', 'spd': '240', 'sight': '1400'}
+- **uswb** sylvanusbanshee {'goldcost': '225', 'HP': '400', 'spd': '270', 'sight': '1400'}
+- **haro** arcaneobservatory {'goldcost': '240', 'lumbercost': '100', 'HP': '1200', 'sight': '900'}
+- **nbfl** bloodfountain {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **nbse** bindstonese {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **nbsm** bookofsummoning {'goldcost': '50', 'HP': '50', 'sight': '900'}
+- **nbsw** bindstonesw {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **nbt1** bouldertower {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **nbt2** bouldertowerupgrade {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **nbwd** barrowden {'goldcost': '210', 'lumbercost': '100', 'HP': '1100', 'sight': '900'}
+- **ncap** corruptedancientprotector {'goldcost': '240', 'lumbercost': '130', 'HP': '500', 'spd': '40', 'sight': '1900'}
+- **ncaw** corruptedancientofwar {'goldcost': '255', 'lumbercost': '70', 'HP': '800', 'spd': '40', 'sight': '900'}
+- **ncmw** corruptedmoonwell {'goldcost': '155', 'lumbercost': '40', 'HP': '600', 'sight': '900'}
+- **ncta** corruptedtreeofages {'goldcost': '270', 'lumbercost': '80', 'HP': '2000', 'spd': '40', 'sight': '900'}
+- **ncte** corruptedtreeofeternity {'goldcost': '300', 'lumbercost': '120', 'HP': '2500', 'spd': '40', 'sight': '900'}
+- **nctl** corruptedtreeoflife {'goldcost': '385', 'HP': '1500', 'spd': '40', 'sight': '900'}
+- **ndfl** defiledfountainoflife {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **ndgt** dalaranguardtower {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **ndke** darkportalse {'goldcost': '50', 'HP': '2000', 'sight': '400'}
+- **ndkw** darkportalsw {'goldcost': '50', 'HP': '2000', 'sight': '400'}
+- **ndmg** demongate {'goldcost': '50', 'HP': '2000', 'sight': '400'}
+- **ndrb** dragonbuilding {'goldcost': '50', 'HP': '1200', 'sight': '1900'}
+- **ndt1** coldtower {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **ndt2** coldtowerupgrade {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **nef0** elvenfarm0 {'goldcost': '70', 'lumbercost': '20', 'HP': '500', 'sight': '900'}
+- **nef1** elvenfarm1 {'goldcost': '70', 'lumbercost': '20', 'HP': '500', 'sight': '900'}
+- **nef2** elvenfarm2 {'goldcost': '70', 'lumbercost': '20', 'HP': '500', 'sight': '900'}
+- **nef3** elvenfarm3 {'goldcost': '70', 'lumbercost': '20', 'HP': '500', 'sight': '900'}
+- **nef4** elvenfarm4 {'goldcost': '70', 'lumbercost': '20', 'HP': '500', 'sight': '900'}
+- **nef5** elvenfarm5 {'goldcost': '70', 'lumbercost': '20', 'HP': '500', 'sight': '900'}
+- **nef6** elvenfarm6 {'goldcost': '70', 'lumbercost': '20', 'HP': '500', 'sight': '900'}
+- **nef7** elvenfarm7 {'goldcost': '70', 'lumbercost': '20', 'HP': '500', 'sight': '900'}
+- **nefm** elvenfarm {'goldcost': '70', 'lumbercost': '20', 'HP': '400', 'sight': '900'}
+- **negf** earthfurytower {'goldcost': '120', 'lumbercost': '60', 'HP': '550', 'sight': '1900'}
+- **negm** skyfurytower {'goldcost': '120', 'lumbercost': '60', 'HP': '450', 'sight': '1900'}
+- **negt** elvenguardtower {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **net1** energytower {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **net2** energytowerupgrade {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **nfnp** purplefountain {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **nfrm** frostmourne {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **nfrt** fruitstand {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **nft1** flametower {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **nft2** flametowerupgrade {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **nfv0** elvenfishingvillage0 {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **nfv1** elvenfishingvillage1 {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **nfv2** elvenfishingvillage2 {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **nfv3** elvenfishingvillage3 {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **nfv4** elvenfishingvillage4 {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **ngob** gemstoneobelisk {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **nhcn** hornofcenarius {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **nheb** highelfbarracks {'goldcost': '255', 'lumbercost': '80', 'HP': '1200', 'sight': '900'}
+- **nico** icecrownobelisk {'goldcost': '50', 'HP': '150000', 'sight': '900'}
+- **nitb** treasurebox {'goldcost': '50', 'HP': '500', 'sight': '900'}
+- **nmgv** magicvault {'goldcost': '50', 'HP': '500', 'sight': '900'}
+- **nnad** altarofthedepths {'goldcost': '255', 'lumbercost': '100', 'HP': '900', 'sight': '1800'}
+- **nnfm** coralbed {'goldcost': '115', 'lumbercost': '40', 'HP': '500', 'sight': '1200'}
+- **nnsa** shrineofazshara {'goldcost': '180', 'lumbercost': '70', 'HP': '1050', 'sight': '900'}
+- **nnsg** spawninggrounds {'goldcost': '205', 'lumbercost': '60', 'HP': '1500', 'sight': '900'}
+- **nntg** tidalguardian {'goldcost': '130', 'lumbercost': '80', 'HP': '500', 'sight': '1800'}
+- **nntt** templeoftides {'goldcost': '385', 'lumbercost': '150', 'HP': '1500', 'sight': '900'}
+- **npgf** pigfarm {'goldcost': '115', 'lumbercost': '40', 'HP': '500', 'sight': '1900'}
+- **npgr** powergenerator {'goldcost': '50', 'HP': '500', 'sight': '900'}
+- **nshr** shrine {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **ntt1** deathtower {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **ntx2** deathtowerupgrade {'goldcost': '120', 'lumbercost': '60', 'HP': '500', 'sight': '1900'}
+- **nvr0** ruinedelvenfishingvillage0 {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **nvr1** ruinedelvenfishingvillage1 {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **nvr2** ruinedelvenfishingvillage2 {'goldcost': '50', 'HP': '1200', 'sight': '900'}
+- **nwc1** wyverncage1 {'goldcost': '50', 'HP': '500', 'sight': '900'}
+- **nwc2** wyverncage2 {'goldcost': '50', 'HP': '500', 'sight': '900'}
+- **nzin** zoneindicator {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **ocbw** chaosorcburrow {'goldcost': '160', 'lumbercost': '70', 'HP': '600', 'sight': '800'}
+- **zcso** chaosspaceorc {'goldcost': '215', 'lumbercost': '10', 'HP': '540', 'spd': '270', 'sight': '1400'}
+- **zhyd** hydralisk {'goldcost': '280', 'lumbercost': '30', 'HP': '700', 'spd': '270', 'sight': '1400'}
+- **zjug** orcjuggernaut {'goldcost': '205', 'lumbercost': '30', 'HP': '520', 'spd': '270', 'sight': '1400'}
+- **zmar** marine {'goldcost': '215', 'HP': '520', 'spd': '270', 'sight': '1400'}
+- **zshv** theshoveler {'goldcost': '680', 'lumbercost': '200', 'HP': '850', 'spd': '270', 'sight': '1400'}
+- **zsmc** sammycube {'goldcost': '425', 'lumbercost': '150', 'HP': '500', 'spd': '270', 'sight': '1400'}
+- **zzrg** zergling {'goldcost': '85', 'HP': '250', 'spd': '270', 'sight': '1400'}
+- **e000** shasure_e000 {'goldcost': '32', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e001** shasure_e001 {'goldcost': '128', 'HP': '40', 'spd': '270', 'sight': '1000'}
+- **e002** shasure_e002 {'goldcost': '512', 'HP': '80', 'spd': '270', 'sight': '1000'}
+- **e003** shasure_e003 {'goldcost': '2048', 'HP': '160', 'spd': '270', 'sight': '1000'}
+- **e004** shasure_e004 {'goldcost': '8192', 'HP': '320', 'spd': '270', 'sight': '1000'}
+- **e005** shasure_e005 {'goldcost': '32768', 'lumbercost': '256', 'HP': '800', 'spd': '270', 'sight': '1000'}
+- **u000** shasure_u000 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u001** shasure_u001 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u002** shasure_u002 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u003** shasure_u003 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u004** shasure_u004 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u005** shasure_u005 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u006** shasure_u006 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u007** shasure_u007 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u008** shasure_u008 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u009** shasure_u009 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00A** shasure_u00A {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00B** shasure_u00B {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00C** shasure_u00C {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00D** shasure_u00D {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00E** shasure_u00E {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00F** shasure_u00F {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00G** shasure_u00G {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00H** shasure_u00H {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00I** shasure_u00I {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00J** shasure_u00J {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00K** shasure_u00K {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00L** shasure_u00L {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00M** shasure_u00M {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00N** shasure_u00N {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00O** shasure_u00O {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00P** shasure_u00P {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00Q** shasure_u00Q {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00R** shasure_u00R {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00S** shasure_u00S {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00T** shasure_u00T {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00U** shasure_u00U {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00V** shasure_u00V {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00W** shasure_u00W {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00X** shasure_u00X {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u00Y** shasure_u00Y {'HP': '10', 'sight': '1600'}
+- **u00Z** shasure_u00Z {'goldcost': '50', 'HP': '20', 'sight': '1600'}
+- **u010** shasure_u010 {'goldcost': '100', 'HP': '40', 'sight': '1600'}
+- **u011** shasure_u011 {'goldcost': '200', 'HP': '80', 'sight': '1600'}
+- **u012** shasure_u012 {'goldcost': '400', 'HP': '160', 'sight': '1600'}
+- **u013** shasure_u013 {'goldcost': '800', 'lumbercost': '30', 'HP': '320', 'sight': '1600'}
+- **u014** shasure_u014 {'goldcost': '1600', 'lumbercost': '60', 'HP': '640', 'sight': '1600'}
+- **u015** shasure_u015 {'goldcost': '3200', 'lumbercost': '128', 'HP': '1280', 'sight': '1600'}
+- **u016** shasure_u016 {'goldcost': '6400', 'lumbercost': '256', 'HP': '2560', 'sight': '1600'}
+- **u017** shasure_u017 {'goldcost': '12800', 'lumbercost': '512', 'HP': '5120', 'sight': '1600'}
+- **u018** shasure_u018 {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **u019** shasure_u019 {'goldcost': '256', 'HP': '100', 'sight': '1600'}
+- **u01A** shasure_u01A {'goldcost': '1024', 'HP': '200', 'sight': '1600'}
+- **u01B** shasure_u01B {'lumbercost': '512', 'HP': '400', 'sight': '1600'}
+- **u01C** shasure_u01C {'goldcost': '32', 'HP': '25', 'sight': '1600'}
+- **u01D** shasure_u01D {'goldcost': '256', 'HP': '100', 'sight': '1600'}
+- **u01E** shasure_u01E {'lumbercost': '256', 'HP': '10', 'sight': '1200'}
+- **h000** shasure_h000 {'goldcost': '4', 'HP': '10', 'sight': '800'}
+- **h001** shasure_h001 {'goldcost': '16', 'HP': '15', 'sight': '1600'}
+- **h002** shasure_h002 {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **h003** shasure_h003 {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **h004** shasure_h004 {'goldcost': '128', 'HP': '80', 'sight': '1600'}
+- **h005** shasure_h005 {'goldcost': '256', 'HP': '140', 'sight': '1600'}
+- **h006** shasure_h006 {'goldcost': '512', 'lumbercost': '16', 'HP': '200', 'sight': '1600'}
+- **h007** shasure_h007 {'goldcost': '1024', 'lumbercost': '32', 'HP': '250', 'sight': '1600'}
+- **h008** shasure_h008 {'goldcost': '2048', 'lumbercost': '64', 'HP': '500', 'sight': '1600'}
+- **h009** shasure_h009 {'goldcost': '4096', 'lumbercost': '128', 'HP': '1000', 'sight': '1600'}
+- **h00A** shasure_h00A {'goldcost': '8192', 'lumbercost': '256', 'HP': '1000', 'sight': '1600'}
+- **h00B** shasure_h00B {'lumbercost': '10240', 'HP': '32000', 'sight': '1600'}
+- **h00C** shasure_h00C {'lumbercost': '25600', 'HP': '64000', 'sight': '1600'}
+- **h00D** shasure_h00D {'lumbercost': '160000', 'HP': '128000', 'sight': '1600'}
+- **h00E** shasure_h00E {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '250000', 'sight': '1600'}
+- **u01F** shasure_u01F {'goldcost': '4', 'HP': '50', 'sight': '800'}
+- **u01G** shasure_u01G {'goldcost': '8', 'HP': '80', 'sight': '1600'}
+- **u01H** shasure_u01H {'goldcost': '16', 'HP': '140', 'sight': '1600'}
+- **u01I** shasure_u01I {'goldcost': '32', 'HP': '200', 'sight': '1600'}
+- **u01J** shasure_u01J {'goldcost': '64', 'HP': '250', 'sight': '1600'}
+- **u01K** shasure_u01K {'goldcost': '128', 'HP': '320', 'sight': '1600'}
+- **u01L** shasure_u01L {'goldcost': '256', 'HP': '640', 'sight': '1600'}
+- **u01M** shasure_u01M {'goldcost': '512', 'HP': '1280', 'sight': '1600'}
+- **u01N** shasure_u01N {'goldcost': '1024', 'HP': '2560', 'sight': '1600'}
+- **u01O** shasure_u01O {'goldcost': '2048', 'HP': '5120', 'sight': '1600'}
+- **u01P** shasure_u01P {'goldcost': '4096', 'lumbercost': '32', 'HP': '10240', 'sight': '1600'}
+- **u01Q** shasure_u01Q {'goldcost': '8192', 'lumbercost': '64', 'HP': '20480', 'sight': '1600'}
+- **u01R** shasure_u01R {'goldcost': '16384', 'lumbercost': '128', 'HP': '40960', 'sight': '1600'}
+- **u01S** shasure_u01S {'goldcost': '32768', 'lumbercost': '256', 'HP': '81920', 'sight': '1600'}
+- **u01T** shasure_u01T {'goldcost': '65536', 'lumbercost': '512', 'HP': '163840', 'sight': '1600'}
+- **u01U** shasure_u01U {'goldcost': '131072', 'lumbercost': '1024', 'HP': '327680', 'sight': '1600'}
+- **u01V** shasure_u01V {'goldcost': '163840', 'lumbercost': '12800', 'HP': '655360', 'sight': '1600'}
+- **u01W** shasure_u01W {'goldcost': '920000', 'lumbercost': '920000', 'HP': '920000', 'sight': '1600'}
+- **u01X** shasure_u01X {'goldcost': '120', 'HP': '300', 'sight': '1600'}
+- **u01Y** shasure_u01Y {'goldcost': '240', 'HP': '600', 'sight': '1600'}
+- **u01Z** shasure_u01Z {'goldcost': '480', 'HP': '1200', 'sight': '1600'}
+- **u020** shasure_u020 {'goldcost': '960', 'HP': '2400', 'sight': '1600'}
+- **u021** shasure_u021 {'goldcost': '1920', 'HP': '4800', 'sight': '1600'}
+- **u022** shasure_u022 {'goldcost': '3840', 'lumbercost': '30', 'HP': '9600', 'sight': '1600'}
+- **u023** shasure_u023 {'goldcost': '7680', 'lumbercost': '60', 'HP': '19200', 'sight': '1600'}
+- **u024** shasure_u024 {'goldcost': '15360', 'lumbercost': '120', 'HP': '38400', 'sight': '1600'}
+- **u025** shasure_u025 {'goldcost': '30720', 'lumbercost': '240', 'HP': '76800', 'sight': '1600'}
+- **u026** shasure_u026 {'goldcost': '61440', 'lumbercost': '480', 'HP': '153600', 'sight': '1600'}
+- **u027** shasure_u027 {'goldcost': '122880', 'lumbercost': '960', 'HP': '327680', 'sight': '1600'}
+- **u028** shasure_u028 {'goldcost': '153600', 'lumbercost': '12000', 'HP': '655360', 'sight': '1600'}
+- **u029** shasure_u029 {'goldcost': '880000', 'lumbercost': '880000', 'HP': '880000', 'sight': '1600'}
+- **u02A** shasure_u02A {'goldcost': '128', 'HP': '320', 'spd': '270', 'sight': '1600'}
+- **u02B** shasure_u02B {'goldcost': '256', 'HP': '640', 'spd': '270', 'sight': '1600'}
+- **u02C** shasure_u02C {'goldcost': '512', 'HP': '1280', 'spd': '270', 'sight': '1600'}
+- **u02D** shasure_u02D {'goldcost': '1024', 'HP': '2560', 'spd': '270', 'sight': '1600'}
+- **u02E** shasure_u02E {'goldcost': '2048', 'HP': '5120', 'spd': '270', 'sight': '1600'}
+- **u02F** shasure_u02F {'goldcost': '4096', 'lumbercost': '32', 'HP': '10240', 'spd': '270', 'sight': '1600'}
+- **u02G** shasure_u02G {'goldcost': '8192', 'lumbercost': '64', 'HP': '20480', 'spd': '270', 'sight': '1600'}
+- **u02H** shasure_u02H {'goldcost': '16384', 'lumbercost': '128', 'HP': '40960', 'spd': '270', 'sight': '1600'}
+- **u02I** shasure_u02I {'goldcost': '32768', 'lumbercost': '256', 'HP': '81920', 'spd': '270', 'sight': '1600'}
+- **u02J** shasure_u02J {'goldcost': '65536', 'lumbercost': '512', 'HP': '163840', 'spd': '270', 'sight': '1600'}
+- **u02K** shasure_u02K {'goldcost': '131072', 'lumbercost': '1024', 'HP': '327680', 'spd': '270', 'sight': '1600'}
+- **u02L** shasure_u02L {'goldcost': '163840', 'lumbercost': '12800', 'HP': '655360', 'spd': '270', 'sight': '1600'}
+- **u02M** shasure_u02M {'goldcost': '920000', 'lumbercost': '920000', 'HP': '920000', 'spd': '270', 'sight': '1600'}
+- **u02N** shasure_u02N {'goldcost': '136', 'HP': '340', 'sight': '1600'}
+- **u02O** shasure_u02O {'goldcost': '272', 'HP': '680', 'sight': '1600'}
+- **u02P** shasure_u02P {'goldcost': '544', 'HP': '1360', 'sight': '1600'}
+- **u02Q** shasure_u02Q {'goldcost': '1088', 'HP': '2720', 'sight': '1600'}
+- **u02R** shasure_u02R {'goldcost': '2176', 'HP': '5440', 'sight': '1600'}
+- **u02S** shasure_u02S {'goldcost': '4352', 'lumbercost': '34', 'HP': '10880', 'sight': '1600'}
+- **u02T** shasure_u02T {'goldcost': '8704', 'lumbercost': '68', 'HP': '21760', 'sight': '1600'}
+- **u02U** shasure_u02U {'goldcost': '17408', 'lumbercost': '136', 'HP': '43520', 'sight': '1600'}
+- **u02V** shasure_u02V {'goldcost': '34816', 'lumbercost': '272', 'HP': '87040', 'sight': '1600'}
+- **u02W** shasure_u02W {'goldcost': '68632', 'lumbercost': '544', 'HP': '174080', 'sight': '1600'}
+- **u02X** shasure_u02X {'goldcost': '139264', 'lumbercost': '1088', 'HP': '327680', 'sight': '1600'}
+- **u02Y** shasure_u02Y {'goldcost': '174080', 'lumbercost': '13600', 'HP': '655360', 'sight': '1600'}
+- **u02Z** shasure_u02Z {'goldcost': '960000', 'lumbercost': '960000', 'HP': '960000', 'sight': '1600'}
+- **u030** shasure_u030 {'goldcost': '144', 'HP': '360', 'sight': '1600'}
+- **u031** shasure_u031 {'goldcost': '288', 'HP': '720', 'sight': '1600'}
+- **u032** shasure_u032 {'goldcost': '576', 'HP': '1440', 'sight': '1600'}
+- **u033** shasure_u033 {'goldcost': '1152', 'HP': '2880', 'sight': '1600'}
+- **u034** shasure_u034 {'goldcost': '2304', 'HP': '5760', 'sight': '1600'}
+- **u035** shasure_u035 {'goldcost': '4608', 'lumbercost': '36', 'HP': '11520', 'sight': '1600'}
+- **u036** shasure_u036 {'goldcost': '9216', 'lumbercost': '72', 'HP': '23040', 'sight': '1600'}
+- **u037** shasure_u037 {'goldcost': '18432', 'lumbercost': '144', 'HP': '46080', 'sight': '1600'}
+- **u038** shasure_u038 {'goldcost': '36864', 'lumbercost': '288', 'HP': '92160', 'sight': '1600'}
+- **u039** shasure_u039 {'goldcost': '73728', 'lumbercost': '576', 'HP': '184320', 'sight': '1600'}
+- **u03A** shasure_u03A {'goldcost': '147456', 'lumbercost': '1152', 'HP': '327680', 'sight': '1600'}
+- **u03B** shasure_u03B {'goldcost': '184320', 'lumbercost': '14400', 'HP': '655360', 'sight': '1600'}
+- **u03C** shasure_u03C {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '1000000', 'sight': '1600'}
+- **e006** shasure_e006 {'goldcost': '520', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e007** shasure_e007 {'goldcost': '1100', 'HP': '40', 'spd': '270', 'sight': '1000'}
+- **e008** shasure_e008 {'goldcost': '2000', 'HP': '80', 'spd': '270', 'sight': '1000'}
+- **e009** shasure_e009 {'goldcost': '3600', 'HP': '160', 'spd': '270', 'sight': '1000'}
+- **e00A** shasure_e00A {'goldcost': '18000', 'HP': '320', 'spd': '270', 'sight': '1000'}
+- **e00B** shasure_e00B {'goldcost': '80000', 'HP': '640', 'spd': '270', 'sight': '1000'}
+- **e00C** shasure_e00C {'goldcost': '255000', 'HP': '1280', 'spd': '270', 'sight': '1000'}
+- **e00D** shasure_e00D {'goldcost': '1000000', 'HP': '2560', 'spd': '270', 'sight': '1000'}
+- **e00E** shasure_e00E {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '5120', 'spd': '270', 'sight': '1000'}
+- **e00F** shasure_e00F {'lumbercost': '1', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e00G** shasure_e00G {'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e00H** shasure_e00H {'goldcost': '90', 'HP': '50', 'sight': '900'}
+- **e00I** shasure_e00I {'lumbercost': '24', 'HP': '50', 'sight': '900'}
+- **e00J** shasure_e00J {'lumbercost': '200', 'HP': '50', 'sight': '900'}
+- **e00K** shasure_e00K {'lumbercost': '800', 'HP': '50', 'sight': '900'}
+- **e00L** shasure_e00L {'lumbercost': '3200', 'HP': '50', 'sight': '900'}
+- **e00M** shasure_e00M {'lumbercost': '12800', 'HP': '50', 'sight': '900'}
+- **e00N** shasure_e00N {'lumbercost': '51200', 'HP': '50', 'sight': '900'}
+- **e00O** shasure_e00O {'lumbercost': '200000', 'HP': '50', 'sight': '900'}
+- **e00P** shasure_e00P {'lumbercost': '1000000', 'HP': '50', 'sight': '900'}
+- **n000** shasure_n000 {'lumbercost': '512', 'HP': '10', 'spd': '310', 'sight': '1200'}
+- **e00Q** shasure_e00Q {'goldcost': '2560', 'lumbercost': '80', 'HP': '300', 'spd': '280', 'sight': '1400'}
+- **e00R** shasure_e00R {'goldcost': '5120', 'lumbercost': '160', 'HP': '575', 'spd': '350', 'sight': '1400'}
+- **h00F** shasure_h00F {'goldcost': '7680', 'lumbercost': '240', 'HP': '650', 'spd': '300', 'sight': '1400'}
+- **n001** shasure_n001 {'goldcost': '15360', 'lumbercost': '480', 'HP': '550', 'spd': '300', 'sight': '1400'}
+- **e00S** shasure_e00S {'lumbercost': '7680', 'HP': '102400', 'spd': '220', 'sight': '1200'}
+- **e00T** shasure_e00T {'lumbercost': '15360', 'HP': '256000', 'spd': '270', 'sight': '1200'}
+- **e00U** shasure_e00U {'lumbercost': '51200', 'HP': '256000', 'spd': '350', 'sight': '1400'}
+- **e00V** shasure_e00V {'goldcost': '135', 'lumbercost': '20', 'HP': '256000', 'spd': '280', 'sight': '1600'}
+- **e00W** shasure_e00W {'lumbercost': '99999', 'HP': '256000', 'spd': '270', 'sight': '1400'}
+- **e00X** shasure_e00X {'goldcost': '255', 'lumbercost': '80', 'HP': '655350', 'spd': '350', 'sight': '1400'}
+- **o000** shasure_o000 {'goldcost': '100', 'HP': '30', 'spd': '190', 'sight': '800'}
+- **o001** shasure_o001 {'goldcost': '3200', 'HP': '800', 'spd': '270', 'sight': '1200'}
+- **o002** shasure_o002 {'goldcost': '800', 'HP': '800', 'spd': '350', 'sight': '1400'}
+- **o003** shasure_o003 {'goldcost': '400', 'HP': '500', 'sight': '1000'}
+- **u03D** shasure_u03D {'goldcost': '200', 'HP': '550', 'sight': '1000'}
+- **u03E** shasure_u03E {'goldcost': '400', 'HP': '550', 'sight': '1000'}
+- **u03F** shasure_u03F {'goldcost': '800', 'HP': '550', 'sight': '1000'}
+- **u03G** shasure_u03G {'goldcost': '1600', 'HP': '550', 'sight': '1000'}
+- **u03H** shasure_u03H {'lumbercost': '8', 'HP': '550', 'sight': '1000'}
+- **u03I** shasure_u03I {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u03J** shasure_u03J {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u03K** shasure_u03K {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u03L** shasure_u03L {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u03M** shasure_u03M {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u03N** shasure_u03N {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **o004** shasure_o004 {'HP': '200', 'sight': '1600'}
+- **o005** shasure_o005 {'HP': '5', 'sight': '600'}
+- **o006** shasure_o006 {'HP': '100', 'sight': '600'}
+- **o007** shasure_o007 {'HP': '5', 'sight': '600'}
+- **o008** shasure_o008 {'HP': '200', 'sight': '1600'}
+- **e00Y** shasure_e00Y {'goldcost': '135', 'lumbercost': '20', 'HP': '5120000', 'spd': '500', 'sight': '1400'}
+- **n002** shasure_n002 {'goldcost': '50', 'HP': '150000', 'sight': '500'}
+- **n003** shasure_n003 {'HP': '150000', 'sight': '200'}
+- **u03O** shasure_u03O {'goldcost': '150', 'lumbercost': '50', 'HP': '50', 'sight': '1600'}
+- **u03P** shasure_u03P {'goldcost': '150', 'lumbercost': '50', 'HP': '50', 'sight': '1600'}
+- **u03Q** shasure_u03Q {'goldcost': '150', 'lumbercost': '50', 'HP': '50', 'sight': '1600'}
+- **e00Z** shasure_e00Z {'goldcost': '60', 'HP': '120', 'sight': '1000'}
+- **u03R** shasure_u03R {'goldcost': '150', 'lumbercost': '50', 'HP': '50', 'sight': '1600'}
+- **e010** shasure_e010 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e011** shasure_e011 {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **h00G** shasure_h00G {'goldcost': '135', 'HP': '100', 'sight': '1400'}
+- **e012** shasure_e012 {'goldcost': '60', 'HP': '100', 'spd': '1'}
+- **e013** shasure_e013 {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e016** shasure_e016 {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **H00H** shasure_H00H {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00I** shasure_H00I {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00J** shasure_H00J {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00K** shasure_H00K {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00L** shasure_H00L {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00M** shasure_H00M {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00N** shasure_H00N {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00O** shasure_H00O {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00P** shasure_H00P {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00Q** shasure_H00Q {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00R** shasure_H00R {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00S** shasure_H00S {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00T** shasure_H00T {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00U** shasure_H00U {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00V** shasure_H00V {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00W** shasure_H00W {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00X** shasure_H00X {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00Y** shasure_H00Y {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H00Z** shasure_H00Z {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H010** shasure_H010 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H011** shasure_H011 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H012** shasure_H012 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H013** shasure_H013 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H014** shasure_H014 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H015** shasure_H015 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H016** shasure_H016 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H017** shasure_H017 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H018** shasure_H018 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H019** shasure_H019 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01A** shasure_H01A {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01B** shasure_H01B {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01C** shasure_H01C {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01D** shasure_H01D {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01E** shasure_H01E {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01F** shasure_H01F {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01G** shasure_H01G {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01H** shasure_H01H {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01I** shasure_H01I {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01J** shasure_H01J {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01K** shasure_H01K {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01L** shasure_H01L {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01M** shasure_H01M {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01N** shasure_H01N {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01O** shasure_H01O {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01P** shasure_H01P {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01Q** shasure_H01Q {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01R** shasure_H01R {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01S** shasure_H01S {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01T** shasure_H01T {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01U** shasure_H01U {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01V** shasure_H01V {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01W** shasure_H01W {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01X** shasure_H01X {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01Y** shasure_H01Y {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H01Z** shasure_H01Z {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H020** shasure_H020 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H021** shasure_H021 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H022** shasure_H022 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H023** shasure_H023 {'goldcost': '425', 'lumbercost': '100', 'HP': '32', 'spd': '280', 'sight': '1200'}
+- **H024** shasure_H024 {'goldcost': '425', 'lumbercost': '100', 'HP': '32', 'spd': '280', 'sight': '1200'}
+- **H025** shasure_H025 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H026** shasure_H026 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H027** shasure_H027 {'lumbercost': '6', 'HP': '50000', 'spd': '350', 'sight': '1400'}
+- **H028** shasure_H028 {'goldcost': '425', 'lumbercost': '100', 'HP': '32', 'spd': '280', 'sight': '800'}
+- **H029** shasure_H029 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02A** shasure_H02A {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **e015** shasure_e015 {'goldcost': '60', 'HP': '120', 'spd': '522', 'sight': '1800'}
+- **e014** shasure_e014 {'goldcost': '60', 'HP': '120', 'spd': '522', 'sight': '1800'}
+- **e017** shasure_e017 {'goldcost': '60', 'HP': '120', 'spd': '522', 'sight': '1800'}
+- **e018** shasure_e018 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **u03S** shasure_u03S {'goldcost': '256', 'HP': '200', 'spd': '120', 'sight': '1600'}
+- **h02B** shasure_h02B {'goldcost': '32768', 'lumbercost': '1024', 'HP': '5120', 'sight': '1600'}
+- **H02C** shasure_H02C {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02D** shasure_H02D {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02E** shasure_H02E {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02F** shasure_H02F {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02G** shasure_H02G {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02H** shasure_H02H {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02I** shasure_H02I {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02J** shasure_H02J {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02K** shasure_H02K {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02L** shasure_H02L {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02M** shasure_H02M {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02N** shasure_H02N {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02O** shasure_H02O {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02P** shasure_H02P {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02Q** shasure_H02Q {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02R** shasure_H02R {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02S** shasure_H02S {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02T** shasure_H02T {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02U** shasure_H02U {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02V** shasure_H02V {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02W** shasure_H02W {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02X** shasure_H02X {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02Y** shasure_H02Y {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H02Z** shasure_H02Z {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H030** shasure_H030 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H031** shasure_H031 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H032** shasure_H032 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H033** shasure_H033 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H034** shasure_H034 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H035** shasure_H035 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H036** shasure_H036 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H037** shasure_H037 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H038** shasure_H038 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H039** shasure_H039 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03A** shasure_H03A {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03B** shasure_H03B {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03C** shasure_H03C {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03D** shasure_H03D {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03E** shasure_H03E {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03F** shasure_H03F {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03G** shasure_H03G {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03H** shasure_H03H {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03I** shasure_H03I {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03J** shasure_H03J {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03K** shasure_H03K {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03L** shasure_H03L {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03M** shasure_H03M {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03N** shasure_H03N {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03O** shasure_H03O {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03P** shasure_H03P {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03Q** shasure_H03Q {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03R** shasure_H03R {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03S** shasure_H03S {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03T** shasure_H03T {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03U** shasure_H03U {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H03V** shasure_H03V {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **u03T** shasure_u03T {'HP': '10', 'sight': '1600'}
+- **u03U** shasure_u03U {'goldcost': '50', 'HP': '20', 'sight': '1600'}
+- **u03V** shasure_u03V {'goldcost': '100', 'HP': '40', 'sight': '1600'}
+- **u03W** shasure_u03W {'goldcost': '200', 'HP': '80', 'sight': '1600'}
+- **u03X** shasure_u03X {'goldcost': '400', 'HP': '160', 'sight': '1600'}
+- **u03Y** shasure_u03Y {'goldcost': '800', 'lumbercost': '30', 'HP': '320', 'sight': '1600'}
+- **u03Z** shasure_u03Z {'goldcost': '1600', 'lumbercost': '60', 'HP': '640', 'sight': '1600'}
+- **u040** shasure_u040 {'goldcost': '3200', 'lumbercost': '128', 'HP': '1280', 'sight': '1600'}
+- **u041** shasure_u041 {'goldcost': '6400', 'lumbercost': '256', 'HP': '2560', 'sight': '1600'}
+- **u042** shasure_u042 {'goldcost': '12800', 'lumbercost': '512', 'HP': '5120', 'sight': '1600'}
+- **u043** shasure_u043 {'goldcost': '64', 'HP': '25', 'sight': '1600'}
+- **u044** shasure_u044 {'goldcost': '256', 'HP': '50', 'sight': '1600'}
+- **u045** shasure_u045 {'goldcost': '1024', 'HP': '100', 'sight': '1600'}
+- **u046** shasure_u046 {'goldcost': '4', 'HP': '50', 'sight': '1600'}
+- **u047** shasure_u047 {'goldcost': '8', 'HP': '80', 'sight': '1600'}
+- **u048** shasure_u048 {'goldcost': '16', 'HP': '140', 'sight': '1600'}
+- **u049** shasure_u049 {'goldcost': '32', 'HP': '200', 'sight': '1600'}
+- **u04A** shasure_u04A {'goldcost': '64', 'HP': '250', 'sight': '1600'}
+- **u04B** shasure_u04B {'goldcost': '128', 'HP': '320', 'sight': '1600'}
+- **u04C** shasure_u04C {'goldcost': '256', 'HP': '640', 'sight': '1600'}
+- **u04D** shasure_u04D {'goldcost': '512', 'HP': '1280', 'sight': '1600'}
+- **u04E** shasure_u04E {'goldcost': '1024', 'HP': '2560', 'sight': '1600'}
+- **u04F** shasure_u04F {'goldcost': '2048', 'HP': '5120', 'sight': '1600'}
+- **u04G** shasure_u04G {'goldcost': '4096', 'lumbercost': '32', 'HP': '10240', 'sight': '1600'}
+- **u04H** shasure_u04H {'goldcost': '8192', 'lumbercost': '64', 'HP': '20480', 'sight': '1600'}
+- **u04I** shasure_u04I {'goldcost': '16384', 'lumbercost': '128', 'HP': '40960', 'sight': '1600'}
+- **u04J** shasure_u04J {'goldcost': '32768', 'lumbercost': '256', 'HP': '81920', 'sight': '1600'}
+- **u04K** shasure_u04K {'goldcost': '65536', 'lumbercost': '512', 'HP': '163840', 'sight': '1600'}
+- **u04L** shasure_u04L {'goldcost': '131072', 'lumbercost': '1024', 'HP': '327680', 'sight': '1600'}
+- **u04M** shasure_u04M {'goldcost': '160000', 'lumbercost': '10240', 'HP': '655360', 'sight': '1600'}
+- **u04N** shasure_u04N {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '1000000', 'sight': '1600'}
+- **u04O** shasure_u04O {'lumbercost': '512', 'HP': '200', 'sight': '1600'}
+- **u04P** shasure_u04P {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **u04Q** shasure_u04Q {'goldcost': '256', 'HP': '50', 'sight': '1600'}
+- **u04R** shasure_u04R {'goldcost': '256', 'HP': '200', 'spd': '120', 'sight': '500'}
+- **u04S** shasure_u04S {'lumbercost': '256', 'HP': '10', 'sight': '1200'}
+- **h03W** shasure_h03W {'goldcost': '16', 'HP': '10', 'sight': '1600'}
+- **h03X** shasure_h03X {'goldcost': '16', 'HP': '15', 'sight': '1600'}
+- **h03Y** shasure_h03Y {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **h03Z** shasure_h03Z {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **h040** shasure_h040 {'goldcost': '128', 'HP': '80', 'sight': '1600'}
+- **h041** shasure_h041 {'goldcost': '256', 'HP': '140', 'sight': '1600'}
+- **h042** shasure_h042 {'goldcost': '512', 'lumbercost': '16', 'HP': '200', 'sight': '1600'}
+- **h043** shasure_h043 {'goldcost': '1024', 'lumbercost': '32', 'HP': '250', 'sight': '1600'}
+- **h044** shasure_h044 {'goldcost': '2048', 'lumbercost': '64', 'HP': '500', 'sight': '1600'}
+- **h045** shasure_h045 {'goldcost': '4096', 'lumbercost': '128', 'HP': '1000', 'sight': '1600'}
+- **h046** shasure_h046 {'goldcost': '8192', 'lumbercost': '256', 'HP': '1000', 'sight': '1600'}
+- **h047** shasure_h047 {'goldcost': '32768', 'lumbercost': '1024', 'HP': '1000', 'sight': '1600'}
+- **h048** shasure_h048 {'lumbercost': '10240', 'HP': '25600', 'sight': '1600'}
+- **h049** shasure_h049 {'lumbercost': '25600', 'HP': '51200', 'sight': '1600'}
+- **h04A** shasure_h04A {'lumbercost': '128000', 'HP': '204800', 'sight': '1600'}
+- **h04B** shasure_h04B {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '250000', 'sight': '1600'}
+- **e019** shasure_e019 {'goldcost': '32', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e01A** shasure_e01A {'goldcost': '128', 'HP': '40', 'spd': '270', 'sight': '1000'}
+- **e01B** shasure_e01B {'goldcost': '512', 'HP': '80', 'spd': '270', 'sight': '1000'}
+- **e01C** shasure_e01C {'goldcost': '2048', 'HP': '160', 'spd': '270', 'sight': '1000'}
+- **e01D** shasure_e01D {'goldcost': '8192', 'HP': '320', 'spd': '270', 'sight': '1000'}
+- **n004** shasure_n004 {'lumbercost': '512', 'HP': '10', 'spd': '310', 'sight': '1200'}
+- **n005** shasure_n005 {'goldcost': '15360', 'lumbercost': '480', 'HP': '550', 'spd': '300', 'sight': '1400'}
+- **e01E** shasure_e01E {'goldcost': '2560', 'lumbercost': '80', 'HP': '300', 'spd': '280', 'sight': '1400'}
+- **h04C** shasure_h04C {'goldcost': '7680', 'lumbercost': '240', 'HP': '650', 'spd': '300', 'sight': '1400'}
+- **e01F** shasure_e01F {'goldcost': '5120', 'lumbercost': '160', 'HP': '575', 'spd': '350', 'sight': '1400'}
+- **e01G** shasure_e01G {'lumbercost': '7680', 'HP': '102400', 'spd': '220', 'sight': '1200'}
+- **e01H** shasure_e01H {'lumbercost': '15360', 'HP': '256000', 'spd': '270', 'sight': '1200'}
+- **e01I** shasure_e01I {'lumbercost': '51200', 'HP': '256000', 'spd': '350', 'sight': '1400'}
+- **e01J** shasure_e01J {'goldcost': '135', 'lumbercost': '20', 'HP': '256000', 'spd': '280', 'sight': '1600'}
+- **e01K** shasure_e01K {'lumbercost': '99999', 'HP': '256000', 'spd': '270', 'sight': '1400'}
+- **e01L** shasure_e01L {'goldcost': '255', 'lumbercost': '80', 'HP': '655350', 'spd': '350', 'sight': '1400'}
+- **e01M** shasure_e01M {'goldcost': '520', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e01N** shasure_e01N {'goldcost': '1100', 'HP': '40', 'spd': '270', 'sight': '1000'}
+- **e01O** shasure_e01O {'goldcost': '2000', 'HP': '80', 'spd': '270', 'sight': '1000'}
+- **e01P** shasure_e01P {'goldcost': '3600', 'HP': '160', 'spd': '270', 'sight': '1000'}
+- **e01Q** shasure_e01Q {'goldcost': '18000', 'HP': '320', 'spd': '270', 'sight': '1000'}
+- **e01R** shasure_e01R {'goldcost': '80000', 'HP': '640', 'spd': '270', 'sight': '1000'}
+- **e01S** shasure_e01S {'goldcost': '255000', 'HP': '1280', 'spd': '270', 'sight': '1000'}
+- **e01T** shasure_e01T {'goldcost': '1000000', 'HP': '2560', 'spd': '270', 'sight': '1000'}
+- **e01U** shasure_e01U {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '5120', 'spd': '270', 'sight': '1000'}
+- **e01V** shasure_e01V {'lumbercost': '1', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e01W** shasure_e01W {'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e01X** shasure_e01X {'goldcost': '80', 'HP': '50', 'sight': '900'}
+- **e01Y** shasure_e01Y {'lumbercost': '24', 'HP': '50', 'sight': '900'}
+- **e01Z** shasure_e01Z {'lumbercost': '200', 'HP': '50', 'sight': '900'}
+- **e020** shasure_e020 {'lumbercost': '800', 'HP': '50', 'sight': '900'}
+- **e021** shasure_e021 {'lumbercost': '3200', 'HP': '50', 'sight': '900'}
+- **e022** shasure_e022 {'lumbercost': '12800', 'HP': '50', 'sight': '900'}
+- **e023** shasure_e023 {'lumbercost': '51200', 'HP': '50', 'sight': '900'}
+- **e024** shasure_e024 {'lumbercost': '200000', 'HP': '50', 'sight': '900'}
+- **e025** shasure_e025 {'lumbercost': '1000000', 'HP': '50', 'sight': '900'}
+- **o009** shasure_o009 {'goldcost': '100', 'HP': '50', 'spd': '190', 'sight': '800'}
+- **o00A** shasure_o00A {'goldcost': '3200', 'HP': '800', 'spd': '270', 'sight': '1200'}
+- **o00B** shasure_o00B {'goldcost': '800', 'HP': '800', 'spd': '350', 'sight': '1400'}
+- **o00C** shasure_o00C {'goldcost': '400', 'HP': '500', 'sight': '1000'}
+- **u04T** shasure_u04T {'goldcost': '200', 'HP': '550', 'sight': '1000'}
+- **u04U** shasure_u04U {'goldcost': '400', 'HP': '550', 'sight': '1000'}
+- **u04V** shasure_u04V {'goldcost': '800', 'HP': '550', 'sight': '1000'}
+- **u04W** shasure_u04W {'goldcost': '1600', 'HP': '550', 'sight': '1000'}
+- **u04X** shasure_u04X {'goldcost': '3200', 'HP': '550', 'sight': '1000'}
+- **u04Y** shasure_u04Y {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u04Z** shasure_u04Z {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u050** shasure_u050 {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u051** shasure_u051 {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u052** shasure_u052 {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u053** shasure_u053 {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **e026** shasure_e026 {'goldcost': '135', 'lumbercost': '20', 'HP': '5120000', 'spd': '500', 'sight': '1400'}
+- **H04D** shasure_H04D {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04E** shasure_H04E {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04F** shasure_H04F {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04G** shasure_H04G {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04H** shasure_H04H {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04I** shasure_H04I {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04J** shasure_H04J {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04K** shasure_H04K {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04L** shasure_H04L {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04M** shasure_H04M {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04N** shasure_H04N {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04O** shasure_H04O {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04P** shasure_H04P {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04Q** shasure_H04Q {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04R** shasure_H04R {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04S** shasure_H04S {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04T** shasure_H04T {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04U** shasure_H04U {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04V** shasure_H04V {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04W** shasure_H04W {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04X** shasure_H04X {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04Y** shasure_H04Y {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H04Z** shasure_H04Z {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H050** shasure_H050 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H051** shasure_H051 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H052** shasure_H052 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H053** shasure_H053 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H054** shasure_H054 {'goldcost': '425', 'lumbercost': '100', 'HP': '10', 'spd': '250', 'sight': '1200'}
+- **H055** shasure_H055 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H056** shasure_H056 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H057** shasure_H057 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H058** shasure_H058 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H059** shasure_H059 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05A** shasure_H05A {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05B** shasure_H05B {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05C** shasure_H05C {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05D** shasure_H05D {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05E** shasure_H05E {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05F** shasure_H05F {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05G** shasure_H05G {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05H** shasure_H05H {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05I** shasure_H05I {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05J** shasure_H05J {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05K** shasure_H05K {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05L** shasure_H05L {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05M** shasure_H05M {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05N** shasure_H05N {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05O** shasure_H05O {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05P** shasure_H05P {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05Q** shasure_H05Q {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05R** shasure_H05R {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05S** shasure_H05S {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05T** shasure_H05T {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05U** shasure_H05U {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05V** shasure_H05V {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05W** shasure_H05W {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H05X** shasure_H05X {'goldcost': '425', 'lumbercost': '100', 'HP': '32', 'spd': '280', 'sight': '1200'}
+- **H05Y** shasure_H05Y {'goldcost': '425', 'lumbercost': '100', 'HP': '32', 'spd': '280', 'sight': '1200'}
+- **H05Z** shasure_H05Z {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H060** shasure_H060 {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **H061** shasure_H061 {'lumbercost': '8', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **e027** shasure_e027 {'goldcost': '32', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e028** shasure_e028 {'goldcost': '128', 'HP': '40', 'spd': '270', 'sight': '1000'}
+- **e029** shasure_e029 {'goldcost': '512', 'HP': '80', 'spd': '270', 'sight': '1000'}
+- **e02A** shasure_e02A {'goldcost': '2048', 'HP': '160', 'spd': '270', 'sight': '1000'}
+- **e02B** shasure_e02B {'goldcost': '8192', 'HP': '320', 'spd': '270', 'sight': '1000'}
+- **e02C** shasure_e02C {'goldcost': '1000000', 'HP': '640', 'spd': '270', 'sight': '1000'}
+- **e02D** shasure_e02D {'goldcost': '520', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e02E** shasure_e02E {'goldcost': '1100', 'HP': '40', 'spd': '270', 'sight': '1000'}
+- **e02F** shasure_e02F {'goldcost': '2000', 'HP': '80', 'spd': '270', 'sight': '1000'}
+- **e02G** shasure_e02G {'goldcost': '3600', 'HP': '160', 'spd': '270', 'sight': '1000'}
+- **e02H** shasure_e02H {'goldcost': '18000', 'HP': '320', 'spd': '270', 'sight': '1000'}
+- **e02I** shasure_e02I {'goldcost': '80000', 'HP': '640', 'spd': '270', 'sight': '1000'}
+- **e02J** shasure_e02J {'goldcost': '255000', 'HP': '1280', 'spd': '270', 'sight': '1000'}
+- **e02K** shasure_e02K {'goldcost': '1000000', 'HP': '2560', 'spd': '270', 'sight': '1000'}
+- **e02L** shasure_e02L {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '5120', 'spd': '270', 'sight': '1000'}
+- **e02M** shasure_e02M {'lumbercost': '1', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e02N** shasure_e02N {'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e02O** shasure_e02O {'goldcost': '140', 'HP': '50', 'sight': '900'}
+- **e02P** shasure_e02P {'lumbercost': '24', 'HP': '50', 'sight': '900'}
+- **e02Q** shasure_e02Q {'lumbercost': '200', 'HP': '50', 'sight': '900'}
+- **e02R** shasure_e02R {'lumbercost': '800', 'HP': '50', 'sight': '900'}
+- **e02S** shasure_e02S {'lumbercost': '3200', 'HP': '50', 'sight': '900'}
+- **e02T** shasure_e02T {'lumbercost': '12800', 'HP': '50', 'sight': '900'}
+- **e02U** shasure_e02U {'lumbercost': '51200', 'HP': '50', 'sight': '900'}
+- **e02V** shasure_e02V {'lumbercost': '250000', 'HP': '50', 'sight': '900'}
+- **e02W** shasure_e02W {'lumbercost': '1000000', 'HP': '50', 'sight': '900'}
+- **n006** shasure_n006 {'lumbercost': '512', 'HP': '10', 'spd': '310', 'sight': '1200'}
+- **e02X** shasure_e02X {'goldcost': '2048', 'HP': '300', 'spd': '280', 'sight': '1400'}
+- **e02Y** shasure_e02Y {'goldcost': '5120', 'lumbercost': '256', 'HP': '575', 'spd': '350', 'sight': '1400'}
+- **h062** shasure_h062 {'goldcost': '7680', 'lumbercost': '240', 'HP': '650', 'spd': '300', 'sight': '1400'}
+- **n007** shasure_n007 {'goldcost': '15360', 'lumbercost': '512', 'HP': '550', 'spd': '300', 'sight': '1400'}
+- **e02Z** shasure_e02Z {'lumbercost': '7680', 'HP': '102400', 'spd': '220', 'sight': '1200'}
+- **e030** shasure_e030 {'lumbercost': '25600', 'HP': '256000', 'spd': '270', 'sight': '1200'}
+- **e031** shasure_e031 {'lumbercost': '51200', 'HP': '256000', 'spd': '350', 'sight': '1400'}
+- **e032** shasure_e032 {'goldcost': '135', 'lumbercost': '20', 'HP': '256000', 'spd': '280', 'sight': '1600'}
+- **e033** shasure_e033 {'lumbercost': '99999', 'HP': '256000', 'spd': '270', 'sight': '1400'}
+- **e034** shasure_e034 {'goldcost': '255', 'lumbercost': '80', 'HP': '655350', 'spd': '350', 'sight': '1400'}
+- **e035** shasure_e035 {'goldcost': '135', 'lumbercost': '20', 'HP': '5120000', 'spd': '500', 'sight': '1400'}
+- **u054** shasure_u054 {'HP': '10', 'sight': '1600'}
+- **u055** shasure_u055 {'goldcost': '25', 'HP': '20', 'sight': '1600'}
+- **u056** shasure_u056 {'goldcost': '50', 'HP': '40', 'sight': '1600'}
+- **u057** shasure_u057 {'goldcost': '100', 'HP': '80', 'sight': '1600'}
+- **u058** shasure_u058 {'goldcost': '320', 'HP': '160', 'sight': '1600'}
+- **u059** shasure_u059 {'goldcost': '800', 'lumbercost': '30', 'HP': '320', 'sight': '1600'}
+- **u05A** shasure_u05A {'goldcost': '1600', 'lumbercost': '60', 'HP': '640', 'sight': '1600'}
+- **u05B** shasure_u05B {'goldcost': '3200', 'lumbercost': '128', 'HP': '1280', 'sight': '1600'}
+- **u05C** shasure_u05C {'goldcost': '6400', 'lumbercost': '256', 'HP': '2560', 'sight': '1600'}
+- **u05D** shasure_u05D {'goldcost': '12800', 'lumbercost': '512', 'HP': '5120', 'sight': '1600'}
+- **u05E** shasure_u05E {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **u05F** shasure_u05F {'goldcost': '16', 'HP': '25', 'sight': '1600'}
+- **u05G** shasure_u05G {'goldcost': '32', 'HP': '50', 'sight': '1600'}
+- **u05H** shasure_u05H {'goldcost': '64', 'HP': '100', 'sight': '1600'}
+- **u05I** shasure_u05I {'lumbercost': '64', 'HP': '200', 'sight': '1600'}
+- **u05J** shasure_u05J {'goldcost': '256', 'HP': '50', 'sight': '1600'}
+- **u05K** shasure_u05K {'lumbercost': '256', 'HP': '10', 'sight': '1200'}
+- **u05L** shasure_u05L {'HP': '50', 'sight': '1600'}
+- **u05M** shasure_u05M {'HP': '80', 'sight': '1600'}
+- **u05N** shasure_u05N {'HP': '140', 'sight': '1600'}
+- **u05O** shasure_u05O {'HP': '200', 'sight': '1600'}
+- **u05P** shasure_u05P {'HP': '250', 'sight': '1600'}
+- **u05Q** shasure_u05Q {'HP': '320', 'sight': '1600'}
+- **u05R** shasure_u05R {'HP': '640', 'sight': '1600'}
+- **u05S** shasure_u05S {'HP': '1280', 'sight': '1600'}
+- **u05T** shasure_u05T {'HP': '2560', 'sight': '1600'}
+- **u05U** shasure_u05U {'goldcost': '1024', 'HP': '5120', 'sight': '1600'}
+- **u05V** shasure_u05V {'goldcost': '2048', 'lumbercost': '8', 'HP': '10240', 'sight': '1600'}
+- **u05W** shasure_u05W {'goldcost': '4096', 'lumbercost': '16', 'HP': '20480', 'sight': '1600'}
+- **u05X** shasure_u05X {'goldcost': '8192', 'lumbercost': '32', 'HP': '40960', 'sight': '1600'}
+- **u05Y** shasure_u05Y {'goldcost': '16384', 'lumbercost': '64', 'HP': '81920', 'sight': '1600'}
+- **u05Z** shasure_u05Z {'goldcost': '32768', 'lumbercost': '128', 'HP': '163840', 'sight': '1600'}
+- **u060** shasure_u060 {'goldcost': '65536', 'lumbercost': '256', 'HP': '327680', 'sight': '1600'}
+- **u061** shasure_u061 {'goldcost': '80000', 'lumbercost': '5120', 'HP': '655360', 'sight': '1600'}
+- **u062** shasure_u062 {'goldcost': '800000', 'lumbercost': '800000', 'HP': '1000000', 'sight': '1600'}
+- **u063** shasure_u063 {'goldcost': '850000', 'lumbercost': '850000', 'HP': '1250000', 'sight': '1600'}
+- **u064** shasure_u064 {'goldcost': '900000', 'lumbercost': '900000', 'HP': '1500000', 'sight': '1600'}
+- **u065** shasure_u065 {'goldcost': '950000', 'lumbercost': '950000', 'HP': '1750000', 'sight': '1600'}
+- **u066** shasure_u066 {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '2000000', 'sight': '1600'}
+- **h063** shasure_h063 {'goldcost': '16', 'HP': '10', 'sight': '1600'}
+- **h064** shasure_h064 {'goldcost': '16', 'HP': '15', 'sight': '1600'}
+- **h065** shasure_h065 {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **h066** shasure_h066 {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **h067** shasure_h067 {'goldcost': '128', 'HP': '80', 'sight': '1600'}
+- **h068** shasure_h068 {'goldcost': '256', 'HP': '140', 'sight': '1600'}
+- **h069** shasure_h069 {'goldcost': '512', 'lumbercost': '16', 'HP': '200', 'sight': '1600'}
+- **h06A** shasure_h06A {'goldcost': '1024', 'lumbercost': '32', 'HP': '250', 'sight': '1600'}
+- **h06B** shasure_h06B {'goldcost': '2048', 'lumbercost': '128', 'HP': '500', 'sight': '1600'}
+- **h06C** shasure_h06C {'goldcost': '4096', 'lumbercost': '256', 'HP': '1000', 'sight': '1600'}
+- **h06D** shasure_h06D {'goldcost': '8192', 'lumbercost': '512', 'HP': '1000', 'sight': '1600'}
+- **h06E** shasure_h06E {'goldcost': '32768', 'lumbercost': '8192', 'HP': '1000', 'sight': '1600'}
+- **h06F** shasure_h06F {'lumbercost': '81920', 'HP': '25600', 'sight': '1600'}
+- **h06G** shasure_h06G {'lumbercost': '256000', 'HP': '51200', 'sight': '1600'}
+- **h06H** shasure_h06H {'lumbercost': '1000000', 'HP': '204800', 'sight': '1600'}
+- **h06I** shasure_h06I {'goldcost': '800000', 'lumbercost': '800000', 'HP': '300000', 'sight': '1600'}
+- **h06J** shasure_h06J {'goldcost': '850000', 'lumbercost': '850000', 'HP': '350000', 'sight': '1600'}
+- **h06K** shasure_h06K {'goldcost': '900000', 'lumbercost': '900000', 'HP': '400000', 'sight': '1600'}
+- **h06L** shasure_h06L {'goldcost': '950000', 'lumbercost': '950000', 'HP': '450000', 'sight': '1600'}
+- **h06M** shasure_h06M {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '500000', 'sight': '1600'}
+- **h06N** shasure_h06N {'goldcost': '1000', 'HP': '1000', 'sight': '1600'}
+- **h06O** shasure_h06O {'goldcost': '10000', 'HP': '1000', 'sight': '1600'}
+- **h06P** shasure_h06P {'goldcost': '100000', 'HP': '1000', 'sight': '1600'}
+- **h06Q** shasure_h06Q {'goldcost': '1000000', 'HP': '1000', 'sight': '1600'}
+- **o00D** shasure_o00D {'goldcost': '10', 'HP': '50', 'spd': '190', 'sight': '800'}
+- **o00E** shasure_o00E {'goldcost': '3200', 'HP': '800', 'spd': '522', 'sight': '1200'}
+- **o00F** shasure_o00F {'goldcost': '800', 'HP': '800', 'spd': '350', 'sight': '1400'}
+- **o00G** shasure_o00G {'goldcost': '400', 'HP': '500', 'sight': '1000'}
+- **u067** shasure_u067 {'goldcost': '250', 'HP': '550', 'sight': '1000'}
+- **u068** shasure_u068 {'lumbercost': '1000', 'HP': '550', 'sight': '1000'}
+- **u069** shasure_u069 {'goldcost': '1000', 'HP': '550', 'sight': '1000'}
+- **u06A** shasure_u06A {'goldcost': '2000', 'HP': '550', 'sight': '1000'}
+- **u06B** shasure_u06B {'goldcost': '4000', 'HP': '550', 'sight': '1000'}
+- **u06C** shasure_u06C {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u06D** shasure_u06D {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u06E** shasure_u06E {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u06F** shasure_u06F {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u06G** shasure_u06G {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u06H** shasure_u06H {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **o00H** shasure_o00H {'goldcost': '400', 'HP': '500', 'sight': '1000'}
+- **H06R** shasure_H06R {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H06S** shasure_H06S {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H06T** shasure_H06T {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H06U** shasure_H06U {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H06V** shasure_H06V {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H06W** shasure_H06W {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H06X** shasure_H06X {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H06Y** shasure_H06Y {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H06Z** shasure_H06Z {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H070** shasure_H070 {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H071** shasure_H071 {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H072** shasure_H072 {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H073** shasure_H073 {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H074** shasure_H074 {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H075** shasure_H075 {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H076** shasure_H076 {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H077** shasure_H077 {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H078** shasure_H078 {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H079** shasure_H079 {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H07A** shasure_H07A {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H07B** shasure_H07B {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H07C** shasure_H07C {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H07D** shasure_H07D {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H07E** shasure_H07E {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H07F** shasure_H07F {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H07G** shasure_H07G {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H07H** shasure_H07H {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H07I** shasure_H07I {'goldcost': '425', 'lumbercost': '100', 'HP': '50', 'spd': '250', 'sight': '1200'}
+- **H07J** shasure_H07J {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07K** shasure_H07K {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07L** shasure_H07L {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07M** shasure_H07M {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07N** shasure_H07N {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07O** shasure_H07O {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07P** shasure_H07P {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07Q** shasure_H07Q {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07R** shasure_H07R {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07S** shasure_H07S {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07T** shasure_H07T {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07U** shasure_H07U {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07V** shasure_H07V {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07W** shasure_H07W {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07X** shasure_H07X {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07Y** shasure_H07Y {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H07Z** shasure_H07Z {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H080** shasure_H080 {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H081** shasure_H081 {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H082** shasure_H082 {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H083** shasure_H083 {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H084** shasure_H084 {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H085** shasure_H085 {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H086** shasure_H086 {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H087** shasure_H087 {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H088** shasure_H088 {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H089** shasure_H089 {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H08A** shasure_H08A {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H08B** shasure_H08B {'goldcost': '425', 'lumbercost': '100', 'HP': '32', 'spd': '250', 'sight': '1200'}
+- **H08C** shasure_H08C {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '250', 'sight': '1200'}
+- **H08D** shasure_H08D {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H08E** shasure_H08E {'goldcost': '425', 'lumbercost': '100', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **H08F** shasure_H08F {'goldcost': '2333', 'lumbercost': '2333', 'HP': '1500', 'spd': '350', 'sight': '1400'}
+- **u06I** shasure_u06I {'goldcost': '150', 'lumbercost': '50', 'HP': '50', 'sight': '1600'}
+- **u06J** shasure_u06J {'goldcost': '256', 'HP': '200', 'spd': '120', 'sight': '1600'}
+- **n008** shasure_n008 {'goldcost': '50', 'HP': '320', 'sight': '500'}
+- **H08G** shasure_H08G {'goldcost': '425', 'lumbercost': '100', 'HP': '32', 'spd': '280', 'sight': '800'}
+- **H08H** shasure_H08H {'goldcost': '425', 'lumbercost': '100', 'HP': '750', 'spd': '350', 'sight': '1400'}
+- **e036** shasure_e036 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **u06K** shasure_u06K {'goldcost': '150', 'lumbercost': '50', 'HP': '50', 'sight': '1600'}
+- **u06L** shasure_u06L {'goldcost': '150', 'lumbercost': '50', 'HP': '50', 'sight': '1600'}
+- **e037** shasure_e037 {'goldcost': '60', 'HP': '100', 'spd': '100'}
+- **h08I** shasure_h08I {'goldcost': '135', 'HP': '100', 'sight': '1400'}
+- **u06M** shasure_u06M {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1000'}
+- **e038** shasure_e038 {'goldcost': '60', 'HP': '100', 'spd': '100'}
+- **e039** shasure_e039 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03A** shasure_e03A {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03B** shasure_e03B {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03C** shasure_e03C {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03D** shasure_e03D {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03E** shasure_e03E {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03F** shasure_e03F {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e03G** shasure_e03G {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e03H** shasure_e03H {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03I** shasure_e03I {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03J** shasure_e03J {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e03K** shasure_e03K {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03L** shasure_e03L {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03M** shasure_e03M {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03N** shasure_e03N {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03O** shasure_e03O {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03P** shasure_e03P {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03Q** shasure_e03Q {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03R** shasure_e03R {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03S** shasure_e03S {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03T** shasure_e03T {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03U** shasure_e03U {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03V** shasure_e03V {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03W** shasure_e03W {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03X** shasure_e03X {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03Y** shasure_e03Y {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e03Z** shasure_e03Z {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e040** shasure_e040 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e041** shasure_e041 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e042** shasure_e042 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e043** shasure_e043 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e044** shasure_e044 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e045** shasure_e045 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e046** shasure_e046 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **u06N** shasure_u06N {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '1000', 'sight': '1600'}
+- **e047** shasure_e047 {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '100', 'spd': '270', 'sight': '1000'}
+- **e048** shasure_e048 {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '100', 'spd': '270', 'sight': '1000'}
+- **u06O** shasure_u06O {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '2500000', 'sight': '1600'}
+- **e049** shasure_e049 {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **h08J** shasure_h08J {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **h08K** shasure_h08K {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **h08L** shasure_h08L {'goldcost': '128', 'HP': '80', 'sight': '1600'}
+- **h08M** shasure_h08M {'goldcost': '256', 'HP': '140', 'sight': '1600'}
+- **h08N** shasure_h08N {'goldcost': '512', 'lumbercost': '16', 'HP': '200', 'sight': '1600'}
+- **h08O** shasure_h08O {'goldcost': '1024', 'lumbercost': '32', 'HP': '250', 'sight': '1600'}
+- **h08P** shasure_h08P {'goldcost': '2048', 'lumbercost': '64', 'HP': '500', 'sight': '1600'}
+- **h08Q** shasure_h08Q {'goldcost': '4096', 'lumbercost': '128', 'HP': '1000', 'sight': '1600'}
+- **h08R** shasure_h08R {'goldcost': '4', 'HP': '10', 'sight': '800'}
+- **h08S** shasure_h08S {'goldcost': '16', 'HP': '15', 'sight': '1600'}
+- **h08T** shasure_h08T {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **h08U** shasure_h08U {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **h08V** shasure_h08V {'goldcost': '128', 'HP': '80', 'sight': '1600'}
+- **h08W** shasure_h08W {'goldcost': '256', 'HP': '140', 'sight': '1600'}
+- **h08X** shasure_h08X {'goldcost': '512', 'lumbercost': '16', 'HP': '200', 'sight': '1600'}
+- **h08Y** shasure_h08Y {'goldcost': '1024', 'lumbercost': '32', 'HP': '250', 'sight': '1600'}
+- **h08Z** shasure_h08Z {'goldcost': '2048', 'lumbercost': '64', 'HP': '500', 'sight': '1600'}
+- **h090** shasure_h090 {'goldcost': '4096', 'lumbercost': '128', 'HP': '1000', 'sight': '1600'}
+- **h091** shasure_h091 {'goldcost': '8192', 'lumbercost': '256', 'HP': '1000', 'sight': '1600'}
+- **h092** shasure_h092 {'goldcost': '32768', 'lumbercost': '1024', 'HP': '5120', 'sight': '1600'}
+- **h093** shasure_h093 {'lumbercost': '10240', 'HP': '32000', 'sight': '1600'}
+- **h094** shasure_h094 {'lumbercost': '25600', 'HP': '64000', 'sight': '1600'}
+- **h095** shasure_h095 {'lumbercost': '160000', 'HP': '128000', 'sight': '1600'}
+- **h096** shasure_h096 {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '250000', 'sight': '1600'}
+- **h097** shasure_h097 {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **h098** shasure_h098 {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **h099** shasure_h099 {'goldcost': '128', 'HP': '80', 'sight': '1600'}
+- **h09A** shasure_h09A {'goldcost': '256', 'HP': '140', 'sight': '1600'}
+- **h09B** shasure_h09B {'goldcost': '512', 'lumbercost': '16', 'HP': '200', 'sight': '1600'}
+- **h09C** shasure_h09C {'goldcost': '1024', 'lumbercost': '32', 'HP': '250', 'sight': '1600'}
+- **h09D** shasure_h09D {'goldcost': '2048', 'lumbercost': '64', 'HP': '500', 'sight': '1600'}
+- **h09E** shasure_h09E {'goldcost': '4096', 'lumbercost': '128', 'HP': '1000', 'sight': '1600'}
+- **e04A** shasure_e04A {'lumbercost': '640', 'HP': '50', 'sight': '900'}
+- **e04B** shasure_e04B {'lumbercost': '2560', 'HP': '50', 'sight': '900'}
+- **e04C** shasure_e04C {'lumbercost': '10240', 'HP': '50', 'sight': '900'}
+- **e04D** shasure_e04D {'lumbercost': '40960', 'HP': '50', 'sight': '900'}
+- **e04E** shasure_e04E {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '800'}
+- **o00I** shasure_o00I {'lumbercost': '500', 'HP': '500000', 'spd': '522', 'sight': '1200'}
+- **o00J** shasure_o00J {'lumbercost': '10', 'HP': '10240', 'spd': '190', 'sight': '800'}
+- **o00K** shasure_o00K {'lumbercost': '200', 'HP': '160000', 'spd': '350', 'sight': '1400'}
+- **u06P** shasure_u06P {'goldcost': '8', 'HP': '10', 'sight': '1600'}
+- **u06Q** shasure_u06Q {'goldcost': '8', 'HP': '10', 'sight': '1600'}
+- **H09F** shasure_H09F {'goldcost': '425', 'lumbercost': '100', 'HP': '500', 'spd': '522', 'sight': '1400'}
+- **H09G** shasure_H09G {'goldcost': '425', 'lumbercost': '100', 'HP': '500', 'spd': '522', 'sight': '1400'}
+- **u06R** shasure_u06R {'goldcost': '200', 'HP': '550', 'sight': '1000'}
+- **e04F** shasure_e04F {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **H09H** shasure_H09H {'goldcost': '425', 'lumbercost': '100', 'HP': '120', 'spd': '522', 'sight': '1000'}
+- **H09I** shasure_H09I {'goldcost': '425', 'lumbercost': '100', 'HP': '120', 'spd': '522', 'sight': '1000'}
+- **H09J** shasure_H09J {'goldcost': '425', 'lumbercost': '100', 'HP': '120', 'spd': '522', 'sight': '1000'}
+- **u06S** shasure_u06S {'goldcost': '144', 'HP': '360', 'sight': '1600'}
+- **u06T** shasure_u06T {'goldcost': '288', 'HP': '720', 'sight': '1600'}
+- **u06U** shasure_u06U {'goldcost': '576', 'HP': '1440', 'sight': '1600'}
+- **u06V** shasure_u06V {'goldcost': '1152', 'HP': '2880', 'sight': '1600'}
+- **u06W** shasure_u06W {'goldcost': '2304', 'HP': '5760', 'sight': '1600'}
+- **u06X** shasure_u06X {'goldcost': '4608', 'lumbercost': '36', 'HP': '11520', 'sight': '1600'}
+- **u06Y** shasure_u06Y {'goldcost': '9216', 'lumbercost': '72', 'HP': '23040', 'sight': '1600'}
+- **u06Z** shasure_u06Z {'goldcost': '18432', 'lumbercost': '144', 'HP': '46080', 'sight': '1600'}
+- **u070** shasure_u070 {'goldcost': '36864', 'lumbercost': '288', 'HP': '92160', 'sight': '1600'}
+- **u071** shasure_u071 {'goldcost': '73728', 'lumbercost': '576', 'HP': '184320', 'sight': '1600'}
+- **u072** shasure_u072 {'goldcost': '147456', 'lumbercost': '1152', 'HP': '327680', 'sight': '1600'}
+- **u073** shasure_u073 {'goldcost': '184320', 'lumbercost': '14400', 'HP': '655360', 'sight': '1600'}
+- **u074** shasure_u074 {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '1000000', 'sight': '1600'}
+- **e04G** shasure_e04G {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e04H** shasure_e04H {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e04I** shasure_e04I {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e04J** shasure_e04J {'goldcost': '60', 'HP': '100', 'spd': '1'}
+- **u075** shasure_u075 {'goldcost': '112', 'HP': '280', 'sight': '1600'}
+- **u076** shasure_u076 {'goldcost': '224', 'HP': '560', 'sight': '1600'}
+- **u077** shasure_u077 {'goldcost': '448', 'HP': '1120', 'sight': '1600'}
+- **u078** shasure_u078 {'goldcost': '896', 'HP': '2240', 'sight': '1600'}
+- **u079** shasure_u079 {'goldcost': '1792', 'HP': '4480', 'sight': '1600'}
+- **u07A** shasure_u07A {'goldcost': '3584', 'lumbercost': '28', 'HP': '8960', 'sight': '1600'}
+- **u07B** shasure_u07B {'goldcost': '7168', 'lumbercost': '56', 'HP': '17920', 'sight': '1600'}
+- **u07C** shasure_u07C {'goldcost': '14336', 'lumbercost': '112', 'HP': '35840', 'sight': '1600'}
+- **u07D** shasure_u07D {'goldcost': '28672', 'lumbercost': '224', 'HP': '71680', 'sight': '1600'}
+- **u07E** shasure_u07E {'goldcost': '57344', 'lumbercost': '448', 'HP': '143360', 'sight': '1600'}
+- **u07F** shasure_u07F {'goldcost': '114688', 'lumbercost': '896', 'HP': '286720', 'sight': '1600'}
+- **u07G** shasure_u07G {'goldcost': '143360', 'lumbercost': '11200', 'HP': '573440', 'sight': '1600'}
+- **u07H** shasure_u07H {'goldcost': '840000', 'lumbercost': '840000', 'HP': '840000', 'sight': '1600'}
+- **u07I** shasure_u07I {'goldcost': '128', 'HP': '320', 'sight': '1600'}
+- **u07J** shasure_u07J {'goldcost': '256', 'HP': '640', 'sight': '1600'}
+- **u07K** shasure_u07K {'goldcost': '512', 'HP': '1280', 'sight': '1600'}
+- **u07L** shasure_u07L {'goldcost': '1024', 'HP': '2560', 'sight': '1600'}
+- **u07M** shasure_u07M {'goldcost': '2048', 'HP': '5120', 'sight': '1600'}
+- **u07N** shasure_u07N {'goldcost': '4096', 'lumbercost': '32', 'HP': '10240', 'sight': '1600'}
+- **u07O** shasure_u07O {'goldcost': '8192', 'lumbercost': '64', 'HP': '20480', 'sight': '1600'}
+- **u07P** shasure_u07P {'goldcost': '16384', 'lumbercost': '128', 'HP': '40960', 'sight': '1600'}
+- **u07Q** shasure_u07Q {'goldcost': '32768', 'lumbercost': '256', 'HP': '81920', 'sight': '1600'}
+- **u07R** shasure_u07R {'goldcost': '65536', 'lumbercost': '512', 'HP': '163840', 'sight': '1600'}
+- **u07S** shasure_u07S {'goldcost': '131072', 'lumbercost': '1024', 'HP': '327680', 'sight': '1600'}
+- **u07T** shasure_u07T {'goldcost': '163840', 'lumbercost': '12800', 'HP': '655360', 'sight': '1600'}
+- **u07U** shasure_u07U {'goldcost': '920000', 'lumbercost': '920000', 'HP': '920000', 'sight': '1600'}
+- **u07V** shasure_u07V {'goldcost': '128', 'HP': '320', 'sight': '1600'}
+- **u07W** shasure_u07W {'goldcost': '136', 'HP': '340', 'sight': '1600'}
+- **u07X** shasure_u07X {'goldcost': '272', 'HP': '680', 'sight': '1600'}
+- **u07Y** shasure_u07Y {'goldcost': '544', 'HP': '1360', 'sight': '1600'}
+- **u07Z** shasure_u07Z {'goldcost': '1088', 'HP': '2720', 'sight': '1600'}
+- **u080** shasure_u080 {'goldcost': '2176', 'HP': '5440', 'sight': '1600'}
+- **u081** shasure_u081 {'goldcost': '4352', 'lumbercost': '34', 'HP': '10880', 'sight': '1600'}
+- **u082** shasure_u082 {'goldcost': '8704', 'lumbercost': '68', 'HP': '21760', 'sight': '1600'}
+- **u083** shasure_u083 {'goldcost': '17408', 'lumbercost': '136', 'HP': '43520', 'sight': '1600'}
+- **u084** shasure_u084 {'goldcost': '34816', 'lumbercost': '272', 'HP': '87040', 'sight': '1600'}
+- **u085** shasure_u085 {'goldcost': '69632', 'lumbercost': '544', 'HP': '174080', 'sight': '1600'}
+- **u086** shasure_u086 {'goldcost': '139264', 'lumbercost': '1088', 'HP': '327680', 'sight': '1600'}
+- **u087** shasure_u087 {'goldcost': '174080', 'lumbercost': '13600', 'HP': '655360', 'sight': '1600'}
+- **u088** shasure_u088 {'goldcost': '960000', 'lumbercost': '960000', 'HP': '960000', 'sight': '1600'}
+- **e04K** shasure_e04K {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e04L** shasure_e04L {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e04M** shasure_e04M {'goldcost': '1600', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e04N** shasure_e04N {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e04O** shasure_e04O {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e04P** shasure_e04P {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e04Q** shasure_e04Q {'goldcost': '32', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e04R** shasure_e04R {'goldcost': '128', 'HP': '40', 'spd': '270', 'sight': '1000'}
+- **e04S** shasure_e04S {'goldcost': '512', 'HP': '80', 'spd': '270', 'sight': '1000'}
+- **e04T** shasure_e04T {'goldcost': '2048', 'HP': '160', 'spd': '270', 'sight': '1000'}
+- **e04U** shasure_e04U {'goldcost': '8192', 'HP': '320', 'spd': '270', 'sight': '1000'}
+- **e04V** shasure_e04V {'goldcost': '32768', 'lumbercost': '256', 'HP': '800', 'spd': '270', 'sight': '1000'}
+- **u089** shasure_u089 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08A** shasure_u08A {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08B** shasure_u08B {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08C** shasure_u08C {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08D** shasure_u08D {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08E** shasure_u08E {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08F** shasure_u08F {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08G** shasure_u08G {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08H** shasure_u08H {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08I** shasure_u08I {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08J** shasure_u08J {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08K** shasure_u08K {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08L** shasure_u08L {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08M** shasure_u08M {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08N** shasure_u08N {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08O** shasure_u08O {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08P** shasure_u08P {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08Q** shasure_u08Q {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08R** shasure_u08R {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08S** shasure_u08S {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08T** shasure_u08T {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08U** shasure_u08U {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08V** shasure_u08V {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08W** shasure_u08W {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08X** shasure_u08X {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08Y** shasure_u08Y {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u08Z** shasure_u08Z {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u090** shasure_u090 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u091** shasure_u091 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u092** shasure_u092 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u093** shasure_u093 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u094** shasure_u094 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u095** shasure_u095 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u096** shasure_u096 {'goldcost': '150', 'lumbercost': '50', 'HP': '550', 'sight': '1600'}
+- **u097** shasure_u097 {'HP': '10', 'sight': '1600'}
+- **u098** shasure_u098 {'goldcost': '50', 'HP': '20', 'sight': '1600'}
+- **u099** shasure_u099 {'goldcost': '100', 'HP': '40', 'sight': '1600'}
+- **u09A** shasure_u09A {'goldcost': '200', 'HP': '80', 'sight': '1600'}
+- **u09B** shasure_u09B {'goldcost': '400', 'HP': '160', 'sight': '1600'}
+- **u09C** shasure_u09C {'goldcost': '800', 'lumbercost': '30', 'HP': '320', 'sight': '1600'}
+- **u09D** shasure_u09D {'goldcost': '1600', 'lumbercost': '60', 'HP': '640', 'sight': '1600'}
+- **u09E** shasure_u09E {'goldcost': '3200', 'lumbercost': '128', 'HP': '1280', 'sight': '1600'}
+- **u09F** shasure_u09F {'goldcost': '6400', 'lumbercost': '256', 'HP': '2560', 'sight': '1600'}
+- **u09G** shasure_u09G {'goldcost': '12800', 'lumbercost': '512', 'HP': '5120', 'sight': '1600'}
+- **u09H** shasure_u09H {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **u09I** shasure_u09I {'goldcost': '256', 'HP': '100', 'sight': '1600'}
+- **u09J** shasure_u09J {'goldcost': '1024', 'HP': '200', 'sight': '1600'}
+- **u09K** shasure_u09K {'lumbercost': '512', 'HP': '400', 'sight': '1600'}
+- **u09L** shasure_u09L {'goldcost': '32', 'HP': '25', 'sight': '1600'}
+- **u09M** shasure_u09M {'goldcost': '128', 'HP': '100', 'sight': '1600'}
+- **u09N** shasure_u09N {'lumbercost': '256', 'HP': '10', 'sight': '1200'}
+- **u09O** shasure_u09O {'HP': '100', 'sight': '800'}
+- **u09P** shasure_u09P {'HP': '175', 'sight': '1600'}
+- **u09Q** shasure_u09Q {'HP': '250', 'sight': '1600'}
+- **u09R** shasure_u09R {'HP': '325', 'sight': '1600'}
+- **u09S** shasure_u09S {'goldcost': '64', 'HP': '400', 'sight': '1600'}
+- **u09T** shasure_u09T {'goldcost': '128', 'HP': '480', 'sight': '1600'}
+- **u09U** shasure_u09U {'goldcost': '256', 'HP': '960', 'sight': '1600'}
+- **u09V** shasure_u09V {'goldcost': '512', 'HP': '1920', 'sight': '1600'}
+- **u09W** shasure_u09W {'goldcost': '1024', 'HP': '3840', 'sight': '1600'}
+- **u09X** shasure_u09X {'goldcost': '2048', 'HP': '7680', 'sight': '1600'}
+- **u09Y** shasure_u09Y {'goldcost': '4096', 'lumbercost': '32', 'HP': '15360', 'sight': '1600'}
+- **u09Z** shasure_u09Z {'goldcost': '8192', 'lumbercost': '64', 'HP': '30720', 'sight': '1600'}
+- **u0A0** shasure_u0A0 {'goldcost': '16384', 'lumbercost': '128', 'HP': '61440', 'sight': '1600'}
+- **u0A1** shasure_u0A1 {'goldcost': '32768', 'lumbercost': '256', 'HP': '122880', 'sight': '1600'}
+- **u0A2** shasure_u0A2 {'goldcost': '65536', 'lumbercost': '512', 'HP': '245760', 'sight': '1600'}
+- **u0A3** shasure_u0A3 {'goldcost': '131072', 'lumbercost': '1024', 'HP': '500000', 'sight': '1600'}
+- **u0A4** shasure_u0A4 {'goldcost': '163840', 'lumbercost': '12800', 'HP': '1000000', 'sight': '1600'}
+- **u0A5** shasure_u0A5 {'goldcost': '920000', 'lumbercost': '920000', 'HP': '1500000', 'sight': '1600'}
+- **u0A6** shasure_u0A6 {'goldcost': '3840', 'lumbercost': '30', 'HP': '14400', 'sight': '1600'}
+- **u0A7** shasure_u0A7 {'goldcost': '7680', 'lumbercost': '60', 'HP': '28800', 'sight': '1600'}
+- **u0A8** shasure_u0A8 {'goldcost': '15360', 'lumbercost': '120', 'HP': '57600', 'sight': '1600'}
+- **u0A9** shasure_u0A9 {'goldcost': '30720', 'lumbercost': '240', 'HP': '115200', 'sight': '1600'}
+- **u0AA** shasure_u0AA {'goldcost': '61440', 'lumbercost': '480', 'HP': '230400', 'sight': '1600'}
+- **u0AB** shasure_u0AB {'goldcost': '131072', 'lumbercost': '1024', 'HP': '500000', 'sight': '1600'}
+- **u0AC** shasure_u0AC {'goldcost': '163840', 'lumbercost': '12800', 'HP': '1000000', 'sight': '1600'}
+- **u0AD** shasure_u0AD {'goldcost': '880000', 'lumbercost': '880000', 'HP': '1500000', 'sight': '1600'}
+- **u0AE** shasure_u0AE {'goldcost': '4352', 'lumbercost': '34', 'HP': '16320', 'sight': '1600'}
+- **u0AF** shasure_u0AF {'goldcost': '8704', 'lumbercost': '68', 'HP': '32640', 'sight': '1600'}
+- **u0AG** shasure_u0AG {'goldcost': '17408', 'lumbercost': '136', 'HP': '65280', 'sight': '1600'}
+- **u0AH** shasure_u0AH {'goldcost': '34816', 'lumbercost': '272', 'HP': '130560', 'sight': '1600'}
+- **u0AI** shasure_u0AI {'goldcost': '68632', 'lumbercost': '544', 'HP': '261120', 'sight': '1600'}
+- **u0AJ** shasure_u0AJ {'goldcost': '131072', 'lumbercost': '1024', 'HP': '500000', 'sight': '1600'}
+- **u0AK** shasure_u0AK {'goldcost': '163840', 'lumbercost': '12800', 'HP': '1000000', 'sight': '1600'}
+- **u0AL** shasure_u0AL {'goldcost': '960000', 'lumbercost': '960000', 'HP': '1500000', 'sight': '1600'}
+- **u0AM** shasure_u0AM {'goldcost': '112', 'HP': '420', 'sight': '1600'}
+- **u0AN** shasure_u0AN {'goldcost': '224', 'HP': '840', 'sight': '1600'}
+- **u0AO** shasure_u0AO {'goldcost': '448', 'HP': '1680', 'sight': '1600'}
+- **u0AP** shasure_u0AP {'goldcost': '896', 'HP': '3360', 'sight': '1600'}
+- **u0AQ** shasure_u0AQ {'goldcost': '1792', 'HP': '6720', 'sight': '1600'}
+- **u0AR** shasure_u0AR {'goldcost': '3584', 'lumbercost': '28', 'HP': '13440', 'sight': '1600'}
+- **u0AS** shasure_u0AS {'goldcost': '7168', 'lumbercost': '56', 'HP': '26880', 'sight': '1600'}
+- **u0AT** shasure_u0AT {'goldcost': '14336', 'lumbercost': '112', 'HP': '53760', 'sight': '1600'}
+- **u0AU** shasure_u0AU {'goldcost': '28672', 'lumbercost': '224', 'HP': '107520', 'sight': '1600'}
+- **u0AV** shasure_u0AV {'goldcost': '57344', 'lumbercost': '448', 'HP': '215040', 'sight': '1600'}
+- **u0AW** shasure_u0AW {'goldcost': '131072', 'lumbercost': '1024', 'HP': '500000', 'sight': '1600'}
+- **u0AX** shasure_u0AX {'goldcost': '163840', 'lumbercost': '12800', 'HP': '1000000', 'sight': '1600'}
+- **u0AY** shasure_u0AY {'goldcost': '840000', 'lumbercost': '840000', 'HP': '1500000', 'sight': '1600'}
+- **u0AZ** shasure_u0AZ {'goldcost': '3840', 'lumbercost': '30', 'HP': '14400', 'sight': '1600'}
+- **u0B0** shasure_u0B0 {'goldcost': '7680', 'lumbercost': '60', 'HP': '28800', 'sight': '1600'}
+- **u0B1** shasure_u0B1 {'goldcost': '15360', 'lumbercost': '120', 'HP': '57600', 'sight': '1600'}
+- **u0B2** shasure_u0B2 {'goldcost': '30720', 'lumbercost': '240', 'HP': '115200', 'sight': '1600'}
+- **u0B3** shasure_u0B3 {'goldcost': '61440', 'lumbercost': '480', 'HP': '230400', 'sight': '1600'}
+- **u0B4** shasure_u0B4 {'goldcost': '131072', 'lumbercost': '1024', 'HP': '500000', 'sight': '1600'}
+- **u0B5** shasure_u0B5 {'goldcost': '163840', 'lumbercost': '12800', 'HP': '1000000', 'sight': '1600'}
+- **u0B6** shasure_u0B6 {'goldcost': '880000', 'lumbercost': '880000', 'HP': '1500000', 'sight': '1600'}
+- **u0B7** shasure_u0B7 {'goldcost': '4096', 'lumbercost': '32', 'HP': '15360', 'spd': '270', 'sight': '1600'}
+- **u0B8** shasure_u0B8 {'goldcost': '8192', 'lumbercost': '64', 'HP': '30720', 'spd': '270', 'sight': '1600'}
+- **u0B9** shasure_u0B9 {'goldcost': '16384', 'lumbercost': '128', 'HP': '61440', 'spd': '270', 'sight': '1600'}
+- **u0BA** shasure_u0BA {'goldcost': '32768', 'lumbercost': '256', 'HP': '122880', 'spd': '270', 'sight': '1600'}
+- **u0BB** shasure_u0BB {'goldcost': '65536', 'lumbercost': '512', 'HP': '245760', 'spd': '270', 'sight': '1600'}
+- **u0BC** shasure_u0BC {'goldcost': '131072', 'lumbercost': '1024', 'HP': '500000', 'spd': '270', 'sight': '1600'}
+- **u0BD** shasure_u0BD {'goldcost': '163840', 'lumbercost': '12800', 'HP': '1000000', 'spd': '270', 'sight': '1600'}
+- **u0BE** shasure_u0BE {'goldcost': '920000', 'lumbercost': '920000', 'HP': '1500000', 'spd': '270', 'sight': '1600'}
+- **u0BF** shasure_u0BF {'goldcost': '144', 'HP': '540', 'sight': '1600'}
+- **u0BG** shasure_u0BG {'goldcost': '288', 'HP': '1080', 'sight': '1600'}
+- **u0BH** shasure_u0BH {'goldcost': '576', 'HP': '2160', 'sight': '1600'}
+- **u0BI** shasure_u0BI {'goldcost': '1152', 'HP': '4320', 'sight': '1600'}
+- **u0BJ** shasure_u0BJ {'goldcost': '2304', 'HP': '8640', 'sight': '1600'}
+- **u0BK** shasure_u0BK {'goldcost': '4608', 'lumbercost': '36', 'HP': '17280', 'sight': '1600'}
+- **u0BL** shasure_u0BL {'goldcost': '9216', 'lumbercost': '72', 'HP': '34560', 'sight': '1600'}
+- **u0BM** shasure_u0BM {'goldcost': '18432', 'lumbercost': '144', 'HP': '69120', 'sight': '1600'}
+- **u0BN** shasure_u0BN {'goldcost': '36864', 'lumbercost': '288', 'HP': '138240', 'sight': '1600'}
+- **u0BO** shasure_u0BO {'goldcost': '73728', 'lumbercost': '576', 'HP': '276480', 'sight': '1600'}
+- **u0BP** shasure_u0BP {'goldcost': '131072', 'lumbercost': '1024', 'HP': '500000', 'sight': '1600'}
+- **u0BQ** shasure_u0BQ {'goldcost': '163840', 'lumbercost': '12800', 'HP': '1000000', 'sight': '1600'}
+- **u0BR** shasure_u0BR {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '1500000', 'sight': '1600'}
+- **u0BS** shasure_u0BS {'goldcost': '4352', 'lumbercost': '34', 'HP': '16320', 'sight': '1600'}
+- **u0BT** shasure_u0BT {'goldcost': '8704', 'lumbercost': '68', 'HP': '32640', 'sight': '1600'}
+- **u0BU** shasure_u0BU {'goldcost': '17408', 'lumbercost': '136', 'HP': '65280', 'sight': '1600'}
+- **u0BV** shasure_u0BV {'goldcost': '34816', 'lumbercost': '272', 'HP': '130560', 'sight': '1600'}
+- **u0BW** shasure_u0BW {'goldcost': '68632', 'lumbercost': '544', 'HP': '261120', 'sight': '1600'}
+- **u0BX** shasure_u0BX {'goldcost': '131072', 'lumbercost': '1024', 'HP': '500000', 'sight': '1600'}
+- **u0BY** shasure_u0BY {'goldcost': '163840', 'lumbercost': '12800', 'HP': '1000000', 'sight': '1600'}
+- **u0BZ** shasure_u0BZ {'goldcost': '960000', 'lumbercost': '960000', 'HP': '1500000', 'sight': '1600'}
+- **u0C0** shasure_u0C0 {'goldcost': '4096', 'lumbercost': '32', 'HP': '15360', 'sight': '1600'}
+- **u0C1** shasure_u0C1 {'goldcost': '8192', 'lumbercost': '64', 'HP': '30720', 'sight': '1600'}
+- **u0C2** shasure_u0C2 {'goldcost': '16384', 'lumbercost': '128', 'HP': '61440', 'sight': '1600'}
+- **u0C3** shasure_u0C3 {'goldcost': '32768', 'lumbercost': '256', 'HP': '122880', 'sight': '1600'}
+- **u0C4** shasure_u0C4 {'goldcost': '65536', 'lumbercost': '512', 'HP': '245760', 'sight': '1600'}
+- **u0C5** shasure_u0C5 {'goldcost': '131072', 'lumbercost': '1024', 'HP': '500000', 'sight': '1600'}
+- **u0C6** shasure_u0C6 {'goldcost': '163840', 'lumbercost': '12800', 'HP': '1000000', 'sight': '1600'}
+- **u0C7** shasure_u0C7 {'goldcost': '920000', 'lumbercost': '920000', 'HP': '1500000', 'sight': '1600'}
+- **u0C8** shasure_u0C8 {'goldcost': '250', 'HP': '550', 'sight': '1000'}
+- **u0C9** shasure_u0C9 {'goldcost': '500', 'HP': '550', 'sight': '1000'}
+- **u0CA** shasure_u0CA {'goldcost': '1000', 'HP': '550', 'sight': '1000'}
+- **u0CB** shasure_u0CB {'goldcost': '2000', 'HP': '550', 'sight': '1000'}
+- **u0CC** shasure_u0CC {'goldcost': '5000', 'HP': '550', 'sight': '1000'}
+- **u0CD** shasure_u0CD {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u0CE** shasure_u0CE {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u0CF** shasure_u0CF {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u0CG** shasure_u0CG {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u0CH** shasure_u0CH {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **u0CI** shasure_u0CI {'goldcost': '150', 'lumbercost': '50', 'HP': '550'}
+- **o00L** shasure_o00L {'goldcost': '20', 'HP': '30', 'spd': '190', 'sight': '800'}
+- **o00M** shasure_o00M {'goldcost': '3200', 'HP': '800', 'spd': '270', 'sight': '1200'}
+- **o00N** shasure_o00N {'goldcost': '800', 'HP': '800', 'spd': '350', 'sight': '1400'}
+- **o00O** shasure_o00O {'goldcost': '400', 'HP': '500', 'sight': '1000'}
+- **e04W** shasure_e04W {'goldcost': '90', 'HP': '50', 'sight': '900'}
+- **e04X** shasure_e04X {'lumbercost': '24', 'HP': '50', 'sight': '900'}
+- **e04Y** shasure_e04Y {'lumbercost': '200', 'HP': '50', 'sight': '900'}
+- **e04Z** shasure_e04Z {'lumbercost': '800', 'HP': '50', 'sight': '900'}
+- **e050** shasure_e050 {'lumbercost': '3200', 'HP': '50', 'sight': '900'}
+- **e051** shasure_e051 {'lumbercost': '12800', 'HP': '50', 'sight': '900'}
+- **e052** shasure_e052 {'lumbercost': '51200', 'HP': '50', 'sight': '900'}
+- **e053** shasure_e053 {'lumbercost': '200000', 'HP': '50', 'sight': '900'}
+- **e054** shasure_e054 {'lumbercost': '1000000', 'HP': '50', 'sight': '900'}
+- **e055** shasure_e055 {'lumbercost': '640', 'HP': '50', 'sight': '900'}
+- **e056** shasure_e056 {'lumbercost': '2560', 'HP': '50', 'sight': '900'}
+- **e057** shasure_e057 {'lumbercost': '10240', 'HP': '50', 'sight': '900'}
+- **e058** shasure_e058 {'lumbercost': '40960', 'HP': '50', 'sight': '900'}
+- **e059** shasure_e059 {'goldcost': '520', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e05A** shasure_e05A {'goldcost': '1100', 'HP': '40', 'spd': '270', 'sight': '1000'}
+- **e05B** shasure_e05B {'goldcost': '1500', 'HP': '80', 'spd': '270', 'sight': '1000'}
+- **e05C** shasure_e05C {'goldcost': '2700', 'HP': '160', 'spd': '270', 'sight': '1000'}
+- **e05D** shasure_e05D {'goldcost': '18000', 'HP': '320', 'spd': '270', 'sight': '1000'}
+- **e05E** shasure_e05E {'goldcost': '80000', 'HP': '640', 'spd': '270', 'sight': '1000'}
+- **e05F** shasure_e05F {'goldcost': '255000', 'HP': '1280', 'spd': '270', 'sight': '1000'}
+- **e05G** shasure_e05G {'goldcost': '1000000', 'HP': '2560', 'spd': '270', 'sight': '1000'}
+- **e05H** shasure_e05H {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '5120', 'spd': '270', 'sight': '1000'}
+- **e05I** shasure_e05I {'lumbercost': '1', 'HP': '20', 'spd': '270', 'sight': '1000'}
+- **e05J** shasure_e05J {'HP': '20', 'spd': '270', 'sight': '1000'}
+- **n009** shasure_n009 {'lumbercost': '512', 'HP': '10', 'spd': '310', 'sight': '1200'}
+- **n00A** shasure_n00A {'goldcost': '15360', 'lumbercost': '480', 'HP': '550', 'spd': '300', 'sight': '1400'}
+- **h09K** shasure_h09K {'goldcost': '7680', 'lumbercost': '240', 'HP': '650', 'spd': '300', 'sight': '1400'}
+- **e05K** shasure_e05K {'lumbercost': '7680', 'HP': '102400', 'spd': '220', 'sight': '1200'}
+- **e05L** shasure_e05L {'lumbercost': '15360', 'HP': '256000', 'spd': '270', 'sight': '1200'}
+- **e05M** shasure_e05M {'goldcost': '5120', 'lumbercost': '160', 'HP': '575', 'spd': '350', 'sight': '1400'}
+- **e05N** shasure_e05N {'goldcost': '2560', 'lumbercost': '80', 'HP': '300', 'spd': '280', 'sight': '1400'}
+- **e05O** shasure_e05O {'lumbercost': '51200', 'HP': '256000', 'spd': '350', 'sight': '1400'}
+- **e05P** shasure_e05P {'goldcost': '135', 'lumbercost': '20', 'HP': '5120000', 'spd': '500', 'sight': '1400'}
+- **e05Q** shasure_e05Q {'goldcost': '135', 'lumbercost': '20', 'HP': '256000', 'spd': '280', 'sight': '1600'}
+- **e05R** shasure_e05R {'lumbercost': '99999', 'HP': '256000', 'spd': '270', 'sight': '1400'}
+- **e05S** shasure_e05S {'goldcost': '255', 'lumbercost': '80', 'HP': '655350', 'spd': '350', 'sight': '1400'}
+- **u0CJ** shasure_u0CJ {'goldcost': '8', 'HP': '10', 'sight': '1600'}
+- **h09L** shasure_h09L {'goldcost': '16', 'HP': '15', 'sight': '1600'}
+- **h09M** shasure_h09M {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **h09N** shasure_h09N {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **h09O** shasure_h09O {'goldcost': '128', 'HP': '80', 'sight': '1600'}
+- **h09P** shasure_h09P {'goldcost': '256', 'HP': '140', 'sight': '1600'}
+- **h09Q** shasure_h09Q {'goldcost': '512', 'lumbercost': '16', 'HP': '200', 'sight': '1600'}
+- **h09R** shasure_h09R {'goldcost': '1024', 'lumbercost': '32', 'HP': '250', 'sight': '1600'}
+- **h09S** shasure_h09S {'goldcost': '2048', 'lumbercost': '64', 'HP': '500', 'sight': '1600'}
+- **h09T** shasure_h09T {'goldcost': '4096', 'lumbercost': '128', 'HP': '1000', 'sight': '1600'}
+- **h09U** shasure_h09U {'goldcost': '8192', 'lumbercost': '256', 'HP': '1000', 'sight': '1600'}
+- **h09V** shasure_h09V {'lumbercost': '10240', 'HP': '32000', 'sight': '1600'}
+- **h09W** shasure_h09W {'lumbercost': '25600', 'HP': '64000', 'sight': '1600'}
+- **h09X** shasure_h09X {'lumbercost': '160000', 'HP': '128000', 'sight': '1600'}
+- **h09Y** shasure_h09Y {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '250000', 'sight': '1600'}
+- **h09Z** shasure_h09Z {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **h0A0** shasure_h0A0 {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **h0A1** shasure_h0A1 {'goldcost': '128', 'HP': '80', 'sight': '1600'}
+- **h0A2** shasure_h0A2 {'goldcost': '256', 'HP': '140', 'sight': '1600'}
+- **h0A3** shasure_h0A3 {'goldcost': '512', 'lumbercost': '16', 'HP': '200', 'sight': '1600'}
+- **h0A4** shasure_h0A4 {'goldcost': '1024', 'lumbercost': '32', 'HP': '250', 'sight': '1600'}
+- **u0CK** shasure_u0CK {'goldcost': '8', 'HP': '10', 'sight': '1600'}
+- **h0A5** shasure_h0A5 {'goldcost': '16', 'HP': '15', 'sight': '1600'}
+- **h0A6** shasure_h0A6 {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **h0A7** shasure_h0A7 {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **h0A8** shasure_h0A8 {'goldcost': '128', 'HP': '80', 'sight': '1600'}
+- **h0A9** shasure_h0A9 {'goldcost': '256', 'HP': '140', 'sight': '1600'}
+- **h0AA** shasure_h0AA {'goldcost': '512', 'lumbercost': '16', 'HP': '200', 'sight': '1600'}
+- **h0AB** shasure_h0AB {'goldcost': '1024', 'lumbercost': '32', 'HP': '250', 'sight': '1600'}
+- **h0AC** shasure_h0AC {'goldcost': '2048', 'lumbercost': '64', 'HP': '500', 'sight': '1600'}
+- **h0AD** shasure_h0AD {'goldcost': '4096', 'lumbercost': '128', 'HP': '1000', 'sight': '1600'}
+- **h0AE** shasure_h0AE {'goldcost': '8192', 'lumbercost': '256', 'HP': '1000', 'sight': '1600'}
+- **h0AF** shasure_h0AF {'goldcost': '32768', 'lumbercost': '1024', 'HP': '5120', 'sight': '1600'}
+- **h0AG** shasure_h0AG {'lumbercost': '10240', 'HP': '32000', 'sight': '1600'}
+- **h0AH** shasure_h0AH {'lumbercost': '25600', 'HP': '64000', 'sight': '1600'}
+- **h0AI** shasure_h0AI {'lumbercost': '160000', 'HP': '128000', 'sight': '1600'}
+- **h0AJ** shasure_h0AJ {'goldcost': '1000000', 'lumbercost': '1000000', 'HP': '250000', 'sight': '1600'}
+- **h0AK** shasure_h0AK {'goldcost': '32', 'HP': '30', 'sight': '1600'}
+- **h0AL** shasure_h0AL {'goldcost': '64', 'HP': '50', 'sight': '1600'}
+- **h0AM** shasure_h0AM {'goldcost': '128', 'HP': '80', 'sight': '1600'}
+- **h0AN** shasure_h0AN {'goldcost': '256', 'HP': '140', 'sight': '1600'}
+- **h0AO** shasure_h0AO {'goldcost': '512', 'lumbercost': '16', 'HP': '200', 'sight': '1600'}
+- **h0AP** shasure_h0AP {'goldcost': '1024', 'lumbercost': '32', 'HP': '250', 'sight': '1600'}
+- **h0AQ** shasure_h0AQ {'goldcost': '32768', 'lumbercost': '1024', 'HP': '5120', 'sight': '1600'}
+- **H0AR** shasure_H0AR {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0AS** shasure_H0AS {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0AT** shasure_H0AT {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0AU** shasure_H0AU {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0AV** shasure_H0AV {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0AW** shasure_H0AW {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0AX** shasure_H0AX {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0AY** shasure_H0AY {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0AZ** shasure_H0AZ {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0B0** shasure_H0B0 {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0B1** shasure_H0B1 {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0B2** shasure_H0B2 {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0B3** shasure_H0B3 {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0B4** shasure_H0B4 {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0B5** shasure_H0B5 {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0B6** shasure_H0B6 {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0B7** shasure_H0B7 {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0B8** shasure_H0B8 {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0B9** shasure_H0B9 {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0BA** shasure_H0BA {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0BB** shasure_H0BB {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0BC** shasure_H0BC {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0BD** shasure_H0BD {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0BE** shasure_H0BE {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0BF** shasure_H0BF {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0BG** shasure_H0BG {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0BH** shasure_H0BH {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0BI** shasure_H0BI {'goldcost': '425', 'lumbercost': '100', 'HP': '20', 'spd': '250', 'sight': '1200'}
+- **H0BJ** shasure_H0BJ {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BK** shasure_H0BK {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BL** shasure_H0BL {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BM** shasure_H0BM {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BN** shasure_H0BN {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BO** shasure_H0BO {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BP** shasure_H0BP {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BQ** shasure_H0BQ {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BR** shasure_H0BR {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BS** shasure_H0BS {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BT** shasure_H0BT {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BU** shasure_H0BU {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BV** shasure_H0BV {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BW** shasure_H0BW {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BX** shasure_H0BX {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BY** shasure_H0BY {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0BZ** shasure_H0BZ {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0C0** shasure_H0C0 {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0C1** shasure_H0C1 {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0C2** shasure_H0C2 {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0C3** shasure_H0C3 {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0C4** shasure_H0C4 {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0C5** shasure_H0C5 {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0C6** shasure_H0C6 {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0C7** shasure_H0C7 {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0C8** shasure_H0C8 {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0C9** shasure_H0C9 {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0CA** shasure_H0CA {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0CB** shasure_H0CB {'goldcost': '425', 'lumbercost': '100', 'HP': '32', 'spd': '280', 'sight': '1200'}
+- **H0CC** shasure_H0CC {'goldcost': '425', 'lumbercost': '100', 'HP': '32', 'spd': '280', 'sight': '1200'}
+- **H0CD** shasure_H0CD {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0CE** shasure_H0CE {'goldcost': '425', 'lumbercost': '100', 'HP': '1000', 'spd': '350', 'sight': '1400'}
+- **H0CF** shasure_H0CF {'lumbercost': '4', 'HP': '50000', 'spd': '350', 'sight': '1400'}
+- **e05T** shasure_e05T {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e05U** shasure_e05U {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e05V** shasure_e05V {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e05W** shasure_e05W {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e05X** shasure_e05X {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e05Y** shasure_e05Y {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e05Z** shasure_e05Z {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e060** shasure_e060 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e061** shasure_e061 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e062** shasure_e062 {'goldcost': '60', 'HP': '120', 'spd': '1'}
+- **e063** shasure_e063 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **u0CL** shasure_u0CL {'goldcost': '256', 'HP': '200', 'spd': '120', 'sight': '1600'}
+- **o00P** shasure_o00P {'lumbercost': '3', 'HP': '1000', 'sight': '1000'}
+- **o00Q** shasure_o00Q {'lumbercost': '5', 'HP': '102400', 'spd': '190', 'sight': '800'}
+- **o00R** shasure_o00R {'lumbercost': '5', 'HP': '102400', 'spd': '270', 'sight': '1200'}
+- **o00S** shasure_o00S {'lumbercost': '5', 'HP': '102400', 'spd': '500', 'sight': '1400'}
+- **e064** shasure_e064 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e065** shasure_e065 {'goldcost': '60', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **o00T** shasure_o00T {'HP': '200', 'sight': '1600'}
+- **e066** shasure_e066 {'goldcost': '400', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e067** shasure_e067 {'goldcost': '8000', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **e068** shasure_e068 {'lumbercost': '16', 'HP': '120', 'spd': '1', 'sight': '1000'}
+- **o00U** shasure_o00U {'lumbercost': '3', 'HP': '80000', 'spd': '190', 'sight': '800'}
+- **o00V** shasure_o00V {'lumbercost': '3', 'HP': '80000', 'spd': '270', 'sight': '1200'}
+- **o00W** shasure_o00W {'lumbercost': '3', 'HP': '80000', 'spd': '350', 'sight': '1400'}
