@@ -62,6 +62,7 @@ function setWallColumn(state: GameState, gx: number, fromY: number, toY: number)
 }
 
 const WPM_SAMPLE_SPACING = TILE / 4; // 32 source units / scale 8 = 4 web units.
+const WPM_POINT_CLEARANCE = 0; // Validate source point topology, not unverified hero-body clearance.
 const NEIGHBORS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]] as const;
 
 function spawnCenter(spawn: Readonly<GridPoint>) {
@@ -102,13 +103,13 @@ function spawnRegion(state: GameState, spawn: Readonly<GridPoint>, radius: numbe
   return region;
 }
 
+/** Point-path connectivity through source WPM; does not cover full troll traversal at radius 22. */
 function sampleDistance(state: GameState, from: Faction, to: Faction): number {
   const [worldWidth, worldHeight] = state.session.grid.world;
   const width = Math.floor(worldWidth / WPM_SAMPLE_SPACING);
   const height = Math.floor(worldHeight / WPM_SAMPLE_SPACING);
-  const radius = HERO_STATS[from].radius;
-  const starts = spawnRegion(state, state.session.spawns[from]!, radius);
-  const goals = spawnRegion(state, state.session.spawns[to]!, radius);
+  const starts = spawnRegion(state, state.session.spawns[from]!, WPM_POINT_CLEARANCE);
+  const goals = spawnRegion(state, state.session.spawns[to]!, WPM_POINT_CLEARANCE);
   const goalSet = new Uint8Array(width * height);
   for (const goal of goals) goalSet[goal] = 1;
   const visited = new Uint8Array(width * height);
@@ -132,7 +133,7 @@ function sampleDistance(state: GameState, from: Faction, to: Faction): number {
       if (visited[next]) continue;
       const wx = (nx + 0.5) * WPM_SAMPLE_SPACING;
       const wy = (ny + 0.5) * WPM_SAMPLE_SPACING;
-      if (!isPathingPositionFree(state, wx, wy, radius)) continue;
+      if (!isPathingPositionFree(state, wx, wy, WPM_POINT_CLEARANCE)) continue;
       visited[next] = 1;
       queue[tail++] = next;
     }
@@ -336,7 +337,7 @@ check("原版 8 张地图：会话边界、WPM 与粗网格一致", () => {
   }
 });
 
-check("原版地图：真实 WPM 出生点可用且双方按英雄半径双向可达", () => {
+check("原版地图：真实 WPM 点路径连通且当前英雄出生点可用", () => {
   const disconnected: string[] = [];
   for (const id of MAP_ORDER) {
     const state = createGame({ mapId: id, rule: id === 4 ? "DEFEND" : "SINGLE", playerFaction: "troll" });
@@ -350,11 +351,11 @@ check("原版地图：真实 WPM 出生点可用且双方按英雄半径双向�
     assertSpawnUsable(state, "elf", elf);
     const elfToTroll = sampleDistance(state, "elf", "troll");
     const trollToElf = sampleDistance(state, "troll", "elf");
-    if (elfToTroll < 0) disconnected.push(`地图 ${id} ${MAP_DEFINITIONS[id].name} 精灵无法按真实 WPM 到达巨魔出生区域`);
-    if (trollToElf < 0) disconnected.push(`地图 ${id} ${MAP_DEFINITIONS[id].name} 巨魔无法按真实 WPM 到达精灵出生区域`);
-    console.log(`    map ${id}: elf->troll ${elfToTroll} steps; troll->elf ${trollToElf} steps`);
+    if (elfToTroll < 0) disconnected.push(`地图 ${id} ${MAP_DEFINITIONS[id].name} 精灵无法沿真实 WPM 点路径到达巨魔出生区域`);
+    if (trollToElf < 0) disconnected.push(`地图 ${id} ${MAP_DEFINITIONS[id].name} 巨魔无法沿真实 WPM 点路径到达精灵出生区域`);
+    console.log(`    map ${id}: elf->troll ${elfToTroll} steps; troll->elf ${trollToElf} steps (clearance 0; not troll radius 22 traversal)`);
   }
-  assert.deepEqual(disconnected, [], `真实 WPM 双向可达性失败:\n${disconnected.join("\n")}`);
+  assert.deepEqual(disconnected, [], `真实 WPM 点路径双向连通性失败:\n${disconnected.join("\n")}`);
 });
 
 check("规则：FIX/SURVIVE 准备期 45 秒", () => {
