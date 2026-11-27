@@ -42,15 +42,15 @@
 | 2 真实地图与原始碰撞 | `maps.json`、8 份 pathing、提取器测试；8 图、JASS 区域/锚点、原始 WPM、地图 5 扩展区 | 已完成 |
 | 3 会话化地图状态 | `SessionContext`、真实 pathing 加载；切图/重开不串状态，32 单位移动视线、128 单位建造格 | 已完成 |
 | 4 八图临时视觉 | `placeholder.ts`、浏览器清单；真实几何和锚点加载，无旧自绘背景/碰撞 | 已完成 |
-| 5 核心规则数据化 | `rules.json`、MVP 适配层；白名单记录均有来源，`OLD + SINGLE` 数值迁移 | 待开始 |
-| 6 核心单局闭环 | 确定性 RNG/状态哈希、经济/建造/战斗/胜负；固定种子复现，实际进入终局 | 待开始 |
+| 5 核心规则数据化 | `rules.json`、MVP 适配层；白名单记录均有来源，`OLD + SINGLE` 数值迁移 | 已完成 |
+| 6 核心单局闭环 | 确定性 RNG/状态哈希、经济/建造/战斗/胜负；固定种子复现，实际进入终局 | 进行中 |
 | 7 技能与装备 | 8 技能、81 物品购买与基础效果；施放边界、未实现效果明确记录 | 待开始 |
 | 8 视野、AI 与移动端 | `Perception`、迷雾、AI 查询约束、浏览器 golden path；AI 不读全图，双朝向触控通过 | 待开始 |
 
 ## 4. 来源约束与已知未知
 
 - `source.json` 中 JASS/WPM/W3E/DOO/W3I/W3A 的大小与哈希来自既有 607 条文件索引，状态为 `VERIFIED`。
-- 九份相关 War3 默认 SLK（AbilityBuffData、AbilityData、ItemData、UnitAbilities、UnitBalance、UnitData、UnitUI、UnitWeapons、UpgradeData）未出现在该索引中，大小和哈希保持 `UNKNOWN`。Task 5 使用前须定位具体 War3 版本文件并补充哈希；W3A/JASS 可验证的覆盖不得被默认值错误覆盖。
+- 九份相关 War3 默认 SLK（AbilityBuffData、AbilityData、ItemData、UnitAbilities、UnitBalance、UnitData、UnitUI、UnitWeapons、UpgradeData）已在 Task 5 补入实际字节数与 SHA-256，状态为 `VERIFIED`。提取器通过 `TVE4_EXTRACTED_ROOT` 或 `--extracted-root` 读取来源，证据按 SLK → W3A → JASS 优先级分层；W3A/JASS 覆盖不会被默认值错误覆盖。
 - War3 客户端内的动态事件顺序和部分公式尚未建立参考轨迹；没有实测证据时保持 `UNKNOWN`。
 - 当前 `HERO_STATS.troll.radius = 22` 是未经原作 SLK/W3A/JASS 证据确认的网页值。真实 WPM 点路径在 8 图中连通，但该半径下巨魔无法从出生区域穿越地图 0/1/2/3/4/5/7 的狭窄通道；Task 5/6 必须补齐碰撞半径/单位语义来源后再调校，不得通过改 WPM 或清地掩盖。
 - 当前 `npm run check:tve4` 与 `npm run check:data` 只证明既有简化实现自洽，不作为原作正确性证据。
@@ -107,7 +107,16 @@
 - 自动验证：`npm run check:tve4` 45 passed；`npm run check:data` 8 passed；`npx tsc --noEmit`、Python 3 tests、render/placeholder 8 tests、生成可复现性与 `git diff --check` 均通过。
 - 浏览器验证：Chrome DevTools 实测 8 图加载、双方代表阵营、地图 4/6 特例、地图 1 移动/建造、地图 7 的 `390x844` 与 `844x390`；Network 无 404，旧 PNG/spritesheet 请求为 0，Console 无 error/warn，仅既存 select a11y issue。
 - 独立审查：首轮 2 Important / 2 Minor；修复 `4c24513` 后定向复审全部 ADDRESSED，Spec/Quality 均通过。修复覆盖重开同步 DEFEND 精灵锚点、Phaser 失败销毁/重试、render bounds 严格比较与水色映射。
-- Task 4 提交：`1f964c1`（实现）、`4c24513`（修复）；未 push、未 amend。临时几何不代表最终原作美术，后续只替换 `render/placeholder.ts`。
+- Task 4 提交：`1f964c1`（实现）、`4c24513`（修复）、`ec97cc9`（验证记录）；未 push、未 amend。临时几何不代表最终原作美术，后续只替换 `render/placeholder.ts`。
+
+### Task 5 验证记录
+
+- 实现：新增 `tools/tve4_source/extract_core_rules.py`，按白名单提取 2 英雄、7 建筑、8 技能、81 物品与 `OLD + SINGLE` 初始规则；`src/lib/tve4/data/mvp-rules.ts` 提供逐值证据与等级感知查询，`rules.ts`/`config.ts` 优先读取 MVP 数据并保留未覆盖字段回退。
+- 来源：九份默认 SLK 已记录真实大小/SHA-256；技能对象 ID 修正为 `A066/A067/A068/A069/A061/A06T/A06W/A062`。证据按 SLK → W3A → JASS 分层，A067 持续时间明确记录默认 15 秒、W3A 4–16 级覆盖 15 秒、JASS level 1 运行期覆盖 6 秒。
+- 置信度：每个数值/布尔字段都有独立 evidence；所有非 VERIFIED 字段自动进入 `unknowns`。当前 379 条 unknowns 中仅 4 条 blocking，分别为纠缠/巨魔之眼冷却和急速/巨魔之眼持续时间的 Web 运行值与原版来源差异；本轮保持运行行为，不伪报已修复。
+- 自动验证：`npx tsx --test scripts/tve4/mvp_rules.test.ts` 17/17；Python 6/6；`npm run check:tve4` 45；`npm run check:data` 8；`npx tsc --noEmit`、确定性生成、`python -O` 校验与 diff 检查均通过。来源测试要求设置 `TVE4_EXTRACTED_ROOT`。
+- 独立审查：首轮 4 Important / 2 Minor，修复轮 1 全部解决但发现 1 个新 Important（证据查询未按技能等级过滤）；修复轮 2 后定向复审全部 ADDRESSED，无新增 Critical/Important。
+- Task 5 提交：`25431af`（实现）、`51d6d6c`（来源优先级/unknown/可移植性修复）、`e6f6ea9`（证据等级过滤修复）；未 push、未 amend。`HERO_STATS.troll.radius = 22` 仍未取得原作语义证明，继续作为 Task 6 阻塞遗留，不得通过改 WPM 掩盖。
 
 ## 6. 后续原作资产阶段（本轮不实施）
 
