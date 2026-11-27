@@ -41,7 +41,7 @@
 | 1 来源基准与 MVP 文档 | `source.json`、来源测试、本文；锁定原包与核心文件哈希，记录 UNKNOWN | 已完成 |
 | 2 真实地图与原始碰撞 | `maps.json`、8 份 pathing、提取器测试；8 图、JASS 区域/锚点、原始 WPM、地图 5 扩展区 | 已完成 |
 | 3 会话化地图状态 | `SessionContext`、真实 pathing 加载；切图/重开不串状态，32 单位移动视线、128 单位建造格 | 已完成 |
-| 4 八图临时视觉 | `placeholder.ts`、浏览器清单；真实几何和锚点加载，无旧自绘背景/碰撞 | 待开始 |
+| 4 八图临时视觉 | `placeholder.ts`、浏览器清单；真实几何和锚点加载，无旧自绘背景/碰撞 | 已完成 |
 | 5 核心规则数据化 | `rules.json`、MVP 适配层；白名单记录均有来源，`OLD + SINGLE` 数值迁移 | 待开始 |
 | 6 核心单局闭环 | 确定性 RNG/状态哈希、经济/建造/战斗/胜负；固定种子复现，实际进入终局 | 待开始 |
 | 7 技能与装备 | 8 技能、81 物品购买与基础效果；施放边界、未实现效果明确记录 | 待开始 |
@@ -97,6 +97,17 @@
 - 最终回归：`npm run check:tve4` 45 passed；`npm run check:data` 8 passed；`npx tsc --noEmit`、Python 2 tests、生成可复现性与 `git diff --check` 均通过。Node 仍有既有 `UNDICI-EHPA` experimental 环境警告。
 - 独立审查：原审查 1 Important / 2 Minor，经两轮修复后全部 ADDRESSED，无新增 Critical/Important 破坏。Task 3 提交为 `45645a7`、`3373093`、`1d40029`；修复提交未 amend、未 push。
 - 未进行浏览器/WebGL 实测，Task 3 不声称 UI 已完成浏览器验收。
+
+### Task 4 验证记录
+
+- 实现：`stage.ts` 不再加载旧自绘地图背景或旧英雄/建筑 spritesheet；新增 `render/placeholder.ts`，单位四状态、建筑、树木/岩石统一使用有限色板几何。`game.tsx` 选图继续读取版本化 `MAP_DEFINITIONS/MAP_ORDER`，缩略图改为地图色块。
+- 渲染数据：扩展 `generate_runtime_maps.py`，从真实 `maps.json` 生成 8 份按图懒加载 JSON（共 3,161,593 bytes）到 `public/tve4/geometry/`；模拟目录不含 terrain/doodads。每份带 catalogVersion、geometryHash、runtimeBounds 与源 W3E/DOO 坐标。
+- 坐标：W3E tile 左上角与 DOO 中心统一按 `(source - runtimeBounds.minX/minY)/8` 转换；128 源单位 tile 渲染为 16 Web 单位。相机边界使用同一原点与比例，不再使用 `0..worldWidth/worldHeight`。
+- 锚点：出生标记只读 session spawns；地图 4 OLD 不伪造精灵点，DEFEND 使用 `elf0`；地图 6 无精灵点时明确拒绝。地图 5 保留基础区/扩展区包围并集及非官方 gap。
+- 自动验证：`npm run check:tve4` 45 passed；`npm run check:data` 8 passed；`npx tsc --noEmit`、Python 3 tests、render/placeholder 8 tests、生成可复现性与 `git diff --check` 均通过。
+- 浏览器验证：Chrome DevTools 实测 8 图加载、双方代表阵营、地图 4/6 特例、地图 1 移动/建造、地图 7 的 `390x844` 与 `844x390`；Network 无 404，旧 PNG/spritesheet 请求为 0，Console 无 error/warn，仅既存 select a11y issue。
+- 独立审查：首轮 2 Important / 2 Minor；修复 `4c24513` 后定向复审全部 ADDRESSED，Spec/Quality 均通过。修复覆盖重开同步 DEFEND 精灵锚点、Phaser 失败销毁/重试、render bounds 严格比较与水色映射。
+- Task 4 提交：`1f964c1`（实现）、`4c24513`（修复）；未 push、未 amend。临时几何不代表最终原作美术，后续只替换 `render/placeholder.ts`。
 
 ## 6. 后续原作资产阶段（本轮不实施）
 
