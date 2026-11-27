@@ -9,7 +9,6 @@ import {
   validateRenderGeometry,
   type RenderGeometry,
 } from "../../src/lib/tve4/render/geometry";
-import { buildPathingOverlay } from "../../src/lib/tve4/render/pathing-overlay";
 
 interface SourceMap {
   id: number;
@@ -109,30 +108,6 @@ test("source W3E/DOO coordinates and camera bounds use the runtime bounds origin
     cameraBoundsToWeb({ minX: -17664, minY: -15360, maxX: 1280, maxY: -512 }, bounds),
     { x: -240, y: -48, width: 2368, height: 1856 },
   );
-});
-
-test("pathing overlay merges blocked WPM runs without changing coordinates", () => {
-  const overlay = buildPathingOverlay(
-    new Uint8Array([
-      0x02, 0x02, 0, 0x02,
-      0, 0, 0, 0,
-      0x02, 0, 0x02, 0x02,
-    ]),
-    4,
-    3,
-    32,
-    [-64, -32],
-    [-64, -32, 64, 64],
-  );
-  assert.deepEqual(overlay, {
-    blockedCells: 6,
-    rects: [
-      { x: 0, y: 0, width: 8, height: 4 },
-      { x: 12, y: 0, width: 4, height: 4 },
-      { x: 0, y: 8, width: 4, height: 4 },
-      { x: 8, y: 8, width: 8, height: 4 },
-    ],
-  });
 });
 
 test("the simulation catalog does not embed terrain or doodad geometry", () => {

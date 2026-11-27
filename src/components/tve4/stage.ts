@@ -8,19 +8,15 @@ import {
   assertRuntimeBoundsMatch,
   cameraBoundsToWeb,
   computeGeometryHash,
-  sourceToWebPoint,
   validateRenderGeometry,
   type RenderBounds,
   type RenderGeometry,
 } from "@/lib/tve4/render/geometry";
 import {
   drawPhaserPlaceholderBuilding,
-  drawPhaserPlaceholderDoodad,
   drawPhaserPlaceholderUnit,
-  drawPhaserTerrainTile,
   type PlaceholderUnitState,
 } from "@/lib/tve4/render/placeholder";
-import { buildPathingOverlay } from "@/lib/tve4/render/pathing-overlay";
 import { HeroModelViewer } from "@/lib/tve4/render/hero-model-viewer";
 import { actionSequenceIndex, loadHeroModelManifest, modelActionFor } from "@/lib/tve4/model-catalog";
 import type { ModelDemoEntry } from "@/lib/tve4-model-demo/manifest";
@@ -47,8 +43,6 @@ class Tve4Scene extends Phaser.Scene {
 
   private interaction: Interaction = { placing: null, selectedId: null, hover: null, gx: 0, gy: 0, valid: false };
   private terrain!: Phaser.GameObjects.Graphics;
-  private pathingOverlay!: Phaser.GameObjects.Graphics;
-  private decor!: Phaser.GameObjects.Graphics;
   private markers!: Phaser.GameObjects.Graphics;
   private shadows!: Phaser.GameObjects.Graphics;
   private entities!: Phaser.GameObjects.Graphics;
@@ -67,7 +61,6 @@ class Tve4Scene extends Phaser.Scene {
   private readonly worldHeight: number;
   private readonly runtimeBounds: RenderBounds;
   private readonly cameraRect: { x: number; y: number; width: number; height: number };
-  private readonly pathing32: Uint8Array;
   private readonly heroModelId: string | null;
   private heroModelViewer: HeroModelViewer | null = null;
   private heroModelCanvas: HTMLCanvasElement | null = null;
@@ -92,7 +85,6 @@ class Tve4Scene extends Phaser.Scene {
     this.worldHeight = initialState.session.grid.world[1];
     this.runtimeBounds = [...initialState.session.grid.bounds];
     this.cameraRect = cameraBoundsToWeb(this.map.cameraBounds, this.runtimeBounds);
-    this.pathing32 = initialState.session.pathing32;
     this.heroModelId = initialState.appearance.heroModelId;
     this.camX = this.cameraRect.x + this.cameraRect.width / 2;
     this.camY = this.cameraRect.y + this.cameraRect.height / 2;
@@ -131,8 +123,6 @@ class Tve4Scene extends Phaser.Scene {
     this.geometry = geometry;
 
     this.terrain = this.add.graphics().setDepth(0);
-    this.pathingOverlay = this.add.graphics().setDepth(1);
-    this.decor = this.add.graphics().setDepth(2);
     this.markers = this.add.graphics().setDepth(3);
     this.shadows = this.add.graphics().setDepth(4);
     this.entities = this.add.graphics().setDepth(10);
@@ -142,8 +132,6 @@ class Tve4Scene extends Phaser.Scene {
     this.bars = this.add.graphics().setDepth(42);
 
     this.drawTerrain();
-    this.drawPathingOverlay();
-    this.drawDoodads();
     this.drawSpawnMarkers();
 
     for (let i = 0; i < 70; i += 1) {
@@ -190,37 +178,16 @@ class Tve4Scene extends Phaser.Scene {
     canvas.dataset.cameraBounds = JSON.stringify(this.cameraRect);
     canvas.dataset.terrainTiles = String(geometry.terrain.length);
     canvas.dataset.doodads = String(geometry.doodads.length);
+    canvas.dataset.doodadsVisible = "false";
+    canvas.dataset.mapStyle = "flat";
     canvas.dataset.fogEnabled = "true";
     this.readyResolve();
     void this.initializeHeroModel();
   }
 
   private drawTerrain(): void {
-    for (const tile of this.geometry.terrain) {
-      const point = sourceToWebPoint(tile.x, tile.y, this.runtimeBounds);
-      drawPhaserTerrainTile(this.terrain, point.x, point.y, tile.tileId, TILE);
-    }
-  }
-
-  private drawPathingOverlay(): void {
-    const { pathing } = this.map;
-    const overlay = buildPathingOverlay(
-      this.pathing32,
-      pathing.width,
-      pathing.height,
-      pathing.cellUnits,
-      pathing.origin,
-      this.runtimeBounds,
-    );
-    for (const rect of overlay.rects) {
-      this.pathingOverlay.fillStyle(0x07100d, 0.48);
-      this.pathingOverlay.fillRect(rect.x, rect.y, rect.width, rect.height);
-      const edge = Math.min(1, rect.width);
-      this.pathingOverlay.fillStyle(0x9ec1b0, 0.2);
-      this.pathingOverlay.fillRect(rect.x, rect.y, edge, rect.height);
-      if (rect.width > edge) this.pathingOverlay.fillRect(rect.x + rect.width - edge, rect.y, edge, rect.height);
-    }
-    this.game.canvas.dataset.wpmBlockedCells = String(overlay.blockedCells);
+    this.terrain.fillStyle(0x22302a, 1);
+    this.terrain.fillRect(0, 0, this.worldWidth, this.worldHeight);
   }
 
   private async initializeHeroModel(): Promise<void> {
@@ -305,13 +272,6 @@ class Tve4Scene extends Phaser.Scene {
     delete this.game.canvas.dataset.heroModelError;
   }
 
-  private drawDoodads(): void {
-    for (const doodad of this.geometry.doodads) {
-      const point = sourceToWebPoint(doodad.x, doodad.y, this.runtimeBounds);
-      drawPhaserPlaceholderDoodad(this.decor, point.x, point.y, doodad.typeId, doodad.rotation, { scale: 0.72 });
-    }
-  }
-
   private drawSpawnMarkers(): void {
     this.markers.clear();
     for (const label of this.spawnLabels) label.destroy();
@@ -336,16 +296,6 @@ class Tve4Scene extends Phaser.Scene {
 
     if (this.spawns.troll) marker(this.spawns.troll.gx, this.spawns.troll.gy, 0xff7a5c, "巨魔出生点", 20);
     if (this.spawns.elf) marker(this.spawns.elf.gx, this.spawns.elf.gy, 0x7ee08a, "精灵出生点", 16);
-    if (this.map.angel) {
-      const point = cellCenter(this.map.angel.gx, this.map.angel.gy);
-      this.markers.lineStyle(2, 0xf1dfa0, 0.8);
-      this.markers.strokeCircle(point.x, point.y, 14);
-    }
-    for (const stone of this.map.stones) {
-      const point = cellCenter(stone.gx, stone.gy);
-      this.markers.fillStyle(0xbdaea0, 0.85);
-      this.markers.fillCircle(point.x, point.y, 6);
-    }
     this.game.canvas.dataset.spawns = JSON.stringify(this.spawns);
     this.game.canvas.dataset.spawnMarkers = String(this.spawnLabels.length);
   }
@@ -410,16 +360,6 @@ class Tve4Scene extends Phaser.Scene {
     this.fog.clear();
     this.bars.clear();
 
-    const { grid } = state.session;
-    const [worldWidth, worldHeight] = grid.world;
-    this.entities.lineStyle(1, 0xffffff, 0.035);
-    for (let gy = 0; gy < grid.height; gy += 2) {
-      this.entities.lineBetween(0, gy * TILE, worldWidth, gy * TILE);
-    }
-    for (let gx = 0; gx < grid.width; gx += 2) {
-      this.entities.lineBetween(gx * TILE, 0, gx * TILE, worldHeight);
-    }
-
     for (const building of state.buildings) {
       if (!building.alive) continue;
       const pixels = building.size * TILE;
@@ -437,6 +377,10 @@ class Tve4Scene extends Phaser.Scene {
         building.level,
         { alpha },
       );
+      if (building.kind === "wall") {
+        this.overlays.lineStyle(2, 0xe5ece8, 0.95);
+        this.overlays.strokeRect(building.x - pixels / 2, building.y - pixels / 2, pixels, pixels);
+      }
       if (building.flash > 0) {
         this.overlays.lineStyle(2, 0xffc0c0, 0.8);
         this.overlays.strokeCircle(building.x, building.y, pixels * 0.65);
