@@ -19,6 +19,7 @@ import {
   type PlaceholderUnitState,
 } from "@/lib/tve4/render/placeholder";
 import { HeroModelViewer } from "@/lib/tve4/render/hero-model-viewer";
+import { buildPathingBoundarySegments } from "@/lib/tve4/render/pathing-boundary";
 import { actionSequenceIndex, loadHeroModelManifest, modelActionFor } from "@/lib/tve4/model-catalog";
 import type { ModelDemoEntry } from "@/lib/tve4-model-demo/manifest";
 import type { ActionKey } from "@/lib/tve4-model-demo/sequences";
@@ -44,6 +45,7 @@ class Tve4Scene extends Phaser.Scene {
 
   private interaction: Interaction = { placing: null, selectedId: null, hover: null, gx: 0, gy: 0, valid: false };
   private terrain!: Phaser.GameObjects.Graphics;
+  private pathingBoundary!: Phaser.GameObjects.Graphics;
   private markers!: Phaser.GameObjects.Graphics;
   private shadows!: Phaser.GameObjects.Graphics;
   private entities!: Phaser.GameObjects.Graphics;
@@ -62,6 +64,7 @@ class Tve4Scene extends Phaser.Scene {
   private readonly worldHeight: number;
   private readonly runtimeBounds: RenderBounds;
   private readonly cameraRect: { x: number; y: number; width: number; height: number };
+  private readonly pathing32: Uint8Array;
   private readonly heroModelId: string | null;
   private heroModelViewer: HeroModelViewer | null = null;
   private heroModelCanvas: HTMLCanvasElement | null = null;
@@ -86,6 +89,7 @@ class Tve4Scene extends Phaser.Scene {
     this.worldHeight = initialState.session.grid.world[1];
     this.runtimeBounds = [...initialState.session.grid.bounds];
     this.cameraRect = cameraBoundsToWeb(this.map.cameraBounds, this.runtimeBounds);
+    this.pathing32 = initialState.session.pathing32;
     this.heroModelId = initialState.appearance.heroModelId;
     this.camX = this.cameraRect.x + this.cameraRect.width / 2;
     this.camY = this.cameraRect.y + this.cameraRect.height / 2;
@@ -124,6 +128,7 @@ class Tve4Scene extends Phaser.Scene {
     this.geometry = geometry;
 
     this.terrain = this.add.graphics().setDepth(0);
+    this.pathingBoundary = this.add.graphics().setDepth(1);
     this.markers = this.add.graphics().setDepth(3);
     this.shadows = this.add.graphics().setDepth(4);
     this.entities = this.add.graphics().setDepth(10);
@@ -133,6 +138,7 @@ class Tve4Scene extends Phaser.Scene {
     this.bars = this.add.graphics().setDepth(42);
 
     this.drawTerrain();
+    this.drawPathingBoundary();
     this.drawSpawnMarkers();
 
     for (let i = 0; i < 70; i += 1) {
@@ -189,6 +195,27 @@ class Tve4Scene extends Phaser.Scene {
   private drawTerrain(): void {
     this.terrain.fillStyle(Phaser.Display.Color.HexStringToColor(MAP_BACKGROUND_COLOR).color, 1);
     this.terrain.fillRect(0, 0, this.worldWidth, this.worldHeight);
+  }
+
+  private drawPathingBoundary(): void {
+    const { pathing } = this.map;
+    const segments = buildPathingBoundarySegments(
+      this.pathing32,
+      pathing.width,
+      pathing.height,
+      pathing.cellUnits,
+      pathing.origin,
+      this.runtimeBounds,
+    );
+    this.pathingBoundary.lineStyle(3, 0x0b120f, 0.95);
+    for (const segment of segments) {
+      this.pathingBoundary.lineBetween(segment.x1, segment.y1, segment.x2, segment.y2);
+    }
+    this.pathingBoundary.lineStyle(1, 0xd8c79f, 0.95);
+    for (const segment of segments) {
+      this.pathingBoundary.lineBetween(segment.x1, segment.y1, segment.x2, segment.y2);
+    }
+    this.game.canvas.dataset.pathingBoundaries = String(segments.length);
   }
 
   private async initializeHeroModel(): Promise<void> {

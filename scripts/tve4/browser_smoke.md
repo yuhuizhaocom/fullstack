@@ -86,7 +86,7 @@
 - [x] 玩家英雄模型：选择 `m022 Oldelf` 进入地图后 Phaser canvas 记录 `data-hero-model-id=m022`、`data-hero-model-ready=true`，额外透明 MDX canvas 随玩家移动；摇杆移动时动作 `stand → walk → stand`。
 - [x] 巨魔模型：选择 `m001 DarkTrollTrapper` 可正常进入地图，`data-hero-model-ready=true`，无模型错误。
 - [x] 默认几何：选择“默认几何”进入地图后只有 Phaser canvas，无 `data-hero-model-ready`，保持轻量占位。
-- [x] 地图净化：`data-map-style=flat`、`data-doodads-visible=false`；统一底色，不再绘制地形条纹、树木/岩石、网格或阻挡色块；墙体增加高亮边界。
+- [x] 地图净化：`data-map-style=flat`、`data-doodads-visible=false`；统一底色，不再绘制地形条纹、树木/岩石、网格或阻挡色块；只保留 WPM 阻挡区与可通行区的交界线（地图 1 为 18,248 段），不填色，墙体/悬崖边界清晰可见。
 - [x] 底色与墙体对比：背景改为柔和灰绿 `#36413c`，墙体填充改为浅石色 `#eadbb8`，加深色外框、亮色内框和低透明度暖色外晕；实际建造石墙后截图中墙体清晰可辨，不刺眼。
 - [x] 上述模型与净化流程 Console error/warn 为 0；未修改 `/tve4-model-demo` 受保护模块，仅复用其 manifest、查看器和原始资产。
 - [x] 英雄模型选择：点击阵营后进入独立选择页；精灵 12 个、巨魔 17 个稳定编号模型，显示原始贴图/灰模与动作完整性，默认优先“动作完整 + 原始贴图”。
