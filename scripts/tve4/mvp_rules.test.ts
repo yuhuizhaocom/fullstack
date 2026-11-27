@@ -21,10 +21,18 @@ const SKILL_KEYS = ["blink", "haste", "entangle", "silence", "windwalk", "berser
 // Literal whitelist: adding/removing shop entries is a deliberate catalog change.
 const ITEM_KEYS = "I0A9 I0AA I02N I02O I02A I02B I02C I02D I03K I03L I03M I01P I02P I02Q I02R I02S I02E I02F I02G I02H I01Q I01R I01S I01T I02T I02U I02V I02W I02I I02J I02K I02L I02X I02M I0A8 I040 I039 I03A I03B I03C I02Y I02Z I030 I031 I03P I03Q I03R I01V I03D I03E I03F I03G I032 I033 I034 I035 I03S I03T I03U I03V I03H I03I I03J I01W I036 I037 I038 I03N I0AB I0AC I0AD I0AE I0AF I0AG I023 I0AH I0AI I0AJ I0BU I027 I0AK".split(" ");
 const SLK_NAMES = "AbilityBuffData AbilityData ItemData UnitAbilities UnitBalance UnitData UnitUI UnitWeapons UpgradeData".split(" ").map((name) => `${name}.slk`);
-const SOURCE_ROOT = String.raw`C:\Users\肥胖的粽子\AppData\Local\Temp\tve_w3x\extracted`;
+const SOURCE_ROOT = process.env.TVE4_EXTRACTED_ROOT;
 
 function records() {
   return [...rules.heroes, ...rules.buildings, ...rules.skills, ...rules.items, ...rules.modeSingle];
+}
+
+function unknownPrefix(record: { id: string }) {
+  if (rules.heroes.some((candidate) => candidate.id === record.id)) return `hero.${record.id}`;
+  if (rules.buildings.some((candidate) => candidate.id === record.id)) return `building.${record.id}`;
+  if (rules.skills.some((candidate) => candidate.id === record.id)) return `skill.${record.id}`;
+  if (rules.items.some((candidate) => candidate.id === record.id)) return `item.${record.id}`;
+  return record.id;
 }
 
 test("catalog contains exactly the current 2 heroes, 7 buildings, 8 skills and 81 items", () => {
@@ -49,13 +57,18 @@ test("every numeric and boolean value has independently sourced per-value eviden
         assert.ok(["VERIFIED", "INFERRED", "UNKNOWN"].includes(item.confidence), `${record.id}.${field}: confidence`);
         if (item.confidence === "VERIFIED") {
           assert.ok(item.objectId || item.jassLine !== undefined, `${record.id}.${field}: verification lacks a source locator`);
+          assert.notEqual(item.value, undefined, `${record.id}.${field}: verification lacks its parsed source value`);
         }
+      }
+      if (!Array.isArray(evidence) && evidence.confidence === "VERIFIED") {
+        assert.equal(evidence.value, value, `${record.id}.${field}: value must equal its parsed source`);
       }
     }
   }
 });
 
 test("all nine default SLK manifests contain actual byte sizes and SHA-256", () => {
+  assert.ok(SOURCE_ROOT, "TVE4_EXTRACTED_ROOT must identify the extracted W3X root");
   for (const name of SLK_NAMES) {
     const manifest = source.coreFiles[name as keyof typeof source.coreFiles];
     const bytes = readFileSync(`${SOURCE_ROOT}/Units/${name}`);
@@ -85,6 +98,48 @@ test("skill IDs and source-default cooldowns are corrected without changing web 
   assert.equal(ruleEvidence("haste", "originalDuration").file, "war3map.j");
   assert.equal(ruleEvidence("haste", "duration").confidence, "INFERRED");
   assert.equal(ruleEvidence("farSight", "cooldown").confidence, "INFERRED");
+});
+
+test("A067 original duration preserves SLK to W3A to JASS precedence", () => {
+  const chain = rules.skills.find((record) => record.id === "haste")?.evidence?.originalDuration;
+  assert.ok(Array.isArray(chain), "A067 duration must be a layered chain");
+  assert.ok(chain.length > 2, "SLK, W3A overrides and JASS must all be represented");
+  assert.deepEqual(chain.map((item) => item.file), [
+    "Units/AbilityData.slk",
+    ...Array<string>(chain.length - 2).fill("war3map.w3a"),
+    "war3map.j",
+  ]);
+  assert.equal(chain[0].field, "HeroDur1");
+  assert.equal(chain[0].value, 15);
+  const w3a = chain.slice(1, -1);
+  assert.ok(w3a.length > 0 && w3a.every((item) => item.field === "adur" && item.objectId === "A067" && item.level !== undefined));
+  assert.deepEqual(w3a.map((item) => item.value), Array<number>(w3a.length).fill(15));
+  assert.equal(chain.at(-1)?.field, "YDWESetUnitAbilityDataReal/A067/102");
+  assert.equal(chain.at(-1)?.value, 6);
+  assert.deepEqual(chain.map((item) => item.priority), [10, ...Array<number>(chain.length - 2).fill(20), 30]);
+  assert.equal(rules.skills.find((record) => record.id === "haste")?.values.originalDuration, chain.at(-1)?.value);
+});
+
+test("every non-VERIFIED numeric or boolean field has a matching unknown", () => {
+  const unknownIds = new Set(rules.unknowns.map((item) => item.id));
+  assert.equal(unknownIds.size, rules.unknowns.length, "unknown IDs must be unique");
+  for (const record of records()) {
+    for (const [field, value] of Object.entries(record.values)) {
+      if (typeof value !== "number" && typeof value !== "boolean") continue;
+      const evidence = record.evidence?.[field];
+      assert.ok(evidence, `${record.id}.${field}: missing evidence`);
+      const layers = Array.isArray(evidence) ? evidence : [evidence];
+      if (layers.every((item) => item.confidence === "VERIFIED")) continue;
+      assert.ok(unknownIds.has(`${unknownPrefix(record)}.${field}`), `${unknownPrefix(record)}.${field}: missing unknown`);
+    }
+  }
+});
+
+test("unknowns expose exactly the four blocking fields", () => {
+  assert.deepEqual(
+    rules.unknowns.filter((item) => item.blocking).map((item) => item.id).sort(),
+    ["skill.entangle.cooldown", "skill.farSight.cooldown", "skill.farSight.duration", "skill.haste.duration"],
+  );
 });
 
 test("unknowns explicitly expose unsupported original effects and unproven conversions", () => {
@@ -123,7 +178,51 @@ test("runtime rules preserve current hero, building, skill and shop values throu
   assert.deepEqual(REQUIREMENTS.reveal, [{ level: 1, need: { kind: "market", level: 2 } }]);
   assert.equal(ruleNumber("troll", "speed"), 175);
   assert.deepEqual(ruleNumbers("tower", "range"), [96, 112, 128, 144, 160, 176, 192, 208]);
+  const towerValues = rules.buildings.find((record) => record.id === "tower")!.values;
+  towerValues.range = 96;
+  try {
+    assert.deepEqual(ruleNumbers("tower", "range"), [96, 112, 128, 144, 160, 176, 192, 208], "scalar prefix must not duplicate explicit index zero");
+  } finally {
+    delete towerValues.range;
+  }
   assert.equal(MVP_RULES.items.length, 81);
+});
+
+test("extractor supports an explicit root, requires one when unset, and stays deterministic under -O", () => {
+  assert.ok(SOURCE_ROOT, "TVE4_EXTRACTED_ROOT must identify the extracted W3X root");
+  const script = "tools/tve4_source/extract_core_rules.py";
+  const expected = readFileSync("data/tve4/mvp/rules.json", "utf8");
+  const envWithoutRoot = { ...process.env };
+  delete envWithoutRoot.TVE4_EXTRACTED_ROOT;
+  assert.throws(
+    () => execFileSync("python", [script, "--check"], { cwd: process.cwd(), env: envWithoutRoot, encoding: "utf8", stdio: "pipe" }),
+    /TVE4_EXTRACTED_ROOT|--extracted-root/,
+  );
+  const actual = execFileSync("python", ["-O", script, "--check", "--extracted-root", SOURCE_ROOT], {
+    cwd: process.cwd(), env: envWithoutRoot, encoding: "utf8",
+  });
+  assert.equal(actual, expected);
+});
+
+test("VERIFIED values are rejected when they mismatch their parsed source, including under -O", () => {
+  const result = execFileSync("python", ["-O", "-c", [
+    "from tools.tve4_source.extract_core_rules import make_record",
+    "try:",
+    "    make_record('probe', {'hp': 11}, {'hp': [{'file': 'Units/UnitBalance.slk', 'objectId': 'H010', 'field': 'HP', 'value': 10, 'confidence': 'VERIFIED'}]})",
+    "except ValueError as error:",
+    "    print(error)",
+    "else:",
+    "    raise SystemExit('mismatch was accepted')",
+  ].join("\n")], { cwd: process.cwd(), encoding: "utf8" });
+  assert.match(result, /legacy value mismatches cited source/);
+});
+
+test("source manifest notes remain source-relative", () => {
+  const serialized = JSON.stringify(source);
+  assert.doesNotMatch(serialized, /Users[\\/]|AppData[\\/]|tve_w3x[\\/]|[A-Za-z]:\\/);
+  for (const [name, manifest] of Object.entries(source.coreFiles)) {
+    if (name.endsWith(".slk")) assert.ok(manifest.note.includes(`Units/${name}`), `${name}: source-relative locator`);
+  }
 });
 
 test("extractor --check regenerates byte-identical deterministic output from original evidence", () => {

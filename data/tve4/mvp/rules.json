@@ -1,5 +1,5 @@
 {
-  "catalogVersion": "daa476c116454d4830af3bd4d48019dcad73c8e4d6b13baf24ab71c4ea10259f",
+  "catalogVersion": "d12a4deacbd2e8f3ef263326b75d839f094a45c2ed421a833749ff4491c749a6",
   "primarySource": "data/tve4/mvp/source.json",
   "modeSingle": [
     {
@@ -17,6 +17,7 @@
         "file": "war3map.j",
         "field": "sa__SingleParamProvider_getElveInitGold/set gold=30",
         "jassLine": 168589,
+        "value": 30,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -24,18 +25,21 @@
           "file": "war3map.j",
           "field": "sa__SingleParamProvider_getElveInitGold/set gold=30",
           "jassLine": 168589,
+          "value": 30,
           "confidence": "VERIFIED"
         },
         "trollGold": {
           "file": "war3map.j",
           "field": "sa__SingleParamProvider_getTrollInitGold/set gold=70",
           "jassLine": 168615,
+          "value": 70,
           "confidence": "VERIFIED"
         },
         "startWood": {
           "file": "war3map.j",
           "field": "sa__SingleParamProvider_getElveInitWood",
           "jassLine": 168600,
+          "value": 0,
           "confidence": "VERIFIED"
         },
         "prepareSeconds": {
@@ -48,6 +52,7 @@
           "file": "war3map.j",
           "field": "sc__SingleParamProvider_getTrollAppearTime",
           "jassLine": 21957,
+          "value": 30,
           "confidence": "VERIFIED"
         }
       }
@@ -73,6 +78,7 @@
         "file": "Units/UnitBalance.slk",
         "objectId": "H010",
         "field": "HP",
+        "value": 10,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -80,6 +86,7 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "H010",
           "field": "HP",
+          "value": 10,
           "confidence": "VERIFIED"
         },
         "damage": [
@@ -100,6 +107,7 @@
           "file": "Units/UnitWeapons.slk",
           "objectId": "H010",
           "field": "cool1",
+          "value": 2.2,
           "confidence": "VERIFIED"
         },
         "range": [
@@ -154,18 +162,21 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "H010",
           "field": "HP",
+          "value": 10,
           "confidence": "VERIFIED"
         },
         "originalSpeed": {
           "file": "Units/UnitBalance.slk",
           "objectId": "H010",
           "field": "spd",
+          "value": 250,
           "confidence": "VERIFIED"
         },
         "originalRange": {
           "file": "Units/UnitWeapons.slk",
           "objectId": "H010",
           "field": "rangeN1",
+          "value": 100,
           "confidence": "VERIFIED"
         }
       }
@@ -189,6 +200,7 @@
         "file": "Units/UnitBalance.slk",
         "objectId": "H020",
         "field": "HP",
+        "value": 750,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -196,6 +208,7 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "H020",
           "field": "HP",
+          "value": 750,
           "confidence": "VERIFIED"
         },
         "damage": [
@@ -216,6 +229,7 @@
           "file": "Units/UnitWeapons.slk",
           "objectId": "H020",
           "field": "cool1",
+          "value": 1.5,
           "confidence": "VERIFIED"
         },
         "range": [
@@ -270,18 +284,21 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "H020",
           "field": "HP",
+          "value": 750,
           "confidence": "VERIFIED"
         },
         "originalSpeed": {
           "file": "Units/UnitBalance.slk",
           "objectId": "H020",
           "field": "spd",
+          "value": 350,
           "confidence": "VERIFIED"
         },
         "originalRange": {
           "file": "Units/UnitWeapons.slk",
           "objectId": "H020",
           "field": "rangeN1",
+          "value": 80,
           "confidence": "VERIFIED"
         }
       }
@@ -357,6 +374,7 @@
         "file": "Units/UnitBalance.slk",
         "objectId": "u00Y",
         "field": "HP",
+        "value": 10,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -372,12 +390,20 @@
           "field": "buildTime",
           "confidence": "INFERRED"
         },
-        "gold.0": {
-          "file": "Units/UnitBalance.slk",
-          "objectId": "u00Y",
-          "field": "goldcost",
-          "confidence": "INFERRED"
-        },
+        "gold.0": [
+          {
+            "file": "Units/UnitBalance.slk",
+            "objectId": "u00Y",
+            "field": "goldcost",
+            "confidence": "INFERRED"
+          },
+          {
+            "file": "data/game/game-rules.json",
+            "objectId": "tent",
+            "field": "gold.0",
+            "confidence": "INFERRED"
+          }
+        ],
         "gold.1": [
           {
             "file": "Units/UnitBalance.slk",
@@ -504,12 +530,20 @@
             "confidence": "INFERRED"
           }
         ],
-        "wood.0": {
-          "file": "Units/UnitBalance.slk",
-          "objectId": "u00Y",
-          "field": "lumbercost",
-          "confidence": "INFERRED"
-        },
+        "wood.0": [
+          {
+            "file": "Units/UnitBalance.slk",
+            "objectId": "u00Y",
+            "field": "lumbercost",
+            "confidence": "INFERRED"
+          },
+          {
+            "file": "data/game/game-rules.json",
+            "objectId": "tent",
+            "field": "wood.0",
+            "confidence": "INFERRED"
+          }
+        ],
         "wood.1": [
           {
             "file": "Units/UnitBalance.slk",
@@ -640,6 +674,7 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "u00Y",
           "field": "HP",
+          "value": 10,
           "confidence": "VERIFIED"
         },
         "hp.1": [
@@ -1005,6 +1040,7 @@
         "file": "Units/UnitBalance.slk",
         "objectId": "u01F",
         "field": "goldcost",
+        "value": 4,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -1024,6 +1060,7 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "u01F",
           "field": "goldcost",
+          "value": 4,
           "confidence": "VERIFIED"
         },
         "gold.1": [
@@ -1152,12 +1189,20 @@
             "confidence": "INFERRED"
           }
         ],
-        "wood.0": {
-          "file": "Units/UnitBalance.slk",
-          "objectId": "u01F",
-          "field": "lumbercost",
-          "confidence": "INFERRED"
-        },
+        "wood.0": [
+          {
+            "file": "Units/UnitBalance.slk",
+            "objectId": "u01F",
+            "field": "lumbercost",
+            "confidence": "INFERRED"
+          },
+          {
+            "file": "data/game/game-rules.json",
+            "objectId": "wall",
+            "field": "wood.0",
+            "confidence": "INFERRED"
+          }
+        ],
         "wood.1": [
           {
             "file": "Units/UnitBalance.slk",
@@ -1288,6 +1333,7 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "u01F",
           "field": "HP",
+          "value": 50,
           "confidence": "VERIFIED"
         },
         "hp.1": [
@@ -1481,6 +1527,7 @@
         "file": "Units/UnitBalance.slk",
         "objectId": "h000",
         "field": "goldcost",
+        "value": 4,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -1500,6 +1547,7 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "h000",
           "field": "goldcost",
+          "value": 4,
           "confidence": "VERIFIED"
         },
         "gold.1": [
@@ -1600,12 +1648,20 @@
             "confidence": "INFERRED"
           }
         ],
-        "wood.0": {
-          "file": "Units/UnitBalance.slk",
-          "objectId": "h000",
-          "field": "lumbercost",
-          "confidence": "INFERRED"
-        },
+        "wood.0": [
+          {
+            "file": "Units/UnitBalance.slk",
+            "objectId": "h000",
+            "field": "lumbercost",
+            "confidence": "INFERRED"
+          },
+          {
+            "file": "data/game/game-rules.json",
+            "objectId": "tower",
+            "field": "wood.0",
+            "confidence": "INFERRED"
+          }
+        ],
         "wood.1": [
           {
             "file": "Units/UnitBalance.slk",
@@ -1708,6 +1764,7 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "h000",
           "field": "HP",
+          "value": 10,
           "confidence": "VERIFIED"
         },
         "hp.1": [
@@ -2037,6 +2094,7 @@
         "file": "Units/UnitBalance.slk",
         "objectId": "e00H",
         "field": "goldcost",
+        "value": 90,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -2056,6 +2114,7 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "e00H",
           "field": "goldcost",
+          "value": 90,
           "confidence": "VERIFIED"
         },
         "gold.1": [
@@ -2114,12 +2173,20 @@
             "confidence": "INFERRED"
           }
         ],
-        "wood.0": {
-          "file": "Units/UnitBalance.slk",
-          "objectId": "e00H",
-          "field": "lumbercost",
-          "confidence": "INFERRED"
-        },
+        "wood.0": [
+          {
+            "file": "Units/UnitBalance.slk",
+            "objectId": "e00H",
+            "field": "lumbercost",
+            "confidence": "INFERRED"
+          },
+          {
+            "file": "data/game/game-rules.json",
+            "objectId": "mine",
+            "field": "wood.0",
+            "confidence": "INFERRED"
+          }
+        ],
         "wood.1": [
           {
             "file": "Units/UnitBalance.slk",
@@ -2180,6 +2247,7 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "e00H",
           "field": "HP",
+          "value": 50,
           "confidence": "VERIFIED"
         },
         "hp.1": [
@@ -2327,6 +2395,7 @@
         "file": "Units/UnitBalance.slk",
         "objectId": "u01E",
         "field": "lumbercost",
+        "value": 256,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -2342,22 +2411,32 @@
           "field": "buildTime",
           "confidence": "INFERRED"
         },
-        "gold": {
-          "file": "Units/UnitBalance.slk",
-          "objectId": "u01E",
-          "field": "goldcost",
-          "confidence": "INFERRED"
-        },
+        "gold": [
+          {
+            "file": "Units/UnitBalance.slk",
+            "objectId": "u01E",
+            "field": "goldcost",
+            "confidence": "INFERRED"
+          },
+          {
+            "file": "data/game/game-rules.json",
+            "objectId": "reveal",
+            "field": "gold",
+            "confidence": "INFERRED"
+          }
+        ],
         "wood": {
           "file": "Units/UnitBalance.slk",
           "objectId": "u01E",
           "field": "lumbercost",
+          "value": 256,
           "confidence": "VERIFIED"
         },
         "hp": {
           "file": "Units/UnitBalance.slk",
           "objectId": "u01E",
           "field": "HP",
+          "value": 10,
           "confidence": "VERIFIED"
         },
         "requirement.1.needLevel": {
@@ -2415,6 +2494,7 @@
         "file": "Units/UnitBalance.slk",
         "objectId": "u03D",
         "field": "goldcost",
+        "value": 200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -2434,6 +2514,7 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "u03D",
           "field": "goldcost",
+          "value": 200,
           "confidence": "VERIFIED"
         },
         "gold.1": [
@@ -2492,12 +2573,20 @@
             "confidence": "INFERRED"
           }
         ],
-        "wood.0": {
-          "file": "Units/UnitBalance.slk",
-          "objectId": "u03D",
-          "field": "lumbercost",
-          "confidence": "INFERRED"
-        },
+        "wood.0": [
+          {
+            "file": "Units/UnitBalance.slk",
+            "objectId": "u03D",
+            "field": "lumbercost",
+            "confidence": "INFERRED"
+          },
+          {
+            "file": "data/game/game-rules.json",
+            "objectId": "trollHouse",
+            "field": "wood.0",
+            "confidence": "INFERRED"
+          }
+        ],
         "wood.1": [
           {
             "file": "Units/UnitBalance.slk",
@@ -2558,6 +2647,7 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "u03D",
           "field": "HP",
+          "value": 550,
           "confidence": "VERIFIED"
         },
         "hp.1": [
@@ -2717,6 +2807,7 @@
         "file": "Units/UnitBalance.slk",
         "objectId": "u018",
         "field": "goldcost",
+        "value": 64,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -2736,12 +2827,14 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "u018",
           "field": "goldcost",
+          "value": 64,
           "confidence": "VERIFIED"
         },
         "hp": {
           "file": "Units/UnitBalance.slk",
           "objectId": "u018",
           "field": "HP",
+          "value": 50,
           "confidence": "VERIFIED"
         },
         "gold.1": {
@@ -2782,20 +2875,29 @@
         "file": "Units/AbilityData.slk",
         "objectId": "A066",
         "field": "Cool1",
-        "confidence": "VERIFIED"
+        "level": 1,
+        "value": 25,
+        "confidence": "VERIFIED",
+        "priority": 10
       },
       "evidence": {
         "cooldown": {
           "file": "Units/AbilityData.slk",
           "objectId": "A066",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 25,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "originalCooldown": {
           "file": "Units/AbilityData.slk",
           "objectId": "A066",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 25,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "duration": {
           "file": "data/game/game-rules.json",
@@ -2813,7 +2915,10 @@
           "file": "Units/AbilityData.slk",
           "objectId": "A066",
           "field": "Cost1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 20,
+          "confidence": "VERIFIED",
+          "priority": 10
         }
       }
     },
@@ -2827,27 +2932,274 @@
         "runtimeDuration": 15,
         "manaCost": 20,
         "defaultDuration": 15,
-        "originalDuration": 6.0
+        "originalDuration": 6
       },
       "source": {
         "file": "Units/AbilityData.slk",
         "objectId": "A067",
         "field": "Cool1",
-        "confidence": "VERIFIED"
+        "level": 1,
+        "value": 30,
+        "confidence": "VERIFIED",
+        "priority": 10
       },
       "evidence": {
-        "cooldown": {
-          "file": "Units/AbilityData.slk",
-          "objectId": "A067",
-          "field": "Cool1",
-          "confidence": "VERIFIED"
-        },
-        "originalCooldown": {
-          "file": "Units/AbilityData.slk",
-          "objectId": "A067",
-          "field": "Cool1",
-          "confidence": "VERIFIED"
-        },
+        "cooldown": [
+          {
+            "file": "Units/AbilityData.slk",
+            "objectId": "A067",
+            "field": "Cool1",
+            "level": 1,
+            "value": 30,
+            "confidence": "VERIFIED",
+            "priority": 10
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 4,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 5,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 6,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 7,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 8,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 9,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 10,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 11,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 12,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 13,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 14,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 15,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 16,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          }
+        ],
+        "originalCooldown": [
+          {
+            "file": "Units/AbilityData.slk",
+            "objectId": "A067",
+            "field": "Cool1",
+            "level": 1,
+            "value": 30,
+            "confidence": "VERIFIED",
+            "priority": 10
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 4,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 5,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 6,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 7,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 8,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 9,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 10,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 11,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 12,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 13,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 14,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 15,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "acdn",
+            "level": 16,
+            "value": 30,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          }
+        ],
         "duration": {
           "file": "data/game/game-rules.json",
           "objectId": "haste",
@@ -2860,24 +3212,399 @@
           "field": "runtimeDuration",
           "confidence": "INFERRED"
         },
-        "manaCost": {
-          "file": "Units/AbilityData.slk",
-          "objectId": "A067",
-          "field": "Cost1",
-          "confidence": "VERIFIED"
-        },
-        "defaultDuration": {
-          "file": "Units/AbilityData.slk",
-          "objectId": "A067",
-          "field": "HeroDur1",
-          "confidence": "VERIFIED"
-        },
-        "originalDuration": {
-          "file": "war3map.j",
-          "field": "YDWESetUnitAbilityDataReal/A067/102",
-          "jassLine": 68965,
-          "confidence": "VERIFIED"
-        }
+        "manaCost": [
+          {
+            "file": "Units/AbilityData.slk",
+            "objectId": "A067",
+            "field": "Cost1",
+            "level": 1,
+            "value": 20,
+            "confidence": "VERIFIED",
+            "priority": 10
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 4,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 5,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 6,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 7,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 8,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 9,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 10,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 11,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 12,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 13,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 14,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 15,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "amcs",
+            "level": 16,
+            "value": 20,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          }
+        ],
+        "defaultDuration": [
+          {
+            "file": "Units/AbilityData.slk",
+            "objectId": "A067",
+            "field": "HeroDur1",
+            "level": 1,
+            "value": 15,
+            "confidence": "VERIFIED",
+            "priority": 10
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 4,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 5,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 6,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 7,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 8,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 9,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 10,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 11,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 12,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 13,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 14,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 15,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "ahdu",
+            "level": 16,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          }
+        ],
+        "originalDuration": [
+          {
+            "file": "Units/AbilityData.slk",
+            "objectId": "A067",
+            "field": "HeroDur1",
+            "level": 1,
+            "value": 15,
+            "confidence": "VERIFIED",
+            "priority": 10
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 4,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 5,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 6,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 7,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 8,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 9,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 10,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 11,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 12,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 13,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 14,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 15,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A067",
+            "field": "adur",
+            "level": 16,
+            "value": 15,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.j",
+            "field": "YDWESetUnitAbilityDataReal/A067/102",
+            "jassLine": 68965,
+            "value": 6,
+            "level": 1,
+            "confidence": "VERIFIED",
+            "priority": 30
+          }
+        ]
       }
     },
     {
@@ -2895,7 +3622,10 @@
         "file": "Units/AbilityData.slk",
         "objectId": "A068",
         "field": "Cool1",
-        "confidence": "VERIFIED"
+        "level": 1,
+        "value": 45,
+        "confidence": "VERIFIED",
+        "priority": 10
       },
       "evidence": {
         "cooldown": [
@@ -2903,7 +3633,10 @@
             "file": "Units/AbilityData.slk",
             "objectId": "A068",
             "field": "Cool1",
-            "confidence": "INFERRED"
+            "level": 1,
+            "value": 45,
+            "confidence": "INFERRED",
+            "priority": 10
           },
           {
             "file": "data/game/game-rules.json",
@@ -2916,7 +3649,10 @@
           "file": "Units/AbilityData.slk",
           "objectId": "A068",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 45,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "duration": {
           "file": "data/game/game-rules.json",
@@ -2934,13 +3670,19 @@
           "file": "Units/AbilityData.slk",
           "objectId": "A068",
           "field": "Cost1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 40,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "defaultDuration": {
           "file": "Units/AbilityData.slk",
           "objectId": "A068",
           "field": "HeroDur1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 3,
+          "confidence": "VERIFIED",
+          "priority": 10
         }
       }
     },
@@ -2959,20 +3701,29 @@
         "file": "Units/AbilityData.slk",
         "objectId": "A069",
         "field": "Cool1",
-        "confidence": "VERIFIED"
+        "level": 1,
+        "value": 60,
+        "confidence": "VERIFIED",
+        "priority": 10
       },
       "evidence": {
         "cooldown": {
           "file": "Units/AbilityData.slk",
           "objectId": "A069",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 60,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "originalCooldown": {
           "file": "Units/AbilityData.slk",
           "objectId": "A069",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 60,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "duration": {
           "file": "data/game/game-rules.json",
@@ -2990,13 +3741,19 @@
           "file": "Units/AbilityData.slk",
           "objectId": "A069",
           "field": "Cost1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 40,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "defaultDuration": {
           "file": "Units/AbilityData.slk",
           "objectId": "A069",
           "field": "HeroDur1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 5,
+          "confidence": "VERIFIED",
+          "priority": 10
         }
       }
     },
@@ -3017,20 +3774,29 @@
         "file": "Units/AbilityData.slk",
         "objectId": "A061",
         "field": "Cool1",
-        "confidence": "VERIFIED"
+        "level": 1,
+        "value": 30,
+        "confidence": "VERIFIED",
+        "priority": 10
       },
       "evidence": {
         "cooldown": {
           "file": "Units/AbilityData.slk",
           "objectId": "A061",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 30,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "originalCooldown": {
           "file": "Units/AbilityData.slk",
           "objectId": "A061",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 30,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "duration": {
           "file": "data/game/game-rules.json",
@@ -3048,13 +3814,19 @@
           "file": "Units/AbilityData.slk",
           "objectId": "A061",
           "field": "Cost1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 10,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "defaultDuration": {
           "file": "Units/AbilityData.slk",
           "objectId": "A061",
           "field": "HeroDur1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 20,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "speedBonus": {
           "file": "data/game/game-rules.json",
@@ -3088,20 +3860,29 @@
         "file": "Units/AbilityData.slk",
         "objectId": "A06T",
         "field": "Cool1",
-        "confidence": "VERIFIED"
+        "level": 1,
+        "value": 120,
+        "confidence": "VERIFIED",
+        "priority": 10
       },
       "evidence": {
         "cooldown": {
           "file": "Units/AbilityData.slk",
           "objectId": "A06T",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 120,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "originalCooldown": {
           "file": "Units/AbilityData.slk",
           "objectId": "A06T",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 120,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "duration": {
           "file": "data/game/game-rules.json",
@@ -3119,13 +3900,19 @@
           "file": "Units/AbilityData.slk",
           "objectId": "A06T",
           "field": "Cost1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 5,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "defaultDuration": {
           "file": "Units/AbilityData.slk",
           "objectId": "A06T",
           "field": "HeroDur1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 10,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "attackSpeed": {
           "file": "data/game/game-rules.json",
@@ -3164,20 +3951,29 @@
         "file": "Units/AbilityData.slk",
         "objectId": "A06W",
         "field": "Cool1",
-        "confidence": "VERIFIED"
+        "level": 1,
+        "value": 45,
+        "confidence": "VERIFIED",
+        "priority": 10
       },
       "evidence": {
         "cooldown": {
           "file": "Units/AbilityData.slk",
           "objectId": "A06W",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 45,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "originalCooldown": {
           "file": "Units/AbilityData.slk",
           "objectId": "A06W",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 45,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "duration": {
           "file": "data/game/game-rules.json",
@@ -3195,7 +3991,10 @@
           "file": "Units/AbilityData.slk",
           "objectId": "A06W",
           "field": "Cost1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 10,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "channel": {
           "file": "data/game/game-rules.json",
@@ -3232,7 +4031,10 @@
         "file": "Units/AbilityData.slk",
         "objectId": "A062",
         "field": "Cool1",
-        "confidence": "VERIFIED"
+        "level": 1,
+        "value": 40,
+        "confidence": "VERIFIED",
+        "priority": 10
       },
       "evidence": {
         "cooldown": [
@@ -3240,7 +4042,10 @@
             "file": "Units/AbilityData.slk",
             "objectId": "A062",
             "field": "Cool1",
-            "confidence": "INFERRED"
+            "level": 1,
+            "value": 40,
+            "confidence": "INFERRED",
+            "priority": 10
           },
           {
             "file": "data/game/game-rules.json",
@@ -3253,7 +4058,10 @@
           "file": "Units/AbilityData.slk",
           "objectId": "A062",
           "field": "Cool1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 40,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "duration": {
           "file": "data/game/game-rules.json",
@@ -3271,13 +4079,19 @@
           "file": "Units/AbilityData.slk",
           "objectId": "A062",
           "field": "Cost1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 60,
+          "confidence": "VERIFIED",
+          "priority": 10
         },
         "defaultDuration": {
           "file": "Units/AbilityData.slk",
           "objectId": "A062",
           "field": "HeroDur1",
-          "confidence": "VERIFIED"
+          "level": 1,
+          "value": 8,
+          "confidence": "VERIFIED",
+          "priority": 10
         }
       }
     }
@@ -3298,6 +4112,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0A9",
         "field": "goldcost",
+        "value": 75,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3305,6 +4120,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0A9",
           "field": "goldcost",
+          "value": 75,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3336,6 +4152,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0AA",
         "field": "goldcost",
+        "value": 200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3343,6 +4160,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0AA",
           "field": "goldcost",
+          "value": 200,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3375,6 +4193,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02N",
         "field": "goldcost",
+        "value": 400,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3382,6 +4201,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02N",
           "field": "goldcost",
+          "value": 400,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3413,6 +4233,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02O",
         "field": "goldcost",
+        "value": 800,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3420,6 +4241,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02O",
           "field": "goldcost",
+          "value": 800,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3451,6 +4273,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02A",
         "field": "goldcost",
+        "value": 100,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3458,6 +4281,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02A",
           "field": "goldcost",
+          "value": 100,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3489,6 +4313,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02B",
         "field": "goldcost",
+        "value": 200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3496,6 +4321,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02B",
           "field": "goldcost",
+          "value": 200,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3527,6 +4353,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02C",
         "field": "goldcost",
+        "value": 400,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3534,6 +4361,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02C",
           "field": "goldcost",
+          "value": 400,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3565,6 +4393,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02D",
         "field": "goldcost",
+        "value": 800,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3572,6 +4401,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02D",
           "field": "goldcost",
+          "value": 800,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3604,6 +4434,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03K",
         "field": "goldcost",
+        "value": 200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3611,6 +4442,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03K",
           "field": "goldcost",
+          "value": 200,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3649,6 +4481,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03L",
         "field": "goldcost",
+        "value": 400,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3656,6 +4489,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03L",
           "field": "goldcost",
+          "value": 400,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3694,6 +4528,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03M",
         "field": "goldcost",
+        "value": 800,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3701,6 +4536,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03M",
           "field": "goldcost",
+          "value": 800,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3737,6 +4573,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I01P",
         "field": "goldcost",
+        "value": 800,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3744,6 +4581,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I01P",
           "field": "goldcost",
+          "value": 800,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3769,6 +4607,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02P",
         "field": "goldcost",
+        "value": 1600,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3776,6 +4615,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02P",
           "field": "goldcost",
+          "value": 1600,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3807,6 +4647,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02Q",
         "field": "goldcost",
+        "value": 3200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3814,6 +4655,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02Q",
           "field": "goldcost",
+          "value": 3200,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3845,6 +4687,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02R",
         "field": "goldcost",
+        "value": 6400,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3852,6 +4695,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02R",
           "field": "goldcost",
+          "value": 6400,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3883,6 +4727,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02S",
         "field": "goldcost",
+        "value": 12800,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3890,6 +4735,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02S",
           "field": "goldcost",
+          "value": 12800,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3921,6 +4767,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02E",
         "field": "goldcost",
+        "value": 1600,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3928,6 +4775,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02E",
           "field": "goldcost",
+          "value": 1600,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3959,6 +4807,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02F",
         "field": "goldcost",
+        "value": 3200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -3966,6 +4815,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02F",
           "field": "goldcost",
+          "value": 3200,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -3997,6 +4847,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02G",
         "field": "goldcost",
+        "value": 6400,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4004,6 +4855,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02G",
           "field": "goldcost",
+          "value": 6400,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4035,6 +4887,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02H",
         "field": "goldcost",
+        "value": 12800,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4042,6 +4895,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02H",
           "field": "goldcost",
+          "value": 12800,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4104,6 +4958,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I01R",
         "field": "goldcost",
+        "value": 50,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4111,6 +4966,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I01R",
           "field": "goldcost",
+          "value": 50,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4141,6 +4997,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I01S",
         "field": "goldcost",
+        "value": 75,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4148,6 +5005,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I01S",
           "field": "goldcost",
+          "value": 75,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4174,6 +5032,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I01T",
         "field": "goldcost",
+        "value": 10000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4181,6 +5040,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I01T",
           "field": "goldcost",
+          "value": 10000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4212,6 +5072,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02T",
         "field": "lumbercost",
+        "value": 1,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4225,6 +5086,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02T",
           "field": "lumbercost",
+          "value": 1,
           "confidence": "VERIFIED"
         },
         "armor": {
@@ -4250,6 +5112,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02U",
         "field": "lumbercost",
+        "value": 2,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4263,6 +5126,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02U",
           "field": "lumbercost",
+          "value": 2,
           "confidence": "VERIFIED"
         },
         "armor": {
@@ -4288,6 +5152,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02V",
         "field": "lumbercost",
+        "value": 8,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4301,6 +5166,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02V",
           "field": "lumbercost",
+          "value": 8,
           "confidence": "VERIFIED"
         },
         "armor": {
@@ -4326,6 +5192,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02W",
         "field": "lumbercost",
+        "value": 32,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4339,6 +5206,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02W",
           "field": "lumbercost",
+          "value": 32,
           "confidence": "VERIFIED"
         },
         "armor": {
@@ -4364,6 +5232,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02I",
         "field": "lumbercost",
+        "value": 1,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4377,6 +5246,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02I",
           "field": "lumbercost",
+          "value": 1,
           "confidence": "VERIFIED"
         },
         "damage": {
@@ -4402,6 +5272,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02J",
         "field": "lumbercost",
+        "value": 2,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4415,6 +5286,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02J",
           "field": "lumbercost",
+          "value": 2,
           "confidence": "VERIFIED"
         },
         "damage": {
@@ -4440,6 +5312,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02K",
         "field": "lumbercost",
+        "value": 8,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4453,6 +5326,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02K",
           "field": "lumbercost",
+          "value": 8,
           "confidence": "VERIFIED"
         },
         "damage": {
@@ -4478,6 +5352,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02L",
         "field": "lumbercost",
+        "value": 32,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4491,6 +5366,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02L",
           "field": "lumbercost",
+          "value": 32,
           "confidence": "VERIFIED"
         },
         "damage": {
@@ -4516,6 +5392,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02X",
         "field": "lumbercost",
+        "value": 128,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4529,6 +5406,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02X",
           "field": "lumbercost",
+          "value": 128,
           "confidence": "VERIFIED"
         },
         "armor": {
@@ -4556,6 +5434,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02M",
         "field": "lumbercost",
+        "value": 128,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4569,6 +5448,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02M",
           "field": "lumbercost",
+          "value": 128,
           "confidence": "VERIFIED"
         },
         "damage": {
@@ -4601,6 +5481,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0A8",
         "field": "lumbercost",
+        "value": 80,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4614,6 +5495,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0A8",
           "field": "lumbercost",
+          "value": 80,
           "confidence": "VERIFIED"
         },
         "original.A010.DataA1": {
@@ -4638,6 +5520,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I040",
         "field": "lumbercost",
+        "value": 32,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4651,6 +5534,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I040",
           "field": "lumbercost",
+          "value": 32,
           "confidence": "VERIFIED"
         }
       }
@@ -4670,6 +5554,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I039",
         "field": "goldcost",
+        "value": 500,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4677,6 +5562,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I039",
           "field": "goldcost",
+          "value": 500,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4708,6 +5594,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03A",
         "field": "goldcost",
+        "value": 1100,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4715,6 +5602,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03A",
           "field": "goldcost",
+          "value": 1100,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4746,6 +5634,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03B",
         "field": "goldcost",
+        "value": 2000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4753,6 +5642,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03B",
           "field": "goldcost",
+          "value": 2000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4785,6 +5675,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03C",
         "field": "goldcost",
+        "value": 800,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4792,6 +5683,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03C",
           "field": "goldcost",
+          "value": 800,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4824,6 +5716,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02Y",
         "field": "goldcost",
+        "value": 100,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4831,6 +5724,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02Y",
           "field": "goldcost",
+          "value": 100,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4863,6 +5757,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I02Z",
         "field": "goldcost",
+        "value": 200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4870,6 +5765,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I02Z",
           "field": "goldcost",
+          "value": 200,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4902,6 +5798,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I030",
         "field": "goldcost",
+        "value": 400,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4909,6 +5806,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I030",
           "field": "goldcost",
+          "value": 400,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4941,6 +5839,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I031",
         "field": "goldcost",
+        "value": 800,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4948,6 +5847,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I031",
           "field": "goldcost",
+          "value": 800,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -4978,6 +5878,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03P",
         "field": "goldcost",
+        "value": 125,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -4985,6 +5886,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03P",
           "field": "goldcost",
+          "value": 125,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5009,6 +5911,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03Q",
         "field": "goldcost",
+        "value": 250,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5016,6 +5919,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03Q",
           "field": "goldcost",
+          "value": 250,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5040,6 +5944,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03R",
         "field": "goldcost",
+        "value": 500,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5047,6 +5952,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03R",
           "field": "goldcost",
+          "value": 500,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5071,6 +5977,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I01V",
         "field": "lumbercost",
+        "value": 16,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5084,6 +5991,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I01V",
           "field": "lumbercost",
+          "value": 16,
           "confidence": "VERIFIED"
         }
       }
@@ -5104,6 +6012,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03D",
         "field": "goldcost",
+        "value": 1600,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5111,6 +6020,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03D",
           "field": "goldcost",
+          "value": 1600,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5143,6 +6053,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03E",
         "field": "goldcost",
+        "value": 3200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5150,6 +6061,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03E",
           "field": "goldcost",
+          "value": 3200,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5182,6 +6094,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03F",
         "field": "goldcost",
+        "value": 6400,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5189,6 +6102,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03F",
           "field": "goldcost",
+          "value": 6400,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5221,6 +6135,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03G",
         "field": "goldcost",
+        "value": 12800,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5228,6 +6143,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03G",
           "field": "goldcost",
+          "value": 12800,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5260,6 +6176,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I032",
         "field": "goldcost",
+        "value": 1600,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5267,6 +6184,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I032",
           "field": "goldcost",
+          "value": 1600,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5299,6 +6217,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I033",
         "field": "goldcost",
+        "value": 3200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5306,6 +6225,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I033",
           "field": "goldcost",
+          "value": 3200,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5338,6 +6258,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I034",
         "field": "goldcost",
+        "value": 6400,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5345,6 +6266,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I034",
           "field": "goldcost",
+          "value": 6400,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5377,6 +6299,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I035",
         "field": "goldcost",
+        "value": 12800,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5384,6 +6307,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I035",
           "field": "goldcost",
+          "value": 12800,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5414,6 +6338,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03S",
         "field": "goldcost",
+        "value": 1000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5421,6 +6346,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03S",
           "field": "goldcost",
+          "value": 1000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5445,6 +6371,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03T",
         "field": "goldcost",
+        "value": 2000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5452,6 +6379,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03T",
           "field": "goldcost",
+          "value": 2000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5476,6 +6404,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03U",
         "field": "goldcost",
+        "value": 4000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5483,6 +6412,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03U",
           "field": "goldcost",
+          "value": 4000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5507,6 +6437,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03V",
         "field": "goldcost",
+        "value": 8000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5514,6 +6445,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03V",
           "field": "goldcost",
+          "value": 8000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5540,6 +6472,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03H",
         "field": "lumbercost",
+        "value": 1,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5553,6 +6486,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03H",
           "field": "lumbercost",
+          "value": 1,
           "confidence": "VERIFIED"
         },
         "original.A01A.DataA1": {
@@ -5579,6 +6513,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03I",
         "field": "lumbercost",
+        "value": 2,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5592,6 +6527,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03I",
           "field": "lumbercost",
+          "value": 2,
           "confidence": "VERIFIED"
         },
         "original.A01B.DataA1": {
@@ -5618,6 +6554,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03J",
         "field": "lumbercost",
+        "value": 8,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5631,6 +6568,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03J",
           "field": "lumbercost",
+          "value": 8,
           "confidence": "VERIFIED"
         },
         "original.A01C.DataA1": {
@@ -5655,6 +6593,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I01W",
         "field": "lumbercost",
+        "value": 1,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5668,6 +6607,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I01W",
           "field": "lumbercost",
+          "value": 1,
           "confidence": "VERIFIED"
         }
       }
@@ -5688,6 +6628,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I036",
         "field": "lumbercost",
+        "value": 1,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5701,6 +6642,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I036",
           "field": "lumbercost",
+          "value": 1,
           "confidence": "VERIFIED"
         },
         "original.A00X.DataA1": {
@@ -5727,6 +6669,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I037",
         "field": "lumbercost",
+        "value": 2,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5740,6 +6683,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I037",
           "field": "lumbercost",
+          "value": 2,
           "confidence": "VERIFIED"
         },
         "original.A00Y.DataA1": {
@@ -5766,6 +6710,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I038",
         "field": "lumbercost",
+        "value": 8,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5779,6 +6724,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I038",
           "field": "lumbercost",
+          "value": 8,
           "confidence": "VERIFIED"
         },
         "original.A00Z.DataA1": {
@@ -5805,6 +6751,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I03N",
         "field": "goldcost",
+        "value": 5000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5812,6 +6759,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I03N",
           "field": "goldcost",
+          "value": 5000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5850,6 +6798,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0AB",
         "field": "goldcost",
+        "value": 64000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5857,6 +6806,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0AB",
           "field": "goldcost",
+          "value": 64000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5889,6 +6839,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0AC",
         "field": "goldcost",
+        "value": 500000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5896,6 +6847,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0AC",
           "field": "goldcost",
+          "value": 500000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5927,6 +6879,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0AD",
         "field": "goldcost",
+        "value": 990000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5934,6 +6887,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0AD",
           "field": "goldcost",
+          "value": 990000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -5965,6 +6919,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0AE",
         "field": "goldcost",
+        "value": 990000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -5972,6 +6927,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0AE",
           "field": "goldcost",
+          "value": 990000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -6002,6 +6958,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0AF",
         "field": "lumbercost",
+        "value": 16,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -6015,6 +6972,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0AF",
           "field": "lumbercost",
+          "value": 16,
           "confidence": "VERIFIED"
         }
       }
@@ -6035,6 +6993,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0AG",
         "field": "goldcost",
+        "value": 3200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -6042,6 +7001,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0AG",
           "field": "goldcost",
+          "value": 3200,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -6074,6 +7034,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I023",
         "field": "lumbercost",
+        "value": 1,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -6087,6 +7048,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I023",
           "field": "lumbercost",
+          "value": 1,
           "confidence": "VERIFIED"
         },
         "original.A02J.Dur1": {
@@ -6113,6 +7075,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0AH",
         "field": "goldcost",
+        "value": 3200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -6120,6 +7083,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0AH",
           "field": "goldcost",
+          "value": 3200,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -6151,6 +7115,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0AI",
         "field": "goldcost",
+        "value": 990000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -6158,6 +7123,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0AI",
           "field": "goldcost",
+          "value": 990000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -6189,6 +7155,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0AJ",
         "field": "goldcost",
+        "value": 990000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -6196,6 +7163,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0AJ",
           "field": "goldcost",
+          "value": 990000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -6259,6 +7227,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I027",
         "field": "goldcost",
+        "value": 200,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -6266,6 +7235,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I027",
           "field": "goldcost",
+          "value": 200,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -6296,6 +7266,7 @@
         "file": "Units/ItemData.slk",
         "objectId": "I0AK",
         "field": "goldcost",
+        "value": 10000,
         "confidence": "VERIFIED"
       },
       "evidence": {
@@ -6303,6 +7274,7 @@
           "file": "Units/ItemData.slk",
           "objectId": "I0AK",
           "field": "goldcost",
+          "value": 10000,
           "confidence": "VERIFIED"
         },
         "wood": {
@@ -7268,6 +8240,946 @@
     {
       "id": "item.I0AK.wood",
       "reason": "SLK 空费用按当前运行契约视为 0；空值到零的转换标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "modeSingle.modeSingle.prepareSeconds",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "hero.elf.worldRange",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "hero.troll.worldRange",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.size",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.buildTime",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.gold.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.gold.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.gold.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.gold.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.gold.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.gold.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.gold.7",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.gold.8",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.gold.9",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.wood.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.wood.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.wood.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.wood.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.wood.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.wood.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.wood.7",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.wood.8",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.wood.9",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.hp.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.hp.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.hp.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.hp.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.hp.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.hp.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.hp.7",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.hp.8",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.hp.9",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.income.0",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.income.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.income.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.income.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.income.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.income.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.income.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.income.7",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.income.8",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.income.9",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.requirement.2.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.requirement.3.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.requirement.4.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.requirement.5.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.requirement.6.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.requirement.7.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.requirement.8.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.requirement.9.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tent.requirement.10.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.size",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.buildTime",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.gold.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.gold.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.gold.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.gold.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.gold.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.gold.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.gold.7",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.gold.8",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.gold.9",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.wood.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.wood.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.wood.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.wood.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.wood.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.wood.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.wood.7",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.wood.8",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.wood.9",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.hp.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.hp.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.hp.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.hp.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.hp.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.hp.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.hp.7",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.hp.8",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.wall.hp.9",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.size",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.buildTime",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.gold.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.gold.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.gold.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.gold.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.gold.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.gold.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.gold.7",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.wood.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.wood.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.wood.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.wood.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.wood.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.wood.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.wood.7",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.hp.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.hp.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.hp.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.hp.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.hp.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.hp.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.hp.7",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.damage.0",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.damage.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.damage.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.damage.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.damage.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.damage.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.damage.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.requirement.3.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.requirement.4.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.requirement.5.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.requirement.6.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.requirement.7.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.range.0",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.range.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.range.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.range.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.range.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.range.5",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.range.6",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.range.7",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.tower.interval",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.size",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.buildTime",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.gold.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.gold.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.gold.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.gold.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.wood.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.wood.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.wood.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.wood.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.hp.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.hp.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.hp.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.hp.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.income.0",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.income.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.income.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.income.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.mine.income.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.reveal.size",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.reveal.buildTime",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.reveal.requirement.1.needLevel",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.reveal.revealRange",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.size",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.buildTime",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.gold.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.gold.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.gold.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.gold.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.wood.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.wood.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.wood.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.wood.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.hp.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.hp.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.hp.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.hp.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.income.0",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.income.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.income.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.income.3",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.income.4",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.heal",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.trollHouse.auraRange",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.market.size",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.market.buildTime",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.market.gold.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.market.hp.1",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.market.gold.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.market.hp.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.blink.duration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.blink.runtimeDuration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.haste.runtimeDuration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.entangle.duration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.entangle.runtimeDuration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.silence.duration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.silence.runtimeDuration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.windwalk.duration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.windwalk.runtimeDuration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.berserk.duration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.berserk.runtimeDuration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.teleport.duration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.teleport.runtimeDuration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "skill.farSight.runtimeDuration",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
       "blocking": false
     }
   ]

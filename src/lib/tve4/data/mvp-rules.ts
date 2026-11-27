@@ -11,6 +11,8 @@ export interface CoreRuleSource {
   field?: string;
   level?: number;
   jassLine?: number;
+  value?: string | number | boolean;
+  priority?: number;
   confidence: CoreRuleConfidence;
 }
 
@@ -60,14 +62,16 @@ export function ruleNumber(id: string, field: string): number {
 
 export function ruleNumbers(id: string, prefix: string): number[] {
   const values = ruleRecord(id).values;
-  const indexed = Object.keys(values)
-    .filter((key) => key.startsWith(`${prefix}.`))
-    .map((key) => ({ index: Number(key.slice(prefix.length + 1)), value: values[key] }))
-    .filter((entry) => Number.isInteger(entry.index) && typeof entry.value === "number")
-    .sort((a, b) => a.index - b.index);
-  const scalar = typeof values[prefix] === "number" ? [{ index: 0, value: values[prefix] }] : [];
-  const entries = [...scalar, ...indexed].sort((a, b) => a.index - b.index);
-  return entries.map((entry) => Number(entry.value));
+  const entries = new Map<number, number>();
+  for (const key of Object.keys(values)) {
+    if (!key.startsWith(`${prefix}.`)) continue;
+    const index = Number(key.slice(prefix.length + 1));
+    const value = values[key];
+    if (Number.isInteger(index) && typeof value === "number") entries.set(index, value);
+  }
+  // An explicit index is more specific than the scalar alias for index zero.
+  if (typeof values[prefix] === "number" && !entries.has(0)) entries.set(0, values[prefix]);
+  return [...entries.entries()].sort(([a], [b]) => a - b).map(([, value]) => value);
 }
 
 export function ruleValue(id: string, field: string): string | number | boolean {
@@ -77,7 +81,9 @@ export function ruleValue(id: string, field: string): string | number | boolean 
 export function ruleEvidence(id: string, field: string): CoreRuleSource {
   const record = ruleRecord(id);
   const evidence = record.evidence?.[field];
-  const source = Array.isArray(evidence) ? evidence[0] : evidence;
-  if (!source) throw new Error(`Missing MVP evidence: ${id}.${field}`);
-  return source;
+  if (!evidence) throw new Error(`Missing MVP evidence: ${id}.${field}`);
+  const layers = Array.isArray(evidence) ? evidence : [evidence];
+  return layers.reduce((selected, candidate) =>
+    !selected || (candidate.priority ?? 0) > (selected.priority ?? 0) ? candidate : selected,
+  );
 }

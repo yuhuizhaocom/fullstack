@@ -10,10 +10,10 @@ from pathlib import Path
 from tools.tve4_source.extract_core_maps import extract
 
 ROOT = Path(__file__).resolve().parents[3]
-EXTRACTED = Path(os.environ.get(
-    "TVE4_EXTRACTED_DIR",
-    r"C:\Users\肥胖的粽子\AppData\Local\Temp\tve_w3x\extracted",
-))
+EXTRACTED_VALUE = os.environ.get("TVE4_EXTRACTED_ROOT")
+if not EXTRACTED_VALUE:
+    raise RuntimeError("TVE4_EXTRACTED_ROOT must identify the extracted W3X root")
+EXTRACTED = Path(EXTRACTED_VALUE)
 MVP_DATA = ROOT / "data" / "tve4" / "mvp"
 WPM_SHA256 = "0ec395397888d611c1c9a1d4107f16e38482273c69ca3e8c169e3a1b0631e399"
 
@@ -24,7 +24,7 @@ class CoreMapsTest(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix="tve4-core-maps-")
         cls.addClassCleanup(temporary.cleanup)
         cls.fresh_output = Path(temporary.name)
-        cls.fresh_maps = extract(output_dir=cls.fresh_output)
+        cls.fresh_maps = extract(extracted_dir=EXTRACTED, output_dir=cls.fresh_output)
         cls.maps = json.loads((MVP_DATA / "maps.json").read_text(encoding="utf-8"))
         cls.source = json.loads((MVP_DATA / "source.json").read_text(encoding="utf-8"))
         cls.wpm = (EXTRACTED / "war3map.wpm").read_bytes()
