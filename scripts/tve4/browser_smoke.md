@@ -123,3 +123,11 @@
 | m054 | elf | 0.0054px | 0.0051px | 10px | 已清除 |
 | m055 | elf | -0.0029px | -0.0060px | 10px | 已清除 |
 | m056 | elf | -0.0046px | -0.0043px | 10px | 已清除 |
+
+## m022 单独复核（Chrome DevTools）
+
+- [x] 常规模式选择精灵 `m022 Oldelf` 进入地图 1；Phaser canvas 与透明 MDX canvas 同时就绪，Console 无 error/warn。
+- [x] 初始缩放 `1.150`：`playerScreenY=groundScreenY=444.50px`，`groundError=0px`；`modelTopScreenY=235.23px`、`heroBarScreenY=225.23px`，`barGap=10px`。
+- [x] 连点两次“＋”后缩放 `1.743`：`groundError=0px`、`barGap=10px`；模型 canvas 从 `110.4x110.4` 调整为 `167.94x167.94`，锚点未漂移。
+- [x] WebGL 像素探针：初始采样 757 点中 26 点非透明，放大后采样 1744 点中 72 点非透明，`gl.getError()=0`；截图确认模型可见且无嵌入式地板。
+- [x] MDX 几何审计：m022 共 5 个可见 geoset，bounds `[-201.1,-110.4,-51.7] .. [105.4,119.7,456.3]`，地板候选为空；无需新增 `HIDDEN_GEOSETS` 规则。
