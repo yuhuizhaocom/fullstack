@@ -551,7 +551,7 @@ export function Tve4Game() {
           </div>
           <div className="w-full max-w-2xl">
             <div className="mb-2 text-center text-xs text-white/60">选择地图（原版 8 张竞技场）</div>
-            <div className="grid max-h-40 grid-cols-4 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-4">
+            <div className="grid max-h-44 grid-cols-4 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-4">
               {MAP_ORDER.map((id) => {
                 const map = MAP_DEFINITIONS[id];
                 return (
