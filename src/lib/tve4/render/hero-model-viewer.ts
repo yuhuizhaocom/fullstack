@@ -5,6 +5,7 @@ import { decodeBlpMipmaps } from "../../tve4-model-demo/blp";
 import { disposeRenderer } from "../../tve4-model-demo/dispose";
 import type { ModelDemoEntry } from "../../tve4-model-demo/manifest";
 import { advanceFrame } from "../../tve4-model-demo/playback";
+import { filterHeroModelGeosets, visibleModelBounds, type VisibleModelBounds } from "./hero-model-geosets";
 
 /** Small transparent MDX renderer used only for the player's hero overlay. */
 export class HeroModelViewer {
@@ -23,6 +24,8 @@ export class HeroModelViewer {
   private playing = true;
   private speed = 1;
   private center = vec3.create();
+  private visibleMin = vec3.create();
+  private visibleMax = vec3.create();
   private modelScale = 1;
   private anchorGroundY = 0;
   private anchorTopY = 0;
@@ -64,13 +67,17 @@ export class HeroModelViewer {
     try {
       const response = await fetch(entry.modelUrl);
       if (!response.ok) throw new Error(`模型请求失败：HTTP ${response.status}`);
-      const parsed = parseMDX(await response.arrayBuffer());
+      const parsed = filterHeroModelGeosets(parseMDX(await response.arrayBuffer()), entry.id);
+      const bounds = visibleModelBounds(parsed);
+      if (!bounds) throw new Error("模型没有可见 geoset");
+      parsed.Info.MinimumExtent = Float32Array.from(bounds.min);
+      parsed.Info.MaximumExtent = Float32Array.from(bounds.max);
       if (token !== this.loadToken) return;
       this.model = parsed;
       const renderer = new ModelRenderer(parsed);
       renderer.initGL(this.gl);
       this.renderer = renderer;
-      this.fitCamera(parsed);
+      this.fitCamera(parsed, bounds);
       await this.preloadTextures(entry, token);
       if (token !== this.loadToken) return;
       this.applyTextures();
@@ -119,16 +126,18 @@ export class HeroModelViewer {
     this.textureCache.clear();
   }
 
-  private fitCamera(parsed: model.Model): void {
-    const min = parsed.Info.MinimumExtent;
-    const max = parsed.Info.MaximumExtent;
+  private fitCamera(parsed: model.Model, bounds: VisibleModelBounds): void {
+    vec3.set(this.visibleMin, bounds.min[0], bounds.min[1], bounds.min[2]);
+    vec3.set(this.visibleMax, bounds.max[0], bounds.max[1], bounds.max[2]);
+    const min = this.visibleMin;
+    const max = this.visibleMax;
     vec3.set(this.center, (min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2);
     const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]) || 1;
     this.modelScale = 180 / size;
     this.updateAnchorMetrics(parsed);
   }
 
-  private updateAnchorMetrics(parsed: model.Model): void {
+  private updateAnchorMetrics(_parsed: model.Model): void {
     const width = this.canvas.width;
     const height = this.canvas.height;
     const projection = mat4.create();
@@ -145,10 +154,8 @@ export class HeroModelViewer {
     mat4.translate(view, view, [-this.center[0], -this.center[1], -this.center[2]]);
     mat4.rotateZ(view, view, this.yaw);
     mat4.scale(view, view, [this.modelScale, this.modelScale, this.modelScale]);
-    const min = parsed.Info.MinimumExtent;
-    const max = parsed.Info.MaximumExtent;
-    const ground = projectPoint(this.center[0], this.center[1], min[2], view, projection, width, height);
-    const top = projectPoint(this.center[0], this.center[1], max[2], view, projection, width, height);
+    const ground = projectPoint(this.center[0], this.center[1], this.visibleMin[2], view, projection, width, height);
+    const top = projectPoint(this.center[0], this.center[1], this.visibleMax[2], view, projection, width, height);
     this.anchorGroundY = (ground.y - height / 2) / height;
     this.anchorTopY = (top.y - height / 2) / height;
   }

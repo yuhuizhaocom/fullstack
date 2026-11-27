@@ -9,6 +9,7 @@ import {
   heroModelsForFaction,
   modelActionFor,
 } from "../../src/lib/tve4/model-catalog";
+import { filterHeroModelGeosets, visibleModelBounds } from "../../src/lib/tve4/render/hero-model-geosets";
 import { createGame, stateHash } from "../../src/lib/tve4/engine";
 import type { ModelDemoEntry } from "../../src/lib/tve4-model-demo/manifest";
 import type { ActionKey } from "../../src/lib/tve4-model-demo/sequences";
@@ -87,6 +88,21 @@ test("model action selection falls back when an animation is missing", () => {
   assert.equal(modelActionFor(standOnly, { alive: false, moving: false, attacking: false }), "stand");
   assert.equal(actionSequenceIndex(complete, "attack"), 2);
   assert.equal(actionSequenceIndex(standOnly, "attack"), null);
+});
+
+test("model floor geosets are removed per model before anchor calibration", () => {
+  const source = {
+    Geosets: [
+      { MinimumExtent: [-120, -120, 0], MaximumExtent: [120, 120, 10] },
+      { MinimumExtent: [-10, -10, 20], MaximumExtent: [10, 10, 100] },
+      { MinimumExtent: [-5, -5, 30], MaximumExtent: [5, 5, 90] },
+    ],
+  };
+  const filtered = filterHeroModelGeosets(source, "m025");
+  assert.equal(filtered.Geosets.length, 2);
+  assert.deepEqual(filtered.Geosets[0], source.Geosets[1]);
+  assert.deepEqual(visibleModelBounds(filtered), { min: [-10, -10, 20], max: [10, 10, 100] });
+  assert.deepEqual(filterHeroModelGeosets(source, "m022").Geosets, source.Geosets);
 });
 
 test("hero appearance is render-only and does not change deterministic state hash", () => {
