@@ -6,6 +6,7 @@ import {
   drawPlaceholderBuilding,
   drawPlaceholderDoodad,
   drawPlaceholderUnit,
+  MAP_BACKGROUND_COLOR,
   terrainColor,
 } from "../../src/lib/tve4/render/placeholder";
 import type { Faction } from "../../src/lib/tve4/types";
@@ -66,6 +67,13 @@ test("placeholder buildings and DOO doodads draw without image assets", () => {
   drawPlaceholderDoodad(doodad.ctx, "WTst");
   assert.ok(doodad.calls.some((call) => call.op === "fill"));
   assert.ok(doodad.calls.some((call) => call.op === "moveTo"));
+});
+
+test("map background is soft and walls use a clearly lighter stone color", () => {
+  assert.equal(MAP_BACKGROUND_COLOR, "#36413c");
+  const wall = recordingContext();
+  drawPlaceholderBuilding(wall.ctx, "wall", "elf", 1);
+  assert.ok(wall.calls.some((call) => call.op === "set:fillStyle" && call.args[0] === "#b9b6a7"));
 });
 
 test("terrain tile types use a small deterministic palette", () => {

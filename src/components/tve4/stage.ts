@@ -15,6 +15,7 @@ import {
 import {
   drawPhaserPlaceholderBuilding,
   drawPhaserPlaceholderUnit,
+  MAP_BACKGROUND_COLOR,
   type PlaceholderUnitState,
 } from "@/lib/tve4/render/placeholder";
 import { HeroModelViewer } from "@/lib/tve4/render/hero-model-viewer";
@@ -186,7 +187,7 @@ class Tve4Scene extends Phaser.Scene {
   }
 
   private drawTerrain(): void {
-    this.terrain.fillStyle(0x22302a, 1);
+    this.terrain.fillStyle(Phaser.Display.Color.HexStringToColor(MAP_BACKGROUND_COLOR).color, 1);
     this.terrain.fillRect(0, 0, this.worldWidth, this.worldHeight);
   }
 

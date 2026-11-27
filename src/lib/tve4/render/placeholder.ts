@@ -99,6 +99,8 @@ class PhaserPainter implements Painter {
   }
 }
 
+export const MAP_BACKGROUND_COLOR = "#36413c";
+
 const FACTION_COLORS: Record<Faction, { main: string; light: string; dark: string }> = {
   elf: { main: "#62c77b", light: "#b8f0b5", dark: "#275c43" },
   troll: { main: "#e07a4f", light: "#ffd0a1", dark: "#713b32" },
@@ -205,11 +207,11 @@ function drawBuilding(p: Painter, kind: string, faction: Faction, level: number,
   p.fillEllipse(2, size * 0.38, size * 1.05, size * 0.3);
 
   if (kind === "wall") {
-    p.fill("#8b8d80");
+    p.fill("#b9b6a7");
     p.fillRect(-size / 2, -size / 2, size, size);
-    p.stroke("#d5d0b8", 0.8, 1.5);
+    p.stroke("#eee8d6", 0.95, 1.5);
     p.strokeRect(-size / 2 + 1, -size / 2 + 1, size - 2, size - 2);
-    p.stroke("#555b52", 0.8, 1);
+    p.stroke("#5b6159", 0.9, 1);
     p.strokeTriangle(-size / 2, 0, 0, -size * 0.35, size / 2, 0);
   } else if (kind === "tower" || kind === "reveal") {
     p.fill(colors.dark);
