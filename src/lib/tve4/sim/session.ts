@@ -75,6 +75,7 @@ export function createSession(options: GameOptions = {}): SessionContext {
   const seed = options.seed ?? 1;
   const catalogVersion = options.catalogVersion ?? MAP_CATALOG_VERSION;
   const bounds = runtimeBounds(map);
+  Object.freeze(bounds);
   const grid: RuntimeGrid = Object.freeze({
     width: map.grid[0],
     height: map.grid[1],

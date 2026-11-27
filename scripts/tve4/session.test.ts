@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { createGame, setBlocked } from "../../src/lib/tve4/engine";
+import { HERO_STATS } from "../../src/lib/tve4/config";
+import { createGame, isPathingPositionFree, setBlocked } from "../../src/lib/tve4/engine";
 import * as mapRuntime from "../../src/lib/tve4/map";
 import * as generated from "../../src/lib/tve4/maps.generated";
 
@@ -32,6 +33,34 @@ const runtime = mapRuntime as typeof mapRuntime & {
 const catalog = generated as typeof generated & { MAP_CATALOG_VERSION: string };
 const WPM_ORIGIN: [number, number] = [-29_696, -17_920];
 const WPM_SHA256 = "0ec395397888d611c1c9a1d4107f16e38482273c69ca3e8c169e3a1b0631e399";
+
+test("shared WPM clearance rejects blocked samples and accepts real spawn centers", () => {
+  const state = createGame({ mapId: 0 });
+  const isFree = isPathingPositionFree;
+  assert.equal(isFree(state, 8, 8, HERO_STATS.troll.radius), false, "source WPM cell (436, 92) is blocked");
+  assert.equal(isFree(state, -1, 8, HERO_STATS.elf.radius), false, "world bounds remain enforced");
+
+  const centerBlocked = createGame({ mapId: 0 });
+  centerBlocked.session.pathing32.fill(0);
+  centerBlocked.session.pathing32[92 * 1_536 + 436] |= 0x02;
+  assert.equal(isFree(centerBlocked, 8, 8, HERO_STATS.elf.radius), false, "the center sample is required");
+
+  const perimeterBlocked = createGame({ mapId: 0 });
+  perimeterBlocked.session.pathing32.fill(0);
+  perimeterBlocked.session.pathing32[117 * 1_536 + 464] |= 0x02;
+  assert.equal(isFree(perimeterBlocked, 100, 100, HERO_STATS.elf.radius), false, "the circular perimeter is sampled");
+
+  for (const id of generated.MAP_ORDER) {
+    const realState = createGame({ mapId: id, rule: id === 4 ? "DEFEND" : "SINGLE", playerFaction: "troll" });
+    for (const faction of ["elf", "troll"] as const) {
+      const spawn = realState.session.spawns[faction];
+      if (!spawn) continue;
+      const x = (spawn.gx + 0.5) * 16;
+      const y = (spawn.gy + 0.5) * 16;
+      assert.equal(isFree(realState, x, y, HERO_STATS[faction].radius), true, `地图 ${id} ${faction} 出生点应可用`);
+    }
+  }
+});
 
 test("map 0 and map 1 keep game state isolated", () => {
   const a = createGame({ mapId: 0, seed: 42 });
@@ -111,6 +140,8 @@ test("sessions have deterministic defaults and independent mutable game data", (
   assert.equal(a.session.catalogVersion, a.catalogVersion);
   assert.equal(a.session.seed, a.seed);
   assert.equal(Object.isFrozen(a.session), true);
+  assert.equal(Object.isFrozen(a.session.grid), true);
+  assert.equal(Object.isFrozen(a.session.grid.bounds), true);
   assert.equal(Object.isFrozen(a.session.map), true);
   assert.notStrictEqual(a.session, b.session);
   assert.notStrictEqual(a.session, c.session);

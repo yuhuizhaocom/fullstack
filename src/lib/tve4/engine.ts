@@ -259,18 +259,22 @@ function occupiedByBuilding(state: GameState, x: number, y: number, r: number, f
   return false;
 }
 
-function positionFree(state: GameState, x: number, y: number, r: number, faction?: Faction): boolean {
+/** Shared world/WPM clearance used by movement and real-map reachability checks. */
+export function isPathingPositionFree(state: GameState, x: number, y: number, radius: number): boolean {
   const [worldWidth, worldHeight] = state.session.grid.world;
-  if (x < r || y < r || x > worldWidth - r || y > worldHeight - r) return false;
+  if (x < radius || y < radius || x > worldWidth - radius || y > worldHeight - radius) return false;
   // 圆形采样：周向 + 中心，避免 AABB 角点把 1 格墙误判成可穿过，同时允许斜向挤过窄口
   for (let i = 0; i < 16; i += 1) {
     const a = (i / 16) * Math.PI * 2;
-    const px = x + Math.cos(a) * r;
-    const py = y + Math.sin(a) * r;
+    const px = x + Math.cos(a) * radius;
+    const py = y + Math.sin(a) * radius;
     if (pathingBlocked(state, px, py)) return false;
   }
-  if (pathingBlocked(state, x, y)) return false;
-  return !occupiedByBuilding(state, x, y, r, faction);
+  return !pathingBlocked(state, x, y);
+}
+
+function positionFree(state: GameState, x: number, y: number, r: number, faction?: Faction): boolean {
+  return isPathingPositionFree(state, x, y, r) && !occupiedByBuilding(state, x, y, r, faction);
 }
 
 function moveWithCollision(state: GameState, h: Hero, dx: number, dy: number): void {

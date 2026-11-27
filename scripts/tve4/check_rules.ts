@@ -2,8 +2,8 @@
 // 校验数值来自 data/game/game-rules.json（原版解包核对）。
 import assert from "node:assert/strict";
 
-import { RULE_PREP, TILE } from "../../src/lib/tve4/config";
-import { MAP_DEFINITIONS, MAP_ORDER } from "../../src/lib/tve4/maps.generated";
+import { HERO_STATS, RULE_PREP, TILE } from "../../src/lib/tve4/config";
+import { MAP_DEFINITIONS, MAP_ORDER, type GridPoint } from "../../src/lib/tve4/maps.generated";
 import {
   buyEquipment,
   buyStrengthBook,
@@ -15,6 +15,7 @@ import {
   createGame,
   demolishBuilding,
   getPlayer,
+  isPathingPositionFree,
   relocateElf,
   setBlocked,
   stepGame,
@@ -26,7 +27,7 @@ import {
 } from "../../src/lib/tve4/engine";
 import { buildBlocked } from "../../src/lib/tve4/map";
 import { EQUIPMENT_RULE, MARKET_RULE, RULES, SCENARIO_RULE, VISION_RULE } from "../../src/lib/tve4/rules";
-import type { GameState } from "../../src/lib/tve4/types";
+import type { Faction, GameState } from "../../src/lib/tve4/types";
 
 const FIXED = 1 / 30;
 let passed = 0;
@@ -58,6 +59,85 @@ function setWallColumn(state: GameState, gx: number, fromY: number, toY: number)
       for (let dx = 0; dx < 4; dx += 1) pathing32[y * pathing.width + pathingX + dx] |= 0x02;
     }
   }
+}
+
+const WPM_SAMPLE_SPACING = TILE / 4; // 32 source units / scale 8 = 4 web units.
+const NEIGHBORS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]] as const;
+
+function spawnCenter(spawn: Readonly<GridPoint>) {
+  return { x: (spawn.gx + 0.5) * TILE, y: (spawn.gy + 0.5) * TILE };
+}
+
+function assertSpawnUsable(state: GameState, faction: Faction, spawn: Readonly<GridPoint>): void {
+  const center = spawnCenter(spawn);
+  const radius = HERO_STATS[faction].radius;
+  assert.ok(isPathingPositionFree(state, center.x, center.y, radius), `地图 ${state.mapId} ${faction} 出生点被 WPM 阻挡`);
+  const step = HERO_STATS[faction].speed * FIXED;
+  assert.ok(
+    [[step, 0], [-step, 0], [0, step], [0, -step]].some(([dx, dy]) =>
+      isPathingPositionFree(state, center.x + dx, center.y + dy, radius)),
+    `地图 ${state.mapId} ${faction} 出生点没有合法移动方向`,
+  );
+}
+
+/** Legal WPM-lattice samples in the real spawn's coarse cell, derived from its center. */
+function spawnRegion(state: GameState, spawn: Readonly<GridPoint>, radius: number): number[] {
+  const center = spawnCenter(spawn);
+  const [worldWidth, worldHeight] = state.session.grid.world;
+  const width = Math.floor(worldWidth / WPM_SAMPLE_SPACING);
+  const height = Math.floor(worldHeight / WPM_SAMPLE_SPACING);
+  const minX = Math.max(0, Math.ceil((spawn.gx * TILE - WPM_SAMPLE_SPACING / 2) / WPM_SAMPLE_SPACING));
+  const maxX = Math.min(width - 1, Math.floor(((spawn.gx + 1) * TILE - WPM_SAMPLE_SPACING / 2) / WPM_SAMPLE_SPACING));
+  const minY = Math.max(0, Math.ceil((spawn.gy * TILE - WPM_SAMPLE_SPACING / 2) / WPM_SAMPLE_SPACING));
+  const maxY = Math.min(height - 1, Math.floor(((spawn.gy + 1) * TILE - WPM_SAMPLE_SPACING / 2) / WPM_SAMPLE_SPACING));
+  const region: number[] = [];
+  for (let gy = minY; gy <= maxY; gy += 1) {
+    for (let gx = minX; gx <= maxX; gx += 1) {
+      const x = (gx + 0.5) * WPM_SAMPLE_SPACING;
+      const y = (gy + 0.5) * WPM_SAMPLE_SPACING;
+      if (isPathingPositionFree(state, x, y, radius)) region.push(gy * width + gx);
+    }
+  }
+  assert.ok(region.length, `地图 ${state.mapId} 出生点 (${center.x},${center.y}) 没有合法 WPM 采样区域`);
+  return region;
+}
+
+function sampleDistance(state: GameState, from: Faction, to: Faction): number {
+  const [worldWidth, worldHeight] = state.session.grid.world;
+  const width = Math.floor(worldWidth / WPM_SAMPLE_SPACING);
+  const height = Math.floor(worldHeight / WPM_SAMPLE_SPACING);
+  const radius = HERO_STATS[from].radius;
+  const starts = spawnRegion(state, state.session.spawns[from]!, radius);
+  const goals = spawnRegion(state, state.session.spawns[to]!, radius);
+  const goalSet = new Uint8Array(width * height);
+  for (const goal of goals) goalSet[goal] = 1;
+  const visited = new Uint8Array(width * height);
+  const queue = new Int32Array(width * height);
+  let head = 0;
+  let tail = 0;
+  for (const start of starts) {
+    queue[tail++] = start;
+    visited[start] = 1;
+  }
+  while (head < tail) {
+    const current = queue[head++];
+    if (goalSet[current]) return head - 1;
+    const x = current % width;
+    const y = Math.floor(current / width);
+    for (const [dx, dy] of NEIGHBORS) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+      const next = ny * width + nx;
+      if (visited[next]) continue;
+      const wx = (nx + 0.5) * WPM_SAMPLE_SPACING;
+      const wy = (ny + 0.5) * WPM_SAMPLE_SPACING;
+      if (!isPathingPositionFree(state, wx, wy, radius)) continue;
+      visited[next] = 1;
+      queue[tail++] = next;
+    }
+  }
+  return -1;
 }
 
 function upgradeNow(state: GameState, id: number) {
@@ -254,6 +334,27 @@ check("原版 8 张地图：会话边界、WPM 与粗网格一致", () => {
       assert.ok(id === 4 || id === 6);
     }
   }
+});
+
+check("原版地图：真实 WPM 出生点可用且双方按英雄半径双向可达", () => {
+  const disconnected: string[] = [];
+  for (const id of MAP_ORDER) {
+    const state = createGame({ mapId: id, rule: id === 4 ? "DEFEND" : "SINGLE", playerFaction: "troll" });
+    const { elf, troll } = state.session.spawns;
+    assertSpawnUsable(state, "troll", troll!);
+    if (!elf) {
+      assert.equal(id, 6, "只有地图 6 可缺少精灵出生点；不得伪造路径");
+      console.log(`    map ${id}: skipped elf reachability (no source elf anchor)`);
+      continue;
+    }
+    assertSpawnUsable(state, "elf", elf);
+    const elfToTroll = sampleDistance(state, "elf", "troll");
+    const trollToElf = sampleDistance(state, "troll", "elf");
+    if (elfToTroll < 0) disconnected.push(`地图 ${id} ${MAP_DEFINITIONS[id].name} 精灵无法按真实 WPM 到达巨魔出生区域`);
+    if (trollToElf < 0) disconnected.push(`地图 ${id} ${MAP_DEFINITIONS[id].name} 巨魔无法按真实 WPM 到达精灵出生区域`);
+    console.log(`    map ${id}: elf->troll ${elfToTroll} steps; troll->elf ${trollToElf} steps`);
+  }
+  assert.deepEqual(disconnected, [], `真实 WPM 双向可达性失败:\n${disconnected.join("\n")}`);
 });
 
 check("规则：FIX/SURVIVE 准备期 45 秒", () => {
