@@ -21,6 +21,10 @@ import {
   type PlaceholderUnitState,
 } from "@/lib/tve4/render/placeholder";
 import { buildPathingOverlay } from "@/lib/tve4/render/pathing-overlay";
+import { HeroModelViewer } from "@/lib/tve4/render/hero-model-viewer";
+import { actionSequenceIndex, loadHeroModelManifest, modelActionFor } from "@/lib/tve4/model-catalog";
+import type { ModelDemoEntry } from "@/lib/tve4-model-demo/manifest";
+import type { ActionKey } from "@/lib/tve4-model-demo/sequences";
 import type { GameState, Interaction } from "@/lib/tve4/types";
 
 export interface Stage4 {
@@ -64,6 +68,12 @@ class Tve4Scene extends Phaser.Scene {
   private readonly runtimeBounds: RenderBounds;
   private readonly cameraRect: { x: number; y: number; width: number; height: number };
   private readonly pathing32: Uint8Array;
+  private readonly heroModelId: string | null;
+  private heroModelViewer: HeroModelViewer | null = null;
+  private heroModelCanvas: HTMLCanvasElement | null = null;
+  private heroModelEntry: ModelDemoEntry | null = null;
+  private heroModelAction: ActionKey | null = null;
+  private modelDisposed = false;
 
   private camX: number;
   private camY: number;
@@ -83,6 +93,7 @@ class Tve4Scene extends Phaser.Scene {
     this.runtimeBounds = [...initialState.session.grid.bounds];
     this.cameraRect = cameraBoundsToWeb(this.map.cameraBounds, this.runtimeBounds);
     this.pathing32 = initialState.session.pathing32;
+    this.heroModelId = initialState.appearance.heroModelId;
     this.camX = this.cameraRect.x + this.cameraRect.width / 2;
     this.camY = this.cameraRect.y + this.cameraRect.height / 2;
     this.readyPromise = new Promise<void>((resolve, reject) => {
@@ -181,6 +192,7 @@ class Tve4Scene extends Phaser.Scene {
     canvas.dataset.doodads = String(geometry.doodads.length);
     canvas.dataset.fogEnabled = "true";
     this.readyResolve();
+    void this.initializeHeroModel();
   }
 
   private drawTerrain(): void {
@@ -209,6 +221,88 @@ class Tve4Scene extends Phaser.Scene {
       if (rect.width > edge) this.pathingOverlay.fillRect(rect.x + rect.width - edge, rect.y, edge, rect.height);
     }
     this.game.canvas.dataset.wpmBlockedCells = String(overlay.blockedCells);
+  }
+
+  private async initializeHeroModel(): Promise<void> {
+    if (!this.heroModelId || this.modelDisposed) return;
+    try {
+      const models = await loadHeroModelManifest();
+      const entry = models.find((candidate) => candidate.id === this.heroModelId);
+      if (!entry || this.modelDisposed) return;
+      const canvas = document.createElement("canvas");
+      canvas.style.position = "absolute";
+      canvas.style.pointerEvents = "none";
+      canvas.style.zIndex = "5";
+      canvas.style.width = "96px";
+      canvas.style.height = "96px";
+      canvas.style.display = "none";
+      canvas.dataset.heroModelId = entry.id;
+      this.game.canvas.parentElement?.appendChild(canvas);
+      const viewer = new HeroModelViewer(canvas);
+      this.heroModelCanvas = canvas;
+      this.heroModelViewer = viewer;
+      await viewer.load(entry);
+      if (this.modelDisposed) return;
+      const color = entry.group === "elf" ? [0.384, 0.780, 0.482] : [0.878, 0.478, 0.310];
+      viewer.setTeamColor(color as [number, number, number]);
+      this.heroModelEntry = entry;
+      canvas.dataset.heroModelReady = "true";
+      this.game.canvas.dataset.heroModelId = entry.id;
+      this.game.canvas.dataset.heroModelReady = "true";
+    } catch (error) {
+      this.disposeHeroModel();
+      this.game.canvas.dataset.heroModelError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  private syncHeroModel(player: GameState["heroes"][number] | undefined): void {
+    const canvas = this.heroModelCanvas;
+    const viewer = this.heroModelViewer;
+    const entry = this.heroModelEntry;
+    if (!canvas || !viewer || !entry || !player) {
+      if (canvas) canvas.style.display = "none";
+      return;
+    }
+    const camera = this.cameras.main;
+    const viewLeft = this.camX - camera.width / (2 * this.zoom);
+    const viewTop = this.camY - camera.height / (2 * this.zoom);
+    const screenX = (player.x - viewLeft) * this.zoom;
+    const screenY = (player.y - viewTop) * this.zoom;
+    const baseSize = player.faction === "troll" ? 120 : 96;
+    const size = Phaser.Math.Clamp(baseSize * this.zoom, 72, 180);
+    canvas.style.display = "block";
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+    canvas.style.left = `${screenX - size / 2}px`;
+    canvas.style.top = `${screenY - size / 2}px`;
+    const action = modelActionFor(entry, {
+      alive: player.alive,
+      moving: player.vx !== 0 || player.vy !== 0,
+      attacking: this.forceAttack || player.cd > player.interval * 0.45,
+    });
+    if (action !== this.heroModelAction) {
+      const index = actionSequenceIndex(entry, action);
+      if (index !== null) {
+        viewer.setSequence(index);
+        viewer.setPlaying(true);
+        this.heroModelAction = action;
+        this.game.canvas.dataset.heroModelAction = action;
+      }
+    }
+  }
+
+  disposeHeroModel(): void {
+    this.modelDisposed = true;
+    this.heroModelViewer?.destroy();
+    this.heroModelViewer = null;
+    this.heroModelCanvas?.remove();
+    this.heroModelCanvas = null;
+    this.heroModelEntry = null;
+    this.heroModelAction = null;
+    delete this.game.canvas.dataset.heroModelId;
+    delete this.game.canvas.dataset.heroModelReady;
+    delete this.game.canvas.dataset.heroModelAction;
+    delete this.game.canvas.dataset.heroModelError;
   }
 
   private drawDoodads(): void {
@@ -307,6 +401,7 @@ class Tve4Scene extends Phaser.Scene {
     camera.setZoom(this.zoom);
     camera.centerOn(this.camX, this.camY);
     this.game.canvas.dataset.zoom = this.zoom.toFixed(3);
+    this.syncHeroModel(player);
 
     this.shadows.clear();
     this.entities.clear();
@@ -403,11 +498,14 @@ class Tve4Scene extends Phaser.Scene {
       const shadowWidth = hero.faction === "troll" ? 50 : 32;
       this.shadows.fillStyle(0x04100d, 0.26);
       this.shadows.fillEllipse(hero.x + 2, hero.y + 5, shadowWidth, shadowWidth * 0.32);
-      drawPhaserPlaceholderUnit(this.entities, hero.x, hero.y, kind, hero.faction, heroState, {
-        alpha,
-        flipX: Math.cos(hero.facing) < -0.08,
-        scale: hero.faction === "troll" ? 1 : 0.9,
-      });
+      const playerModelActive = hero.isPlayer && Boolean(this.heroModelViewer?.ready && this.heroModelEntry);
+      if (!playerModelActive) {
+        drawPhaserPlaceholderUnit(this.entities, hero.x, hero.y, kind, hero.faction, heroState, {
+          alpha,
+          flipX: Math.cos(hero.facing) < -0.08,
+          scale: hero.faction === "troll" ? 1 : 0.9,
+        });
+      }
       if (hero.alive && (hero.isPlayer || hero.hp < hero.maxHp)) {
         const height = hero.faction === "troll" ? 30 : 24;
         const barWidth = hero.faction === "troll" ? 68 : 46;
@@ -559,6 +657,7 @@ export async function createStage4(canvas: HTMLCanvasElement, width: number, hei
       return { x: point.x, y: point.y };
     },
     destroy: () => {
+      scene.disposeHeroModel();
       delete canvas.dataset.tve4Ready;
       game.destroy(false);
     },

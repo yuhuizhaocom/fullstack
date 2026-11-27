@@ -119,6 +119,7 @@ export function createGame(options: GameOptions = {}): GameState {
     session,
     rng: createRng(session.seed),
     aiMemory: { lastSeen, buildingIds: [] },
+    appearance: { heroModelId: options.heroModelId ?? null },
     playerFaction,
     testMode,
     trollStrength: 0,

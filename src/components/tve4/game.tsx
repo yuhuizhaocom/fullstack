@@ -37,6 +37,7 @@ import { SKILL_ICONS, itemIcon } from "@/lib/tve4/render/icons";
 import type { BuildKind, Faction, GameState, Interaction, Mode, Rule, SkillKey } from "@/lib/tve4/types";
 
 import type { Stage4 } from "./stage";
+import { HeroModelPicker } from "./hero-model-picker";
 
 const FIXED = 1 / 30;
 type Sheet = "build" | "skill" | "shop" | null;
@@ -115,6 +116,8 @@ export function Tve4Game() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [startFaction, setStartFaction] = useState<Faction | null>(null);
+  const [pendingFaction, setPendingFaction] = useState<Faction | null>(null);
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [preMode, setPreMode] = useState<Mode>("OLD");
   const [preRule, setPreRule] = useState<Rule>("SINGLE");
   const [preMap, setPreMap] = useState<number>(DEFAULT_MAP_ID);
@@ -220,7 +223,7 @@ export function Tve4Game() {
         const testMode = testModeRef.current;
         const mode = modeRef.current;
         const rule = ruleRef.current;
-        const state = createGame({ mapId: preMap, testMode, mode, rule, playerFaction: startFaction });
+        const state = createGame({ mapId: preMap, testMode, mode, rule, playerFaction: startFaction, heroModelId: selectedModelId });
         const stage = await createStage4(canvas, box.clientWidth, box.clientHeight, state);
         if (cancelled) {
           stage.destroy();
@@ -242,7 +245,7 @@ export function Tve4Game() {
       stageRef.current?.destroy();
       stageRef.current = null;
     };
-  }, [preMap, startFaction, stageAttempt, sync]);
+  }, [preMap, startFaction, stageAttempt, selectedModelId, sync]);
 
   useEffect(() => {
     let last = performance.now();
@@ -506,6 +509,7 @@ export function Tve4Game() {
       mode,
       rule,
       playerFaction: stateRef.current?.playerFaction ?? startFaction ?? "elf",
+      heroModelId: stateRef.current?.appearance.heroModelId ?? selectedModelId,
     });
     stageRef.current?.updateSession(next.session);
     stateRef.current = next;
@@ -516,7 +520,7 @@ export function Tve4Game() {
     sheetRef.current = null;
     setSheet(null);
     sync();
-  }, [preMap, startFaction, sync]);
+  }, [preMap, startFaction, selectedModelId, sync]);
 
   return (
     <div ref={boxRef} className="relative h-dvh w-full overflow-hidden bg-[#07100b]">
@@ -577,32 +581,36 @@ export function Tve4Game() {
           <div className="flex w-full max-w-md flex-col gap-3">
             <button
               className="rounded-xl border border-emerald-500/50 bg-emerald-900/40 p-4 text-left"
-              onClick={() => {
-                modeRef.current = preMode;
-                ruleRef.current = preRule;
-                testModeRef.current = preTest;
-                setLoading(true);
-                setStartFaction("elf");
-              }}
+              onClick={() => setPendingFaction("elf")}
             >
               <div className="text-lg font-semibold text-emerald-300">精灵阵营</div>
               <div className="mt-1 text-xs text-white/60">前期全力发育，中期起塔压制，后期 66 座终极塔召唤大法师；可搬家逃跑或游走发育</div>
             </button>
             <button
               className="rounded-xl border border-orange-500/50 bg-orange-900/40 p-4 text-left"
-              onClick={() => {
-                modeRef.current = preMode;
-                ruleRef.current = preRule;
-                testModeRef.current = preTest;
-                setLoading(true);
-                setStartFaction("troll");
-              }}
+              onClick={() => setPendingFaction("troll")}
             >
               <div className="text-lg font-semibold text-orange-300">巨魔阵营</div>
               <div className="mt-1 text-xs text-white/60">前期快速打钱投入攻击攻速，精灵反抗时补护甲血量；杀光精灵或堆到 16 万力量获胜</div>
             </button>
           </div>
         </div>
+      ) : null}
+      {pendingFaction ? (
+        <HeroModelPicker
+          faction={pendingFaction}
+          selectedModelId={selectedModelId}
+          onBack={() => setPendingFaction(null)}
+          onConfirm={(modelId) => {
+            modeRef.current = preMode;
+            ruleRef.current = preRule;
+            testModeRef.current = preTest;
+            setSelectedModelId(modelId);
+            setStartFaction(pendingFaction);
+            setPendingFaction(null);
+            setLoading(true);
+          }}
+        />
       ) : null}
       {startFaction && loading ? <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/70 text-sm text-white">加载中...</div> : null}
       {toast ? (

@@ -35,6 +35,7 @@ export interface GameOptions {
   mapId?: number;
   seed?: number;
   catalogVersion?: string;
+  heroModelId?: string | null;
 }
 
 export type SkillKey =
@@ -170,6 +171,7 @@ export interface GameState {
   session: SessionContext;
   rng: Rng;
   aiMemory: AiMemory;
+  appearance: { heroModelId: string | null };
   playerFaction: Faction;
   testMode: boolean;
   trollStrength: number;
