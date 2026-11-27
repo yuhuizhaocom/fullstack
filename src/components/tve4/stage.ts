@@ -20,6 +20,7 @@ import {
   drawPhaserTerrainTile,
   type PlaceholderUnitState,
 } from "@/lib/tve4/render/placeholder";
+import { buildPathingOverlay } from "@/lib/tve4/render/pathing-overlay";
 import type { GameState, Interaction } from "@/lib/tve4/types";
 
 export interface Stage4 {
@@ -42,6 +43,7 @@ class Tve4Scene extends Phaser.Scene {
 
   private interaction: Interaction = { placing: null, selectedId: null, hover: null, gx: 0, gy: 0, valid: false };
   private terrain!: Phaser.GameObjects.Graphics;
+  private pathingOverlay!: Phaser.GameObjects.Graphics;
   private decor!: Phaser.GameObjects.Graphics;
   private markers!: Phaser.GameObjects.Graphics;
   private shadows!: Phaser.GameObjects.Graphics;
@@ -61,6 +63,7 @@ class Tve4Scene extends Phaser.Scene {
   private readonly worldHeight: number;
   private readonly runtimeBounds: RenderBounds;
   private readonly cameraRect: { x: number; y: number; width: number; height: number };
+  private readonly pathing32: Uint8Array;
 
   private camX: number;
   private camY: number;
@@ -79,6 +82,7 @@ class Tve4Scene extends Phaser.Scene {
     this.worldHeight = initialState.session.grid.world[1];
     this.runtimeBounds = [...initialState.session.grid.bounds];
     this.cameraRect = cameraBoundsToWeb(this.map.cameraBounds, this.runtimeBounds);
+    this.pathing32 = initialState.session.pathing32;
     this.camX = this.cameraRect.x + this.cameraRect.width / 2;
     this.camY = this.cameraRect.y + this.cameraRect.height / 2;
     this.readyPromise = new Promise<void>((resolve, reject) => {
@@ -116,6 +120,7 @@ class Tve4Scene extends Phaser.Scene {
     this.geometry = geometry;
 
     this.terrain = this.add.graphics().setDepth(0);
+    this.pathingOverlay = this.add.graphics().setDepth(1);
     this.decor = this.add.graphics().setDepth(2);
     this.markers = this.add.graphics().setDepth(3);
     this.shadows = this.add.graphics().setDepth(4);
@@ -126,6 +131,7 @@ class Tve4Scene extends Phaser.Scene {
     this.bars = this.add.graphics().setDepth(42);
 
     this.drawTerrain();
+    this.drawPathingOverlay();
     this.drawDoodads();
     this.drawSpawnMarkers();
 
@@ -182,6 +188,27 @@ class Tve4Scene extends Phaser.Scene {
       const point = sourceToWebPoint(tile.x, tile.y, this.runtimeBounds);
       drawPhaserTerrainTile(this.terrain, point.x, point.y, tile.tileId, TILE);
     }
+  }
+
+  private drawPathingOverlay(): void {
+    const { pathing } = this.map;
+    const overlay = buildPathingOverlay(
+      this.pathing32,
+      pathing.width,
+      pathing.height,
+      pathing.cellUnits,
+      pathing.origin,
+      this.runtimeBounds,
+    );
+    for (const rect of overlay.rects) {
+      this.pathingOverlay.fillStyle(0x07100d, 0.48);
+      this.pathingOverlay.fillRect(rect.x, rect.y, rect.width, rect.height);
+      const edge = Math.min(1, rect.width);
+      this.pathingOverlay.fillStyle(0x9ec1b0, 0.2);
+      this.pathingOverlay.fillRect(rect.x, rect.y, edge, rect.height);
+      if (rect.width > edge) this.pathingOverlay.fillRect(rect.x + rect.width - edge, rect.y, edge, rect.height);
+    }
+    this.game.canvas.dataset.wpmBlockedCells = String(overlay.blockedCells);
   }
 
   private drawDoodads(): void {

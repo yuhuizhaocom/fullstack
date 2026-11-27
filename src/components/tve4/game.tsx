@@ -655,7 +655,7 @@ export function Tve4Game() {
             </span>
           </div>
           {showMore ? (
-            <div className="pointer-events-none absolute bottom-24 right-3 z-30 flex w-56 flex-col gap-2 rounded-xl border border-white/10 bg-neutral-900/95 p-2 text-xs text-white">
+            <div className="pointer-events-none absolute right-3 top-[max(11rem,calc(env(safe-area-inset-top)+10rem))] z-30 flex w-56 flex-col gap-2 rounded-xl border border-white/10 bg-neutral-900/95 p-2 text-xs text-white landscape:right-[18rem] landscape:top-[max(0.75rem,env(safe-area-inset-top))]">
               <button className="pointer-events-auto rounded-lg bg-white/10 px-2 py-2" onClick={() => restart(!snapshot.testMode)}>
                 {snapshot.testMode ? "测试模式" : "常规模式"}
               </button>
@@ -745,8 +745,13 @@ export function Tve4Game() {
                 <button className="pointer-events-auto rounded-lg bg-black/70 px-2 py-3 text-[11px] text-white" onClick={() => { migrateRef.current = true; }}>迁移</button>
               </>
             ) : null}
-            <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => setShowMore(!showMore)}>更多</button>
           </div>
+          <button
+            className="pointer-events-auto absolute right-3 top-[max(8rem,calc(env(safe-area-inset-top)+7rem))] z-30 rounded-lg bg-black/70 px-3 py-2 text-xs text-white"
+            onClick={() => setShowMore(!showMore)}
+          >
+            更多
+          </button>
           <div className="pointer-events-none absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] rounded-lg bg-black/60 px-3 py-2 text-right text-xs text-white">
             <div>金币 {Math.floor(snapshot.gold)} · 木材 {Math.floor(snapshot.wood)}</div>
             <div>生命 {Math.max(0, snapshot.hp).toFixed(0)}/{snapshot.maxHp} · 法力 {Math.floor(snapshot.mana)}/{snapshot.maxMana} · 剩余 {snapshot.lives}</div>
