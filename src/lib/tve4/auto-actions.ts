@@ -25,7 +25,7 @@ export function runAutoActions(options: AutoActionOptions, callbacks: AutoAction
   const upgrades: AutoActionResult["upgrades"] = [];
   const skills: SkillKey[] = [];
   if (options.upgradeTent && callbacks.upgradeTent()) upgrades.push("tent");
-  if (options.upgradeWall && (!options.upgradeTent || callbacks.tentNeedsWall()) && callbacks.upgradeWall()) upgrades.push("wall");
+  if (options.upgradeWall && callbacks.tentNeedsWall() && callbacks.upgradeWall()) upgrades.push("wall");
   const repaired = options.repair && callbacks.repair();
   for (const key of options.skills) {
     if (callbacks.castSkill(key)) skills.push(key);

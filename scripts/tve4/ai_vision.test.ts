@@ -4,6 +4,7 @@ import test from "node:test";
 import { createPerception } from "../../src/lib/tve4/ai/perception";
 import { TILE } from "../../src/lib/tve4/config";
 import { createGame, isTrollVisibleToPlayer, stepGame } from "../../src/lib/tve4/engine";
+import { EQUIPMENT_RULE } from "../../src/lib/tve4/rules";
 import type { Building, GameState } from "../../src/lib/tve4/types";
 
 function testState(): GameState {
@@ -132,6 +133,43 @@ test("troll AI patrols the last-seen area instead of standing still outside visi
   const start = { x: troll.x, y: troll.y };
   for (let i = 0; i < 30 * 12; i += 1) stepGame(state, 1 / 30, { mx: 0, my: 0 });
   assert.ok(Math.hypot(troll.x - start.x, troll.y - start.y) > 40, "troll should patrol when no enemy is visible");
+});
+
+test("visible elf pursuit outranks troll shopping", () => {
+  const state = testState();
+  state.blocked.fill(0);
+  state.session.pathing32.fill(0);
+  state.buildings = state.buildings.filter((b) => b.kind !== "market" && b.kind !== "trollHouse");
+  const elf = state.heroes.find((h) => h.faction === "elf")!;
+  const troll = state.heroes.find((h) => h.faction === "troll")!;
+  const base = state.session.trollBase;
+  troll.x = (base.gx + 0.5) * TILE;
+  troll.y = (base.gy + 0.5) * TILE;
+  elf.x = troll.x + 100;
+  elf.y = troll.y;
+  elf.hp = elf.maxHp = 1_000_000;
+  elf.invuln = 1_000_000;
+  troll.invuln = 0;
+  troll.gold = 1_000_000;
+  troll.wood = 0;
+  troll.items = EQUIPMENT_RULE.items.filter((item) => !item.wood).map((item) => item.key);
+  assert.ok(createPerception(state, "troll").visibleEnemies().includes(elf));
+  const startX = troll.x;
+  for (let i = 0; i < 30; i += 1) stepGame(state, 1 / 30, { mx: 0, my: 0 });
+  assert.ok(troll.x > startX + 20, `troll should chase the visible elf, x=${troll.x}`);
+});
+
+test("visible buildings do not overwrite the last seen elf position", () => {
+  const state = testState();
+  const elf = state.heroes.find((h) => h.faction === "elf")!;
+  const troll = state.heroes.find((h) => h.faction === "troll")!;
+  elf.x = 50;
+  elf.y = 50;
+  wallNear(state, troll.x + 20, troll.y);
+  const lastSeen = { x: elf.x, y: elf.y };
+  state.aiMemory.lastSeen = lastSeen;
+  stepGame(state, 1 / 30, { mx: 0, my: 0 });
+  assert.deepEqual(state.aiMemory.lastSeen, lastSeen);
 });
 
 test("vision-constrained AI navigates real WPM and finishes a stationary map-3 game", () => {

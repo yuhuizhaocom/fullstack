@@ -1012,18 +1012,10 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
   }
   const elf = perception.visibleEnemies().find((h) => h.faction === "elf");
   const knownBuildings = perception.exploredResources();
-  if (visibleBuildings.length) {
-    state.aiMemory.lastSeen = { x: visibleBuildings[0].x, y: visibleBuildings[0].y };
-  }
   const house = state.buildings.find((b) => b.alive && b.kind === "trollHouse");
   let tx: number;
   let ty: number;
-  if (nextItem && troll.gold >= nextItem.gold && troll.hp > troll.maxHp * 0.5) {
-    const base = state.session.trollBase;
-    const point = gridToWorld(base.gx, base.gy);
-    tx = point.x;
-    ty = point.y;
-  } else if (house && troll.hp < troll.maxHp * 0.35) {
+  if (house && troll.hp < troll.maxHp * 0.35) {
     tx = house.x;
     ty = house.y;
   } else if (elf) {
@@ -1044,15 +1036,20 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
       tx = elf.x;
       ty = elf.y;
     }
+  } else if (state.aiMemory.lastSeen) {
+    const offset = AI_PATROL_OFFSETS[Math.floor(state.time / 6) % AI_PATROL_OFFSETS.length];
+    tx = Math.max(TILE, Math.min(state.session.grid.world[0] - TILE, state.aiMemory.lastSeen.x + offset[0]));
+    ty = Math.max(TILE, Math.min(state.session.grid.world[1] - TILE, state.aiMemory.lastSeen.y + offset[1]));
+  } else if (nextItem && troll.gold >= nextItem.gold && troll.hp > troll.maxHp * 0.5) {
+    const base = state.session.trollBase;
+    const point = gridToWorld(base.gx, base.gy);
+    tx = point.x;
+    ty = point.y;
   } else if (knownBuildings.length) {
     const nearest = [...knownBuildings]
       .sort((a, b) => Math.hypot(a.x - troll.x, a.y - troll.y) - Math.hypot(b.x - troll.x, b.y - troll.y))[0];
     tx = nearest.x;
     ty = nearest.y;
-  } else if (state.aiMemory.lastSeen) {
-    const offset = AI_PATROL_OFFSETS[Math.floor(state.time / 6) % AI_PATROL_OFFSETS.length];
-    tx = Math.max(TILE, Math.min(state.session.grid.world[0] - TILE, state.aiMemory.lastSeen.x + offset[0]));
-    ty = Math.max(TILE, Math.min(state.session.grid.world[1] - TILE, state.aiMemory.lastSeen.y + offset[1]));
   } else {
     troll.vx = 0;
     troll.vy = 0;

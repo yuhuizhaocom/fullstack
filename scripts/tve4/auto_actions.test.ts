@@ -30,6 +30,7 @@ test("keeps auto flags independent and does not run disabled actions", () => {
       upgradeTent: () => { calls.push("tent"); return true; },
       tentNeedsWall: () => true,
       upgradeWall: () => { calls.push("wall"); return true; },
+      repair: () => false,
       castSkill: () => { calls.push("skill"); return true; },
     },
   );
@@ -44,6 +45,7 @@ test("continues to later actions after an earlier action is unavailable", () => 
       upgradeTent: () => { calls.push("tent"); return false; },
       tentNeedsWall: () => true,
       upgradeWall: () => { calls.push("wall"); return true; },
+      repair: () => false,
       castSkill: (key) => { calls.push(key); return true; },
     },
   );
@@ -61,11 +63,28 @@ test("skips auto wall immediately after a house upgrade removes the wall depende
       upgradeTent: () => { calls.push("tent"); tentNeedsWall = false; return true; },
       tentNeedsWall: () => tentNeedsWall,
       upgradeWall: () => { calls.push("wall"); return true; },
+      repair: () => false,
       castSkill: () => true,
     },
   );
   assert.deepEqual(calls, ["tent"]);
   assert.deepEqual(result.upgrades, ["tent"]);
+});
+
+test("checks house wall dependency even when only auto wall is enabled", () => {
+  const calls: string[] = [];
+  const result = runAutoActions(
+    { upgradeTent: false, upgradeWall: true, repair: false, skills: [] },
+    {
+      upgradeTent: () => { calls.push("tent"); return true; },
+      tentNeedsWall: () => false,
+      upgradeWall: () => { calls.push("wall"); return true; },
+      repair: () => false,
+      castSkill: () => true,
+    },
+  );
+  assert.deepEqual(calls, []);
+  assert.deepEqual(result.upgrades, []);
 });
 
 test("runs auto repair after upgrades and before auto skills", () => {
