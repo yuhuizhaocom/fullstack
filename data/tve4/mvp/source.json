@@ -1,0 +1,108 @@
+{
+  "w3xSha256": "d8d3df747520529ee530a87754d568278f51378dfa30e419a64fe208165bb9d7",
+  "w3xFile": "92321DFF967C964EC7EB7EE52A91A7A4.w3x",
+  "snapshotId": "tve4-4.0.34b-d8d3df747520",
+  "coreFiles": {
+    "war3map.j": {
+      "size": 12283445,
+      "sha256": "d5941219dd0ac01a9189691266b55a0d205d41c537ce9ca0b7a06f6be5cf1720",
+      "status": "VERIFIED",
+      "note": "JASS 触发器脚本；哈希复用 docs/research/file-index.json。"
+    },
+    "war3map.wpm": {
+      "size": 1769488,
+      "sha256": "0ec395397888d611c1c9a1d4107f16e38482273c69ca3e8c169e3a1b0631e399",
+      "status": "VERIFIED",
+      "note": "1536×1152 原始可通行性数据；哈希复用 docs/research/file-index.json。"
+    },
+    "war3map.w3e": {
+      "size": 778928,
+      "sha256": "790bbf00fe6b305589fbe0db8af0911a633f39061c0569238a8d1437ebf21f15",
+      "status": "VERIFIED",
+      "note": "原始地表数据；哈希复用 docs/research/file-index.json。"
+    },
+    "war3map.doo": {
+      "size": 214174,
+      "sha256": "0d007db35d01bf44d343decea8f9c832cd9656db63fa7362bcb0aa5bab7cf99d",
+      "status": "VERIFIED",
+      "note": "原始装饰物位置；哈希复用 docs/research/file-index.json。"
+    },
+    "war3map.w3i": {
+      "size": 920,
+      "sha256": "40ba316e3505556cfbf67366f669372457e8e2c7fffe05f4973b199f8d97228c",
+      "status": "VERIFIED",
+      "note": "地图信息；哈希复用 docs/research/file-index.json。"
+    },
+    "war3map.w3a": {
+      "size": 127740,
+      "sha256": "f263f1fee82c65304c1477868a2b777d77aabe6a13f1439ba4933eb37e711a08",
+      "status": "VERIFIED",
+      "note": "地图内技能物编覆盖；哈希复用 docs/research/file-index.json。"
+    },
+    "AbilityBuffData.slk": {
+      "size": "UNKNOWN",
+      "sha256": "UNKNOWN",
+      "status": "UNKNOWN",
+      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+    },
+    "AbilityData.slk": {
+      "size": "UNKNOWN",
+      "sha256": "UNKNOWN",
+      "status": "UNKNOWN",
+      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+    },
+    "ItemData.slk": {
+      "size": "UNKNOWN",
+      "sha256": "UNKNOWN",
+      "status": "UNKNOWN",
+      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+    },
+    "UnitAbilities.slk": {
+      "size": "UNKNOWN",
+      "sha256": "UNKNOWN",
+      "status": "UNKNOWN",
+      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+    },
+    "UnitBalance.slk": {
+      "size": "UNKNOWN",
+      "sha256": "UNKNOWN",
+      "status": "UNKNOWN",
+      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+    },
+    "UnitData.slk": {
+      "size": "UNKNOWN",
+      "sha256": "UNKNOWN",
+      "status": "UNKNOWN",
+      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+    },
+    "UnitUI.slk": {
+      "size": "UNKNOWN",
+      "sha256": "UNKNOWN",
+      "status": "UNKNOWN",
+      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+    },
+    "UnitWeapons.slk": {
+      "size": "UNKNOWN",
+      "sha256": "UNKNOWN",
+      "status": "UNKNOWN",
+      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+    },
+    "UpgradeData.slk": {
+      "size": "UNKNOWN",
+      "sha256": "UNKNOWN",
+      "status": "UNKNOWN",
+      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+    }
+  },
+  "notes": [
+    "原作：新巨魔与精灵 v4.0.34b，作者跃耀F9；内部名称见原 W3X。",
+    "来源索引：docs/research/file-index.json，共 607 个 listfile 条目；本基准只摘录既有哈希，不重新实现 MPQ 解析。",
+    "原索引把原包 SHA-256 记为大写；本文件按任务规范使用同一摘要的小写形式。",
+    "snapshotId 是版本与原包哈希前缀组成的稳定标识；后续替换来源时必须同时更新该标识及文件哈希。"
+  ],
+  "unknowns": [
+    "九份 War3 默认 SLK 未出现在现有 file-index.json 中，文件大小与 SHA-256 保持 UNKNOWN；Task 5 使用前必须补来源、版本和哈希。",
+    "本任务不重新读取原 W3X 或解压目录，不声明对缺失 SLK 的可用性作出新核验。",
+    "原作视觉资产尚未提取，也未确认授权；MVP 使用临时几何视觉。"
+  ]
+}
