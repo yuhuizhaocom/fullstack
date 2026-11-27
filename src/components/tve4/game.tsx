@@ -23,10 +23,8 @@ import {
   createGame,
   demolishBuilding,
   getPlayer,
-  relocateElf,
   repairWall,
   stepGame,
-  toggleMobileDev,
   upgradeKind,
   tradeWood,
   tryBuild,
@@ -62,7 +60,6 @@ interface Snapshot {
   faction: Faction;
   testMode: boolean;
   canSummon: boolean;
-  mobileDev: boolean;
   trollStrength: number;
   relocateCd: number;
   wallUpgrade: { ok: boolean; reason: string; cost: number; wood: number; level: number };
@@ -102,7 +99,6 @@ export function Tve4Game() {
   const placingRef = useRef<BuildKind | null>(null);
   const moveTargetRef = useRef<{ x: number; y: number } | null>(null);
   const pendingSkillRef = useRef<SkillKey | null>(null);
-  const migrateRef = useRef(false);
   const dragRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const pinchRef = useRef<{ distance: number } | null>(null);
@@ -151,7 +147,6 @@ export function Tve4Game() {
       faction: s.playerFaction,
       testMode: s.testMode,
       canSummon: canSummonMage(s),
-      mobileDev: s.mobileDev,
       trollStrength: s.trollStrength,
       relocateCd: s.relocateCd,
       wallUpgrade: canUpgradeKind(s, "wall"),
@@ -437,15 +432,7 @@ export function Tve4Game() {
     const world = stage.screenToWorld(e.clientX, e.clientY);
     if (!world) return;
     hoverRef.current = world;
-    if (migrateRef.current) {
-        const gx = Math.floor(world.x / TILE);
-        const gy = Math.floor(world.y / TILE);
-        migrateRef.current = false;
-        relocateElf(state, gx, gy);
-        sync();
-        return;
-      }
-      if (pendingSkillRef.current) {
+    if (pendingSkillRef.current) {
         castSkill(state, pendingSkillRef.current, world);
         pendingSkillRef.current = null;
         sync();
@@ -584,7 +571,7 @@ export function Tve4Game() {
               onClick={() => setPendingFaction("elf")}
             >
               <div className="text-lg font-semibold text-emerald-300">精灵阵营</div>
-              <div className="mt-1 text-xs text-white/60">前期全力发育，中期起塔压制，后期 66 座终极塔召唤大法师；可搬家逃跑或游走发育</div>
+              <div className="mt-1 text-xs text-white/60">前期全力发育，中期起塔压制，后期 66 座终极塔召唤大法师</div>
             </button>
             <button
               className="rounded-xl border border-orange-500/50 bg-orange-900/40 p-4 text-left"
@@ -744,13 +731,6 @@ export function Tve4Game() {
                 >
                   拆除
                 </button>
-                <button
-                  className="pointer-events-auto rounded-lg bg-black/70 px-2 py-3 text-[11px] text-white"
-                  onClick={() => { const s = stateRef.current; if (s) { toggleMobileDev(s); sync(); } }}
-                >
-                  游走{snapshot.mobileDev ? "开" : "关"}
-                </button>
-                <button className="pointer-events-auto rounded-lg bg-black/70 px-2 py-3 text-[11px] text-white" onClick={() => { migrateRef.current = true; }}>迁移</button>
               </>
             ) : null}
           </div>
