@@ -208,6 +208,20 @@ test("damaged buildings do not repair without a repair order", () => {
   assert.equal(wall.hp, before, "original repair requires a worker order");
 });
 
+test("repair orders skip buildings already under repair", () => {
+  const state = createGame({ mapId: 0, seed: 33, playerFaction: "elf" });
+  const first = addUpgradeFixture(state, "wall", 1, 2);
+  const second = addUpgradeFixture(state, "wall", 1, 5);
+  first.hp = first.maxHp * 0.2;
+  second.hp = second.maxHp * 0.5;
+
+  assert.equal(repairWall(state, "wall"), true);
+  assert.equal(first.repairing, true);
+  assert.equal(repairWall(state, "wall"), true);
+  assert.equal(second.repairing, true);
+  assert.equal(repairWall(state, "wall"), false);
+});
+
 test("combat uses LOS, damage, and bounty on an isolated fixture", () => {
   const state = createGame({ mapId: 0, seed: 9, testMode: true, playerFaction: "elf" });
   openMap(state);

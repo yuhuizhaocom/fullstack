@@ -486,7 +486,7 @@ function buildingRepairRate(b: Building): number {
 /** 免费维修墙/建筑（原版修理不消耗资源）。 */
 export function repairWall(state: GameState, kind: BuildKind = "wall"): boolean {
   const list = state.buildings.filter(
-    (b) => b.alive && b.faction === "elf" && b.kind === kind && b.buildTimer <= 0 && b.hp < b.maxHp,
+    (b) => b.alive && b.faction === "elf" && b.kind === kind && b.buildTimer <= 0 && !b.repairing && b.hp < b.maxHp,
   );
   if (!list.length) {
     setHint(state, `没有需要维修的${BUILDINGS[kind].label}`);

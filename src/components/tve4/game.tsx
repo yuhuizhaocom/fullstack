@@ -148,6 +148,7 @@ export function Tve4Game() {
   const [audioSettings, setAudioSettingsState] = useState<Tve4AudioSettings>({ music: true, sfx: true });
   const [autoSkills, setAutoSkills] = useState<Set<SkillKey>>(() => new Set());
   const [autoUpgrades, setAutoUpgrades] = useState({ tent: false, wall: false });
+  const [autoRepair, setAutoRepair] = useState(false);
   const longPressRef = useRef<number | null>(null);
   const suppressClickRef = useRef(false);
 
@@ -384,17 +385,19 @@ export function Tve4Game() {
         acc += dt;
         let guard = 0;
         while (acc >= FIXED && guard < 5) {
-          if (autoSkills.size > 0 || autoUpgrades.tent || autoUpgrades.wall) {
+          if (autoSkills.size > 0 || autoUpgrades.tent || autoUpgrades.wall || autoRepair) {
             const auto = runAutoActions(
-              { upgradeTent: autoUpgrades.tent, upgradeWall: autoUpgrades.wall, skills: [...autoSkills] },
+              { upgradeTent: autoUpgrades.tent, upgradeWall: autoUpgrades.wall, repair: autoRepair, skills: [...autoSkills] },
               {
                 upgradeTent: () => canUpgradeKind(state, "tent").ok && upgradeKind(state, "tent"),
                 tentNeedsWall: () => needsWallForTentUpgrade(state),
                 upgradeWall: () => canUpgradeKind(state, "wall").ok && upgradeKind(state, "wall"),
+                repair: () => repairWall(state, "wall"),
                 castSkill: (key) => castSkill(state, key, hoverRef.current, true),
               },
             );
             if (auto.upgrades.length > 0) playTve4Sfx("upgrade");
+            if (auto.repaired) playTve4Sfx("heal");
             if (auto.skills.length > 0) playTve4Sfx("skill");
           }
           stepGame(state, FIXED, { mx, my, aim: hoverRef.current });
@@ -420,7 +423,7 @@ export function Tve4Game() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [sync, autoSkills, autoUpgrades]);
+  }, [sync, autoSkills, autoUpgrades, autoRepair]);
 
   useEffect(() => {
     const onKey = (down: boolean) => (e: KeyboardEvent) => {
@@ -624,6 +627,7 @@ export function Tve4Game() {
     setSheet(null);
     setAutoSkills(new Set());
     setAutoUpgrades({ tent: false, wall: false });
+    setAutoRepair(false);
     sync();
   }, [preMap, startFaction, selectedModelId, sync]);
 
@@ -879,11 +883,13 @@ export function Tve4Game() {
                   {snapshot.houseUpgrade.requirements.length ? <span className="mt-1 block text-[9px] font-normal text-white/65">前置 {requirementText(snapshot.houseUpgrade)}</span> : null}
                 </button>
                 <button
-                  className="pointer-events-auto rounded-lg bg-emerald-800 px-2 py-3 text-[11px] text-white"
-                  title="免费维修墙/建筑（原版修理不消耗资源）"
-                  onClick={() => { const s = stateRef.current; if (s) { playTve4Sfx(repairWall(s, "wall") ? "heal" : "error"); sync(); } }}
+                  {...longPressProps(() => setAutoRepair((current) => !current))}
+                  className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${autoRepair ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-emerald-800"}`}
+                  aria-pressed={autoRepair}
+                  title={`免费维修墙/建筑（原版修理不消耗资源）${autoRepair ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
+                  onClick={() => clickWithoutLongPress(() => { const s = stateRef.current; if (s) { playTve4Sfx(repairWall(s, "wall") ? "heal" : "error"); sync(); } })}
                 >
-                  维修
+                  维修{autoRepair ? <span className="ml-1 text-[9px] text-cyan-100">自动</span> : null}
                 </button>
                 <button
                   className="pointer-events-auto rounded-lg bg-rose-800 px-2 py-3 text-[11px] text-white disabled:opacity-40"
@@ -1074,11 +1080,22 @@ export function Tve4Game() {
             <div className="absolute bottom-24 right-3 z-20 rounded-xl border border-white/10 bg-neutral-900/95 p-3 text-xs text-white">
               <div className="font-semibold">{snapshot.selected.label} Lv{snapshot.selected.level}</div>
               <div>HP {Math.max(0, snapshot.selected.hp).toFixed(0)}/{snapshot.selected.maxHp}</div>
-              <div className="mt-1 text-white/60">
-                {snapshot.selected.canUpgrade
-                  ? `升级需 ${snapshot.selected.cost} 金${snapshot.selected.woodCost ? ` · ${snapshot.selected.woodCost} 木` : ""}`
-                  : "已满级"}
-              </div>
+              {snapshot.selected.canUpgrade ? (
+                <button
+                  className="mt-2 rounded-lg bg-amber-700 px-3 py-1 text-xs"
+                  onClick={() => {
+                    const s = stateRef.current;
+                    if (s && selectedRef.current !== null) {
+                      playTve4Sfx(tryUpgrade(s, selectedRef.current) ? "upgrade" : "error");
+                      sync();
+                    }
+                  }}
+                >
+                  升级 · {snapshot.selected.cost} 金{snapshot.selected.woodCost ? ` · ${snapshot.selected.woodCost} 木` : ""}
+                </button>
+              ) : (
+                <div className="mt-2 text-white/50">已满级</div>
+              )}
               {snapshot.demolish && !snapshot.demolish.ok ? (
                 <div className="mt-1 text-[10px] text-rose-300/70">{snapshot.demolish.reason}</div>
               ) : null}
