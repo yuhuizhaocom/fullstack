@@ -33,6 +33,7 @@ import {
   createGame,
   demolishBuilding,
   getPlayer,
+  isTrollVisibleToPlayer,
   needsWallForTentUpgrade,
   repairWall,
   stepGame,
@@ -84,6 +85,7 @@ interface Snapshot {
   testMode: boolean;
   canSummon: boolean;
   trollStrength: number;
+  trollVisible: boolean;
   relocateCd: number;
   wallUpgrade: UpgradeCheck;
   houseUpgrade: UpgradeCheck;
@@ -245,6 +247,7 @@ export function Tve4Game() {
       testMode: s.testMode,
       canSummon: canSummonMage(s),
       trollStrength: s.trollStrength,
+      trollVisible: isTrollVisibleToPlayer(s),
       relocateCd: s.relocateCd,
       wallUpgrade: canUpgradeKind(s, "wall"),
       houseUpgrade: canUpgradeKind(s, "tent"),
@@ -807,6 +810,19 @@ export function Tve4Game() {
                   音效 {audioSettings.sfx ? "开" : "关"}
                 </button>
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button className="pointer-events-auto rounded-lg bg-white/10 px-2 py-2" onClick={() => stageRef.current?.focusPlayer()}>
+                  聚焦精灵
+                </button>
+                <button
+                  className="pointer-events-auto rounded-lg bg-white/10 px-2 py-2 disabled:opacity-40"
+                  disabled={!snapshot.trollVisible}
+                  title={snapshot.trollVisible ? "聚焦当前可见巨魔" : "巨魔不在视野内"}
+                  onClick={() => stageRef.current?.focusTroll()}
+                >
+                  聚焦巨魔
+                </button>
+              </div>
               <div className="flex gap-2">
                 <button className="pointer-events-auto flex-1 rounded-lg bg-white/10 px-2 py-2" onClick={() => stageRef.current?.zoomBy(1.25)}>＋</button>
                 <button className="pointer-events-auto flex-1 rounded-lg bg-white/10 px-2 py-2" onClick={() => stageRef.current?.zoomBy(0.8)}>－</button>
@@ -814,155 +830,9 @@ export function Tve4Game() {
               </div>
             </div>
           ) : null}
-          <div className="pointer-events-none absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-28 right-2 z-30 flex flex-wrap justify-end gap-1.5 sm:left-36 sm:right-3 sm:gap-2">
-            <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => toggleSheet(snapshot.faction === "elf" ? "build" : "shop")}>
-              {snapshot.faction === "elf" ? "建造" : "商店"}
-            </button>
-            {SKILLS[snapshot.faction].map((spec) => (
-              <button
-                key={spec.key}
-                {...longPressProps(() => toggleAutoSkill(spec.key))}
-                className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${
-                  autoSkills.has(spec.key) ? "bg-cyan-900/80 ring-2 ring-cyan-300" : "bg-black/70"
-                } ${(snapshot.cooldowns[spec.key] ?? 0) > 0 || snapshot.mana < spec.manaCost ? "opacity-40" : ""}`}
-                aria-pressed={autoSkills.has(spec.key)}
-                aria-disabled={(snapshot.cooldowns[spec.key] ?? 0) > 0 || snapshot.mana < spec.manaCost}
-                title={`${spec.label}：${spec.desc}（${spec.manaCost} 法力）${autoSkills.has(spec.key) ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
-                onClick={() => clickWithoutLongPress(() => {
-                  const s = stateRef.current;
-                  if (s) {
-                    const ok = castSkill(s, spec.key, hoverRef.current);
-                    playTve4Sfx(ok ? "skill" : "error");
-                    sync();
-                  }
-                })}
-              >
-                <span
-                  className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-sm text-[10px] leading-none"
-                  style={{ background: SKILL_ICONS[spec.key].background, color: SKILL_ICONS[spec.key].color }}
-                >
-                  {SKILL_ICONS[spec.key].glyph}
-                </span>
-                {spec.label}
-                {autoSkills.has(spec.key) ? <span className="ml-1 text-[9px] text-cyan-200">自动</span> : null}
-                {(snapshot.cooldowns[spec.key] ?? 0) > 0 ? ` ${Math.ceil(snapshot.cooldowns[spec.key])}s` : ""}
-              </button>
-            ))}
-            {snapshot.faction === "elf" ? (
-              <>
-                <button
-                  {...longPressProps(() => toggleAutoUpgrade("wall"))}
-                  className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${
-                    autoUpgrades.wall ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-amber-800"
-                  } ${!snapshot.wallUpgrade.ok ? "opacity-40" : ""}`}
-                  aria-pressed={autoUpgrades.wall}
-                  aria-disabled={!snapshot.wallUpgrade.ok}
-                  title={`${snapshot.wallUpgrade.ok
-                    ? `升墙 Lv${snapshot.wallUpgrade.level + 1}：${snapshot.wallUpgrade.cost} 金${snapshot.wallUpgrade.wood ? ` · ${snapshot.wallUpgrade.wood} 木` : ""}`
-                    : snapshot.wallUpgrade.reason}${snapshot.wallUpgrade.requirements.length ? `；前置 ${requirementText(snapshot.wallUpgrade)}` : ""}${autoUpgrades.wall ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
-                  onClick={() => clickWithoutLongPress(() => { const s = stateRef.current; if (s) { playTve4Sfx(upgradeKind(s, "wall") ? "upgrade" : "error"); sync(); } })}
-                >
-                  升墙{snapshot.wallUpgrade.cost > 0 || snapshot.wallUpgrade.wood > 0 ? ` ${resourceProgress(snapshot.gold, snapshot.wood, snapshot.wallUpgrade.cost, snapshot.wallUpgrade.wood)}` : ""}
-                  {autoUpgrades.wall ? <span className="ml-1 text-[9px] text-cyan-100">自动</span> : null}
-                  {snapshot.wallUpgrade.requirements.length ? <span className="mt-1 block text-[9px] font-normal text-white/65">前置 {requirementText(snapshot.wallUpgrade)}</span> : null}
-                </button>
-                <button
-                  {...longPressProps(() => toggleAutoUpgrade("tent"))}
-                  className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${
-                    autoUpgrades.tent ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-amber-800"
-                  } ${!snapshot.houseUpgrade.ok ? "opacity-40" : ""}`}
-                  aria-pressed={autoUpgrades.tent}
-                  aria-disabled={!snapshot.houseUpgrade.ok}
-                  title={`${snapshot.houseUpgrade.ok
-                    ? `升房 Lv${snapshot.houseUpgrade.level + 1}：${snapshot.houseUpgrade.cost} 金${snapshot.houseUpgrade.wood ? ` · ${snapshot.houseUpgrade.wood} 木` : ""}`
-                    : snapshot.houseUpgrade.reason}${snapshot.houseUpgrade.requirements.length ? `；前置 ${requirementText(snapshot.houseUpgrade)}` : ""}${autoUpgrades.tent ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
-                  onClick={() => clickWithoutLongPress(() => { const s = stateRef.current; if (s) { playTve4Sfx(upgradeKind(s, "tent") ? "upgrade" : "error"); sync(); } })}
-                >
-                  升房{snapshot.houseUpgrade.cost > 0 || snapshot.houseUpgrade.wood > 0 ? ` ${resourceProgress(snapshot.gold, snapshot.wood, snapshot.houseUpgrade.cost, snapshot.houseUpgrade.wood)}` : ""}
-                  {autoUpgrades.tent ? <span className="ml-1 text-[9px] text-cyan-100">自动</span> : null}
-                  {snapshot.houseUpgrade.requirements.length ? <span className="mt-1 block text-[9px] font-normal text-white/65">前置 {requirementText(snapshot.houseUpgrade)}</span> : null}
-                </button>
-                <button
-                  {...longPressProps(() => setAutoRepair((current) => !current))}
-                  className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${autoRepair ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-emerald-800"}`}
-                  aria-pressed={autoRepair}
-                  title={`免费维修墙/建筑（原版修理不消耗资源）${autoRepair ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
-                  onClick={() => clickWithoutLongPress(() => { const s = stateRef.current; if (s) { playTve4Sfx(repairWall(s, "wall") ? "heal" : "error"); sync(); } })}
-                >
-                  维修{autoRepair ? <span className="ml-1 text-[9px] text-cyan-100">自动</span> : null}
-                </button>
-                <button
-                  className="pointer-events-auto rounded-lg bg-rose-800 px-2 py-3 text-[11px] text-white disabled:opacity-40"
-                  disabled={!snapshot.demolish?.ok}
-                  onClick={() => {
-                    const s = stateRef.current;
-                    if (s && selectedRef.current !== null) {
-                      playTve4Sfx(demolishBuilding(s, selectedRef.current) ? "demolish" : "error");
-                      selectedRef.current = null;
-                      sync();
-                    }
-                  }}
-                >
-                  拆除
-                </button>
-              </>
-            ) : null}
-          </div>
-          <button
-            className="pointer-events-auto absolute right-3 top-[max(8rem,calc(env(safe-area-inset-top)+7rem))] z-30 rounded-lg bg-black/70 px-3 py-2 text-xs text-white"
-            onClick={() => setShowMore(!showMore)}
-          >
-            更多
-          </button>
-          <div className="pointer-events-none absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] rounded-lg bg-black/60 px-3 py-2 text-right text-xs text-white">
-            <div>金币 {Math.floor(snapshot.gold)} · 木材 {Math.floor(snapshot.wood)}</div>
-            <div>生命 {Math.max(0, snapshot.hp).toFixed(0)}/{snapshot.maxHp} · 法力 {Math.floor(snapshot.mana)}/{snapshot.maxMana} · 剩余 {snapshot.lives}</div>
-            <div className="text-white/60">击杀 {snapshot.stats.kills} · 摧毁 {snapshot.stats.destroyed}</div>
-            {snapshot.trollItems.length ? (
-              <div className="text-[10px] text-amber-200/70">巨魔装备 {snapshot.trollItems.length}/{RULES.equipmentShop.items.length}</div>
-            ) : null}
-            {snapshot.faction === "troll" ? (
-              <div className="text-[10px] text-orange-200/80">
-                力量 {snapshot.trollStrength}/{SCENARIO_RULE.troll.strengthWin}
-              </div>
-            ) : null}
-          </div>
-          {snapshot.hasMarket ? (
-            <div className="pointer-events-none absolute right-3 top-24 flex gap-2">
-              <button
-                className="pointer-events-auto rounded-lg bg-black/60 px-2 py-1 text-[11px] text-white"
-                onClick={() => {
-                  const s = stateRef.current;
-                  if (s) { playTve4Sfx(tradeWood(s, true) ? "pickup" : "error"); sync(); }
-                }}
-              >
-                买木 {MARKET_RULE.tradeAmount} · {snapshot.woodPriceIn} 金
-              </button>
-              <button
-                className="pointer-events-auto rounded-lg bg-black/60 px-2 py-1 text-[11px] text-white"
-                onClick={() => {
-                  const s = stateRef.current;
-                  if (s) { playTve4Sfx(tradeWood(s, false) ? "pickup" : "error"); sync(); }
-                }}
-              >
-                卖木 {MARKET_RULE.tradeAmount} · +{snapshot.woodPriceOut} 金
-              </button>
-            </div>
-          ) : null}
-          {snapshot.hint ? (
-            <div className="pointer-events-none absolute left-1/2 top-14 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs text-white">
-              {snapshot.hint}
-            </div>
-          ) : null}
-          {snapshot.result ? (
-            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/70 text-white">
-              <div className="text-3xl font-bold">{snapshot.result === "win" ? "胜利" : "失败"}</div>
-              <div className="text-sm text-white/70">坚守 {snapshot.time.toFixed(0)} 秒 · 击杀 {snapshot.stats.kills} · 摧毁 {snapshot.stats.destroyed}</div>
-              <button className="rounded-lg bg-emerald-600 px-4 py-2 text-sm" onClick={() => restart()}>再来一局</button>
-            </div>
-          ) : null}
+          <div className="pointer-events-none absolute inset-x-0 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex flex-col gap-2 px-2">
           {sheet ? (
-            <div className="absolute bottom-24 left-1/2 z-20 max-w-[95vw] -translate-x-1/2 overflow-x-auto rounded-xl border border-white/10 bg-neutral-900/95 p-3 text-white">
+            <div className="pointer-events-auto order-1 max-h-[38vh] w-full overflow-y-auto rounded-xl border border-white/10 bg-neutral-900/95 p-3 text-white">
               {sheet === "build" ? (
                 <div className="flex flex-wrap gap-2">
                   {BUILD_KINDS.map((kind) => {
@@ -1077,7 +947,7 @@ export function Tve4Game() {
             </div>
           ) : null}
           {snapshot.selected ? (
-            <div className="absolute bottom-24 right-3 z-20 rounded-xl border border-white/10 bg-neutral-900/95 p-3 text-xs text-white">
+            <div className="pointer-events-auto order-2 self-end rounded-xl border border-white/10 bg-neutral-900/95 p-3 text-xs text-white">
               <div className="font-semibold">{snapshot.selected.label} Lv{snapshot.selected.level}</div>
               <div>HP {Math.max(0, snapshot.selected.hp).toFixed(0)}/{snapshot.selected.maxHp}</div>
               {snapshot.selected.canUpgrade ? (
@@ -1099,6 +969,154 @@ export function Tve4Game() {
               {snapshot.demolish && !snapshot.demolish.ok ? (
                 <div className="mt-1 text-[10px] text-rose-300/70">{snapshot.demolish.reason}</div>
               ) : null}
+            </div>
+          ) : null}
+          <div className="pointer-events-none order-3 flex flex-wrap justify-end gap-1.5 pl-28 sm:gap-2">
+            <button className="pointer-events-auto rounded-lg bg-black/70 px-3 py-3 text-xs text-white" onClick={() => toggleSheet(snapshot.faction === "elf" ? "build" : "shop")}>
+              {snapshot.faction === "elf" ? "建造" : "商店"}
+            </button>
+            {SKILLS[snapshot.faction].map((spec) => (
+              <button
+                key={spec.key}
+                {...longPressProps(() => toggleAutoSkill(spec.key))}
+                className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${
+                  autoSkills.has(spec.key) ? "bg-cyan-900/80 ring-2 ring-cyan-300" : "bg-black/70"
+                } ${(snapshot.cooldowns[spec.key] ?? 0) > 0 || snapshot.mana < spec.manaCost ? "opacity-40" : ""}`}
+                aria-pressed={autoSkills.has(spec.key)}
+                aria-disabled={(snapshot.cooldowns[spec.key] ?? 0) > 0 || snapshot.mana < spec.manaCost}
+                title={`${spec.label}：${spec.desc}（${spec.manaCost} 法力）${autoSkills.has(spec.key) ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
+                onClick={() => clickWithoutLongPress(() => {
+                  const s = stateRef.current;
+                  if (s) {
+                    const ok = castSkill(s, spec.key, hoverRef.current);
+                    playTve4Sfx(ok ? "skill" : "error");
+                    sync();
+                  }
+                })}
+              >
+                <span
+                  className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-sm text-[10px] leading-none"
+                  style={{ background: SKILL_ICONS[spec.key].background, color: SKILL_ICONS[spec.key].color }}
+                >
+                  {SKILL_ICONS[spec.key].glyph}
+                </span>
+                {spec.label}
+                {autoSkills.has(spec.key) ? <span className="ml-1 text-[9px] text-cyan-200">自动</span> : null}
+                {(snapshot.cooldowns[spec.key] ?? 0) > 0 ? ` ${Math.ceil(snapshot.cooldowns[spec.key])}s` : ""}
+              </button>
+            ))}
+            {snapshot.faction === "elf" ? (
+              <>
+                <button
+                  {...longPressProps(() => toggleAutoUpgrade("wall"))}
+                  className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${
+                    autoUpgrades.wall ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-amber-800"
+                  } ${!snapshot.wallUpgrade.ok ? "opacity-40" : ""}`}
+                  aria-pressed={autoUpgrades.wall}
+                  aria-disabled={!snapshot.wallUpgrade.ok}
+                  title={`${snapshot.wallUpgrade.ok
+                    ? `升墙 Lv${snapshot.wallUpgrade.level + 1}：${snapshot.wallUpgrade.cost} 金${snapshot.wallUpgrade.wood ? ` · ${snapshot.wallUpgrade.wood} 木` : ""}`
+                    : snapshot.wallUpgrade.reason}${snapshot.wallUpgrade.requirements.length ? `；前置 ${requirementText(snapshot.wallUpgrade)}` : ""}${autoUpgrades.wall ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
+                  onClick={() => clickWithoutLongPress(() => { const s = stateRef.current; if (s) { playTve4Sfx(upgradeKind(s, "wall") ? "upgrade" : "error"); sync(); } })}
+                >
+                  升墙{snapshot.wallUpgrade.cost > 0 || snapshot.wallUpgrade.wood > 0 ? ` ${resourceProgress(snapshot.gold, snapshot.wood, snapshot.wallUpgrade.cost, snapshot.wallUpgrade.wood)}` : ""}
+                  {autoUpgrades.wall ? <span className="ml-1 text-[9px] text-cyan-100">自动</span> : null}
+                  {snapshot.wallUpgrade.requirements.length ? <span className="mt-1 block text-[9px] font-normal text-white/65">前置 {requirementText(snapshot.wallUpgrade)}</span> : null}
+                </button>
+                <button
+                  {...longPressProps(() => toggleAutoUpgrade("tent"))}
+                  className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${
+                    autoUpgrades.tent ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-amber-800"
+                  } ${!snapshot.houseUpgrade.ok ? "opacity-40" : ""}`}
+                  aria-pressed={autoUpgrades.tent}
+                  aria-disabled={!snapshot.houseUpgrade.ok}
+                  title={`${snapshot.houseUpgrade.ok
+                    ? `升房 Lv${snapshot.houseUpgrade.level + 1}：${snapshot.houseUpgrade.cost} 金${snapshot.houseUpgrade.wood ? ` · ${snapshot.houseUpgrade.wood} 木` : ""}`
+                    : snapshot.houseUpgrade.reason}${snapshot.houseUpgrade.requirements.length ? `；前置 ${requirementText(snapshot.houseUpgrade)}` : ""}${autoUpgrades.tent ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
+                  onClick={() => clickWithoutLongPress(() => { const s = stateRef.current; if (s) { playTve4Sfx(upgradeKind(s, "tent") ? "upgrade" : "error"); sync(); } })}
+                >
+                  升房{snapshot.houseUpgrade.cost > 0 || snapshot.houseUpgrade.wood > 0 ? ` ${resourceProgress(snapshot.gold, snapshot.wood, snapshot.houseUpgrade.cost, snapshot.houseUpgrade.wood)}` : ""}
+                  {autoUpgrades.tent ? <span className="ml-1 text-[9px] text-cyan-100">自动</span> : null}
+                  {snapshot.houseUpgrade.requirements.length ? <span className="mt-1 block text-[9px] font-normal text-white/65">前置 {requirementText(snapshot.houseUpgrade)}</span> : null}
+                </button>
+                <button
+                  {...longPressProps(() => setAutoRepair((current) => !current))}
+                  className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${autoRepair ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-emerald-800"}`}
+                  aria-pressed={autoRepair}
+                  title={`免费维修墙/建筑（原版修理不消耗资源）${autoRepair ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
+                  onClick={() => clickWithoutLongPress(() => { const s = stateRef.current; if (s) { playTve4Sfx(repairWall(s, "wall") ? "heal" : "error"); sync(); } })}
+                >
+                  维修{autoRepair ? <span className="ml-1 text-[9px] text-cyan-100">自动</span> : null}
+                </button>
+                <button
+                  className="pointer-events-auto rounded-lg bg-rose-800 px-2 py-3 text-[11px] text-white disabled:opacity-40"
+                  disabled={!snapshot.demolish?.ok}
+                  onClick={() => {
+                    const s = stateRef.current;
+                    if (s && selectedRef.current !== null) {
+                      playTve4Sfx(demolishBuilding(s, selectedRef.current) ? "demolish" : "error");
+                      selectedRef.current = null;
+                      sync();
+                    }
+                  }}
+                >
+                  拆除
+                </button>
+              </>
+            ) : null}
+          </div>
+          </div>
+          <button
+            className="pointer-events-auto absolute right-3 top-[max(8rem,calc(env(safe-area-inset-top)+7rem))] z-30 rounded-lg bg-black/70 px-3 py-2 text-xs text-white"
+            onClick={() => setShowMore(!showMore)}
+          >
+            更多
+          </button>
+          <div className="pointer-events-none absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] rounded-lg bg-black/60 px-3 py-2 text-right text-xs text-white">
+            <div>金币 {Math.floor(snapshot.gold)} · 木材 {Math.floor(snapshot.wood)}</div>
+            <div>生命 {Math.max(0, snapshot.hp).toFixed(0)}/{snapshot.maxHp} · 法力 {Math.floor(snapshot.mana)}/{snapshot.maxMana} · 剩余 {snapshot.lives}</div>
+            <div className="text-white/60">击杀 {snapshot.stats.kills} · 摧毁 {snapshot.stats.destroyed}</div>
+            {snapshot.trollItems.length ? (
+              <div className="text-[10px] text-amber-200/70">巨魔装备 {snapshot.trollItems.length}/{RULES.equipmentShop.items.length}</div>
+            ) : null}
+            {snapshot.faction === "troll" ? (
+              <div className="text-[10px] text-orange-200/80">
+                力量 {snapshot.trollStrength}/{SCENARIO_RULE.troll.strengthWin}
+              </div>
+            ) : null}
+          </div>
+          {snapshot.hasMarket ? (
+            <div className="pointer-events-none absolute right-3 top-24 flex gap-2">
+              <button
+                className="pointer-events-auto rounded-lg bg-black/60 px-2 py-1 text-[11px] text-white"
+                onClick={() => {
+                  const s = stateRef.current;
+                  if (s) { playTve4Sfx(tradeWood(s, true) ? "pickup" : "error"); sync(); }
+                }}
+              >
+                买木 {MARKET_RULE.tradeAmount} · {snapshot.woodPriceIn} 金
+              </button>
+              <button
+                className="pointer-events-auto rounded-lg bg-black/60 px-2 py-1 text-[11px] text-white"
+                onClick={() => {
+                  const s = stateRef.current;
+                  if (s) { playTve4Sfx(tradeWood(s, false) ? "pickup" : "error"); sync(); }
+                }}
+              >
+                卖木 {MARKET_RULE.tradeAmount} · +{snapshot.woodPriceOut} 金
+              </button>
+            </div>
+          ) : null}
+          {snapshot.hint ? (
+            <div className="pointer-events-none absolute left-1/2 top-14 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs text-white">
+              {snapshot.hint}
+            </div>
+          ) : null}
+          {snapshot.result ? (
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/70 text-white">
+              <div className="text-3xl font-bold">{snapshot.result === "win" ? "胜利" : "失败"}</div>
+              <div className="text-sm text-white/70">坚守 {snapshot.time.toFixed(0)} 秒 · 击杀 {snapshot.stats.kills} · 摧毁 {snapshot.stats.destroyed}</div>
+              <button className="rounded-lg bg-emerald-600 px-4 py-2 text-sm" onClick={() => restart()}>再来一局</button>
             </div>
           ) : null}
         </>

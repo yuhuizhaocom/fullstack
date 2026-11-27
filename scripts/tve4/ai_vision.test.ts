@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { createPerception } from "../../src/lib/tve4/ai/perception";
 import { TILE } from "../../src/lib/tve4/config";
-import { createGame, stepGame } from "../../src/lib/tve4/engine";
+import { createGame, isTrollVisibleToPlayer, stepGame } from "../../src/lib/tve4/engine";
 import type { Building, GameState } from "../../src/lib/tve4/types";
 
 function testState(): GameState {
@@ -44,6 +44,20 @@ test("AI does not see an enemy outside its own vision", () => {
   const trollPerception = createPerception(state, "troll");
   assert.deepEqual(trollPerception.visibleEnemies().filter((h) => h.faction === "elf"), []);
   assert.equal(trollPerception.canSee(elf.x, elf.y), false);
+});
+
+test("troll focus availability follows player vision", () => {
+  const state = testState();
+  const elf = state.heroes.find((h) => h.isPlayer)!;
+  const troll = state.heroes.find((h) => h.faction === "troll")!;
+  elf.x = 50;
+  elf.y = 50;
+  troll.x = 936;
+  troll.y = 840;
+  assert.equal(isTrollVisibleToPlayer(state), false);
+  troll.x = elf.x + 30;
+  troll.y = elf.y;
+  assert.equal(isTrollVisibleToPlayer(state), true);
 });
 
 test("vision follows current positions and remembers explored buildings", () => {

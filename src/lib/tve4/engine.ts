@@ -261,6 +261,10 @@ export function getPlayer(state: GameState): Hero | undefined {
   return state.heroes.find((h) => h.isPlayer);
 }
 
+export function isTrollVisibleToPlayer(state: GameState): boolean {
+  return createPerception(state, state.playerFaction).visibleEnemies().some((h) => h.faction === "troll");
+}
+
 // ---------------------------------------------------------------- 碰撞 / 建造
 
 function isUnderConstruction(b: Building): boolean {

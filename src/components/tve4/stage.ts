@@ -37,6 +37,8 @@ export interface Stage4 {
   zoomBy(factor: number): void;
   panBy(dx: number, dy: number): void;
   setPanning(value: boolean): void;
+  focusPlayer(): void;
+  focusTroll(): void;
   getZoom(): number;
   resize(width: number, height: number): void;
   screenToWorld(clientX: number, clientY: number): { x: number; y: number } | null;
@@ -56,6 +58,7 @@ class Tve4Scene extends Phaser.Scene {
   private entities!: Phaser.GameObjects.Graphics;
   private effects!: Phaser.GameObjects.Graphics;
   private overlays!: Phaser.GameObjects.Graphics;
+  private wallOutlines!: Phaser.GameObjects.Graphics;
   private fog!: Phaser.GameObjects.Image;
   private bars!: Phaser.GameObjects.Graphics;
   private texts: Phaser.GameObjects.Text[] = [];
@@ -83,6 +86,9 @@ class Tve4Scene extends Phaser.Scene {
   private zoom = 1.15;
   private zoomTarget = 1.15;
   private fullMap = false;
+  private followPlayer = true;
+  private lastPlayer: { x: number; y: number } | null = null;
+  private lastVisibleTroll: { x: number; y: number } | null = null;
   private forceAttack = false;
   private panning = false;
 
@@ -153,6 +159,7 @@ class Tve4Scene extends Phaser.Scene {
     fogContext.fillRect(0, 0, 512, 512);
     fogTexture.refresh();
     this.fog = this.add.image(0, 0, "tve4-fog").setOrigin(0.5).setScrollFactor(0).setDepth(38);
+    this.wallOutlines = this.add.graphics().setDepth(40);
     this.bars = this.add.graphics().setDepth(42);
 
     this.drawTerrain();
@@ -359,6 +366,9 @@ class Tve4Scene extends Phaser.Scene {
     assertRuntimeBoundsMatch(this.runtimeBounds, session.grid.bounds);
     this.spawns = session.spawns;
     this.audioEventState = null;
+    this.followPlayer = true;
+    this.lastPlayer = null;
+    this.lastVisibleTroll = null;
     this.drawSpawnMarkers();
   }
 
@@ -369,12 +379,33 @@ class Tve4Scene extends Phaser.Scene {
   setZoomBy(factor: number): void {
     this.zoomTarget = Phaser.Math.Clamp(this.zoomTarget * factor, 0.08, 2.5);
     this.fullMap = false;
+    if (this.followPlayer && this.lastPlayer) {
+      this.camX = this.lastPlayer.x;
+      this.camY = this.lastPlayer.y;
+    }
   }
 
   panBy(dx: number, dy: number): void {
+    this.followPlayer = false;
     this.camX = Phaser.Math.Clamp(this.camX + dx, this.cameraRect.x, this.cameraRect.x + this.cameraRect.width);
     this.camY = Phaser.Math.Clamp(this.camY + dy, this.cameraRect.y, this.cameraRect.y + this.cameraRect.height);
     this.fullMap = false;
+  }
+
+  focusPlayer(): void {
+    if (!this.lastPlayer) return;
+    this.followPlayer = true;
+    this.fullMap = false;
+    this.camX = this.lastPlayer.x;
+    this.camY = this.lastPlayer.y;
+  }
+
+  focusTroll(): void {
+    if (!this.lastVisibleTroll) return;
+    this.followPlayer = false;
+    this.fullMap = false;
+    this.camX = this.lastVisibleTroll.x;
+    this.camY = this.lastVisibleTroll.y;
   }
 
   setPanning(value: boolean): void {
@@ -406,6 +437,9 @@ class Tve4Scene extends Phaser.Scene {
 
     const camera = this.cameras.main;
     const player = state.heroes.find((hero) => hero.isPlayer && hero.alive);
+    this.lastPlayer = player ? { x: player.x, y: player.y } : null;
+    const visibleTroll = state.heroes.find((hero) => hero.faction === "troll" && hero.alive && visibleEnemyHeroIds.has(hero.id));
+    this.lastVisibleTroll = visibleTroll ? { x: visibleTroll.x, y: visibleTroll.y } : null;
     if (player) {
       this.game.canvas.dataset.playerX = player.x.toFixed(3);
       this.game.canvas.dataset.playerY = player.y.toFixed(3);
@@ -413,8 +447,10 @@ class Tve4Scene extends Phaser.Scene {
       delete this.game.canvas.dataset.playerX;
       delete this.game.canvas.dataset.playerY;
     }
+    this.game.canvas.dataset.trollVisible = String(Boolean(visibleTroll));
+    this.game.canvas.dataset.cameraFollow = String(this.followPlayer);
     this.game.canvas.dataset.buildingCount = String(state.buildings.filter((building) => building.alive).length);
-    if (!this.fullMap && !this.panning && player) {
+    if (!this.fullMap && this.followPlayer && player) {
       this.camX += (player.x - this.camX) * 0.1;
       this.camY += (player.y - this.camY) * 0.1;
     }
@@ -431,12 +467,21 @@ class Tve4Scene extends Phaser.Scene {
       delete this.game.canvas.dataset.playerScreenX;
       delete this.game.canvas.dataset.playerScreenY;
     }
+    if (visibleTroll) {
+      const trollScreen = camera.getViewMatrix(true).transformPoint(visibleTroll.x, visibleTroll.y);
+      this.game.canvas.dataset.trollScreenX = trollScreen.x.toFixed(2);
+      this.game.canvas.dataset.trollScreenY = trollScreen.y.toFixed(2);
+    } else {
+      delete this.game.canvas.dataset.trollScreenX;
+      delete this.game.canvas.dataset.trollScreenY;
+    }
     this.syncHeroModel(player);
 
     this.shadows.clear();
     this.entities.clear();
     this.effects.clear();
     this.overlays.clear();
+    this.wallOutlines.clear();
     this.bars.clear();
 
     for (const building of state.buildings) {
@@ -458,12 +503,13 @@ class Tve4Scene extends Phaser.Scene {
         { alpha },
       );
       if (building.kind === "wall") {
-        this.overlays.lineStyle(8, 0xffd86b, 0.25);
-        this.overlays.strokeRect(building.x - pixels / 2 - 4, building.y - pixels / 2 - 4, pixels + 8, pixels + 8);
-        this.overlays.lineStyle(4, 0x1a1410, 1);
-        this.overlays.strokeRect(building.x - pixels / 2 - 1, building.y - pixels / 2 - 1, pixels + 2, pixels + 2);
-        this.overlays.lineStyle(2, 0xffe6ad, 1);
-        this.overlays.strokeRect(building.x - pixels / 2, building.y - pixels / 2, pixels, pixels);
+        const outlines = building.faction === state.playerFaction ? this.wallOutlines : this.overlays;
+        outlines.lineStyle(8, 0xffd86b, 0.25);
+        outlines.strokeRect(building.x - pixels / 2 - 4, building.y - pixels / 2 - 4, pixels + 8, pixels + 8);
+        outlines.lineStyle(4, 0x1a1410, 1);
+        outlines.strokeRect(building.x - pixels / 2 - 1, building.y - pixels / 2 - 1, pixels + 2, pixels + 2);
+        outlines.lineStyle(2, 0xffe6ad, 1);
+        outlines.strokeRect(building.x - pixels / 2, building.y - pixels / 2, pixels, pixels);
       }
       if (building.flash > 0) {
         this.overlays.lineStyle(2, 0xffc0c0, 0.8);
@@ -493,8 +539,11 @@ class Tve4Scene extends Phaser.Scene {
         this.bars.fillRect(building.x - 22, building.y - pixels * 0.42, 44 * progress, 4);
       }
       if (building.id === this.interaction.selectedId) {
-        this.overlays.lineStyle(2, 0xffd86b, 0.9);
-        this.overlays.strokeRect(building.x - pixels / 2 - 3, building.y - pixels / 2 - 3, pixels + 6, pixels + 6);
+        const selection = building.kind === "wall" && building.faction === state.playerFaction
+          ? this.wallOutlines
+          : this.overlays;
+        selection.lineStyle(2, 0xffd86b, 0.9);
+        selection.strokeRect(building.x - pixels / 2 - 3, building.y - pixels / 2 - 3, pixels + 6, pixels + 6);
       }
       if (building.eyeMarked > 0) {
         this.overlays.lineStyle(2, 0xff7a5c, 0.9);
@@ -674,6 +723,8 @@ export async function createStage4(canvas: HTMLCanvasElement, width: number, hei
     zoomBy: (factor) => scene.setZoomBy(factor),
     panBy: (dx, dy) => scene.panBy(dx, dy),
     setPanning: (value) => scene.setPanning(value),
+    focusPlayer: () => scene.focusPlayer(),
+    focusTroll: () => scene.focusTroll(),
     getZoom: () => scene.getZoomValue(),
     resize: (w, h) => {
       game.scale.resize(w, h);
