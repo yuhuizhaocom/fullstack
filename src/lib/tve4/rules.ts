@@ -124,7 +124,7 @@ function indexedValues(id: string, field: string, fallback: number | number[]): 
 function mvpBuildings(): RuleFile["buildings"] {
   return Object.fromEntries(MVP_RULES.buildings.map((record) => {
     const old = legacy.buildings[record.id]
-      ?? (record.id === "lumberCamp" ? { gold: [60], wood: [0], hp: [120], woodIncome: [0.625] } : undefined);
+      ?? (record.id === "lumberCamp" ? { gold: [2000, 3600, 18000], wood: [0, 0, 0], hp: [120, 240, 480], woodIncome: [1, 2, 10] } : undefined);
     if (!old && record.id !== "market") throw new Error(`Missing legacy building metadata: ${record.id}`);
     const gold = indexedValues(record.id, "gold", old?.gold ?? []);
     const wood = indexedValues(record.id, "wood", old?.wood ?? []);

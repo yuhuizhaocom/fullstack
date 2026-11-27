@@ -405,8 +405,9 @@ export function tryUpgrade(state: GameState, id: number): boolean {
     return false;
   }
   const spec = def.levels[b.level];
+  const cost = buildingUpgradeCost(b.kind, b.level);
   const hero = b.faction === "elf" ? getPlayer(state) : state.heroes.find((h) => h.faction === b.faction);
-  if (!hero || hero.gold < spec.cost) {
+  if (!hero || hero.gold < cost) {
     setHint(state, "金币不足");
     return false;
   }
@@ -419,7 +420,7 @@ export function tryUpgrade(state: GameState, id: number): boolean {
     setHint(state, missing);
     return false;
   }
-  hero.gold -= spec.cost;
+  hero.gold -= cost;
   hero.wood -= spec.woodCost ?? 0;
   b.level += 1;
   b.maxHp = def.levels[b.level - 1].hp;
@@ -503,6 +504,13 @@ export function repairWall(state: GameState, kind: BuildKind = "wall"): boolean 
   return true;
 }
 
+export function buildingUpgradeCost(kind: BuildKind, currentLevel: number): number {
+  const def = BUILDINGS[kind];
+  const next = def.levels[currentLevel];
+  if (!next) return 0;
+  return kind === "lumberCamp" ? next.cost - def.levels[currentLevel - 1].cost : next.cost;
+}
+
 export function canUpgradeKind(state: GameState, kind: BuildKind): UpgradeCheck {
   const def = BUILDINGS[kind];
   const b = state.buildings
@@ -511,13 +519,14 @@ export function canUpgradeKind(state: GameState, kind: BuildKind): UpgradeCheck 
   if (!b) return { ok: false, reason: `需要先建造${def.label}`, cost: 0, wood: 0, level: 0, requirements: [] };
   if (b.level >= def.levels.length) return { ok: false, reason: "已满级", cost: 0, wood: 0, level: b.level, requirements: [] };
   const spec = def.levels[b.level];
+  const cost = buildingUpgradeCost(kind, b.level);
   const requirement = requirementInfo(state, kind, b.level + 1, "elf");
   const requirements = requirement ? [requirement] : [];
   const hero = getPlayer(state);
-  if (!hero || hero.gold < spec.cost) return { ok: false, reason: `需 ${spec.cost} 金`, cost: spec.cost, wood: spec.woodCost ?? 0, level: b.level, requirements };
+  if (!hero || hero.gold < cost) return { ok: false, reason: `需 ${cost} 金`, cost, wood: spec.woodCost ?? 0, level: b.level, requirements };
   const missing = requirement && !requirement.met ? `需要先建造 ${requirement.label} Lv${requirement.level}` : null;
-  if (missing) return { ok: false, reason: missing, cost: spec.cost, wood: spec.woodCost ?? 0, level: b.level, requirements };
-  return { ok: true, reason: "", cost: spec.cost, wood: spec.woodCost ?? 0, level: b.level, requirements };
+  if (missing) return { ok: false, reason: missing, cost, wood: spec.woodCost ?? 0, level: b.level, requirements };
+  return { ok: true, reason: "", cost, wood: spec.woodCost ?? 0, level: b.level, requirements };
 }
 
 export function needsWallForTentUpgrade(state: GameState): boolean {

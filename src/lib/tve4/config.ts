@@ -120,7 +120,7 @@ export const BUILDINGS: Record<string, BuildingDef> = {
     }],
   },
   lumberCamp: {
-    label: "精灵采木场", desc: "60 金建造，每 8 秒产出 5 木材，等效于采木精灵", texture: "b_tent",
+    label: "精灵采木场", desc: "2000 金起，每级累计 2000/3600/18000 金，产量 1/2/10 木每秒", texture: "b_tent",
     size: ruleNumber("lumberCamp", "size"), buildTime: ruleNumber("lumberCamp", "buildTime"),
     levels: levels("lumberCamp").map(({ cost, hp, woodIncome }) => ({ cost, hp, woodIncome })),
   },

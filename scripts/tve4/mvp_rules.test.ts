@@ -222,7 +222,11 @@ test("runtime rules preserve current hero, building, skill and shop values throu
   assert.equal(BUILDINGS.wall.levels.length, 10);
   assert.equal(BUILDINGS.tower.levels.length, 8);
   assert.deepEqual(BUILDINGS.market.levels, [{ cost: 64, hp: 50 }, { cost: 256, hp: 100 }, { cost: 1024, hp: 200 }]);
-  assert.deepEqual(BUILDINGS.lumberCamp.levels, [{ cost: 60, hp: 120, woodIncome: 0.625 }]);
+  assert.deepEqual(BUILDINGS.lumberCamp.levels, [
+    { cost: 2000, hp: 120, woodIncome: 1 },
+    { cost: 3600, hp: 240, woodIncome: 2 },
+    { cost: 18000, hp: 480, woodIncome: 10 },
+  ]);
   assert.deepEqual(REQUIREMENTS.tent?.map((entry) => [entry.level, entry.need.kind, entry.need.level]), [[2, "wall", 1], [3, "wall", 4], [4, "market", 1], [5, "wall", 1], [6, "market", 2], [7, "wall", 4], [8, "market", 2], [9, "market", 3], [10, "market", 3]]);
   assert.deepEqual(REQUIREMENTS.reveal, [{ level: 1, need: { kind: "market", level: 2 } }]);
   assert.equal(ruleNumber("troll", "speed"), 175);

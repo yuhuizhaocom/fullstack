@@ -102,6 +102,10 @@ def config_evidence(record_id: str, field: str) -> dict:
     return evidence("src/lib/tve4/config.ts", "INFERRED", objectId=record_id, field=field)
 
 
+def user_adaptation_evidence(record_id: str, field: str, value) -> dict:
+    return evidence("user-specified", "INFERRED", objectId=record_id, field=field, value=number(value))
+
+
 def number(value) -> float | int:
     n = float(value)
     return int(n) if n.is_integer() else n
@@ -340,30 +344,34 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
             add_unknown(unknowns, "building.tower", "damage.7", "终极塔伤害保留当前运行值；未找到原版 UnitWeapons/JASS 的等值证据。")
 
     wisp = balance["ewsp"]
-    harvest = ability_data["Awha"]
-    lumber_gold = number(wisp["goldcost"])
     lumber_hp = number(wisp["HP"])
-    lumber_per_trip = number(harvest["DataA1"])
-    lumber_seconds = number(harvest["Dur1"])
-    lumber_rate = lumber_per_trip / lumber_seconds
+    lumber_gold = [2000, 3600, 18000]
+    lumber_wood_income = [1, 2, 10]
     lumber_values = {
         "objectId": "WEB_LUMBER_CAMP", "size": 2, "buildTime": 2,
-        "gold.0": lumber_gold, "wood.0": 0, "hp.0": lumber_hp,
-        "woodIncome.0": lumber_rate, "originalWoodPerTrip": lumber_per_trip,
-        "originalHarvestSeconds": lumber_seconds,
+        "gold.0": lumber_gold[0], "gold.1": lumber_gold[1], "gold.2": lumber_gold[2],
+        "wood.0": 0, "wood.1": 0, "wood.2": 0,
+        "hp.0": lumber_hp, "hp.1": 240, "hp.2": 480,
+        "woodIncome.0": lumber_wood_income[0], "woodIncome.1": lumber_wood_income[1], "woodIncome.2": lumber_wood_income[2],
     }
     lumber_sources = {
         "size": [config_evidence("lumberCamp", "size")],
         "buildTime": [config_evidence("lumberCamp", "buildTime")],
-        "gold.0": [slk_evidence("UnitBalance.slk", "ewsp", "goldcost", value=lumber_gold)],
-        "wood.0": [config_evidence("lumberCamp", "wood.0")],
+        "gold.0": [user_adaptation_evidence("lumberCamp", "gold.0", lumber_gold[0])],
+        "gold.1": [user_adaptation_evidence("lumberCamp", "gold.1", lumber_gold[1])],
+        "gold.2": [user_adaptation_evidence("lumberCamp", "gold.2", lumber_gold[2])],
+        "wood.0": [user_adaptation_evidence("lumberCamp", "wood.0", 0)],
+        "wood.1": [user_adaptation_evidence("lumberCamp", "wood.1", 0)],
+        "wood.2": [user_adaptation_evidence("lumberCamp", "wood.2", 0)],
         "hp.0": [slk_evidence("UnitBalance.slk", "ewsp", "HP", value=lumber_hp)],
-        "woodIncome.0": [slk_evidence("AbilityData.slk", "Awha", "DataA1/Dur1", "INFERRED", value=lumber_rate)],
-        "originalWoodPerTrip": [slk_evidence("AbilityData.slk", "Awha", "DataA1", value=lumber_per_trip)],
-        "originalHarvestSeconds": [slk_evidence("AbilityData.slk", "Awha", "Dur1", value=lumber_seconds)],
+        "hp.1": [user_adaptation_evidence("lumberCamp", "hp.1", 240)],
+        "hp.2": [user_adaptation_evidence("lumberCamp", "hp.2", 480)],
+        "woodIncome.0": [user_adaptation_evidence("lumberCamp", "woodIncome.0", lumber_wood_income[0])],
+        "woodIncome.1": [user_adaptation_evidence("lumberCamp", "woodIncome.1", lumber_wood_income[1])],
+        "woodIncome.2": [user_adaptation_evidence("lumberCamp", "woodIncome.2", lumber_wood_income[2])],
     }
     building_records.append(make_record("lumberCamp", lumber_values, lumber_sources))
-    add_unknown(unknowns, "building.lumberCamp", "web-adaptation", "精灵采木场是网页单机适配建筑，用于替代采木精灵；价格/HP 取自 ewsp，收益按 Awha 每次 5 木、8 秒换算为每秒 0.625 木，建筑对象本身为 INFERRED。")
+    add_unknown(unknowns, "building.lumberCamp", "web-adaptation", "精灵采木场是用户指定的网页单机适配建筑；三档累计价格为 2000/3600/18000 金，产量为 1/2/10 木每秒，HP 以 ewsp 的 120 为基础扩展。")
 
     skill_records = []
     runtime_cd = {"blink": 25, "haste": 30, "entangle": 3, "silence": 60, "windwalk": 30, "berserk": 120, "teleport": 45, "farSight": 25}

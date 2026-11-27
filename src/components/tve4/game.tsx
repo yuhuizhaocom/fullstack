@@ -25,6 +25,7 @@ import { runAutoActions } from "@/lib/tve4/auto-actions";
 import {
   buyEquipment,
   buyStrengthBook,
+  buildingUpgradeCost,
   canBuild,
   canUpgradeKind,
   canDemolish,
@@ -234,7 +235,7 @@ export function Tve4Game() {
     const b = selectedRef.current !== null ? s.buildings.find((x) => x.id === selectedRef.current && x.alive) : null;
     const def = b ? BUILDINGS[b.kind] : null;
     const nextSpec = b && def && b.level < def.levels.length ? def.levels[b.level] : null;
-    const nextCost = nextSpec?.cost ?? 0;
+    const nextCost = b && def && b.level < def.levels.length ? buildingUpgradeCost(b.kind, b.level) : 0;
     const nextWood = nextSpec?.woodCost ?? 0;
     setSnapshot({
       time: s.time,
