@@ -331,8 +331,7 @@ class Tve4Scene extends Phaser.Scene {
       );
     };
 
-    if (this.spawns.troll) marker(this.spawns.troll.gx, this.spawns.troll.gy, 0xff7a5c, "巨魔出生点", 20);
-    if (this.spawns.elf) marker(this.spawns.elf.gx, this.spawns.elf.gy, 0x7ee08a, "精灵出生点", 16);
+    if (this.spawns.troll) marker(this.spawns.troll.gx, this.spawns.troll.gy, 0xff7a5c, "出生点", 20);
     this.game.canvas.dataset.spawns = JSON.stringify(this.spawns);
     this.game.canvas.dataset.spawnMarkers = String(this.spawnLabels.length);
   }

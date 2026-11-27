@@ -165,7 +165,7 @@ test("troll skills apply legal casts, channeling, mana and expiry", () => {
 
   const teleport = fresh("troll");
   const caster = teleport.heroes.find((h) => h.isPlayer)!;
-  const spawn = teleport.session.spawns.troll!;
+  const spawn = teleport.session.trollBase;
   caster.x += TILE * 4;
   assert.equal(castSkill(teleport, "teleport"), true);
   assert.equal(caster.channelTime, 2);

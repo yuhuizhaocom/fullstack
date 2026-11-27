@@ -191,12 +191,12 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
 
 function createTrollInfrastructure(state: GameState): void {
   // u03D 原版由系统创建，玩家不能自建
-  const spawn = requireSpawn(state.session, "troll");
-  state.buildings.push(makeBuilding(state, "trollHouse", "troll", spawn.gx - 1, spawn.gy - 1, 0));
+  const base = state.session.trollBase;
+  state.buildings.push(makeBuilding(state, "trollHouse", "troll", base.gx - 1, base.gy - 1, 0));
   for (const [ox, oy] of EQUIPMENT_RULE.shopOffsets) {
     state.buildings.push(makeBuilding(
       state, "market", "troll",
-      spawn.gx + Math.round(ox * 0.5), spawn.gy + Math.round(oy * 0.5), 0,
+      base.gx + Math.round(ox * 0.5), base.gy + Math.round(oy * 0.5), 0,
     ));
   }
 }
@@ -720,8 +720,8 @@ function updateTimers(state: GameState, dt: number): void {
       h.channelTime -= dt;
       if (h.channelTime <= 0) {
         h.channelTime = 0;
-        const spawn = requireSpawn(state.session, "troll");
-        const p = gridToWorld(spawn.gx, spawn.gy);
+        const base = state.session.trollBase;
+        const p = gridToWorld(base.gx, base.gy);
         h.x = p.x;
         h.y = p.y;
         h.invuln = 1;
@@ -896,8 +896,8 @@ function updateProjectiles(state: GameState, dt: number): void {
 }
 
 function nearShop(state: GameState, troll: Hero): boolean {
-  const spawn = requireSpawn(state.session, "troll");
-  const point = gridToWorld(spawn.gx, spawn.gy);
+  const base = state.session.trollBase;
+  const point = gridToWorld(base.gx, base.gy);
   return Math.hypot(troll.x - point.x, troll.y - point.y) <= EQUIPMENT_RULE.purchaseRadius;
 }
 
@@ -967,8 +967,8 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
   let tx: number;
   let ty: number;
   if (nextItem && troll.gold >= nextItem.gold && troll.hp > troll.maxHp * 0.5) {
-    const spawn = requireSpawn(state.session, "troll");
-    const point = gridToWorld(spawn.gx, spawn.gy);
+    const base = state.session.trollBase;
+    const point = gridToWorld(base.gx, base.gy);
     tx = point.x;
     ty = point.y;
   } else if (house && troll.hp < troll.maxHp * 0.35) {

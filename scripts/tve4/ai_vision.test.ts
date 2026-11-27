@@ -36,6 +36,11 @@ function wallNear(state: GameState, x: number, y: number): Building {
 test("AI does not see an enemy outside its own vision", () => {
   const state = testState();
   const elf = state.heroes.find((h) => h.isPlayer)!;
+  const troll = state.heroes.find((h) => h.faction === "troll")!;
+  elf.x = 50;
+  elf.y = 50;
+  troll.x = 936;
+  troll.y = 840;
   const trollPerception = createPerception(state, "troll");
   assert.deepEqual(trollPerception.visibleEnemies().filter((h) => h.faction === "elf"), []);
   assert.equal(trollPerception.canSee(elf.x, elf.y), false);
@@ -43,7 +48,10 @@ test("AI does not see an enemy outside its own vision", () => {
 
 test("vision follows current positions and remembers explored buildings", () => {
   const state = testState();
-  const { elf, troll } = placeTrollAtElf(state, 40);
+  const elf = state.heroes.find((h) => h.isPlayer)!;
+  elf.x = 200;
+  elf.y = 200;
+  const { troll } = placeTrollAtElf(state, 40);
   const near = createPerception(state, "troll");
   assert.equal(near.canSee(elf.x, elf.y), true);
   assert.deepEqual(near.visibleEnemies().filter((h) => h.faction === "elf"), [elf]);
@@ -54,8 +62,10 @@ test("vision follows current positions and remembers explored buildings", () => 
   const seesWall = createPerception(state, "troll");
   assert.ok(seesWall.visibleBuildings().some((b) => b.id === wall.id));
 
-  troll.x = elf.x + 1200;
-  troll.y = elf.y + 900;
+  troll.x = 1200;
+  troll.y = 900;
+  elf.x = 50;
+  elf.y = 50;
   const far = createPerception(state, "troll");
   assert.equal(far.canSee(elf.x, elf.y), false);
   assert.equal(far.visibleBuildings().some((b) => b.id === wall.id), false);
@@ -73,8 +83,10 @@ test("windwalk hides a hero until revealed, and the expose rule overrides distan
   assert.equal(createPerception(state, "elf").visibleEnemies().includes(troll), true);
 
   troll.buffs.revealed = 0;
-  troll.x = elf.x + 2000;
-  troll.y = elf.y + 2000;
+  troll.x = 1200;
+  troll.y = 900;
+  elf.x = 50;
+  elf.y = 50;
   const beforeExpose = createPerception(state, "troll");
   assert.equal(beforeExpose.visibleEnemies().includes(elf), false);
   state.elfExposed = true;
@@ -99,6 +111,10 @@ test("player-side perception never overwrites AI memory", () => {
 
 test("vision-constrained AI navigates real WPM and finishes a stationary map-3 game", () => {
   const state = createGame({ mapId: 3, seed: 11, testMode: true, playerFaction: "elf" });
+  const elf = state.heroes.find((h) => h.faction === "elf")!;
+  elf.x = 280;
+  elf.y = 104;
+  state.aiMemory.lastSeen = { x: elf.x, y: elf.y };
   for (let i = 0; i < 30 * 30 && !state.result; i += 1) stepGame(state, 1 / 30, { mx: 0, my: 0 });
   assert.equal(state.result, "lose");
   assert.equal(state.heroes.find((h) => h.faction === "elf")!.alive, false);

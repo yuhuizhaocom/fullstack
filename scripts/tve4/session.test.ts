@@ -48,7 +48,7 @@ test("shared WPM clearance rejects blocked samples and accepts real spawn center
   const perimeterBlocked = createGame({ mapId: 0 });
   perimeterBlocked.session.pathing32.fill(0);
   perimeterBlocked.session.pathing32[117 * 1_536 + 464] |= 0x02;
-  assert.equal(isFree(perimeterBlocked, 100, 100, HERO_STATS.elf.radius), false, "the circular perimeter is sampled");
+  assert.equal(isFree(perimeterBlocked, 100, 100, HERO_STATS.elf.radius), true, "unverified body radius does not add WPM clearance");
 
   for (const id of generated.MAP_ORDER) {
     const realState = createGame({ mapId: id, rule: id === 4 ? "DEFEND" : "SINGLE", playerFaction: "troll" });
@@ -121,8 +121,8 @@ test("the coarse grid is derived from 4x4 WPM blocks without clearing spawn cell
   assert.deepEqual(runtime.buildBuildGrid128(map), expected);
   const state = createGame({ mapId: 0 });
   assert.deepEqual(state.blocked, expected);
-  assert.deepEqual(state.session.spawns.troll, { gx: 60, gy: 49 });
-  assert.deepEqual(state.session.spawns.elf, { gx: 105, gy: 7 });
+  assert.deepEqual(state.session.spawns.elf, state.session.spawns.troll);
+  assert.deepEqual(state.session.trollBase, { gx: 60, gy: 49 });
 
   setBlocked(state, new Uint8Array(expected.length).fill(1));
   for (const spawn of [state.session.spawns.troll!, state.session.spawns.elf!]) {
@@ -172,15 +172,16 @@ test("map 5 uses the boundRect/extraRects union so the gap angel is representabl
   assert.ok(angel.gy * 128 + map.bounds[1] < map.extraRects[0].minY);
 });
 
-test("map 4 DEFEND uses elf0 and map 6 rejects any request to place an elf", () => {
-  const defend = createGame({ mapId: 4, rule: "DEFEND" });
-  assert.deepEqual(defend.session.spawns.elf, { gx: 29, gy: 42 });
-
-  const race = createGame({ mapId: 6, playerFaction: "troll" });
-  assert.equal(race.session.spawns.elf, null);
-  assert.throws(() => createGame({ mapId: 6, playerFaction: "elf" }), /地图 6.*精灵出生点/);
-  assert.throws(
-    () => createGame({ mapId: 6, playerFaction: "troll", testMode: true }),
-    /地图 6.*精灵出生点/,
-  );
+test("both factions share a usable center spawn on every map", () => {
+  for (const id of generated.MAP_ORDER) {
+    const state = createGame({ mapId: id, playerFaction: "elf" });
+    const { elf, troll } = state.session.spawns;
+    assert.ok(elf, `地图 ${id} 必须有精灵出生点`);
+    assert.ok(troll, `地图 ${id} 必须有巨魔出生点`);
+    assert.deepEqual(elf, troll, `地图 ${id} 双方出生点应在同一中心格`);
+    const x = (elf.gx + 0.5) * 16;
+    const y = (elf.gy + 0.5) * 16;
+    assert.equal(isPathingPositionFree(state, x, y, HERO_STATS.elf.radius), true);
+    assert.equal(isPathingPositionFree(state, x, y, HERO_STATS.troll.radius), true);
+  }
 });

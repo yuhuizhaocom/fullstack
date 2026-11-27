@@ -328,12 +328,9 @@ check("原版 8 张地图：会话边界、WPM 与粗网格一致", () => {
     assert.ok(state.session.spawns.troll);
     assert.ok(state.session.spawns.troll!.gx >= 0 && state.session.spawns.troll!.gx < def.grid[0]);
     assert.ok(state.session.spawns.troll!.gy >= 0 && state.session.spawns.troll!.gy < def.grid[1]);
-    if (state.session.spawns.elf) {
-      assert.ok(state.session.spawns.elf.gx >= 0 && state.session.spawns.elf.gx < def.grid[0]);
-      assert.ok(state.session.spawns.elf.gy >= 0 && state.session.spawns.elf.gy < def.grid[1]);
-    } else {
-      assert.ok(id === 4 || id === 6);
-    }
+    assert.ok(state.session.spawns.elf, `地图 ${id} 必须有中心精灵出生点`);
+    assert.ok(state.session.spawns.elf.gx >= 0 && state.session.spawns.elf.gx < def.grid[0]);
+    assert.ok(state.session.spawns.elf.gy >= 0 && state.session.spawns.elf.gy < def.grid[1]);
   }
 });
 
@@ -343,12 +340,7 @@ check("原版地图：真实 WPM 点路径连通且当前英雄出生点可用",
     const state = createGame({ mapId: id, rule: id === 4 ? "DEFEND" : "SINGLE", playerFaction: "troll" });
     const { elf, troll } = state.session.spawns;
     assertSpawnUsable(state, "troll", troll!);
-    if (!elf) {
-      assert.equal(id, 6, "只有地图 6 可缺少精灵出生点；不得伪造路径");
-      console.log(`    map ${id}: skipped elf reachability (no source elf anchor)`);
-      continue;
-    }
-    assertSpawnUsable(state, "elf", elf);
+    assertSpawnUsable(state, "elf", elf!);
     const elfToTroll = sampleDistance(state, "elf", "troll");
     const trollToElf = sampleDistance(state, "troll", "elf");
     if (elfToTroll < 0) disconnected.push(`地图 ${id} ${MAP_DEFINITIONS[id].name} 精灵无法沿真实 WPM 点路径到达巨魔出生区域`);
@@ -669,6 +661,12 @@ check("人机巨魔会移动进攻（不会被商店围死）", () => {
   openMap(s);
   const troll = s.heroes.find((h) => h.faction === "troll")!;
   const start = { x: troll.x, y: troll.y };
+  const p = getPlayer(s)!;
+  p.x = troll.x + 400;
+  p.y = troll.y;
+  p.hp = 1000;
+  p.maxHp = 1000;
+  s.aiMemory.lastSeen = { x: p.x, y: p.y };
   troll.invuln = 0;
   run(s, 4);
   assert.ok(Math.hypot(troll.x - start.x, troll.y - start.y) > 40, "巨魔应离开出生点进攻");
