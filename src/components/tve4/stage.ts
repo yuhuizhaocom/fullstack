@@ -271,17 +271,14 @@ class Tve4Scene extends Phaser.Scene {
       return;
     }
     const camera = this.cameras.main;
-    const viewLeft = this.camX - camera.width / (2 * this.zoom);
-    const viewTop = this.camY - camera.height / (2 * this.zoom);
-    const screenX = (player.x - viewLeft) * this.zoom;
-    const screenY = (player.y - viewTop) * this.zoom;
+    const screenPoint = camera.getViewMatrix(true).transformPoint(player.x, player.y);
     const baseSize = player.faction === "troll" ? 120 : 96;
     const size = Phaser.Math.Clamp(baseSize * this.zoom, 72, 180);
     canvas.style.display = "block";
     canvas.style.width = `${size}px`;
     canvas.style.height = `${size}px`;
-    canvas.style.left = `${screenX - size / 2}px`;
-    canvas.style.top = `${screenY - size * 0.3}px`;
+    canvas.style.left = `${screenPoint.x - size / 2}px`;
+    canvas.style.top = `${screenPoint.y - size / 2}px`;
     const action = modelActionFor(entry, {
       alive: player.alive,
       moving: player.vx !== 0 || player.vy !== 0,
@@ -390,7 +387,16 @@ class Tve4Scene extends Phaser.Scene {
     this.zoom += (this.zoomTarget - this.zoom) * 0.12;
     camera.setZoom(this.zoom);
     camera.centerOn(this.camX, this.camY);
+    camera.preRender();
     this.game.canvas.dataset.zoom = this.zoom.toFixed(3);
+    if (player) {
+      const screenPoint = camera.getViewMatrix(true).transformPoint(player.x, player.y);
+      this.game.canvas.dataset.playerScreenX = screenPoint.x.toFixed(2);
+      this.game.canvas.dataset.playerScreenY = screenPoint.y.toFixed(2);
+    } else {
+      delete this.game.canvas.dataset.playerScreenX;
+      delete this.game.canvas.dataset.playerScreenY;
+    }
     this.syncHeroModel(player);
 
     this.shadows.clear();
@@ -566,12 +572,9 @@ class Tve4Scene extends Phaser.Scene {
       this.fog.setDisplaySize(Math.max(camera.width, camera.height) * 2.2, Math.max(camera.width, camera.height) * 2.2);
       return;
     }
-    const viewLeft = this.camX - camera.width / (2 * this.zoom);
-    const viewTop = this.camY - camera.height / (2 * this.zoom);
-    const screenX = (player.x - viewLeft) * this.zoom;
-    const screenY = (player.y - viewTop) * this.zoom;
+    const screenPoint = camera.getViewMatrix(true).transformPoint(player.x, player.y);
     const size = Math.max(camera.width, camera.height) * 2.2;
-    this.fog.setPosition(screenX, screenY);
+    this.fog.setPosition(screenPoint.x, screenPoint.y);
     this.fog.setDisplaySize(size, size);
   }
 
