@@ -83,7 +83,7 @@
 - GREEN：`python -m unittest tools.tve4_source.tests.test_core_maps -v`，5 passed；`npx tsx scripts/tve4/check_maps.ts`，7 checks passed，包含本地来源 WPM 逐字节比对。
 - 回归：`npm run check:tve4` 44 passed；`npm run check:data` 8 passed；Python `py_compile` 通过；旧生成器 8 图边界与来源精灵锚点检查通过（未重写旧资产）。
 - 地图 5：`MAP_5_AREA_EXTRA = (-26688,-3264,-16448,6752)` 完整保留；天使 `(-21507.5,-3956.7)` 位于基础区与扩展区之间，不断言其属于扩展区。
-- 旧生成器仅保留预览兼容，已删除 `clear_rect()`、`carve_to_main()`、`choose_elf_spawn()` 及生产调用；地图 5 预览使用基础区与官方扩展区的并集，元数据仍分别保留两区。
+- 旧生成器仅保留预览兼容，已删除 `clear_rect()`、`carve_to_main()`、`choose_elf_spawn()` 及生产调用；地图 5 旧预览按基础区与官方扩展区的包围矩形裁剪（并非严格并集，会包含两区之间的空隙），元数据仍分别保留两区。
 
 ## 6. 后续原作资产阶段（本轮不实施）
 

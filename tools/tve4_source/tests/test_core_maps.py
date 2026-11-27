@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import struct
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -20,9 +21,25 @@ WPM_SHA256 = "0ec395397888d611c1c9a1d4107f16e38482273c69ca3e8c169e3a1b0631e399"
 class CoreMapsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.maps = extract()
+        temporary = tempfile.TemporaryDirectory(prefix="tve4-core-maps-")
+        cls.addClassCleanup(temporary.cleanup)
+        cls.fresh_output = Path(temporary.name)
+        cls.fresh_maps = extract(output_dir=cls.fresh_output)
+        cls.maps = json.loads((MVP_DATA / "maps.json").read_text(encoding="utf-8"))
         cls.source = json.loads((MVP_DATA / "source.json").read_text(encoding="utf-8"))
         cls.wpm = (EXTRACTED / "war3map.wpm").read_bytes()
+
+    def test_committed_artifacts_match_fresh_extraction(self):
+        committed_json = (MVP_DATA / "maps.json").read_bytes()
+        fresh_json = (self.fresh_output / "maps.json").read_bytes()
+        self.assertEqual(committed_json, fresh_json)
+        self.assertEqual(self.maps, self.fresh_maps)
+        for map_data in self.maps:
+            with self.subTest(map=map_data["id"]):
+                committed = (MVP_DATA / map_data["pathing"]["file"]).read_bytes()
+                fresh = (self.fresh_output / map_data["pathing"]["file"]).read_bytes()
+                self.assertEqual(committed, fresh)
+                self.assertEqual(committed, self.wpm)
 
     def test_real_maps_and_jass_regions(self):
         self.assertEqual(len(self.maps), 8)
@@ -107,6 +124,17 @@ class CoreMapsTest(unittest.TestCase):
 
     def test_terrain_and_doodads_are_unaltered_source_geometry(self):
         w3e = (EXTRACTED / "war3map.w3e").read_bytes()
+        doo = (EXTRACTED / "war3map.doo").read_bytes()
+        magic, version, subversion, doodad_count = struct.unpack_from("<4sIII", doo, 0)
+        self.assertEqual((magic, version, subversion, doodad_count), (b"W3do", 8, 11, 4_283))
+        source_doodads = []
+        for index in range(doodad_count):
+            offset = 16 + index * 50
+            type_id = doo[offset:offset + 4].decode("ascii")
+            x, y, _z = struct.unpack_from("<3f", doo, offset + 8)
+            rotation = struct.unpack_from("<f", doo, offset + 20)[0]
+            source_doodads.append({"typeId": type_id, "x": x, "y": y, "rotation": rotation})
+
         ground_offset = 65 + 385 * 289 * 4
         first_doodad = self.maps[4]["doodads"][0]
         self.assertEqual(first_doodad["typeId"], "WTst")
@@ -146,12 +174,15 @@ class CoreMapsTest(unittest.TestCase):
                         tile["x"] < rect["maxX"] and tile["x"] + 128 >= rect["maxX"]
                         for tile in map_data["terrain"]
                     ))
-                for doodad in map_data["doodads"]:
-                    self.assertTrue(any(
+                expected_doodads = [
+                    doodad for doodad in source_doodads
+                    if any(
                         rect["minX"] <= doodad["x"] <= rect["maxX"]
                         and rect["minY"] <= doodad["y"] <= rect["maxY"]
                         for rect in rects
-                    ))
+                    )
+                ]
+                self.assertEqual(map_data["doodads"], expected_doodads)
 
     def test_legacy_generator_has_no_spawn_mutation_calls(self):
         path = ROOT / "tools" / "map-parser" / "generate_tve4_maps.py"

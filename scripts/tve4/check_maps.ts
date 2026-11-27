@@ -218,8 +218,13 @@ const intersects = (x: number, y: number, area: Rect) =>
   && y < area.maxY && y + TILE_UNITS > area.minY;
 
 let passed = 0;
-function check(name: string, fn: () => void) {
-  fn();
+let skipped = 0;
+function check(name: string, fn: () => "skipped" | void) {
+  if (fn() === "skipped") {
+    skipped += 1;
+    console.log(`  skip ${name}`);
+    return;
+  }
   passed += 1;
   console.log(`  ok ${name}`);
 }
@@ -293,8 +298,8 @@ check("本地提取源存在时逐字节比对 WPM", () => {
     ?? "C:\\Users\\肥胖的粽子\\AppData\\Local\\Temp\\tve_w3x\\extracted";
   const sourceWpm = path.join(extracted, "war3map.wpm");
   if (!existsSync(sourceWpm)) {
-    console.log("    note: extracted source unavailable; Task 1 hash identity checked instead");
-    return;
+    console.log("    note: extracted source unavailable; source-byte comparison not run");
+    return "skipped";
   }
   const original = readFileSync(sourceWpm);
   assert.equal(sha256(original), WPM_SHA256);
@@ -343,4 +348,4 @@ check("DOO 装饰坐标、区域归属、数量与首条来源值", () => {
   }
 });
 
-console.log(`${passed} checks passed`);
+console.log(`${passed} checks passed${skipped > 0 ? `, ${skipped} skipped` : ""}`);
