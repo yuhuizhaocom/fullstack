@@ -259,9 +259,14 @@ export function getPlayer(state: GameState): Hero | undefined {
 
 // ---------------------------------------------------------------- 碰撞 / 建造
 
+function isUnderConstruction(b: Building): boolean {
+  // 升级也复用 buildTimer，但已升级建筑必须保持实体碰撞。
+  return b.level === 1 && b.buildTimer > 0;
+}
+
 function occupiedByBuilding(state: GameState, x: number, y: number, r: number, faction?: Faction): boolean {
   for (const b of state.buildings) {
-    if (!b.alive || b.buildTimer > 0) continue;
+    if (!b.alive || isUnderConstruction(b)) continue;
     // 系统建筑不阻挡同阵营英雄，避免出生点商店/小屋把巨魔围死；玩家建筑正常碰撞。
     if (faction && b.faction === faction && b.system) continue;
     const half = (b.size * TILE) / 2;
@@ -522,7 +527,7 @@ function hasLineOfSight(
     const gy = Math.floor(py / TILE);
     // 建筑同样阻挡视线（原版墙体是实体）
     for (const b of buildings) {
-      if (!b.alive || b.buildTimer > 0 || b.id === ignoreId || (faction && b.faction === faction && b.system)) continue;
+      if (!b.alive || isUnderConstruction(b) || b.id === ignoreId || (faction && b.faction === faction && b.system)) continue;
       if (gx >= b.gx0 && gx < b.gx0 + b.size && gy >= b.gy0 && gy < b.gy0 + b.size) return false;
     }
   }
@@ -538,7 +543,7 @@ function cellWalkable(state: GameState, gx: number, gy: number, faction: Faction
       const nx = gx + dx;
       const ny = gy + dy;
       for (const b of buildings) {
-        if (!b.alive || b.buildTimer > 0 || (b.faction === faction && b.system)) continue;
+        if (!b.alive || isUnderConstruction(b) || (b.faction === faction && b.system)) continue;
         if (nx >= b.gx0 && nx < b.gx0 + b.size && ny >= b.gy0 && ny < b.gy0 + b.size) return false;
       }
     }

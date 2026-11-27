@@ -9,6 +9,7 @@ import {
   stateHash,
   stepGame,
   tryBuild,
+  tryUpgrade,
 } from "../../src/lib/tve4/engine";
 import { loadMvpMap, runtimePathingSegmentClear } from "../../src/lib/tve4/map";
 import { createRng, nextRandom } from "../../src/lib/tve4/sim/rng";
@@ -29,6 +30,18 @@ function spawnCenter(state: GameState, faction: Faction): { x: number; y: number
   const spawn = state.session.spawns[faction];
   assert.ok(spawn, `${state.mapId}: missing ${faction} spawn`);
   return { x: (spawn.gx + 0.5) * TILE, y: (spawn.gy + 0.5) * TILE };
+}
+
+function makeUpgradingWall(state: GameState) {
+  const spawn = state.session.spawns.elf!;
+  const hero = state.heroes.find((h) => h.isPlayer)!;
+  hero.gold = 1000;
+  assert.equal(tryBuild(state, "wall", spawn.gx + 4, spawn.gy, "elf"), true);
+  const wall = state.buildings.at(-1)!;
+  wall.buildTimer = 0;
+  assert.equal(tryUpgrade(state, wall.id), true);
+  assert.ok(wall.buildTimer > 0);
+  return wall;
 }
 
 function hasWpmPath(state: GameState, from: Faction, to: Faction, radius: number): boolean {
@@ -179,6 +192,69 @@ test("player-built walls block their owner's body and line of sight", () => {
   const before = troll.hp;
   stepGame(state, FIXED, { mx: 0, my: 0 });
   assert.equal(troll.hp, before, "owner wall must block line of sight");
+});
+
+test("upgrading walls still block the owner's movement", () => {
+  const state = createGame({ mapId: 0, seed: 13, testMode: true, playerFaction: "elf" });
+  openMap(state);
+  const elf = state.heroes.find((h) => h.isPlayer)!;
+  const troll = state.heroes.find((h) => h.faction === "troll")!;
+  const wall = makeUpgradingWall(state);
+  elf.x = (wall.gx0 - 2) * TILE;
+  elf.y = wall.y;
+  troll.x = elf.x;
+  troll.y = elf.y + 800;
+
+  run(state, 0.4, 1, 0);
+
+  assert.ok(wall.buildTimer > 0, "movement check must happen during the upgrade");
+  assert.ok(elf.x < wall.gx0 * TILE, "owner must not cross an upgrading wall");
+});
+
+test("upgrading walls still block line of sight", () => {
+  const state = createGame({ mapId: 0, seed: 14, testMode: true, playerFaction: "elf" });
+  openMap(state);
+  const elf = state.heroes.find((h) => h.isPlayer)!;
+  const troll = state.heroes.find((h) => h.faction === "troll")!;
+  const wall = makeUpgradingWall(state);
+  elf.x = wall.x - 3 * TILE / 2;
+  elf.y = wall.y;
+  elf.cd = 0;
+  troll.x = wall.x + 3 * TILE / 2;
+  troll.y = wall.y;
+  troll.hp = 750;
+  troll.invuln = 0;
+
+  stepGame(state, FIXED, { mx: 0, my: 0 });
+
+  assert.ok(wall.buildTimer > 0, "attack check must happen during the upgrade");
+  assert.equal(troll.hp, 750, "an upgrading wall must block attacks");
+});
+
+test("AI pathfinding routes around an upgrading wall", () => {
+  const state = createGame({ mapId: 0, seed: 15, testMode: true, playerFaction: "elf" });
+  openMap(state);
+  const elf = state.heroes.find((h) => h.faction === "elf")!;
+  const troll = state.heroes.find((h) => h.faction === "troll")!;
+  const wall = makeUpgradingWall(state);
+  elf.x = (wall.gx0 + 3) * TILE;
+  elf.y = wall.y;
+  troll.x = (wall.gx0 - 3) * TILE;
+  troll.y = wall.y;
+  state.aiMemory.buildingIds = [wall.id];
+  state.aiTimer = 10;
+  state.pathTimer = 0;
+
+  stepGame(state, FIXED, { mx: 0, my: 0 });
+
+  assert.ok(wall.buildTimer > 0, "path check must happen during the upgrade");
+  assert.ok(state.aiPath.length > 0, "AI should find a route around the wall");
+  assert.equal(state.aiPath.some((point) => {
+    const gx = Math.floor(point.x / TILE);
+    const gy = Math.floor(point.y / TILE);
+    return gx >= wall.gx0 - 1 && gx < wall.gx0 + wall.size + 1
+      && gy >= wall.gy0 - 1 && gy < wall.gy0 + wall.size + 1;
+  }), false, "AI path must not enter the upgrading wall's blocked cells");
 });
 
 test("real WPM paths remain traversable for both hero radii, including troll radius 22", () => {
