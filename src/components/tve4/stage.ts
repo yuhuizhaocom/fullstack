@@ -365,7 +365,7 @@ class Tve4Scene extends Phaser.Scene {
       if (!building.alive) continue;
       const pixels = building.size * TILE;
       const definition = BUILDINGS[building.kind];
-      const alpha = building.buildTimer > 0 ? 0.55 : 1;
+      const alpha = building.buildTimer > 0 && building.kind !== "wall" ? 0.55 : 1;
       this.shadows.fillStyle(0x04100d, 0.28);
       this.shadows.fillEllipse(building.x + 3, building.y + pixels * 0.1, pixels * 0.8, pixels * 0.3);
       drawPhaserPlaceholderBuilding(
@@ -379,7 +379,11 @@ class Tve4Scene extends Phaser.Scene {
         { alpha },
       );
       if (building.kind === "wall") {
-        this.overlays.lineStyle(2, 0xe5ece8, 0.95);
+        this.overlays.lineStyle(8, 0xffd86b, 0.25);
+        this.overlays.strokeRect(building.x - pixels / 2 - 4, building.y - pixels / 2 - 4, pixels + 8, pixels + 8);
+        this.overlays.lineStyle(4, 0x1a1410, 1);
+        this.overlays.strokeRect(building.x - pixels / 2 - 1, building.y - pixels / 2 - 1, pixels + 2, pixels + 2);
+        this.overlays.lineStyle(2, 0xffe6ad, 1);
         this.overlays.strokeRect(building.x - pixels / 2, building.y - pixels / 2, pixels, pixels);
       }
       if (building.flash > 0) {

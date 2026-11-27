@@ -69,11 +69,13 @@ test("placeholder buildings and DOO doodads draw without image assets", () => {
   assert.ok(doodad.calls.some((call) => call.op === "moveTo"));
 });
 
-test("map background is soft and walls use a clearly lighter stone color", () => {
+test("map background is soft and walls use a high-contrast stone block treatment", () => {
   assert.equal(MAP_BACKGROUND_COLOR, "#36413c");
   const wall = recordingContext();
   drawPlaceholderBuilding(wall.ctx, "wall", "elf", 1);
-  assert.ok(wall.calls.some((call) => call.op === "set:fillStyle" && call.args[0] === "#b9b6a7"));
+  assert.ok(wall.calls.some((call) => call.op === "set:fillStyle" && call.args[0] === "#eadbb8"));
+  assert.ok(wall.calls.some((call) => call.op === "set:strokeStyle" && call.args[0] === "#2a2118"));
+  assert.ok(wall.calls.some((call) => call.op === "set:strokeStyle" && call.args[0] === "#f4e6bd"));
 });
 
 test("terrain tile types use a small deterministic palette", () => {

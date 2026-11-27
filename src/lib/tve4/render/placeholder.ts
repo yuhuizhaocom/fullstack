@@ -207,12 +207,19 @@ function drawBuilding(p: Painter, kind: string, faction: Faction, level: number,
   p.fillEllipse(2, size * 0.38, size * 1.05, size * 0.3);
 
   if (kind === "wall") {
-    p.fill("#b9b6a7");
-    p.fillRect(-size / 2, -size / 2, size, size);
-    p.stroke("#eee8d6", 0.95, 1.5);
-    p.strokeRect(-size / 2 + 1, -size / 2 + 1, size - 2, size - 2);
-    p.stroke("#5b6159", 0.9, 1);
-    p.strokeTriangle(-size / 2, 0, 0, -size * 0.35, size / 2, 0);
+    p.fill("#241b12", 0.55);
+    p.fillRect(-size / 2 + 2, -size / 2 + 3, size, size);
+    p.fill("#8f7a58");
+    p.fillRect(-size / 2, -size / 2 + 2, size, size);
+    p.fill("#eadbb8");
+    p.fillRect(-size / 2, -size / 2, size, size - 2);
+    p.stroke("#2a2118", 1, 2);
+    p.strokeRect(-size / 2, -size / 2, size, size);
+    p.stroke("#f4e6bd", 0.95, 1);
+    p.strokeRect(-size / 2 + 2, -size / 2 + 2, size - 4, size - 5);
+    p.stroke("#6b5a42", 0.85, 1);
+    p.strokeRect(-size / 2 + 2, -1, size - 4, 1);
+    p.strokeRect(-1, -size / 2 + 2, 1, size - 5);
   } else if (kind === "tower" || kind === "reveal") {
     p.fill(colors.dark);
     p.fillRect(-size * 0.34, -height * 0.55, size * 0.68, height * 0.82);
