@@ -48,7 +48,7 @@ function elfWallNearTroll(state: GameState): Building {
     x: (gx0 + 0.5) * TILE, y: (gy0 + 0.5) * TILE,
     gx0, gy0, size: 1, level: 1, hp: 100_000, maxHp: 100_000,
     alive: true, buildTimer: 0, demolishTimer: 0, eyeMarked: 0,
-    noHitTimer: 0, flash: 0, cd: 0,
+    repairing: false, flash: 0, cd: 0,
   };
   state.buildings.push(wall);
   return wall;
@@ -145,6 +145,15 @@ test("elf skills apply legal casts, mana costs, cooldowns, target rules and expi
   poorElf.mana = 0;
   assert.equal(castSkill(poor, "haste"), false);
   assert.match(poor.hint?.text ?? "", /法力不足/);
+});
+
+test("quiet auto-cast failures do not overwrite the current hint", () => {
+  const state = fresh();
+  const hero = state.heroes.find((h) => h.isPlayer)!;
+  hero.mana = 0;
+  state.hint = { text: "keep", t: 1 };
+  assert.equal(castSkill(state, "haste", undefined, true), false);
+  assert.equal(state.hint?.text, "keep");
 });
 
 test("troll skills apply legal casts, channeling, mana and expiry", () => {

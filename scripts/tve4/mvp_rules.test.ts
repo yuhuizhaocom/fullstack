@@ -12,7 +12,7 @@ import { BUILDINGS, HERO_STATS, REQUIREMENTS, SKILLS } from "../../src/lib/tve4/
 import { BUILDING_RULES, EQUIPMENT_RULE, RULES } from "../../src/lib/tve4/rules";
 
 const HEROES = ["elf", "troll"];
-const BUILDING_KEYS = ["wall", "tower", "mine", "tent", "market", "reveal", "trollHouse"];
+const BUILDING_KEYS = ["wall", "tower", "mine", "tent", "market", "reveal", "lumberCamp", "trollHouse"];
 const SKILL_IDS: Record<string, string> = {
   blink: "A066", haste: "A067", entangle: "A068", silence: "A069",
   windwalk: "A061", berserk: "A06T", teleport: "A06W", farSight: "A062",
@@ -35,7 +35,7 @@ function unknownPrefix(record: { id: string }) {
   return record.id;
 }
 
-test("catalog contains exactly the current 2 heroes, 7 buildings, 8 skills and 81 items", () => {
+test("catalog contains exactly the current 2 heroes, 8 buildings, 8 skills and 81 items", () => {
   assert.deepEqual(rules.heroes.map((r) => r.id), HEROES);
   assert.deepEqual(rules.buildings.map((r) => r.id).sort(), [...BUILDING_KEYS].sort());
   assert.deepEqual(rules.skills.map((r) => r.id), SKILL_KEYS);
@@ -222,6 +222,7 @@ test("runtime rules preserve current hero, building, skill and shop values throu
   assert.equal(BUILDINGS.wall.levels.length, 10);
   assert.equal(BUILDINGS.tower.levels.length, 8);
   assert.deepEqual(BUILDINGS.market.levels, [{ cost: 64, hp: 50 }, { cost: 256, hp: 100 }, { cost: 1024, hp: 200 }]);
+  assert.deepEqual(BUILDINGS.lumberCamp.levels, [{ cost: 60, hp: 120, woodIncome: 0.625 }]);
   assert.deepEqual(REQUIREMENTS.tent?.map((entry) => [entry.level, entry.need.kind, entry.need.level]), [[2, "wall", 1], [3, "wall", 4], [4, "market", 1], [5, "wall", 1], [6, "market", 2], [7, "wall", 4], [8, "market", 2], [9, "market", 3], [10, "market", 3]]);
   assert.deepEqual(REQUIREMENTS.reveal, [{ level: 1, need: { kind: "market", level: 2 } }]);
   assert.equal(ruleNumber("troll", "speed"), 175);

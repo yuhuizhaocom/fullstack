@@ -1,9 +1,8 @@
 // AI perception: current vision plus explored building memory. Never reads the full map.
 
-import { BUILDINGS, TILE } from "../config";
-import { ruleNumber } from "../data/mvp-rules";
-import { RULES } from "../rules";
+import { BUILDINGS } from "../config";
 import type { Building, Faction, GameState, Hero } from "../types";
+import { buildingVisionRadius, heroVisionRadius } from "../vision";
 
 export interface Perception {
   visibleEnemies(): Hero[];
@@ -18,25 +17,16 @@ interface VisionSource {
   radius: number;
 }
 
-const SCALE = RULES.scale;
-// UnitBalance has no extracted building sight values yet; this is an MVP
-// display/AI approximation, not a VERIFIED original building-vision number.
-const BUILDING_SIGHT_WEB = 6 * TILE;
-
-function heroSight(hero: Hero): number {
-  return ruleNumber(hero.faction, "originalSight") * SCALE;
-}
-
 function buildingSight(building: Building): number {
   const spec = BUILDINGS[building.kind]?.levels[building.level - 1];
-  return Math.max(BUILDING_SIGHT_WEB, spec?.range ?? 0);
+  return buildingVisionRadius(spec?.range ?? 0);
 }
 
 function visionSources(state: GameState, faction: Faction): VisionSource[] {
   const sources: VisionSource[] = [];
   for (const hero of state.heroes) {
     if (hero.faction !== faction || !hero.alive) continue;
-    sources.push({ x: hero.x, y: hero.y, radius: heroSight(hero) });
+    sources.push({ x: hero.x, y: hero.y, radius: heroVisionRadius(hero) });
   }
   for (const building of state.buildings) {
     if (building.faction !== faction || !building.alive) continue;

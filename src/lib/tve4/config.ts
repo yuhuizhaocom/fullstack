@@ -44,6 +44,7 @@ export interface BuildingLevel {
   hp: number;
   woodCost?: number;
   income?: number;
+  woodIncome?: number;
   damage?: number;
   range?: number;
   interval?: number;
@@ -68,12 +69,14 @@ function levels(key: string, ranges?: number[]): BuildingLevel[] {
   const wood = arr(BUILDING_RULES[key].wood);
   const hp = arr(BUILDING_RULES[key].hp);
   const income = arr(BUILDING_RULES[key].income);
+  const woodIncome = arr(BUILDING_RULES[key].woodIncome);
   const damage = arr(BUILDING_RULES[key].damage);
   return gold.map((cost, i) => ({
     cost,
     hp: hp[i] ?? 10,
     woodCost: wood[i] || undefined,
     income: income[i],
+    woodIncome: woodIncome[i],
     damage: damage[i],
     range: ranges?.[i],
     interval: key === "tower" ? ruleNumber("tower", "interval") : undefined,
@@ -116,6 +119,11 @@ export const BUILDINGS: Record<string, BuildingDef> = {
       range: (BUILDING_RULES.reveal.revealRange ?? 900) * RULES.scale,
     }],
   },
+  lumberCamp: {
+    label: "精灵采木场", desc: "60 金建造，每 8 秒产出 5 木材，等效于采木精灵", texture: "b_tent",
+    size: ruleNumber("lumberCamp", "size"), buildTime: ruleNumber("lumberCamp", "buildTime"),
+    levels: levels("lumberCamp").map(({ cost, hp, woodIncome }) => ({ cost, hp, woodIncome })),
+  },
   trollHouse: {
     label: "巨魔房屋", desc: "u03D 系统建筑，玩家只能升级", texture: "b_tent",
     size: ruleNumber("trollHouse", "size"), buildTime: ruleNumber("trollHouse", "buildTime"),
@@ -149,7 +157,7 @@ export const REQUIREMENTS: Partial<Record<BuildKind, Array<{ level: number; need
   reveal: requirements("reveal"),
 };
 
-export const ELF_BUILD_KINDS = ["wall", "tower", "mine", "tent", "market", "reveal"] as const;
+export const ELF_BUILD_KINDS = ["wall", "tower", "mine", "tent", "market", "reveal", "lumberCamp"] as const;
 export const BUILD_KINDS = ELF_BUILD_KINDS;
 
 import type { SkillKey } from "./types";

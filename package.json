@@ -17,7 +17,8 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "check:tve4": "tsx scripts/tve4/check_rules.ts",
-    "check:data": "tsx scripts/tve4/check_data.ts"
+    "check:data": "tsx scripts/tve4/check_data.ts",
+    "check:model-demo": "tsx --test scripts/tve4-model-demo/*.test.ts && tsx scripts/tve4-model-demo/check_assets.ts"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"
@@ -33,6 +34,7 @@
     "@radix-ui/react-slot": "^1.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "gl-matrix": "3.3.0",
     "gsap": "^3.15.1",
     "howler": "^2.2.4",
     "jsfxr": "^1.4.1",
@@ -47,6 +49,7 @@
     "tailwind-merge": "^2.6.2",
     "three": "^0.187.0",
     "tsx": "^4.23.15",
+    "war3-model": "4.0.1",
     "ws": "^8.23.0",
     "zod": "^3.24.1"
   },

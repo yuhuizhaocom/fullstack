@@ -12,6 +12,7 @@ export type BuildKind =
   | "tent"
   | "market"
   | "reveal"
+  | "lumberCamp"
   | "trollHouse";
 
 export type Rule =
@@ -110,7 +111,7 @@ export interface Building {
   buildTimer: number;
   demolishTimer: number;
   eyeMarked: number;
-  noHitTimer: number;
+  repairing: boolean;
   flash: number;
   cd: number;
   system?: boolean;

@@ -1,5 +1,5 @@
 {
-  "catalogVersion": "e9c4f37025f19a69d8f87f01f7d359d25a19befe362b80056728d1939eec5716",
+  "catalogVersion": "772833f4f25eb4b88e65a0ee2a800e87b090666e10d5e4aab0d90452a92467b4",
   "primarySource": "data/tve4/mvp/source.json",
   "modeSingle": [
     {
@@ -2920,6 +2920,82 @@
           "file": "src/lib/tve4/config.ts",
           "field": "market.levels[2].hp",
           "confidence": "INFERRED"
+        }
+      }
+    },
+    {
+      "id": "lumberCamp",
+      "values": {
+        "objectId": "WEB_LUMBER_CAMP",
+        "size": 2,
+        "buildTime": 2,
+        "gold.0": 60,
+        "wood.0": 0,
+        "hp.0": 120,
+        "woodIncome.0": 0.625,
+        "originalWoodPerTrip": 5,
+        "originalHarvestSeconds": 8
+      },
+      "source": {
+        "file": "Units/UnitBalance.slk",
+        "objectId": "ewsp",
+        "field": "goldcost",
+        "value": 60,
+        "confidence": "VERIFIED"
+      },
+      "evidence": {
+        "size": {
+          "file": "src/lib/tve4/config.ts",
+          "objectId": "lumberCamp",
+          "field": "size",
+          "confidence": "INFERRED"
+        },
+        "buildTime": {
+          "file": "src/lib/tve4/config.ts",
+          "objectId": "lumberCamp",
+          "field": "buildTime",
+          "confidence": "INFERRED"
+        },
+        "gold.0": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "ewsp",
+          "field": "goldcost",
+          "value": 60,
+          "confidence": "VERIFIED"
+        },
+        "wood.0": {
+          "file": "src/lib/tve4/config.ts",
+          "objectId": "lumberCamp",
+          "field": "wood.0",
+          "confidence": "INFERRED"
+        },
+        "hp.0": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "ewsp",
+          "field": "HP",
+          "value": 120,
+          "confidence": "VERIFIED"
+        },
+        "woodIncome.0": {
+          "file": "Units/AbilityData.slk",
+          "objectId": "Awha",
+          "field": "DataA1/Dur1",
+          "value": 0.625,
+          "confidence": "INFERRED"
+        },
+        "originalWoodPerTrip": {
+          "file": "Units/AbilityData.slk",
+          "objectId": "Awha",
+          "field": "DataA1",
+          "value": 5,
+          "confidence": "VERIFIED"
+        },
+        "originalHarvestSeconds": {
+          "file": "Units/AbilityData.slk",
+          "objectId": "Awha",
+          "field": "Dur1",
+          "value": 8,
+          "confidence": "VERIFIED"
         }
       }
     }
@@ -7506,6 +7582,11 @@
       "blocking": false
     },
     {
+      "id": "building.lumberCamp.web-adaptation",
+      "reason": "精灵采木场是网页单机适配建筑，用于替代采木精灵；价格/HP 取自 ewsp，收益按 Awha 每次 5 木、8 秒换算为每秒 0.625 木，建筑对象本身为 INFERRED。",
+      "blocking": false
+    },
+    {
       "id": "skill.haste.duration",
       "reason": "网页持续时间与原版默认/JASS 覆盖不同；为保持运行行为标记 INFERRED。",
       "blocking": true
@@ -9197,6 +9278,26 @@
     },
     {
       "id": "building.market.hp.2",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.lumberCamp.size",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.lumberCamp.buildTime",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.lumberCamp.wood.0",
+      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
+      "blocking": false
+    },
+    {
+      "id": "building.lumberCamp.woodIncome.0",
       "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
       "blocking": false
     },

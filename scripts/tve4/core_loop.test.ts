@@ -4,8 +4,11 @@ import test from "node:test";
 import { BUILDINGS, HERO_STATS, TILE } from "../../src/lib/tve4/config";
 import {
   canBuild,
+  canUpgradeKind,
   createGame,
   isPathingPositionFree,
+  needsWallForTentUpgrade,
+  repairWall,
   stateHash,
   stepGame,
   tryBuild,
@@ -13,7 +16,8 @@ import {
 } from "../../src/lib/tve4/engine";
 import { loadMvpMap, runtimePathingSegmentClear } from "../../src/lib/tve4/map";
 import { createRng, nextRandom } from "../../src/lib/tve4/sim/rng";
-import type { Faction, GameState } from "../../src/lib/tve4/types";
+import { REPAIR_RULE } from "../../src/lib/tve4/rules";
+import type { Building, Faction, GameState } from "../../src/lib/tve4/types";
 
 const FIXED = 1 / 30;
 
@@ -42,6 +46,33 @@ function makeUpgradingWall(state: GameState) {
   assert.equal(tryUpgrade(state, wall.id), true);
   assert.ok(wall.buildTimer > 0);
   return wall;
+}
+
+function makeDamagedWall(state: GameState) {
+  const spawn = state.session.spawns.elf!;
+  const hero = state.heroes.find((h) => h.isPlayer)!;
+  hero.gold = 1000;
+  assert.equal(tryBuild(state, "wall", spawn.gx + 4, spawn.gy, "elf"), true);
+  const wall = state.buildings.at(-1)!;
+  wall.buildTimer = 0;
+  wall.hp = wall.maxHp / 2;
+  return wall;
+}
+
+function addUpgradeFixture(state: GameState, kind: Building["kind"], level: number, offset: number): Building {
+  const spawn = state.session.spawns.elf!;
+  const def = BUILDINGS[kind];
+  const building: Building = {
+    id: state.nextId++, kind, faction: "elf",
+    x: (spawn.gx + offset + def.size / 2) * TILE,
+    y: (spawn.gy + def.size / 2) * TILE,
+    gx0: spawn.gx + offset, gy0: spawn.gy,
+    size: def.size, level, hp: def.levels[level - 1].hp, maxHp: def.levels[level - 1].hp,
+    alive: true, buildTimer: 0, demolishTimer: 0, eyeMarked: 0, repairing: false,
+    flash: 0, cd: 0,
+  };
+  state.buildings.push(building);
+  return building;
 }
 
 function hasWpmPath(state: GameState, from: Faction, to: Faction, radius: number): boolean {
@@ -121,6 +152,60 @@ test("economy and construction consume MVP rule costs on valid ground", () => {
   assert.equal(tryBuild(state, "wall", spot.gx, spot.gy, "elf"), true);
   assert.equal(hero.gold, beforeGold - BUILDINGS.wall.levels[0].cost);
   assert.ok(state.buildings.some((b) => b.kind === "wall" && b.faction === "elf"));
+});
+
+test("upgrade checks expose the current next-level building prerequisites", () => {
+  const state = createGame({ mapId: 0, seed: 8, playerFaction: "elf" });
+  const hero = state.heroes.find((h) => h.isPlayer)!;
+  const wall = addUpgradeFixture(state, "wall", 1, 2);
+  const tent = addUpgradeFixture(state, "tent", 2, 5);
+  hero.gold = 0;
+
+  let check = canUpgradeKind(state, "tent");
+  assert.equal(check.ok, false);
+  assert.deepEqual(check.requirements, [{ kind: "wall", level: 4, label: "石墙", met: false }]);
+  assert.equal(needsWallForTentUpgrade(state), true);
+
+  hero.gold = 1_000_000;
+  wall.level = 4;
+  check = canUpgradeKind(state, "tent");
+  assert.equal(check.ok, true);
+  assert.deepEqual(check.requirements, [{ kind: "wall", level: 4, label: "石墙", met: true }]);
+  assert.equal(needsWallForTentUpgrade(state), false);
+
+  tent.level = 3;
+  addUpgradeFixture(state, "market", 1, 8);
+  check = canUpgradeKind(state, "tent");
+  assert.equal(check.ok, true);
+  assert.deepEqual(check.requirements, [{ kind: "market", level: 1, label: "城镇/市场", met: true }]);
+});
+
+test("repair starts a continuous source-rate process instead of instant healing", () => {
+  const state = createGame({ mapId: 0, seed: 31, playerFaction: "elf" });
+  openMap(state);
+  const wall = makeDamagedWall(state);
+  wall.level = 6;
+  const before = wall.hp;
+  const ratio = REPAIR_RULE.timeRatios[0];
+  const rate = wall.maxHp / (BUILDINGS.wall.buildTime * ratio);
+
+  assert.equal(repairWall(state, "wall"), true);
+  assert.equal(wall.hp, before, "issuing repair must not instantly restore HP");
+  run(state, 1);
+  assert.ok(Math.abs(wall.hp - (before + rate)) < 1e-6, `repair rate should be ${rate} HP/s`);
+  run(state, BUILDINGS.wall.buildTime * ratio);
+  assert.equal(wall.hp, wall.maxHp);
+});
+
+test("damaged buildings do not repair without a repair order", () => {
+  const state = createGame({ mapId: 0, seed: 32, playerFaction: "elf" });
+  openMap(state);
+  const wall = makeDamagedWall(state);
+  const before = wall.hp;
+
+  run(state, 4);
+
+  assert.equal(wall.hp, before, "original repair requires a worker order");
 });
 
 test("combat uses LOS, damage, and bounty on an isolated fixture", () => {

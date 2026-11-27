@@ -2,6 +2,9 @@
 
 import * as Phaser from "phaser";
 
+import { playTve4Sfx } from "@/lib/tve4/audio";
+import { collectTve4AudioEvents, type Tve4AudioEventState } from "@/lib/tve4/audio-events";
+import { fogDisplaySize, heroVisionRadius } from "@/lib/tve4/vision";
 import { BUILDINGS, TILE } from "@/lib/tve4/config";
 import { cellCenter } from "@/lib/tve4/map";
 import {
@@ -72,6 +75,7 @@ class Tve4Scene extends Phaser.Scene {
   private heroModelEntry: ModelDemoEntry | null = null;
   private heroModelAction: ActionKey | null = null;
   private modelDisposed = false;
+  private audioEventState: Tve4AudioEventState | null = null;
 
   private camX: number;
   private camY: number;
@@ -140,10 +144,10 @@ class Tve4Scene extends Phaser.Scene {
     const fogContext = fogTexture.getContext();
     const gradient = fogContext.createRadialGradient(256, 256, 0, 256, 256, 256);
     gradient.addColorStop(0, "rgba(2,6,10,0)");
-    gradient.addColorStop(0.28, "rgba(2,6,10,0)");
-    gradient.addColorStop(0.52, "rgba(2,6,10,0.58)");
-    gradient.addColorStop(0.76, "rgba(2,6,10,0.72)");
-    gradient.addColorStop(1, "rgba(2,6,10,0.82)");
+    gradient.addColorStop(0.2, "rgba(2,6,10,0)");
+    gradient.addColorStop(0.42, "rgba(2,6,10,0.72)");
+    gradient.addColorStop(0.7, "rgba(2,6,10,0.86)");
+    gradient.addColorStop(1, "rgba(2,6,10,0.92)");
     fogContext.fillStyle = gradient;
     fogContext.fillRect(0, 0, 512, 512);
     fogTexture.refresh();
@@ -353,6 +357,7 @@ class Tve4Scene extends Phaser.Scene {
     }
     assertRuntimeBoundsMatch(this.runtimeBounds, session.grid.bounds);
     this.spawns = session.spawns;
+    this.audioEventState = null;
     this.drawSpawnMarkers();
   }
 
@@ -380,6 +385,20 @@ class Tve4Scene extends Phaser.Scene {
   }
 
   apply(state: GameState): void {
+    const audioState: Tve4AudioEventState = {
+      projectiles: state.projectiles.map((projectile) => ({ id: projectile.id })),
+      heroes: state.heroes.map((hero) => ({
+        id: hero.id,
+        alive: hero.alive,
+        hp: hero.hp,
+        cd: hero.cd,
+        interval: hero.interval,
+      })),
+      buildings: state.buildings.map((building) => ({ id: building.id, alive: building.alive })),
+    };
+    for (const event of collectTve4AudioEvents(this.audioEventState, audioState)) playTve4Sfx(event);
+    this.audioEventState = audioState;
+
     const camera = this.cameras.main;
     const player = state.heroes.find((hero) => hero.isPlayer && hero.alive);
     if (player) {
@@ -575,15 +594,15 @@ class Tve4Scene extends Phaser.Scene {
     }
     this.fog.setVisible(true);
     const camera = this.cameras.main;
-    if (!player) {
-      this.fog.setPosition(camera.width / 2, camera.height / 2);
-      this.fog.setDisplaySize(Math.max(camera.width, camera.height) * 2.2, Math.max(camera.width, camera.height) * 2.2);
-      return;
-    }
-    const screenPoint = camera.getViewMatrix(true).transformPoint(player.x, player.y);
-    const size = Math.max(camera.width, camera.height) * 2.2;
+    const screenPoint = player
+      ? camera.getViewMatrix(true).transformPoint(player.x, player.y)
+      : { x: camera.width / 2, y: camera.height / 2 };
+    const size = player
+      ? fogDisplaySize(heroVisionRadius(player), camera.zoom, camera.width, camera.height)
+      : fogDisplaySize(0, camera.zoom, camera.width, camera.height);
     this.fog.setPosition(screenPoint.x, screenPoint.y);
     this.fog.setDisplaySize(size, size);
+    this.game.canvas.dataset.fogDiameter = size.toFixed(1);
   }
 
   private heroBarY(hero: GameState["heroes"][number], height: number): number {

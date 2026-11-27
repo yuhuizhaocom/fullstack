@@ -42,6 +42,7 @@ export interface RuleFile {
     wood: number | number[];
     hp: number | number[];
     income?: number | number[];
+    woodIncome?: number | number[];
     damage?: number | number[];
     revealRange?: number;
     heal?: number;
@@ -89,8 +90,6 @@ export interface RuleFile {
   };
   repair: {
     timeRatios: number[];
-    baseHpPerSecond: number;
-    delayAfterHit: number;
   };
   scenarios: {
     elf: {
@@ -124,12 +123,14 @@ function indexedValues(id: string, field: string, fallback: number | number[]): 
 
 function mvpBuildings(): RuleFile["buildings"] {
   return Object.fromEntries(MVP_RULES.buildings.map((record) => {
-    const old = legacy.buildings[record.id];
+    const old = legacy.buildings[record.id]
+      ?? (record.id === "lumberCamp" ? { gold: [60], wood: [0], hp: [120], woodIncome: [0.625] } : undefined);
     if (!old && record.id !== "market") throw new Error(`Missing legacy building metadata: ${record.id}`);
     const gold = indexedValues(record.id, "gold", old?.gold ?? []);
     const wood = indexedValues(record.id, "wood", old?.wood ?? []);
     const hp = indexedValues(record.id, "hp", old?.hp ?? []);
     const income = indexedValues(record.id, "income", old?.income ?? 0);
+    const woodIncome = indexedValues(record.id, "woodIncome", old?.woodIncome ?? 0);
     const damage = indexedValues(record.id, "damage", old?.damage ?? 0);
     const value = (field: string) => record.values[field];
     return [record.id, {
@@ -138,6 +139,7 @@ function mvpBuildings(): RuleFile["buildings"] {
       wood: wood.length === 1 ? wood[0] : wood,
       hp: hp.length === 1 ? hp[0] : hp,
       ...(Object.keys(record.values).some((key) => key.startsWith("income")) ? { income: income.length === 1 ? income[0] : income } : {}),
+      ...(Object.keys(record.values).some((key) => key.startsWith("woodIncome")) ? { woodIncome: woodIncome.length === 1 ? woodIncome[0] : woodIncome } : {}),
       ...(Object.keys(record.values).some((key) => key.startsWith("damage")) ? { damage: damage.length === 1 ? damage[0] : damage } : {}),
       ...(typeof value("revealRange") === "number" ? { revealRange: Number(value("revealRange")) } : {}),
       ...(typeof value("heal") === "number" ? { heal: Number(value("heal")) } : {}),

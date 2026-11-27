@@ -124,6 +124,19 @@
 | m055 | elf | -0.0029px | -0.0060px | 10px | 已清除 |
 | m056 | elf | -0.0046px | -0.0043px | 10px | 已清除 |
 
+## 背景音乐与音效（Chrome DevTools）
+
+- [x] 复用 `src/lib/world/audio.ts` 的程序化 BGM 与 Howler/jsfxr 音效，新增 TVE4 薄封装；未引入外部音频文件。
+- [x] 首次用户手势只解锁 AudioContext，不在选择页提前播放 BGM；进入对局后 BGM 调度器开始产生振荡器节点。
+- [x] 操作、建造、升级、拆除、攻击、受击、摧毁、死亡、技能、错误、治疗、拾取共 12 类音效均已映射；独立浏览器 Harness 逐类播放，`AudioBufferSourceNode.start` 从 65 增至 77。
+- [x] 完整游戏链路验证：选择页首次点击后 `AudioContext=running`、BGM 振荡器计数仍为 0；进入地图后振荡器计数持续增长。
+- [x] 建造验证：石墙落位后建筑数 `0 -> 1`，音频缓冲节点计数同步增长；测试模式真实战斗期间攻击/受击/死亡音效持续触发。
+- [x] “更多”面板音乐开关：关闭后振荡器计数 `1389 -> 1389` 不再增长，重新开启后恢复 `1389 -> 1401`；`data-audio-music` 与 `localStorage` 同步更新。
+- [x] 音效开关与持久化：`data-audio-sfx=off/on`，`localStorage["tve4-audio-settings-v1"]` 正确保存 `{music,sfx}`。
+- [x] 自动化：`scripts/tve4/audio.test.ts` 6 项、`scripts/tve4/audio-events.test.ts` 6 项通过；干净 worktree 中 `check:tve4` 45 项、`check:data` 8 项、`tsc --noEmit` 通过。
+- [x] 浏览器 Console 无 error/warn，仅保留既存 select 字段 a11y issue。
+- 注：完整游戏浏览器回归在 `HEAD + 音频改动` 的临时 worktree 执行，避免同期未完成的 `lumberCamp` 并行改动阻断编译。
+
 ## m022 单独复核（Chrome DevTools）
 
 - [x] 常规模式选择精灵 `m022 Oldelf` 进入地图 1；Phaser canvas 与透明 MDX canvas 同时就绪，Console 无 error/warn。

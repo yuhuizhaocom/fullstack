@@ -27,7 +27,7 @@ function wallNear(state: GameState, x: number, y: number): Building {
     x: (gx0 + 0.5) * TILE, y: (gy0 + 0.5) * TILE,
     gx0, gy0, size: 1, level: 1, hp: 100, maxHp: 100,
     alive: true, buildTimer: 0, demolishTimer: 0, eyeMarked: 0,
-    noHitTimer: 0, flash: 0, cd: 0,
+    repairing: false, flash: 0, cd: 0,
   };
   state.buildings.push(wall);
   return wall;
@@ -97,7 +97,7 @@ test("vision sources use source hero sight and do not expose the full map", () =
   const state = testState();
   const troll = state.heroes.find((h) => h.faction === "troll")!;
   const ai = createPerception(state, "troll");
-  const sight = 1400 * 0.125;
+  const sight = 140;
   assert.equal(ai.canSee(troll.x + sight - 2, troll.y), true);
   assert.equal(ai.canSee(troll.x + sight + 20, troll.y), false);
 });
@@ -107,6 +107,17 @@ test("player-side perception never overwrites AI memory", () => {
   state.aiMemory = { lastSeen: { x: 1, y: 2 }, buildingIds: [999] };
   createPerception(state, "elf");
   assert.deepEqual(state.aiMemory, { lastSeen: { x: 1, y: 2 }, buildingIds: [999] });
+});
+
+test("troll AI patrols the last-seen area instead of standing still outside vision", () => {
+  const state = createGame({ mapId: 1, seed: 11, testMode: true, playerFaction: "elf" });
+  const elf = state.heroes.find((h) => h.faction === "elf")!;
+  const troll = state.heroes.find((h) => h.faction === "troll")!;
+  elf.x = 200;
+  elf.y = 200;
+  const start = { x: troll.x, y: troll.y };
+  for (let i = 0; i < 30 * 12; i += 1) stepGame(state, 1 / 30, { mx: 0, my: 0 });
+  assert.ok(Math.hypot(troll.x - start.x, troll.y - start.y) > 40, "troll should patrol when no enemy is visible");
 });
 
 test("vision-constrained AI navigates real WPM and finishes a stationary map-3 game", () => {

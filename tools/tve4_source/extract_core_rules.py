@@ -339,6 +339,32 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
         if key == "tower":
             add_unknown(unknowns, "building.tower", "damage.7", "终极塔伤害保留当前运行值；未找到原版 UnitWeapons/JASS 的等值证据。")
 
+    wisp = balance["ewsp"]
+    harvest = ability_data["Awha"]
+    lumber_gold = number(wisp["goldcost"])
+    lumber_hp = number(wisp["HP"])
+    lumber_per_trip = number(harvest["DataA1"])
+    lumber_seconds = number(harvest["Dur1"])
+    lumber_rate = lumber_per_trip / lumber_seconds
+    lumber_values = {
+        "objectId": "WEB_LUMBER_CAMP", "size": 2, "buildTime": 2,
+        "gold.0": lumber_gold, "wood.0": 0, "hp.0": lumber_hp,
+        "woodIncome.0": lumber_rate, "originalWoodPerTrip": lumber_per_trip,
+        "originalHarvestSeconds": lumber_seconds,
+    }
+    lumber_sources = {
+        "size": [config_evidence("lumberCamp", "size")],
+        "buildTime": [config_evidence("lumberCamp", "buildTime")],
+        "gold.0": [slk_evidence("UnitBalance.slk", "ewsp", "goldcost", value=lumber_gold)],
+        "wood.0": [config_evidence("lumberCamp", "wood.0")],
+        "hp.0": [slk_evidence("UnitBalance.slk", "ewsp", "HP", value=lumber_hp)],
+        "woodIncome.0": [slk_evidence("AbilityData.slk", "Awha", "DataA1/Dur1", "INFERRED", value=lumber_rate)],
+        "originalWoodPerTrip": [slk_evidence("AbilityData.slk", "Awha", "DataA1", value=lumber_per_trip)],
+        "originalHarvestSeconds": [slk_evidence("AbilityData.slk", "Awha", "Dur1", value=lumber_seconds)],
+    }
+    building_records.append(make_record("lumberCamp", lumber_values, lumber_sources))
+    add_unknown(unknowns, "building.lumberCamp", "web-adaptation", "精灵采木场是网页单机适配建筑，用于替代采木精灵；价格/HP 取自 ewsp，收益按 Awha 每次 5 木、8 秒换算为每秒 0.625 木，建筑对象本身为 INFERRED。")
+
     skill_records = []
     runtime_cd = {"blink": 25, "haste": 30, "entangle": 3, "silence": 60, "windwalk": 30, "berserk": 120, "teleport": 45, "farSight": 25}
     for key, (object_id, original_cd, duration) in SKILLS.items():

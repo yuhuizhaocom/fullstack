@@ -48,6 +48,10 @@ import type {
 
 const SCALE = RULES.scale;
 const PATHING_VIEWS = new WeakMap<GameState, PathingGrid>();
+const AI_PATROL_OFFSETS = [
+  [0, 0], [-480, 0], [0, -480], [480, 0], [0, 480],
+  [-480, -480], [480, -480], [-480, 480], [480, 480],
+] as const;
 
 function pathingView(state: GameState): PathingGrid {
   let view = PATHING_VIEWS.get(state);
@@ -230,7 +234,7 @@ function makeBuilding(state: GameState, kind: BuildKind, faction: Faction, gx: n
     x: (gx + def.size / 2) * TILE, y: (gy + def.size / 2) * TILE,
     gx0: gx, gy0: gy, size: def.size, level: 1,
     hp: def.levels[0].hp, maxHp: def.levels[0].hp,
-    alive: true, buildTimer, demolishTimer: 0, eyeMarked: 0, noHitTimer: 0, flash: 0, cd: 0,
+    alive: true, buildTimer, demolishTimer: 0, eyeMarked: 0, repairing: false, flash: 0, cd: 0,
     system,
   };
 }
@@ -316,14 +320,35 @@ function cellsFreeForBuilding(state: GameState, gx: number, gy: number, size: nu
   return true;
 }
 
-function requirementReason(state: GameState, kind: BuildKind, level: number, faction: Faction): string | null {
+export interface UpgradeRequirement {
+  kind: BuildKind;
+  level: number;
+  label: string;
+  met: boolean;
+}
+
+export interface UpgradeCheck {
+  ok: boolean;
+  reason: string;
+  cost: number;
+  wood: number;
+  level: number;
+  requirements: UpgradeRequirement[];
+}
+
+function requirementInfo(state: GameState, kind: BuildKind, level: number, faction: Faction): UpgradeRequirement | null {
   const req = REQUIREMENTS[kind]?.find((r) => r.level === level);
   if (!req) return null;
   const met = state.buildings.some(
     (b) => b.alive && b.faction === faction && b.kind === req.need.kind
       && b.level >= req.need.level && b.buildTimer <= 0,
   );
-  return met ? null : `需要先建造 ${BUILDINGS[req.need.kind].label} Lv${req.need.level}`;
+  return { kind: req.need.kind, level: req.need.level, label: BUILDINGS[req.need.kind].label, met };
+}
+
+function requirementReason(state: GameState, kind: BuildKind, level: number, faction: Faction): string | null {
+  const req = requirementInfo(state, kind, level, faction);
+  return req && !req.met ? `需要先建造 ${req.label} Lv${req.level}` : null;
 }
 
 export function canBuild(
@@ -454,6 +479,10 @@ function refundTent(state: GameState, b: Building): void {
   addFloat(state, b.x, b.y - 20, `+${gold} 金 +${wood} 木`, "#ffd86b", 13);
 }
 
+function buildingRepairRate(b: Building): number {
+  return b.maxHp / (BUILDINGS[b.kind].buildTime * REPAIR_RULE.timeRatios[0]);
+}
+
 /** 免费维修墙/建筑（原版修理不消耗资源）。 */
 export function repairWall(state: GameState, kind: BuildKind = "wall"): boolean {
   const list = state.buildings.filter(
@@ -464,27 +493,31 @@ export function repairWall(state: GameState, kind: BuildKind = "wall"): boolean 
     return false;
   }
   const b = list.sort((a, c) => a.hp / a.maxHp - c.hp / c.maxHp)[0];
-  const ratio = REPAIR_RULE.timeRatios[Math.min(b.level - 1, REPAIR_RULE.timeRatios.length - 1)];
-  b.hp = Math.min(b.maxHp, b.hp + (b.maxHp * 0.4 * 4) / ratio);
-  b.noHitTimer = REPAIR_RULE.delayAfterHit;
+  b.repairing = true;
   addEffect(state, b.x, b.y, b.size * TILE, "#7ee08a");
-  addFloat(state, b.x, b.y - 18, "已维修", "#7ee08a", 12);
+  addFloat(state, b.x, b.y - 18, "维修中", "#7ee08a", 12);
   return true;
 }
 
-export function canUpgradeKind(state: GameState, kind: BuildKind): { ok: boolean; reason: string; cost: number; wood: number; level: number } {
+export function canUpgradeKind(state: GameState, kind: BuildKind): UpgradeCheck {
   const def = BUILDINGS[kind];
   const b = state.buildings
     .filter((x) => x.alive && x.faction === "elf" && x.kind === kind)
     .sort((a, c) => a.level - c.level)[0];
-  if (!b) return { ok: false, reason: `需要先建造${def.label}`, cost: 0, wood: 0, level: 0 };
-  if (b.level >= def.levels.length) return { ok: false, reason: "已满级", cost: 0, wood: 0, level: b.level };
+  if (!b) return { ok: false, reason: `需要先建造${def.label}`, cost: 0, wood: 0, level: 0, requirements: [] };
+  if (b.level >= def.levels.length) return { ok: false, reason: "已满级", cost: 0, wood: 0, level: b.level, requirements: [] };
   const spec = def.levels[b.level];
+  const requirement = requirementInfo(state, kind, b.level + 1, "elf");
+  const requirements = requirement ? [requirement] : [];
   const hero = getPlayer(state);
-  if (!hero || hero.gold < spec.cost) return { ok: false, reason: `需 ${spec.cost} 金`, cost: spec.cost, wood: spec.woodCost ?? 0, level: b.level };
-  const missing = requirementReason(state, kind, b.level + 1, "elf");
-  if (missing) return { ok: false, reason: missing, cost: spec.cost, wood: spec.woodCost ?? 0, level: b.level };
-  return { ok: true, reason: "", cost: spec.cost, wood: spec.woodCost ?? 0, level: b.level };
+  if (!hero || hero.gold < spec.cost) return { ok: false, reason: `需 ${spec.cost} 金`, cost: spec.cost, wood: spec.woodCost ?? 0, level: b.level, requirements };
+  const missing = requirement && !requirement.met ? `需要先建造 ${requirement.label} Lv${requirement.level}` : null;
+  if (missing) return { ok: false, reason: missing, cost: spec.cost, wood: spec.woodCost ?? 0, level: b.level, requirements };
+  return { ok: true, reason: "", cost: spec.cost, wood: spec.woodCost ?? 0, level: b.level, requirements };
+}
+
+export function needsWallForTentUpgrade(state: GameState): boolean {
+  return canUpgradeKind(state, "tent").requirements.some((r) => r.kind === "wall" && !r.met);
 }
 
 export function upgradeKind(state: GameState, kind: BuildKind): boolean {
@@ -648,7 +681,6 @@ function dealDamage(state: GameState, attacker: Hero, target: DamageTarget, raw:
     addEffect(state, attacker.x, attacker.y, 22, "#7ee08a");
   }
   target.ref.flash = 0.16;
-  if (target.kind === "building") (target.ref as Building).noHitTimer = 0;
   if (target.ref.hp <= 0) {
     if (target.kind === "building") destroyBuilding(state, target.ref as Building);
     else killHero(state, target.ref as Hero, attacker);
@@ -738,14 +770,12 @@ function updateTimers(state: GameState, dt: number): void {
   }
   for (const b of state.buildings) {
     b.flash = Math.max(0, b.flash - dt);
-    b.noHitTimer += dt;
-    // VERIFIED：修理不消耗资源，比率按等级 4/2.5/1.5/1/0.5/0.25
-    if (
-      b.alive && b.buildTimer <= 0 && b.hp < b.maxHp
-      && b.noHitTimer >= REPAIR_RULE.delayAfterHit
-    ) {
-      const ratio = REPAIR_RULE.timeRatios[Math.min(b.level - 1, REPAIR_RULE.timeRatios.length - 1)];
-      b.hp = Math.min(b.maxHp, b.hp + (REPAIR_RULE.baseHpPerSecond / ratio) * dt);
+    if (b.repairing) {
+      if (b.alive && b.buildTimer <= 0 && b.hp < b.maxHp) {
+        b.hp = Math.min(b.maxHp, b.hp + buildingRepairRate(b) * dt);
+      } else if (!b.alive || b.hp >= b.maxHp) {
+        b.repairing = false;
+      }
     }
     if (b.alive && b.buildTimer > 0) b.buildTimer = Math.max(0, b.buildTimer - dt);
     if (b.alive && b.eyeMarked > 0) b.eyeMarked = Math.max(0, b.eyeMarked - dt);
@@ -769,25 +799,39 @@ function updateIncome(state: GameState, dt: number): void {
     state.incomeAcc -= 1;
     let elfIncome = 0;
     let trollIncome = 0;
+    let elfWoodIncome = 0;
+    let trollWoodIncome = 0;
     for (const b of state.buildings) {
       if (!b.alive || b.buildTimer > 0) continue;
-      const income = BUILDINGS[b.kind].levels[b.level - 1].income ?? 0;
-      if (b.faction === "elf") elfIncome += income;
-      else trollIncome += income;
+      const spec = BUILDINGS[b.kind].levels[b.level - 1];
+      const income = spec.income ?? 0;
+      const woodIncome = spec.woodIncome ?? 0;
+      if (b.faction === "elf") {
+        elfIncome += income;
+        elfWoodIncome += woodIncome;
+      } else {
+        trollIncome += income;
+        trollWoodIncome += woodIncome;
+      }
     }
     for (const h of state.heroes) {
       if (!h.alive) continue;
       const gain = (h.faction === "elf" ? elfIncome : trollIncome) + h.bonusIncome;
+      const woodGain = h.faction === "elf" ? elfWoodIncome : trollWoodIncome;
       if (gain > 0) {
         h.gold += gain;
         state.stats.goldEarned += gain;
       }
-      // 跳字显示在产出建筑（小屋/作坊/矿）上，而不是英雄身上
+      if (woodGain > 0) h.wood += woodGain;
+      // 跳字显示在产出建筑（小屋/作坊/矿/采木场）上，而不是英雄身上
       for (const b of state.buildings) {
         if (!b.alive || b.buildTimer > 0 || b.faction !== h.faction) continue;
-        const income = BUILDINGS[b.kind].levels[b.level - 1].income ?? 0;
-        if (income > 0) {
-          addFloat(state, b.x, b.y - b.size * TILE * 0.5, `+${income} 金`, "#ffd86b", 11);
+        const spec = BUILDINGS[b.kind].levels[b.level - 1];
+        if ((spec.income ?? 0) > 0) {
+          addFloat(state, b.x, b.y - b.size * TILE * 0.5, `+${spec.income} 金`, "#ffd86b", 11);
+        }
+        if ((spec.woodIncome ?? 0) > 0) {
+          addFloat(state, b.x, b.y - b.size * TILE * 0.5, `+${spec.woodIncome} 木`, "#bfe9ff", 11);
         }
       }
     }
@@ -884,9 +928,6 @@ function updateProjectiles(state: GameState, dt: number): void {
         if (Math.hypot(h.x - p.tx, h.y - p.ty) < h.radius + 14) {
           if (attacker) dealDamage(state, attacker, { x: h.x, y: h.y, radius: h.radius, hp: h.hp, kind: "hero", ref: h }, p.damage);
           else h.hp -= p.damage;
-          for (const b of state.buildings) {
-            if (b.alive && b.faction === p.faction) b.noHitTimer = 0;
-          }
           break;
         }
       }
@@ -940,6 +981,7 @@ function updateElfAI(state: GameState, dt: number, elf: Hero): void {
     return false;
   };
   if (!have("tent")) tryPlace("tent");
+  if (!have("lumberCamp")) tryPlace("lumberCamp");
   if (!have("mine") || (have("mine") && elf.gold > 200)) tryPlace("mine");
   if (danger && (!have("tower") || elf.gold > 100)) tryPlace("tower");
 }
@@ -1004,8 +1046,9 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
     tx = nearest.x;
     ty = nearest.y;
   } else if (state.aiMemory.lastSeen) {
-    tx = state.aiMemory.lastSeen.x;
-    ty = state.aiMemory.lastSeen.y;
+    const offset = AI_PATROL_OFFSETS[Math.floor(state.time / 6) % AI_PATROL_OFFSETS.length];
+    tx = Math.max(TILE, Math.min(state.session.grid.world[0] - TILE, state.aiMemory.lastSeen.x + offset[0]));
+    ty = Math.max(TILE, Math.min(state.session.grid.world[1] - TILE, state.aiMemory.lastSeen.y + offset[1]));
   } else {
     troll.vx = 0;
     troll.vy = 0;
@@ -1193,7 +1236,7 @@ export function stateHash(state: GameState): string {
       gx0: b.gx0, gy0: b.gy0, size: b.size, level: b.level, hp: b.hp,
       maxHp: b.maxHp, alive: b.alive, buildTimer: b.buildTimer,
       demolishTimer: b.demolishTimer, eyeMarked: b.eyeMarked,
-      noHitTimer: b.noHitTimer, cd: b.cd, system: b.system ?? false,
+      repairing: b.repairing, cd: b.cd, system: b.system ?? false,
     })),
     projectiles: state.projectiles.map((p) => ({
       id: p.id, faction: p.faction, x: p.x, y: p.y, tx: p.tx, ty: p.ty,
@@ -1483,11 +1526,11 @@ function castSkillFor(state: GameState, hero: Hero, key: SkillKey, aim?: { x: nu
   return true;
 }
 
-export function castSkill(state: GameState, key: SkillKey, aim?: { x: number; y: number } | null): boolean {
+export function castSkill(state: GameState, key: SkillKey, aim?: { x: number; y: number } | null, quiet = false): boolean {
   const hero = getPlayer(state);
   if (!hero) return false;
   const ok = castSkillFor(state, hero, key, aim);
-  if (!ok) {
+  if (!ok && !quiet) {
     const spec = SKILLS[hero.faction].find((s) => s.key === key);
     if (!spec) setHint(state, "技能不可用");
     else if (hero.cooldowns[key] > 0) setHint(state, `${spec.label}冷却中`);

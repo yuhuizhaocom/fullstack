@@ -2,7 +2,7 @@
 // 校验数值来自 data/game/game-rules.json（原版解包核对）。
 import assert from "node:assert/strict";
 
-import { HERO_STATS, RULE_PREP, TILE } from "../../src/lib/tve4/config";
+import { BUILDINGS, HERO_STATS, RULE_PREP, TILE } from "../../src/lib/tve4/config";
 import { MAP_DEFINITIONS, MAP_ORDER, type GridPoint } from "../../src/lib/tve4/maps.generated";
 import {
   buyEquipment,
@@ -17,6 +17,7 @@ import {
   getPlayer,
   isPathingPositionFree,
   relocateElf,
+  repairWall,
   setBlocked,
   stepGame,
   summonArchmage,
@@ -26,7 +27,7 @@ import {
   tryUpgrade,
 } from "../../src/lib/tve4/engine";
 import { buildBlocked } from "../../src/lib/tve4/map";
-import { EQUIPMENT_RULE, MARKET_RULE, RULES, SCENARIO_RULE, VISION_RULE } from "../../src/lib/tve4/rules";
+import { EQUIPMENT_RULE, MARKET_RULE, REPAIR_RULE, RULES, SCENARIO_RULE, VISION_RULE } from "../../src/lib/tve4/rules";
 import type { Faction, GameState } from "../../src/lib/tve4/types";
 
 const FIXED = 1 / 30;
@@ -606,7 +607,7 @@ check("终极塔：普通箭塔 Lv7 不算 h096，66 座才触发", () => {
       x: (5 + (i % 20) * 8) * TILE, y: (5 + Math.floor(i / 20) * 8) * TILE,
       gx0: 5 + (i % 20) * 8, gy0: 5 + Math.floor(i / 20) * 8, size: 2,
       level: 7, hp: 200, maxHp: 200, alive: true, buildTimer: 0,
-      demolishTimer: 0, eyeMarked: 0, noHitTimer: 0, flash: 0, cd: 0,
+      demolishTimer: 0, eyeMarked: 0, repairing: false, flash: 0, cd: 0,
     });
   }
   assert.equal(canSummonMage(s), false);
@@ -741,7 +742,7 @@ check("巨魔优先拆墙：有墙挡路时先攻击墙", () => {
   assert.ok(wall.hp < beforeHp, `巨魔应先拆墙，墙 HP ${wall.hp}/${beforeHp}`);
 });
 
-check("维修：墙被攻击后随时间免费回血", () => {
+check("维修：下达指令后按原作比率持续免费回血", () => {
   const s = createGame();
   openMap(s);
   const p = getPlayer(s)!;
@@ -750,9 +751,12 @@ check("维修：墙被攻击后随时间免费回血", () => {
   const wall = s.buildings.find((b) => b.kind === "wall")!;
   wall.buildTimer = 0;
   wall.hp = 20;
-  wall.noHitTimer = 0;
-  run(s, 4);
-  assert.ok(wall.hp > 20, `墙应免费修复，hp=${wall.hp}`);
+  const before = wall.hp;
+  const rate = wall.maxHp / (BUILDINGS.wall.buildTime * REPAIR_RULE.timeRatios[0]);
+  assert.equal(repairWall(s, "wall"), true);
+  assert.equal(wall.hp, before, "维修指令不能瞬间回血");
+  run(s, 1);
+  assert.ok(Math.abs(wall.hp - (before + rate)) < 1e-6, `墙应按 ${rate} HP/秒维修，hp=${wall.hp}`);
 });
 
 check("大法师：66 座塔后自动召唤，无需按钮", () => {
@@ -764,7 +768,7 @@ check("大法师：66 座塔后自动召唤，无需按钮", () => {
       x: (5 + (i % 20) * 8) * TILE, y: (5 + Math.floor(i / 20) * 8) * TILE,
       gx0: 5 + (i % 20) * 8, gy0: 5 + Math.floor(i / 20) * 8, size: 2,
       level: 8, hp: 250000, maxHp: 250000, alive: true, buildTimer: 0,
-      demolishTimer: 0, eyeMarked: 0, noHitTimer: 0, flash: 0, cd: 0,
+      demolishTimer: 0, eyeMarked: 0, repairing: false, flash: 0, cd: 0,
     });
   }
   assert.equal(s.mageSummoned, false);
