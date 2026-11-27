@@ -33,7 +33,6 @@ export class HeroModelViewer {
   private cameraTheta = 0.24;
   private cameraDistance = 360;
   private yaw = 0;
-  private drawCount = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -71,8 +70,7 @@ export class HeroModelViewer {
       const parsed = filterHeroModelGeosets(parseMDX(await response.arrayBuffer()), entry.id);
       const bounds = visibleModelBounds(parsed);
       if (!bounds) throw new Error("模型没有可见 geoset");
-      parsed.Info.MinimumExtent = Float32Array.from(bounds.min);
-      parsed.Info.MaximumExtent = Float32Array.from(bounds.max);
+      // Keep MDX Info extents intact; war3-model uses them for rendering bounds.
       if (token !== this.loadToken) return;
       this.model = parsed;
       const renderer = new ModelRenderer(parsed);
@@ -130,8 +128,8 @@ export class HeroModelViewer {
   private fitCamera(parsed: model.Model, bounds: VisibleModelBounds): void {
     vec3.set(this.visibleMin, bounds.min[0], bounds.min[1], bounds.min[2]);
     vec3.set(this.visibleMax, bounds.max[0], bounds.max[1], bounds.max[2]);
-    const min = this.visibleMin;
-    const max = this.visibleMax;
+    const min = parsed.Info.MinimumExtent;
+    const max = parsed.Info.MaximumExtent;
     vec3.set(this.center, (min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2);
     const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]) || 1;
     this.modelScale = 180 / size;
@@ -153,6 +151,7 @@ export class HeroModelViewer {
     );
     mat4.lookAt(view, eye, this.center, [0, 0, 1]);
     mat4.translate(view, view, [-this.center[0], -this.center[1], -this.center[2]]);
+    mat4.rotateZ(view, view, this.yaw);
     mat4.scale(view, view, [this.modelScale, this.modelScale, this.modelScale]);
     const ground = projectPoint(this.center[0], this.center[1], this.visibleMin[2], view, projection, width, height);
     const top = projectPoint(this.center[0], this.center[1], this.visibleMax[2], view, projection, width, height);
@@ -240,13 +239,12 @@ export class HeroModelViewer {
     );
     mat4.lookAt(view, eye, this.center, [0, 0, 1]);
     mat4.translate(view, view, [-this.center[0], -this.center[1], -this.center[2]]);
+    mat4.rotateZ(view, view, this.yaw);
     mat4.scale(view, view, [this.modelScale, this.modelScale, this.modelScale]);
     this.renderer.setCamera(eye, this.cameraQuaternion(eye, this.center));
     this.renderer.setLightPosition([this.center[0] + 220, this.center[1] - 160, this.center[2] + 320]);
     this.renderer.setLightColor([1, 1, 1]);
     this.renderer.render(view, projection, { wireframe: false, env: false, useEnvironmentMap: false });
-    this.canvas.dataset.modelDrawCount = String(++this.drawCount);
-    this.canvas.dataset.modelFrame = String(this.frame);
   }
 
   private cameraQuaternion(position: vec3, target: vec3): quat {
