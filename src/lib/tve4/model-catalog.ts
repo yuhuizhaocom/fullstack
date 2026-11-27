@@ -1,10 +1,12 @@
-import type { ModelGroup } from "../tve4-model-demo/catalog";
 import type { ModelDemoEntry } from "../tve4-model-demo/manifest";
 import type { ActionKey } from "../tve4-model-demo/sequences";
 import type { Faction } from "./types";
 
 const COMPLETE_ACTIONS: ActionKey[] = ["stand", "walk", "attack", "death"];
+const ELF_MODEL_IDS = new Set(["m022", "m024", "m025", "m027", "m028", "m029"]);
 const TROLL_MODEL_IDS = new Set(["m004", "m005", "m015", "m016", "m017"]);
+const OTHER_ELF_MODEL_IDS = new Set(["m042", "m044", "m045", "m047", "m048", "m049", "m050", "m051", "m054", "m055", "m056"]);
+const OTHER_TROLL_MODEL_IDS = new Set(["m036", "m040"]);
 
 export async function loadHeroModelManifest(): Promise<ModelDemoEntry[]> {
   const response = await fetch("/tve4-model-demo/manifest.json");
@@ -16,10 +18,11 @@ export async function loadHeroModelManifest(): Promise<ModelDemoEntry[]> {
 
 export function heroModelsForFaction(models: ModelDemoEntry[], faction: Faction): ModelDemoEntry[] {
   return models
-    .filter((entry) => entry.group === (faction as ModelGroup))
     .filter((entry) => faction === "troll"
-      ? TROLL_MODEL_IDS.has(entry.id)
-      : entry.id !== "m020" && hasAvailableTexture(entry))
+      ? (entry.group === "troll" && TROLL_MODEL_IDS.has(entry.id))
+        || (entry.group === "other-characters" && OTHER_TROLL_MODEL_IDS.has(entry.id))
+      : (entry.group === "elf" && ELF_MODEL_IDS.has(entry.id) && hasAvailableTexture(entry))
+        || (entry.group === "other-characters" && OTHER_ELF_MODEL_IDS.has(entry.id)))
     .sort((a, b) => a.number - b.number);
 }
 

@@ -17,6 +17,11 @@ const HIDDEN_GEOSETS: Record<string, readonly number[]> = {
   m015: [0],
   m016: [0],
   m017: [13],
+  m050: [7, 8, 9],
+  m051: [20, 21, 23],
+  m054: [3, 4, 5],
+  m055: [0],
+  m056: [0],
 };
 
 export function filterHeroModelGeosets<T extends { Geosets: readonly unknown[] }>(model: T, modelId: string): T {
