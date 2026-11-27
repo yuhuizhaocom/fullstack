@@ -19,7 +19,7 @@ import {
   type PlaceholderUnitState,
 } from "@/lib/tve4/render/placeholder";
 import { HeroModelViewer } from "@/lib/tve4/render/hero-model-viewer";
-import { shouldFlipHeroModel } from "@/lib/tve4/render/hero-model-facing";
+import { heroModelOrientation } from "@/lib/tve4/render/hero-model-facing";
 import { buildPathingBoundarySegments } from "@/lib/tve4/render/pathing-boundary";
 import { actionSequenceIndex, loadHeroModelManifest, modelActionFor } from "@/lib/tve4/model-catalog";
 import type { ModelDemoEntry } from "@/lib/tve4-model-demo/manifest";
@@ -281,9 +281,11 @@ class Tve4Scene extends Phaser.Scene {
     canvas.style.height = `${size}px`;
     canvas.style.left = `${screenPoint.x - size / 2}px`;
     canvas.style.top = `${screenPoint.y - metrics.groundY * size - size / 2}px`;
-    const flipX = shouldFlipHeroModel(player.facing);
-    canvas.style.transform = flipX ? "scaleX(-1)" : "scaleX(1)";
-    canvas.dataset.heroModelFlipX = String(flipX);
+    const orientation = heroModelOrientation(player.facing);
+    viewer.setYaw(orientation.yaw);
+    canvas.style.transform = orientation.flipX ? "scaleX(-1)" : "scaleX(1)";
+    canvas.dataset.heroModelFlipX = String(orientation.flipX);
+    canvas.dataset.heroModelYaw = orientation.yaw.toFixed(4);
     canvas.dataset.modelGroundY = metrics.groundY.toFixed(4);
     canvas.dataset.modelTopY = metrics.topY.toFixed(4);
     canvas.dataset.modelGroundScreenY = screenPoint.y.toFixed(2);

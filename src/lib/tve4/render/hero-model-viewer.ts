@@ -29,6 +29,7 @@ export class HeroModelViewer {
   private cameraPhi = -Math.PI / 2;
   private cameraTheta = 0.24;
   private cameraDistance = 360;
+  private yaw = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -103,6 +104,10 @@ export class HeroModelViewer {
     this.renderer?.setTeamColor(vec3.fromValues(color[0], color[1], color[2]));
   }
 
+  setYaw(yaw: number): void {
+    this.yaw = yaw;
+  }
+
   destroy(): void {
     this.loadToken += 1;
     this.stopLoop();
@@ -138,6 +143,7 @@ export class HeroModelViewer {
     );
     mat4.lookAt(view, eye, this.center, [0, 0, 1]);
     mat4.translate(view, view, [-this.center[0], -this.center[1], -this.center[2]]);
+    mat4.rotateZ(view, view, this.yaw);
     mat4.scale(view, view, [this.modelScale, this.modelScale, this.modelScale]);
     const min = parsed.Info.MinimumExtent;
     const max = parsed.Info.MaximumExtent;
@@ -227,6 +233,7 @@ export class HeroModelViewer {
     );
     mat4.lookAt(view, eye, this.center, [0, 0, 1]);
     mat4.translate(view, view, [-this.center[0], -this.center[1], -this.center[2]]);
+    mat4.rotateZ(view, view, this.yaw);
     mat4.scale(view, view, [this.modelScale, this.modelScale, this.modelScale]);
     this.renderer.setCamera(eye, this.cameraQuaternion(eye, this.center));
     this.renderer.setLightPosition([this.center[0] + 220, this.center[1] - 160, this.center[2] + 320]);
