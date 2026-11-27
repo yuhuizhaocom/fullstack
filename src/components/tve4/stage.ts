@@ -502,14 +502,7 @@ class Tve4Scene extends Phaser.Scene {
       if (hero.alive && (hero.isPlayer || hero.hp < hero.maxHp)) {
         const height = hero.faction === "troll" ? 30 : 24;
         const barWidth = hero.faction === "troll" ? 68 : 46;
-        this.drawBar(hero.x, hero.y - height - 8, barWidth, hero.hp / hero.maxHp, hero.faction === "elf" ? 0x7ee08a : 0xff7a5c);
-      }
-      if (hero.isPlayer && hero.alive) {
-        const exposed = state.elfExposed && !state.buildings.some(
-          (building) => building.alive && building.faction === "elf" && building.kind === "tent" && building.level >= 5,
-        );
-        this.overlays.lineStyle(2, exposed ? 0xff6b6b : 0x7ee08a, 0.8);
-        this.overlays.strokeEllipse(hero.x, hero.y + 5, shadowWidth + 10, shadowWidth * 0.38);
+        this.drawBar(hero.x, hero.y - height - 14, barWidth, hero.hp / hero.maxHp, hero.faction === "elf" ? 0x7ee08a : 0xff7a5c);
       }
       if (hero.buffs.root > 0) {
         this.overlays.lineStyle(2, 0x9be7ff, 0.9);
