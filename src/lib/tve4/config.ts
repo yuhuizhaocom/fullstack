@@ -2,6 +2,7 @@
 // 规则文件已从原版解包文件核对（见 data/game/game-rules.json）。
 
 import { MAP_DEFINITIONS } from "./maps.generated";
+import { ruleNumber, ruleNumbers, ruleRecord } from "./data/mvp-rules";
 import { BUILDING_RULES, RULES } from "./rules";
 import type { BuildKind, Mode, Rule } from "./types";
 
@@ -75,46 +76,49 @@ function levels(key: string, ranges?: number[]): BuildingLevel[] {
     income: income[i],
     damage: damage[i],
     range: ranges?.[i],
-    interval: key === "tower" ? 1.5 : undefined,
+    interval: key === "tower" ? ruleNumber("tower", "interval") : undefined,
   }));
 }
 
 export const BUILDINGS: Record<string, BuildingDef> = {
   wall: {
-    label: "石墙", desc: "u01F 石墙链，可升级 10 级", size: 1, texture: "b_wall", buildTime: 0.5,
+    label: "石墙", desc: "u01F 石墙链，可升级 10 级", texture: "b_wall",
+    size: ruleNumber("wall", "size"), buildTime: ruleNumber("wall", "buildTime"),
     levels: levels("wall"),
   },
   tower: {
-    label: "基础箭塔", desc: "h000 箭塔链 7 级 + h096 终极塔", size: 2, texture: "b_tower", buildTime: 1.5,
-    levels: levels("tower", [96, 112, 128, 144, 160, 176, 192, 208]),
+    label: "基础箭塔", desc: "h000 箭塔链 7 级 + h096 终极塔", texture: "b_tower",
+    size: ruleNumber("tower", "size"), buildTime: ruleNumber("tower", "buildTime"),
+    levels: levels("tower", ruleNumbers("tower", "range")),
   },
   mine: {
-    label: "闹鬼金矿", desc: "e00H 金矿链，每秒金币", size: 2, texture: "b_mine", buildTime: 2,
+    label: "闹鬼金矿", desc: "e00H 金矿链，每秒金币", texture: "b_mine",
+    size: ruleNumber("mine", "size"), buildTime: ruleNumber("mine", "buildTime"),
     levels: levels("mine"),
   },
   tent: {
-    label: "作坊", desc: "u00Y 帐篷起，10 级链，死亡返还全部升级花费", size: 2, texture: "b_tent", buildTime: 1.2,
+    label: "作坊", desc: "u00Y 帐篷起，10 级链，死亡返还全部升级花费", texture: "b_tent",
+    size: ruleNumber("tent", "size"), buildTime: ruleNumber("tent", "buildTime"),
     levels: levels("tent"),
   },
   market: {
-    label: "城镇/市场", desc: "u018 城镇，交易并解锁高级建筑", size: 2, texture: "b_tent", buildTime: 2,
-    levels: [
-      { cost: 64, hp: 50 },
-      { cost: 256, hp: 100 },
-      { cost: 1024, hp: 200 },
-    ],
+    label: "城镇/市场", desc: "u018 城镇，交易并解锁高级建筑", texture: "b_tent",
+    size: ruleNumber("market", "size"), buildTime: ruleNumber("market", "buildTime"),
+    levels: levels("market").map(({ cost, hp }) => ({ cost, hp })),
   },
   reveal: {
-    label: "真视之塔", desc: "u01E 反隐塔", size: 2, texture: "b_tower", buildTime: 2,
+    label: "真视之塔", desc: "u01E 反隐塔", texture: "b_tower",
+    size: ruleNumber("reveal", "size"), buildTime: ruleNumber("reveal", "buildTime"),
     levels: [{
       cost: arr(BUILDING_RULES.reveal.gold)[0] ?? 0,
       hp: arr(BUILDING_RULES.reveal.hp)[0] ?? 10,
       woodCost: arr(BUILDING_RULES.reveal.wood)[0] || undefined,
-      range: (BUILDING_RULES.reveal.revealRange ?? 900) * 0.125,
+      range: (BUILDING_RULES.reveal.revealRange ?? 900) * RULES.scale,
     }],
   },
   trollHouse: {
-    label: "巨魔房屋", desc: "u03D 系统建筑，玩家只能升级", size: 3, texture: "b_tent", buildTime: 2,
+    label: "巨魔房屋", desc: "u03D 系统建筑，玩家只能升级", texture: "b_tent",
+    size: ruleNumber("trollHouse", "size"), buildTime: ruleNumber("trollHouse", "buildTime"),
     levels: levels("trollHouse"),
   },
 };
@@ -124,27 +128,25 @@ export interface Requirement {
   kind: BuildKind;
   level: number;
 }
+function requirements(key: string): Array<{ level: number; need: Requirement }> {
+  const values = ruleRecord(key).values;
+  return Object.keys(values)
+    .map((field) => /^requirement\.(\d+)\.needKind$/.exec(field))
+    .filter((match): match is RegExpExecArray => match !== null)
+    .map((match) => {
+      const level = Number(match[1]);
+      return {
+        level,
+        need: { kind: String(values[`requirement.${level}.needKind`]) as BuildKind, level: ruleNumber(key, `requirement.${level}.needLevel`) },
+      };
+    })
+    .sort((a, b) => a.level - b.level);
+}
+
 export const REQUIREMENTS: Partial<Record<BuildKind, Array<{ level: number; need: Requirement }>>> = {
-  // 作坊升级有前置：2 级只需基础墙，不要求商店/城镇；高级才需要城镇等级
-  tent: [
-    { level: 2, need: { kind: "wall", level: 1 } },
-    { level: 3, need: { kind: "wall", level: 4 } },
-    { level: 4, need: { kind: "market", level: 1 } },
-    { level: 5, need: { kind: "wall", level: 1 } },
-    { level: 6, need: { kind: "market", level: 2 } },
-    { level: 7, need: { kind: "wall", level: 4 } },
-    { level: 8, need: { kind: "market", level: 2 } },
-    { level: 9, need: { kind: "market", level: 3 } },
-    { level: 10, need: { kind: "market", level: 3 } },
-  ],
-  tower: [
-    { level: 3, need: { kind: "market", level: 1 } },
-    { level: 4, need: { kind: "market", level: 1 } },
-    { level: 5, need: { kind: "market", level: 2 } },
-    { level: 6, need: { kind: "market", level: 2 } },
-    { level: 7, need: { kind: "market", level: 3 } },
-  ],
-  reveal: [{ level: 1, need: { kind: "market", level: 2 } }],
+  tent: requirements("tent"),
+  tower: requirements("tower"),
+  reveal: requirements("reveal"),
 };
 
 export const ELF_BUILD_KINDS = ["wall", "tower", "mine", "tent", "market", "reveal"] as const;
@@ -153,8 +155,16 @@ export const BUILD_KINDS = ELF_BUILD_KINDS;
 import type { SkillKey } from "./types";
 
 export const HERO_STATS = {
-  elf: { hp: 10, damage: 7, interval: 2.2, range: 32, speed: 125, radius: 14 },
-  troll: { hp: 750, damage: 7, interval: 1.5, range: 34, speed: 175, radius: 22 },
+  elf: {
+    hp: ruleNumber("elf", "hp"), damage: ruleNumber("elf", "damage"),
+    interval: ruleNumber("elf", "interval"), range: ruleNumber("elf", "range"),
+    speed: ruleNumber("elf", "speed"), radius: ruleNumber("elf", "radius"),
+  },
+  troll: {
+    hp: ruleNumber("troll", "hp"), damage: ruleNumber("troll", "damage"),
+    interval: ruleNumber("troll", "interval"), range: ruleNumber("troll", "range"),
+    speed: ruleNumber("troll", "speed"), radius: ruleNumber("troll", "radius"),
+  },
 } as const;
 
 export interface SkillKeyInfo {
@@ -166,16 +176,16 @@ export interface SkillKeyInfo {
 
 export const SKILLS: Record<"elf" | "troll", SkillKeyInfo[]> = {
   elf: [
-    { key: "blink", label: "闪烁", cd: 25, desc: "向指针方向瞬移 12 格" },
-    { key: "haste", label: "魔法提速", cd: 30, desc: "15 秒移速 +110%" },
-    { key: "entangle", label: "纠缠根须", cd: 3, desc: "定身巨魔 3 秒" },
-    { key: "silence", label: "沉默", cd: 60, desc: "封锁巨魔技能 5 秒" },
+    { key: "blink", label: "闪烁", cd: ruleNumber("blink", "cooldown"), desc: "向指针方向瞬移 12 格" },
+    { key: "haste", label: "魔法提速", cd: ruleNumber("haste", "cooldown"), desc: "15 秒移速 +110%" },
+    { key: "entangle", label: "纠缠根须", cd: ruleNumber("entangle", "cooldown"), desc: "定身巨魔 3 秒" },
+    { key: "silence", label: "沉默", cd: ruleNumber("silence", "cooldown"), desc: "封锁巨魔技能 5 秒" },
   ],
   troll: [
-    { key: "windwalk", label: "疾风步", cd: 30, desc: "隐身 20 秒，移速 +50%" },
-    { key: "berserk", label: "狂战士", cd: 120, desc: "10 秒 +100% 攻速、+50% 移速，受伤 +50%" },
-    { key: "teleport", label: "传送", cd: 45, desc: "2 秒读条，返回巨魔小屋或商店" },
-    { key: "farSight", label: "巨魔之眼", cd: 25, desc: "标记一处精灵建筑 15 秒，期间无法拆除" },
+    { key: "windwalk", label: "疾风步", cd: ruleNumber("windwalk", "cooldown"), desc: "隐身 20 秒，移速 +50%" },
+    { key: "berserk", label: "狂战士", cd: ruleNumber("berserk", "cooldown"), desc: "10 秒 +100% 攻速、+50% 移速，受伤 +50%" },
+    { key: "teleport", label: "传送", cd: ruleNumber("teleport", "cooldown"), desc: "2 秒读条，返回巨魔小屋或商店" },
+    { key: "farSight", label: "巨魔之眼", cd: ruleNumber("farSight", "cooldown"), desc: "标记一处精灵建筑 15 秒，期间无法拆除" },
   ],
 };
 

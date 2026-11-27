@@ -40,69 +40,67 @@
       "note": "地图内技能物编覆盖；哈希复用 docs/research/file-index.json。"
     },
     "AbilityBuffData.slk": {
-      "size": "UNKNOWN",
-      "sha256": "UNKNOWN",
-      "status": "UNKNOWN",
-      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+      "size": 10292,
+      "sha256": "9f009bd9dab1417f564560bdafb1d40e71b651109e6ca77d5184476b76eead7f",
+      "status": "VERIFIED",
+      "note": "War3 默认物编；Task 5 从 C:\\Users\\肥胖的粽子\\AppData\\Local\\Temp\\tve_w3x\\extracted\\Units\\AbilityBuffData.slk 只读计算实际字节数与 SHA-256。"
     },
     "AbilityData.slk": {
-      "size": "UNKNOWN",
-      "sha256": "UNKNOWN",
-      "status": "UNKNOWN",
-      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+      "size": 400198,
+      "sha256": "a4e8bbd0fa000e4024ca41ff39168092f28f1559d27461f17b97089b83c31a3e",
+      "status": "VERIFIED",
+      "note": "War3 默认物编；Task 5 从 C:\\Users\\肥胖的粽子\\AppData\\Local\\Temp\\tve_w3x\\extracted\\Units\\AbilityData.slk 只读计算实际字节数与 SHA-256。"
     },
     "ItemData.slk": {
-      "size": "UNKNOWN",
-      "sha256": "UNKNOWN",
-      "status": "UNKNOWN",
-      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+      "size": 254252,
+      "sha256": "30cb8be7bad0d9d032ae8d6fb9517b5334ae8dc8dc52f0f752cbddca1565c8c0",
+      "status": "VERIFIED",
+      "note": "War3 默认物编；Task 5 从 C:\\Users\\肥胖的粽子\\AppData\\Local\\Temp\\tve_w3x\\extracted\\Units\\ItemData.slk 只读计算实际字节数与 SHA-256。"
     },
     "UnitAbilities.slk": {
-      "size": "UNKNOWN",
-      "sha256": "UNKNOWN",
-      "status": "UNKNOWN",
-      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+      "size": 103559,
+      "sha256": "81ad6eaf03fcf06090d227b97844fa4bc5d517037e21cd38c1f4c6f4a8548ffc",
+      "status": "VERIFIED",
+      "note": "War3 默认物编；Task 5 从 C:\\Users\\肥胖的粽子\\AppData\\Local\\Temp\\tve_w3x\\extracted\\Units\\UnitAbilities.slk 只读计算实际字节数与 SHA-256。"
     },
     "UnitBalance.slk": {
-      "size": "UNKNOWN",
-      "sha256": "UNKNOWN",
-      "status": "UNKNOWN",
-      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+      "size": 652142,
+      "sha256": "3d1af3347fe4be05c8a8b891ad657170ddc265d174163a70802e6198ade47c57",
+      "status": "VERIFIED",
+      "note": "War3 默认物编；Task 5 从 C:\\Users\\肥胖的粽子\\AppData\\Local\\Temp\\tve_w3x\\extracted\\Units\\UnitBalance.slk 只读计算实际字节数与 SHA-256。"
     },
     "UnitData.slk": {
-      "size": "UNKNOWN",
-      "sha256": "UNKNOWN",
-      "status": "UNKNOWN",
-      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+      "size": 384230,
+      "sha256": "b543e6a5008ac3dd35bca924d21aebd0695541c1eaa548216f3e738486d97180",
+      "status": "VERIFIED",
+      "note": "War3 默认物编；Task 5 从 C:\\Users\\肥胖的粽子\\AppData\\Local\\Temp\\tve_w3x\\extracted\\Units\\UnitData.slk 只读计算实际字节数与 SHA-256。"
     },
     "UnitUI.slk": {
-      "size": "UNKNOWN",
-      "sha256": "UNKNOWN",
-      "status": "UNKNOWN",
-      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+      "size": 764177,
+      "sha256": "0a0b43024aa666970cb2d1ec027ca999306510bf9f8a67ae226d05579a748973",
+      "status": "VERIFIED",
+      "note": "War3 默认物编；Task 5 从 C:\\Users\\肥胖的粽子\\AppData\\Local\\Temp\\tve_w3x\\extracted\\Units\\UnitUI.slk 只读计算实际字节数与 SHA-256。"
     },
     "UnitWeapons.slk": {
-      "size": "UNKNOWN",
-      "sha256": "UNKNOWN",
-      "status": "UNKNOWN",
-      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+      "size": 774108,
+      "sha256": "49d358fa79678e42a5402627dec1908f338fceba4c1928a7668557c23e2f27af",
+      "status": "VERIFIED",
+      "note": "War3 默认物编；Task 5 从 C:\\Users\\肥胖的粽子\\AppData\\Local\\Temp\\tve_w3x\\extracted\\Units\\UnitWeapons.slk 只读计算实际字节数与 SHA-256。"
     },
     "UpgradeData.slk": {
-      "size": "UNKNOWN",
-      "sha256": "UNKNOWN",
-      "status": "UNKNOWN",
-      "note": "War3 默认物编；file-index.json 未收录，尚未定位并核验本地文件。"
+      "size": 14308,
+      "sha256": "5d5b14f016cdab72a50e539238b4b9ceb66893c8e1972a5e491d05bf60f0ea5e",
+      "status": "VERIFIED",
+      "note": "War3 默认物编；Task 5 从 C:\\Users\\肥胖的粽子\\AppData\\Local\\Temp\\tve_w3x\\extracted\\Units\\UpgradeData.slk 只读计算实际字节数与 SHA-256。"
     }
   },
   "notes": [
     "原作：新巨魔与精灵 v4.0.34b，作者跃耀F9；内部名称见原 W3X。",
-    "来源索引：docs/research/file-index.json，共 607 个 listfile 条目；本基准只摘录既有哈希，不重新实现 MPQ 解析。",
+    "地图文件哈希摘自 docs/research/file-index.json；九份默认 SLK 的大小与 SHA-256 由 Task 5 从本地只读文件实际计算。",
     "原索引把原包 SHA-256 记为大写；本文件按任务规范使用同一摘要的小写形式。",
     "snapshotId 是版本与原包哈希前缀组成的稳定标识；后续替换来源时必须同时更新该标识及文件哈希。"
   ],
   "unknowns": [
-    "九份 War3 默认 SLK 未出现在现有 file-index.json 中，文件大小与 SHA-256 保持 UNKNOWN；Task 5 使用前必须补来源、版本和哈希。",
-    "本任务不重新读取原 W3X 或解压目录，不声明对缺失 SLK 的可用性作出新核验。",
     "原作视觉资产尚未提取，也未确认授权；MVP 使用临时几何视觉。"
   ]
 }
