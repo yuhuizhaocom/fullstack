@@ -174,7 +174,8 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
     x, y, vx: 0, vy: 0, facing: 0,
     flash: 0,
     invuln: 0,
-    hp: s.hp, maxHp: s.hp, damage: s.damage, interval: s.interval, range: s.range,
+    hp: s.hp, maxHp: s.hp, mana: s.mana, maxMana: s.mana, manaRegen: s.manaRegen,
+    damage: s.damage, interval: s.interval, range: s.range,
     speed: s.speed, radius: s.radius,
     cd: 0, channelTime: 0, deathTimer: 0,
     gold: (MODE_START_GOLD[state.mode] ?? START_GOLD)[faction], wood: START_WOOD,
@@ -234,6 +235,7 @@ function respawnHero(state: GameState, h: Hero): void {
   const p = gridToWorld(point.gx, point.gy);
   h.alive = true;
   h.hp = h.maxHp;
+  h.mana = h.maxMana;
   h.x = p.x;
   h.y = p.y;
   h.cd = 0;
@@ -699,6 +701,7 @@ function updateTimers(state: GameState, dt: number): void {
         && Math.hypot(h.x - b.x, h.y - b.y) <= (BUILDING_RULES.trollHouse.auraRange ?? 500) * SCALE,
     );
     h.cd = Math.max(0, h.cd - dt);
+    h.mana = Math.min(h.maxMana, h.mana + h.manaRegen * dt);
     for (const k of ALL_SKILL_KEYS) h.cooldowns[k] = Math.max(0, h.cooldowns[k] - dt);
     if (nearHouse) {
       h.hp = Math.min(h.maxHp, h.hp + h.maxHp * (BUILDING_RULES.trollHouse.heal ?? 0.06) * dt);
@@ -1150,7 +1153,8 @@ export function stateHash(state: GameState): string {
       id: h.id, faction: h.faction, isPlayer: h.isPlayer, isWolf: h.isWolf,
       isAlly: h.isAlly, alive: h.alive, lives: h.lives, x: h.x, y: h.y,
       vx: h.vx, vy: h.vy, facing: h.facing, invuln: h.invuln, hp: h.hp,
-      maxHp: h.maxHp, damage: h.damage, interval: h.interval, range: h.range,
+      maxHp: h.maxHp, mana: h.mana, maxMana: h.maxMana, manaRegen: h.manaRegen,
+      damage: h.damage, interval: h.interval, range: h.range,
       speed: h.speed, radius: h.radius, cd: h.cd, channelTime: h.channelTime,
       deathTimer: h.deathTimer, gold: h.gold, wood: h.wood, items: h.items,
       bonusIncome: h.bonusIncome, bonusLifesteal: h.bonusLifesteal,
@@ -1380,24 +1384,31 @@ function findOpenNear(state: GameState, x: number, y: number): { x: number; y: n
   return { x: clampedX, y: clampedY };
 }
 
-function skillDistance(key: SkillKey): number {
-  if (key === "blink") return TILE * 12;
-  return 0;
+function skillNumber(key: SkillKey, field: string, fallback: number): number {
+  const value = RULES.skills[key]?.[field];
+  return typeof value === "number" ? value : fallback;
 }
 
 function castSkillFor(state: GameState, hero: Hero, key: SkillKey, aim?: { x: number; y: number } | null): boolean {
   if (!hero.alive || hero.cooldowns[key] > 0) return false;
   if (hero.faction === "troll" && hero.buffs.silence > 0) return false;
   const spec = SKILLS[hero.faction].find((s) => s.key === key);
-  if (!spec) return false;
-  const dist = skillDistance(key);
-  if (dist > 0) {
-    let dx = aim ? aim.x - hero.x : Math.cos(hero.facing);
-    let dy = aim ? aim.y - hero.y : Math.sin(hero.facing);
-    const mag = Math.hypot(dx, dy);
-    if (mag > 1) {
-      dx /= mag;
-      dy /= mag;
+  if (!spec || hero.mana < spec.manaCost) return false;
+
+  if (key === "blink") {
+    const maxDist = skillNumber(key, "originalBlinkDistance", TILE * 12 / SCALE) * SCALE;
+    let dx = Math.cos(hero.facing);
+    let dy = Math.sin(hero.facing);
+    let dist = maxDist;
+    if (aim) {
+      const ax = aim.x - hero.x;
+      const ay = aim.y - hero.y;
+      const mag = Math.hypot(ax, ay);
+      if (mag > 1) {
+        dx = ax / mag;
+        dy = ay / mag;
+        dist = Math.min(maxDist, mag);
+      }
     }
     const to = findOpenNear(state, hero.x + dx * dist, hero.y + dy * dist);
     addEffect(state, hero.x, hero.y, 40, "#bfe9ff");
@@ -1405,11 +1416,11 @@ function castSkillFor(state: GameState, hero: Hero, key: SkillKey, aim?: { x: nu
     hero.y = to.y;
     addEffect(state, hero.x, hero.y, 50, "#bfe9ff");
   }
-  if (key === "haste") hero.buffs.haste = 15;
-  if (key === "windwalk") hero.buffs.windwalk = 20;
-  if (key === "berserk") hero.buffs.berserk = 10;
+  if (key === "haste") hero.buffs.haste = spec.duration;
+  if (key === "windwalk") hero.buffs.windwalk = spec.duration;
+  if (key === "berserk") hero.buffs.berserk = spec.duration;
   if (key === "teleport") {
-    hero.channelTime = 2;
+    hero.channelTime = skillNumber(key, "channel", 2);
     hero.vx = 0;
     hero.vy = 0;
   }
@@ -1419,21 +1430,27 @@ function castSkillFor(state: GameState, hero: Hero, key: SkillKey, aim?: { x: nu
     const target = state.buildings
       .filter((b) => b.alive && b.faction === "elf" && Math.hypot(b.x - point.x, b.y - point.y) <= range)
       .sort((a, b) => Math.hypot(a.x - point.x, a.y - point.y) - Math.hypot(b.x - point.x, b.y - point.y))[0];
-    if (target) {
-      target.eyeMarked = 15;
-      addEffect(state, target.x, target.y, 40, "#ff9c7a");
-      addFloat(state, target.x, target.y - 26, "巨魔之眼", "#ff9c7a", 12);
-    }
+    if (!target) return false;
+    target.eyeMarked = spec.duration;
+    addEffect(state, target.x, target.y, 40, "#ff9c7a");
+    addFloat(state, target.x, target.y - 26, "巨魔之眼", "#ff9c7a", 12);
   }
   if (key === "entangle" || key === "silence") {
     const troll = state.heroes.find((h) => h.faction === "troll" && h.alive);
-    if (troll) {
-      if (key === "entangle") troll.buffs.root = 3;
-      else troll.buffs.silence = 5;
-      addEffect(state, troll.x, troll.y, 34, "#9be7ff");
+    const range = skillNumber(key, "originalCastRange", 0) * SCALE;
+    if (
+      !troll || range <= 0
+      || Math.hypot(troll.x - hero.x, troll.y - hero.y) > range
+      || !hasLineOfSight(state, hero.x, hero.y, troll.x, troll.y, undefined, hero.faction)
+    ) {
+      return false;
     }
+    if (key === "entangle") troll.buffs.root = spec.duration;
+    else troll.buffs.silence = spec.duration;
+    addEffect(state, troll.x, troll.y, 34, "#9be7ff");
   }
-  hero.cooldowns[key] = spec.cd;
+  hero.mana -= spec.manaCost;
+  hero.cooldowns[key] = skillNumber(key, "cooldown", spec.cd);
   addFloat(state, hero.x, hero.y - 26, spec.label, "#bfe9ff", 12);
   return true;
 }
@@ -1444,7 +1461,10 @@ export function castSkill(state: GameState, key: SkillKey, aim?: { x: number; y:
   const ok = castSkillFor(state, hero, key, aim);
   if (!ok) {
     const spec = SKILLS[hero.faction].find((s) => s.key === key);
-    setHint(state, spec ? `${spec.label}尚未就绪` : "技能不可用");
+    if (!spec) setHint(state, "技能不可用");
+    else if (hero.cooldowns[key] > 0) setHint(state, `${spec.label}冷却中`);
+    else if (hero.mana < spec.manaCost) setHint(state, `法力不足（需要 ${spec.manaCost}）`);
+    else setHint(state, `${spec.label}目标无效或超出范围`);
   }
   return ok;
 }

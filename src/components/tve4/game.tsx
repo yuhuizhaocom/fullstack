@@ -33,6 +33,7 @@ import {
   tryUpgrade,
 } from "@/lib/tve4/engine";
 import { EQUIPMENT_RULE, MARKET_RULE, RULES, SCENARIO_RULE } from "@/lib/tve4/rules";
+import { SKILL_ICONS, itemIcon } from "@/lib/tve4/render/icons";
 import type { BuildKind, Faction, GameState, Interaction, Mode, Rule, SkillKey } from "@/lib/tve4/types";
 
 import type { Stage4 } from "./stage";
@@ -74,6 +75,8 @@ interface Snapshot {
   wood: number;
   hp: number;
   maxHp: number;
+  mana: number;
+  maxMana: number;
   lives: number;
   cooldowns: Record<SkillKey, number>;
   selected: { id: number; label: string; level: number; hp: number; maxHp: number; canUpgrade: boolean; cost: number; woodCost: number } | null;
@@ -157,6 +160,8 @@ export function Tve4Game() {
       wood: hero?.wood ?? 0,
       hp: hero?.hp ?? 0,
       maxHp: hero?.maxHp ?? 1,
+      mana: hero?.mana ?? 0,
+      maxMana: hero?.maxMana ?? 1,
       lives: hero?.lives ?? 0,
       cooldowns: hero ? { ...hero.cooldowns } : ({} as Record<SkillKey, number>),
       selected: b && def
@@ -642,13 +647,19 @@ export function Tve4Game() {
               <button
                 key={spec.key}
                 className="pointer-events-auto rounded-lg bg-black/70 px-2 py-3 text-[11px] text-white disabled:opacity-40"
-                disabled={(snapshot.cooldowns[spec.key] ?? 0) > 0}
-                title={`${spec.label}：${spec.desc}`}
+                disabled={(snapshot.cooldowns[spec.key] ?? 0) > 0 || snapshot.mana < spec.manaCost}
+                title={`${spec.label}：${spec.desc}（${spec.manaCost} 法力）`}
                 onClick={() => {
                   const s = stateRef.current;
                   if (s) { castSkill(s, spec.key, hoverRef.current); sync(); }
                 }}
               >
+                <span
+                  className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-sm text-[10px] leading-none"
+                  style={{ background: SKILL_ICONS[spec.key].background, color: SKILL_ICONS[spec.key].color }}
+                >
+                  {SKILL_ICONS[spec.key].glyph}
+                </span>
                 {spec.label}
                 {(snapshot.cooldowns[spec.key] ?? 0) > 0 ? ` ${Math.ceil(snapshot.cooldowns[spec.key])}s` : ""}
               </button>
@@ -705,7 +716,7 @@ export function Tve4Game() {
           </div>
           <div className="pointer-events-none absolute right-3 top-3 rounded-lg bg-black/60 px-3 py-2 text-right text-xs text-white">
             <div>金币 {Math.floor(snapshot.gold)} · 木材 {Math.floor(snapshot.wood)}</div>
-            <div>生命 {Math.max(0, snapshot.hp).toFixed(0)}/{snapshot.maxHp} · 剩余 {snapshot.lives}</div>
+            <div>生命 {Math.max(0, snapshot.hp).toFixed(0)}/{snapshot.maxHp} · 法力 {Math.floor(snapshot.mana)}/{snapshot.maxMana} · 剩余 {snapshot.lives}</div>
             <div className="text-white/60">击杀 {snapshot.stats.kills} · 摧毁 {snapshot.stats.destroyed}</div>
             {snapshot.trollItems.length ? (
               <div className="text-[10px] text-amber-200/70">巨魔装备 {snapshot.trollItems.length}/{RULES.equipmentShop.items.length}</div>
@@ -795,7 +806,13 @@ export function Tve4Game() {
                               }
                             }}
                           >
-                            <div className="font-semibold">{item.label}</div>
+                            <span
+                              className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-sm text-[10px] leading-none"
+                              style={{ background: itemIcon(item.key).background, color: itemIcon(item.key).color }}
+                            >
+                              {itemIcon(item.key).glyph}
+                            </span>
+                            <span className="font-semibold">{item.label}</span>
                             <div className="text-white/60">{item.gold} 金{item.wood ? ` · ${item.wood} 木` : ""}</div>
                             {item.note ? <div className="mt-1 text-[9px] text-amber-200/60">原版效果未实现</div> : null}
                           </button>
@@ -839,8 +856,14 @@ export function Tve4Game() {
                         sync();
                       }}
                     >
-                      <div className="font-semibold">{spec.label}</div>
-                      <div className="text-white/60">{(snapshot.cooldowns[spec.key] ?? 0) > 0 ? `${Math.ceil(snapshot.cooldowns[spec.key])}s` : "就绪"}</div>
+                      <span
+                        className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-sm text-[10px] leading-none"
+                        style={{ background: SKILL_ICONS[spec.key].background, color: SKILL_ICONS[spec.key].color }}
+                      >
+                        {SKILL_ICONS[spec.key].glyph}
+                      </span>
+                      <span className="font-semibold">{spec.label}</span>
+                      <div className="text-white/60">{(snapshot.cooldowns[spec.key] ?? 0) > 0 ? `${Math.ceil(snapshot.cooldowns[spec.key])}s` : "就绪"} · {spec.manaCost} 法力</div>
                       <div className="mt-1 text-[10px] text-white/40">{spec.desc}</div>
                     </button>
                   ))}

@@ -196,6 +196,9 @@ export const RULES: RuleFile = {
       id: String(ruleValue(record.id, "id")),
       cooldown: ruleNumber(record.id, "cooldown"),
       duration: ruleNumber(record.id, "duration"),
+      manaCost: ruleNumber(record.id, "manaCost"),
+      ...(typeof record.values.originalCastRange === "number" ? { originalCastRange: Number(record.values.originalCastRange) } : {}),
+      ...(typeof record.values.originalBlinkDistance === "number" ? { originalBlinkDistance: Number(record.values.originalBlinkDistance) } : {}),
     }];
   })),
   startGold: { elf: ruleNumber("modeSingle", "elfGold"), troll: ruleNumber("modeSingle", "trollGold") },

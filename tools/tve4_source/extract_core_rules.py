@@ -42,7 +42,7 @@ SKILLS = {
     "blink": ("A066", 25, 25), "haste": ("A067", 30, 15),
     "entangle": ("A068", 45, 3), "silence": ("A069", 60, 5),
     "windwalk": ("A061", 30, 20), "berserk": ("A06T", 120, 10),
-    "teleport": ("A06W", 45, 2), "farSight": ("A062", 40, 25),
+    "teleport": ("A06W", 45, 2), "farSight": ("A062", 40, 15),
 }
 SHOPS = ["u03I", "u03J", "u03K", "u03L", "u03M", "u03N", "o003"]
 REQUIREMENTS = {
@@ -250,10 +250,12 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
             hp_sources = [slk_evidence("UnitBalance.slk", object_id, "HP", "INFERRED"), legacy_evidence(key, "hp")]
         if parsed_interval != old["interval"]:
             interval_sources = [slk_evidence("UnitWeapons.slk", object_id, "cool1", "INFERRED"), legacy_evidence(key, "interval")]
-        values = {"objectId": object_id, "hp": old["hp"], "damage": old["attack"], "interval": old["interval"], "range": runtime_ranges[key], "worldRange": old["range"], "speed": old["speed"], "radius": old["radius"], "originalHp": parsed_hp, "originalSpeed": number(balance[object_id]["spd"]), "originalRange": number(weapons[object_id]["rangeN1"])}
+        values = {"objectId": object_id, "hp": old["hp"], "damage": old["attack"], "interval": old["interval"], "range": runtime_ranges[key], "worldRange": old["range"], "speed": old["speed"], "radius": old["radius"], "mana": number(balance[object_id]["manaN"]), "manaRegen": number(balance[object_id]["regenMana"]), "originalHp": parsed_hp, "originalSpeed": number(balance[object_id]["spd"]), "originalRange": number(weapons[object_id]["rangeN1"])}
         sources = {
             "hp": hp_sources,
             "interval": interval_sources,
+            "mana": [slk_evidence("UnitBalance.slk", object_id, "manaN", value=number(balance[object_id]["manaN"]))],
+            "manaRegen": [slk_evidence("UnitBalance.slk", object_id, "regenMana", value=number(balance[object_id]["regenMana"]))],
             "originalHp": [slk_evidence("UnitBalance.slk", object_id, "HP", value=parsed_hp)],
             "originalSpeed": [slk_evidence("UnitBalance.slk", object_id, "spd", value=number(balance[object_id]["spd"]))],
             "originalRange": [slk_evidence("UnitWeapons.slk", object_id, "rangeN1", value=number(weapons[object_id]["rangeN1"]))],
@@ -363,6 +365,14 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
             duration_layers = layered_slk("AbilityData.slk", object_id, duration_field, row[duration_field], w3a, ("ahdu",) if duration_field == "HeroDur1" else ("adur",))
             values["defaultDuration"] = resolve_layer(duration_layers)
             sources["defaultDuration"] = duration_layers
+        if key in {"entangle", "silence"}:
+            cast_range = number(row["Rng1"])
+            values["originalCastRange"] = cast_range
+            sources["originalCastRange"] = [slk_evidence("AbilityData.slk", object_id, "Rng1", value=cast_range)]
+        if key == "blink":
+            blink_distance = number(row["DataA1"])
+            values["originalBlinkDistance"] = blink_distance
+            sources["originalBlinkDistance"] = [slk_evidence("AbilityData.slk", object_id, "DataA1", value=blink_distance)]
         require(values["originalCooldown"] == original_cd, f"{object_id}: unexpected source cooldown {original_cooldown}")
         old_skill = legacy["skills"].get(key, {})
         for field, value in old_skill.items():

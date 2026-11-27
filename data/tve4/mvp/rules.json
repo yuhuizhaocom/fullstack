@@ -1,5 +1,5 @@
 {
-  "catalogVersion": "d12a4deacbd2e8f3ef263326b75d839f094a45c2ed421a833749ff4491c749a6",
+  "catalogVersion": "a55255d95dbab9b572692c0db6cb54be74a85b6b5815ea66750a04865fbaa454",
   "primarySource": "data/tve4/mvp/source.json",
   "modeSingle": [
     {
@@ -70,6 +70,8 @@
         "worldRange": 112,
         "speed": 125,
         "radius": 14,
+        "mana": 200,
+        "manaRegen": 2,
         "originalHp": 10,
         "originalSpeed": 250,
         "originalRange": 100
@@ -158,6 +160,20 @@
             "confidence": "INFERRED"
           }
         ],
+        "mana": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "H010",
+          "field": "manaN",
+          "value": 200,
+          "confidence": "VERIFIED"
+        },
+        "manaRegen": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "H010",
+          "field": "regenMana",
+          "value": 2,
+          "confidence": "VERIFIED"
+        },
         "originalHp": {
           "file": "Units/UnitBalance.slk",
           "objectId": "H010",
@@ -192,6 +208,8 @@
         "worldRange": 90,
         "speed": 175,
         "radius": 22,
+        "mana": 200,
+        "manaRegen": 1,
         "originalHp": 750,
         "originalSpeed": 350,
         "originalRange": 80
@@ -280,6 +298,20 @@
             "confidence": "INFERRED"
           }
         ],
+        "mana": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "H020",
+          "field": "manaN",
+          "value": 200,
+          "confidence": "VERIFIED"
+        },
+        "manaRegen": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "H020",
+          "field": "regenMana",
+          "value": 1,
+          "confidence": "VERIFIED"
+        },
         "originalHp": {
           "file": "Units/UnitBalance.slk",
           "objectId": "H020",
@@ -2869,7 +2901,8 @@
         "originalCooldown": 25,
         "duration": 25,
         "runtimeDuration": 25,
-        "manaCost": 20
+        "manaCost": 20,
+        "originalBlinkDistance": 1500
       },
       "source": {
         "file": "Units/AbilityData.slk",
@@ -2919,6 +2952,13 @@
           "value": 20,
           "confidence": "VERIFIED",
           "priority": 10
+        },
+        "originalBlinkDistance": {
+          "file": "Units/AbilityData.slk",
+          "objectId": "A066",
+          "field": "DataA1",
+          "value": 1500,
+          "confidence": "VERIFIED"
         }
       }
     },
@@ -3616,7 +3656,8 @@
         "duration": 3,
         "runtimeDuration": 3,
         "manaCost": 40,
-        "defaultDuration": 3
+        "defaultDuration": 3,
+        "originalCastRange": 400
       },
       "source": {
         "file": "Units/AbilityData.slk",
@@ -3683,6 +3724,13 @@
           "value": 3,
           "confidence": "VERIFIED",
           "priority": 10
+        },
+        "originalCastRange": {
+          "file": "Units/AbilityData.slk",
+          "objectId": "A068",
+          "field": "Rng1",
+          "value": 400,
+          "confidence": "VERIFIED"
         }
       }
     },
@@ -3695,7 +3743,8 @@
         "duration": 5,
         "runtimeDuration": 5,
         "manaCost": 40,
-        "defaultDuration": 5
+        "defaultDuration": 5,
+        "originalCastRange": 600
       },
       "source": {
         "file": "Units/AbilityData.slk",
@@ -3754,6 +3803,13 @@
           "value": 5,
           "confidence": "VERIFIED",
           "priority": 10
+        },
+        "originalCastRange": {
+          "file": "Units/AbilityData.slk",
+          "objectId": "A069",
+          "field": "Rng1",
+          "value": 600,
+          "confidence": "VERIFIED"
         }
       }
     },
@@ -4022,8 +4078,8 @@
         "id": "A062",
         "cooldown": 25,
         "originalCooldown": 40,
-        "duration": 25,
-        "runtimeDuration": 25,
+        "duration": 15,
+        "runtimeDuration": 15,
         "manaCost": 60,
         "defaultDuration": 8
       },

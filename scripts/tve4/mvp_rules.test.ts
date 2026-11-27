@@ -202,8 +202,8 @@ test("unknowns explicitly expose unsupported original effects and unproven conve
 
 test("runtime rules preserve current hero, building, skill and shop values through MVP adapters", () => {
   assert.deepEqual(HERO_STATS, rawLegacy.heroes ? {
-    elf: { hp: 10, damage: 7, interval: 2.2, range: 32, speed: 125, radius: 14 },
-    troll: { hp: 750, damage: 7, interval: 1.5, range: 34, speed: 175, radius: 22 },
+    elf: { hp: 10, damage: 7, interval: 2.2, range: 32, speed: 125, radius: 14, mana: 200, manaRegen: 2 },
+    troll: { hp: 750, damage: 7, interval: 1.5, range: 34, speed: 175, radius: 22, mana: 200, manaRegen: 1 },
   } : {});
   assert.deepEqual(RULES.heroes, rawLegacy.heroes);
   for (const [key, value] of Object.entries(rawLegacy.buildings)) {

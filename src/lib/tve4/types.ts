@@ -73,6 +73,9 @@ export interface Hero {
   invuln: number;
   hp: number;
   maxHp: number;
+  mana: number;
+  maxMana: number;
+  manaRegen: number;
   damage: number;
   interval: number;
   range: number;

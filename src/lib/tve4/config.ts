@@ -159,11 +159,13 @@ export const HERO_STATS = {
     hp: ruleNumber("elf", "hp"), damage: ruleNumber("elf", "damage"),
     interval: ruleNumber("elf", "interval"), range: ruleNumber("elf", "range"),
     speed: ruleNumber("elf", "speed"), radius: ruleNumber("elf", "radius"),
+    mana: ruleNumber("elf", "mana"), manaRegen: ruleNumber("elf", "manaRegen"),
   },
   troll: {
     hp: ruleNumber("troll", "hp"), damage: ruleNumber("troll", "damage"),
     interval: ruleNumber("troll", "interval"), range: ruleNumber("troll", "range"),
     speed: ruleNumber("troll", "speed"), radius: ruleNumber("troll", "radius"),
+    mana: ruleNumber("troll", "mana"), manaRegen: ruleNumber("troll", "manaRegen"),
   },
 } as const;
 
@@ -171,21 +173,23 @@ export interface SkillKeyInfo {
   key: SkillKey;
   label: string;
   cd: number;
+  manaCost: number;
+  duration: number;
   desc: string;
 }
 
 export const SKILLS: Record<"elf" | "troll", SkillKeyInfo[]> = {
   elf: [
-    { key: "blink", label: "闪烁", cd: ruleNumber("blink", "cooldown"), desc: "向指针方向瞬移 12 格" },
-    { key: "haste", label: "魔法提速", cd: ruleNumber("haste", "cooldown"), desc: "15 秒移速 +110%" },
-    { key: "entangle", label: "纠缠根须", cd: ruleNumber("entangle", "cooldown"), desc: "定身巨魔 3 秒" },
-    { key: "silence", label: "沉默", cd: ruleNumber("silence", "cooldown"), desc: "封锁巨魔技能 5 秒" },
+    { key: "blink", label: "闪烁", cd: ruleNumber("blink", "cooldown"), manaCost: ruleNumber("blink", "manaCost"), duration: ruleNumber("blink", "duration"), desc: "向指针方向瞬移，最多 1500 源单位" },
+    { key: "haste", label: "魔法提速", cd: ruleNumber("haste", "cooldown"), manaCost: ruleNumber("haste", "manaCost"), duration: ruleNumber("haste", "duration"), desc: "移速 +110%，持续 15 秒" },
+    { key: "entangle", label: "纠缠根须", cd: ruleNumber("entangle", "cooldown"), manaCost: ruleNumber("entangle", "manaCost"), duration: ruleNumber("entangle", "duration"), desc: "定身 400 源单位内的巨魔 3 秒" },
+    { key: "silence", label: "沉默", cd: ruleNumber("silence", "cooldown"), manaCost: ruleNumber("silence", "manaCost"), duration: ruleNumber("silence", "duration"), desc: "封锁 600 源单位内巨魔技能 5 秒" },
   ],
   troll: [
-    { key: "windwalk", label: "疾风步", cd: ruleNumber("windwalk", "cooldown"), desc: "隐身 20 秒，移速 +50%" },
-    { key: "berserk", label: "狂战士", cd: ruleNumber("berserk", "cooldown"), desc: "10 秒 +100% 攻速、+50% 移速，受伤 +50%" },
-    { key: "teleport", label: "传送", cd: ruleNumber("teleport", "cooldown"), desc: "2 秒读条，返回巨魔小屋或商店" },
-    { key: "farSight", label: "巨魔之眼", cd: ruleNumber("farSight", "cooldown"), desc: "标记一处精灵建筑 15 秒，期间无法拆除" },
+    { key: "windwalk", label: "疾风步", cd: ruleNumber("windwalk", "cooldown"), manaCost: ruleNumber("windwalk", "manaCost"), duration: ruleNumber("windwalk", "duration"), desc: "隐身 20 秒，移速 +50%" },
+    { key: "berserk", label: "狂战士", cd: ruleNumber("berserk", "cooldown"), manaCost: ruleNumber("berserk", "manaCost"), duration: ruleNumber("berserk", "duration"), desc: "10 秒 +100% 攻速、+50% 移速" },
+    { key: "teleport", label: "传送", cd: ruleNumber("teleport", "cooldown"), manaCost: ruleNumber("teleport", "manaCost"), duration: ruleNumber("teleport", "duration"), desc: "2 秒读条，返回巨魔小屋或商店" },
+    { key: "farSight", label: "巨魔之眼", cd: ruleNumber("farSight", "cooldown"), manaCost: ruleNumber("farSight", "manaCost"), duration: ruleNumber("farSight", "duration"), desc: "标记一处精灵建筑，期间无法拆除" },
   ],
 };
 
