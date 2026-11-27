@@ -39,6 +39,16 @@ import type { Stage4 } from "./stage";
 
 const FIXED = 1 / 30;
 type Sheet = "build" | "skill" | "shop" | null;
+const MAP_SWATCHES = [
+  "#d7e2df",
+  "#638454",
+  "#54734a",
+  "#a89768",
+  "#777b70",
+  "#355f66",
+  "#28563d",
+  "#9bbbc4",
+] as const;
 
 interface Snapshot {
   time: number;
@@ -488,8 +498,13 @@ export function Tve4Game() {
                     }`}
                     onClick={() => setPreMap(id)}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={map.thumb} alt={map.name} className="mb-1 h-9 w-full rounded object-cover" />
+                    <div
+                      aria-hidden="true"
+                      className="mb-1 flex h-9 w-full items-center justify-center rounded text-[10px] font-bold text-black/55"
+                      style={{ backgroundColor: MAP_SWATCHES[id] }}
+                    >
+                      MAP {id}
+                    </div>
                     <div className="truncate">{map.name}</div>
                     <div className="text-[10px] text-white/40">{map.grid[0]}×{map.grid[1]}</div>
                   </button>

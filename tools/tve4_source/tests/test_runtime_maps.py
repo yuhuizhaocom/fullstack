@@ -15,6 +15,11 @@ class RuntimeMapsTest(unittest.TestCase):
     def generate(self, source: Path, output: Path) -> None:
         with patch.object(generate_runtime_maps, "MVP_DATA", source), patch.object(
             generate_runtime_maps, "OUTPUT", output
+        ), patch.object(
+            generate_runtime_maps,
+            "GEOMETRY_OUTPUT",
+            output.with_name(f"{output.name}-geometry"),
+            create=True,
         ):
             generate_runtime_maps.main()
 
@@ -111,6 +116,68 @@ class RuntimeMapsTest(unittest.TestCase):
             (source / "maps.json").write_text(json.dumps(maps), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "unexpected pathing origin"):
                 self.generate(source, root / "output")
+
+    def test_generates_render_only_geometry_with_source_coordinates_and_hash(self):
+        maps = json.loads(
+            (generate_runtime_maps.MVP_DATA / "maps.json").read_text(encoding="utf-8")
+        )
+
+        def number(value: float) -> str:
+            text = f"{float(value):.9f}".rstrip("0").rstrip(".")
+            return "0" if text in ("", "-0") else text
+
+        def geometry_hash(map_data: dict) -> str:
+            lines = ["tve4-render-geometry-v1"]
+            lines.extend(
+                f"T{number(tile['x'])},{number(tile['y'])},{tile['tileId']}"
+                for tile in map_data["terrain"]
+            )
+            lines.extend(
+                f"D{doodad['typeId']},{number(doodad['x'])},{number(doodad['y'])},{number(doodad['rotation'])}"
+                for doodad in map_data["doodads"]
+            )
+            return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
+
+        with tempfile.TemporaryDirectory(prefix="tve4-render-geometry-") as temporary:
+            root = Path(temporary)
+            source = root / "source"
+            source.mkdir()
+            shutil.copytree(generate_runtime_maps.MVP_DATA / "pathing", source / "pathing")
+            (source / "maps.json").write_text(
+                json.dumps(maps, ensure_ascii=False), encoding="utf-8"
+            )
+            output = root / "output"
+            geometry_output = root / "geometry"
+            with patch.object(generate_runtime_maps, "MVP_DATA", source), patch.object(
+                generate_runtime_maps, "OUTPUT", output
+            ), patch.object(
+                generate_runtime_maps, "GEOMETRY_OUTPUT", geometry_output, create=True
+            ):
+                generate_runtime_maps.main()
+
+            catalog = (output / "maps.generated.ts").read_text(encoding="utf-8")
+            catalog_version = re.search(r'MAP_CATALOG_VERSION = "([a-f0-9]{64})"', catalog)
+            self.assertIsNotNone(catalog_version)
+            self.assertNotIn('"terrain"', catalog)
+            self.assertNotIn('"doodads"', catalog)
+            self.assertEqual(
+                sorted(path.name for path in geometry_output.glob("map-*.json")),
+                [f"map-{map_id}.json" for map_id in range(8)],
+            )
+            for map_data in maps:
+                geometry = json.loads(
+                    (geometry_output / f"map-{map_data['id']}.json").read_text(encoding="utf-8")
+                )
+                self.assertEqual(geometry["version"], 1)
+                self.assertEqual(geometry["mapId"], map_data["id"])
+                self.assertEqual(geometry["catalogVersion"], catalog_version.group(1))
+                self.assertEqual(geometry["runtimeBounds"], list(generate_runtime_maps._aligned_bounds(map_data)))
+                self.assertEqual(geometry["terrain"], map_data["terrain"])
+                self.assertEqual(geometry["doodads"], map_data["doodads"])
+                self.assertEqual(geometry["geometryHash"], geometry_hash(map_data))
+                self.assertEqual(geometry["coordinateSystem"]["sourceTileUnits"], 128)
+                self.assertEqual(geometry["coordinateSystem"]["webTileUnits"], 16)
+                self.assertEqual(geometry["coordinateSystem"]["scaleDivisor"], 8)
 
 
 if __name__ == "__main__":

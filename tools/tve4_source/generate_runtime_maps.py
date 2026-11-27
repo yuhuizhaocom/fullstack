@@ -25,6 +25,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 MVP_DATA = ROOT / "data" / "tve4" / "mvp"
 OUTPUT = ROOT / "src" / "lib" / "tve4"
+GEOMETRY_OUTPUT = ROOT / "public" / "tve4" / "geometry"
 
 WPM_WIDTH = 1_536
 WPM_HEIGHT = 1_152
@@ -183,6 +184,51 @@ def _bfs_distance(
 
 def _json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+
+def _format_number(value: float) -> str:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"non-finite render geometry number: {value}")
+    text = f"{number:.9f}".rstrip("0").rstrip(".")
+    return "0" if text in ("", "-0") else text
+
+
+def _render_geometry_hash(map_data: dict[str, Any]) -> str:
+    """Hash source W3E/DOO records with a JS-stable numeric representation."""
+    lines = ["tve4-render-geometry-v1"]
+    lines.extend(
+        f"T{_format_number(tile['x'])},{_format_number(tile['y'])},{tile['tileId']}"
+        for tile in map_data["terrain"]
+    )
+    lines.extend(
+        f"D{doodad['typeId']},{_format_number(doodad['x'])},"
+        f"{_format_number(doodad['y'])},{_format_number(doodad['rotation'])}"
+        for doodad in map_data["doodads"]
+    )
+    return _sha256("\n".join(lines).encode("utf-8"))
+
+
+def _render_geometry(
+    map_data: dict[str, Any],
+    bounds: tuple[int, int, int, int],
+    catalog_version: str,
+) -> dict[str, Any]:
+    return {
+        "version": 1,
+        "mapId": map_data["id"],
+        "catalogVersion": catalog_version,
+        "geometryHash": _render_geometry_hash(map_data),
+        "runtimeBounds": list(bounds),
+        "coordinateSystem": {
+            "sourceTileUnits": BUILD_CELL_UNITS,
+            "webTileUnits": WEB_TILE_UNITS,
+            "scaleDivisor": BUILD_CELL_UNITS // WEB_TILE_UNITS,
+            "webOrigin": "runtimeBounds.minX/minY",
+        },
+        "terrain": map_data["terrain"],
+        "doodads": map_data["doodads"],
+    }
 
 
 def _base64_typescript(payload: str) -> list[str]:
@@ -390,9 +436,22 @@ def main() -> None:
         encoding="utf-8",
         newline="\n",
     )
+
+    GEOMETRY_OUTPUT.mkdir(parents=True, exist_ok=True)
+    geometry_sizes = []
+    for map_data in maps:
+        geometry = _render_geometry(map_data, _aligned_bounds(map_data), catalog_version)
+        payload = _json(geometry)
+        (GEOMETRY_OUTPUT / f"map-{map_data['id']}.json").write_text(
+            payload,
+            encoding="utf-8",
+            newline="\n",
+        )
+        geometry_sizes.append(len(payload.encode("utf-8")))
     print(
         f"generated {len(definitions)} maps; shared WPM {len(cells)} bytes -> "
-        f"PackBits {len(packed)} bytes -> Base64 {len(payload)} chars"
+        f"PackBits {len(packed)} bytes -> Base64 {len(payload)} chars; "
+        f"render geometry {sum(geometry_sizes)} bytes across 8 lazy-loaded files"
     )
 
 
