@@ -40,7 +40,7 @@
 | --- | --- | --- |
 | 1 来源基准与 MVP 文档 | `source.json`、来源测试、本文；锁定原包与核心文件哈希，记录 UNKNOWN | 已完成 |
 | 2 真实地图与原始碰撞 | `maps.json`、8 份 pathing、提取器测试；8 图、JASS 区域/锚点、原始 WPM、地图 5 扩展区 | 已完成 |
-| 3 会话化地图状态 | `SessionContext`、真实 pathing 加载；切图/重开不串状态，32 单位移动视线、128 单位建造格 | 待开始 |
+| 3 会话化地图状态 | `SessionContext`、真实 pathing 加载；切图/重开不串状态，32 单位移动视线、128 单位建造格 | 已完成 |
 | 4 八图临时视觉 | `placeholder.ts`、浏览器清单；真实几何和锚点加载，无旧自绘背景/碰撞 | 待开始 |
 | 5 核心规则数据化 | `rules.json`、MVP 适配层；白名单记录均有来源，`OLD + SINGLE` 数值迁移 | 待开始 |
 | 6 核心单局闭环 | 确定性 RNG/状态哈希、经济/建造/战斗/胜负；固定种子复现，实际进入终局 | 待开始 |
@@ -52,6 +52,7 @@
 - `source.json` 中 JASS/WPM/W3E/DOO/W3I/W3A 的大小与哈希来自既有 607 条文件索引，状态为 `VERIFIED`。
 - 九份相关 War3 默认 SLK（AbilityBuffData、AbilityData、ItemData、UnitAbilities、UnitBalance、UnitData、UnitUI、UnitWeapons、UpgradeData）未出现在该索引中，大小和哈希保持 `UNKNOWN`。Task 5 使用前须定位具体 War3 版本文件并补充哈希；W3A/JASS 可验证的覆盖不得被默认值错误覆盖。
 - War3 客户端内的动态事件顺序和部分公式尚未建立参考轨迹；没有实测证据时保持 `UNKNOWN`。
+- 当前 `HERO_STATS.troll.radius = 22` 是未经原作 SLK/W3A/JASS 证据确认的网页值。真实 WPM 点路径在 8 图中连通，但该半径下巨魔无法从出生区域穿越地图 0/1/2/3/4/5/7 的狭窄通道；Task 5/6 必须补齐碰撞半径/单位语义来源后再调校，不得通过改 WPM 或清地掩盖。
 - 当前 `npm run check:tve4` 与 `npm run check:data` 只证明既有简化实现自洽，不作为原作正确性证据。
 
 ## 5. 验证策略
@@ -59,7 +60,7 @@
 | 层次 | 命令/方法 | 验收重点 |
 | --- | --- | --- |
 | 来源 | `npx tsx --test scripts/tve4/source.test.ts` | 原包 SHA-256 与五份核心地图文件哈希存在 |
-| 地图 | `python -m unittest tools.tve4_source.tests.test_core_maps -v`；`npx tsx scripts/tve4/check_maps.ts` | 8 图、原始 WPM、锚点、相机边界、地图 5 扩展区；无人工改造 |
+| 地图 | `python -m unittest tools.tve4_source.tests.test_core_maps -v`；`npx tsx scripts/tve4/check_maps.ts`；`npx tsx --test scripts/tve4/session.test.ts`；`python -m unittest tools.tve4_source.tests.test_runtime_maps -v` | 8 图、原始 WPM、锚点、相机边界、地图 5 扩展区；会话隔离、PackBits 载荷、零 clearance 点路径；无人工改造 |
 | 规则 | `npx tsx --test scripts/tve4/mvp_rules.test.ts` | 核心记录来源完整，UNKNOWN 显式输出 |
 | 模拟 | `npx tsx --test scripts/tve4/core_loop.test.ts` | 固定步长/种子状态哈希一致，完整单局可进入胜负 |
 | 技能装备 | `npx tsx --test scripts/tve4/skills_items.test.ts` | 8 技能与 81 物品购买路径、施放/购买边界 |
@@ -84,6 +85,18 @@
 - 回归：`npm run check:tve4` 44 passed；`npm run check:data` 8 passed；Python `py_compile` 通过；旧生成器 8 图边界与来源精灵锚点检查通过（未重写旧资产）。
 - 地图 5：`MAP_5_AREA_EXTRA = (-26688,-3264,-16448,6752)` 完整保留；天使 `(-21507.5,-3956.7)` 位于基础区与扩展区之间，不断言其属于扩展区。
 - 旧生成器仅保留预览兼容，已删除 `clear_rect()`、`carve_to_main()`、`choose_elf_spawn()` 及生产调用；地图 5 旧预览按基础区与官方扩展区的包围矩形裁剪（并非严格并集，会包含两区之间的空隙），元数据仍分别保留两区。
+
+### Task 3 验证记录
+
+- 实现：新增 `SessionContext`，把地图、目录版本、seed、模式、规则、阵营、尺寸、出生点、WPM 元数据与碰撞数组绑定到单局；`createGame` 不再读取模块级地图变量，重开和切图使用显式 `mapId`/session。
+- 运行期数据：`tools/tve4_source/generate_runtime_maps.py` 从 Task 2 产物生成轻量目录与共享 WPM；1,769,472 bytes cell payload 编码为 122,748 bytes PackBits / 163,664 Base64 字符，同步解码，不引入依赖、异步 fetch 或客户端 `node:fs`。
+- 碰撞分工：完整 1536×1152、32 单位 WPM 用于移动/视线；128 单位粗网格由 4×4 WPM 中至少 9 个 `0x02` 阻挡格派生，仅用于建造/粗寻路。删除出生点清空，不开挖走廊。
+- 锚点：巨魔取 `trollHouse/trollHouse0`，精灵取 `lifeTree`；地图 4 DEFEND 取 `elf0`；地图 6 无精灵锚点时显式失败；地图 5 使用基础区/扩展区包围并集，保留间隙中的天使坐标。
+- RED/GREEN：生成器测试先以真实 Task 2 schema 复现 `KeyError: origin`，修复后 2 tests 通过；会话隔离/冻结/碰撞 helper 测试 7/7 通过。未声称复现前任实现者未留下的初始 RED。
+- 真实路径：8 图均通过未修改 WPM 的零 clearance 双向点路径检查；地图 6 因无精灵锚点明确跳过。当前半径出生点中心与局部移动检查继续通过。半径 22 的巨魔全图身体穿越失败已作为 Task 5/6 阻塞遗留记录，不以改地图或伪造路径处理。
+- 最终回归：`npm run check:tve4` 45 passed；`npm run check:data` 8 passed；`npx tsc --noEmit`、Python 2 tests、生成可复现性与 `git diff --check` 均通过。Node 仍有既有 `UNDICI-EHPA` experimental 环境警告。
+- 独立审查：原审查 1 Important / 2 Minor，经两轮修复后全部 ADDRESSED，无新增 Critical/Important 破坏。Task 3 提交为 `45645a7`、`3373093`、`1d40029`；修复提交未 amend、未 push。
+- 未进行浏览器/WebGL 实测，Task 3 不声称 UI 已完成浏览器验收。
 
 ## 6. 后续原作资产阶段（本轮不实施）
 
