@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { mat4, vec3, vec4 } from "gl-matrix";
 
 import {
   actionSequenceIndex,
@@ -9,6 +10,7 @@ import {
   heroModelsForFaction,
   modelActionFor,
 } from "../../src/lib/tve4/model-catalog";
+import { createHeroModelView, type HeroModelCamera } from "../../src/lib/tve4/render/hero-model-viewer";
 import { calibrateHeroModelAnchor, filterHeroModelGeosets, visibleModelBounds } from "../../src/lib/tve4/render/hero-model-geosets";
 import { createGame, stateHash } from "../../src/lib/tve4/engine";
 import type { ModelDemoEntry } from "../../src/lib/tve4-model-demo/manifest";
@@ -141,6 +143,25 @@ test("model floor geosets are removed per model before anchor calibration", () =
   assert.deepEqual(filterHeroModelGeosets(geosets(6), "m054").Geosets.map((geoset) => geoset.MinimumExtent[2]), [0, 1, 2]);
   assert.deepEqual(filterHeroModelGeosets(geosets(9), "m055").Geosets.map((geoset) => geoset.MinimumExtent[2]), [1, 2, 3, 4, 5, 6, 7, 8]);
   assert.deepEqual(filterHeroModelGeosets(geosets(8), "m056").Geosets.map((geoset) => geoset.MinimumExtent[2]), [1, 2, 3, 4, 5, 6, 7]);
+});
+
+test("hero model camera keeps the model center at the viewport center", () => {
+  const camera: HeroModelCamera = {
+    center: [23.4957, 11.0524, 113.9145],
+    modelScale: 0.2611,
+    yaw: 0,
+    cameraPhi: -Math.PI / 2,
+    cameraTheta: 0.24,
+    cameraDistance: 360,
+  };
+  const view = createHeroModelView(camera);
+  const projection = mat4.create();
+  mat4.perspective(projection, Math.PI / 4, 1, 0.1, 5000);
+  const clip = vec4.create();
+  vec4.transformMat4(clip, vec4.fromValues(...camera.center, 1), view);
+  vec4.transformMat4(clip, clip, projection);
+  assert.ok(Math.abs(clip[0] / clip[3]) < 1e-6);
+  assert.ok(Math.abs(clip[1] / clip[3]) < 1e-6);
 });
 
 test("m022 uses rendered pixel bounds for its health bar and ground anchor", () => {

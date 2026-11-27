@@ -7,6 +7,34 @@ import type { ModelDemoEntry } from "../../tve4-model-demo/manifest";
 import { advanceFrame } from "../../tve4-model-demo/playback";
 import { calibrateHeroModelAnchor, filterHeroModelGeosets, visibleModelBounds, type VisibleModelBounds } from "./hero-model-geosets";
 
+export interface HeroModelCamera {
+  center: readonly [number, number, number];
+  modelScale: number;
+  yaw: number;
+  cameraPhi: number;
+  cameraTheta: number;
+  cameraDistance: number;
+}
+
+export function createHeroModelView(camera: HeroModelCamera): mat4 {
+  const view = mat4.create();
+  const eye = vec3.create();
+  vec3.set(
+    eye,
+    camera.center[0] + Math.cos(camera.cameraTheta) * Math.cos(camera.cameraPhi) * camera.cameraDistance,
+    camera.center[1] + Math.cos(camera.cameraTheta) * Math.sin(camera.cameraPhi) * camera.cameraDistance,
+    camera.center[2] + Math.sin(camera.cameraTheta) * camera.cameraDistance,
+  );
+  mat4.lookAt(view, eye, camera.center, [0, 0, 1]);
+  const model = mat4.create();
+  mat4.translate(model, model, camera.center);
+  mat4.scale(model, model, [camera.modelScale, camera.modelScale, camera.modelScale]);
+  mat4.rotateZ(model, model, camera.yaw);
+  mat4.translate(model, model, [-camera.center[0], -camera.center[1], -camera.center[2]]);
+  mat4.multiply(view, view, model);
+  return view;
+}
+
 /** Small transparent MDX renderer used only for the player's hero overlay. */
 export class HeroModelViewer {
   private readonly canvas: HTMLCanvasElement;
@@ -36,6 +64,7 @@ export class HeroModelViewer {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
+    (window as Window & { __tve4HeroViewer?: HeroModelViewer }).__tve4HeroViewer = this;
     const gl = canvas.getContext("webgl2", { alpha: true, antialias: true })
       ?? canvas.getContext("webgl", { alpha: true, antialias: true });
     if (!gl) throw new Error("无法创建英雄模型 WebGL 上下文");
@@ -136,23 +165,23 @@ export class HeroModelViewer {
     this.updateAnchorMetrics(parsed);
   }
 
+  private camera(): HeroModelCamera {
+    return {
+      center: [this.center[0], this.center[1], this.center[2]],
+      modelScale: this.modelScale,
+      yaw: this.yaw,
+      cameraPhi: this.cameraPhi,
+      cameraTheta: this.cameraTheta,
+      cameraDistance: this.cameraDistance,
+    };
+  }
+
   private updateAnchorMetrics(_parsed: model.Model): void {
     const width = this.canvas.width;
     const height = this.canvas.height;
     const projection = mat4.create();
-    const view = mat4.create();
+    const view = createHeroModelView(this.camera());
     mat4.perspective(projection, Math.PI / 4, width / Math.max(1, height), 0.1, 5000);
-    const eye = vec3.create();
-    vec3.set(
-      eye,
-      this.center[0] + Math.cos(this.cameraTheta) * Math.cos(this.cameraPhi) * this.cameraDistance,
-      this.center[1] + Math.cos(this.cameraTheta) * Math.sin(this.cameraPhi) * this.cameraDistance,
-      this.center[2] + Math.sin(this.cameraTheta) * this.cameraDistance,
-    );
-    mat4.lookAt(view, eye, this.center, [0, 0, 1]);
-    mat4.translate(view, view, [-this.center[0], -this.center[1], -this.center[2]]);
-    mat4.rotateZ(view, view, this.yaw);
-    mat4.scale(view, view, [this.modelScale, this.modelScale, this.modelScale]);
     const ground = projectPoint(this.center[0], this.center[1], this.visibleMin[2], view, projection, width, height);
     const top = projectPoint(this.center[0], this.center[1], this.visibleMax[2], view, projection, width, height);
     const anchor = calibrateHeroModelAnchor(
@@ -233,7 +262,7 @@ export class HeroModelViewer {
     gl.viewport(0, 0, width, height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     const projection = mat4.create();
-    const view = mat4.create();
+    const view = createHeroModelView(this.camera());
     mat4.perspective(projection, Math.PI / 4, width / Math.max(1, height), 0.1, 5000);
     const eye = vec3.create();
     vec3.set(
@@ -242,10 +271,6 @@ export class HeroModelViewer {
       this.center[1] + Math.cos(this.cameraTheta) * Math.sin(this.cameraPhi) * this.cameraDistance,
       this.center[2] + Math.sin(this.cameraTheta) * this.cameraDistance,
     );
-    mat4.lookAt(view, eye, this.center, [0, 0, 1]);
-    mat4.translate(view, view, [-this.center[0], -this.center[1], -this.center[2]]);
-    mat4.rotateZ(view, view, this.yaw);
-    mat4.scale(view, view, [this.modelScale, this.modelScale, this.modelScale]);
     this.renderer.setCamera(eye, this.cameraQuaternion(eye, this.center));
     this.renderer.setLightPosition([this.center[0] + 220, this.center[1] - 160, this.center[2] + 320]);
     this.renderer.setLightColor([1, 1, 1]);
