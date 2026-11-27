@@ -51,7 +51,7 @@ class Tve4Scene extends Phaser.Scene {
   private entities!: Phaser.GameObjects.Graphics;
   private effects!: Phaser.GameObjects.Graphics;
   private overlays!: Phaser.GameObjects.Graphics;
-  private fog!: Phaser.GameObjects.Graphics;
+  private fog!: Phaser.GameObjects.Image;
   private bars!: Phaser.GameObjects.Graphics;
   private texts: Phaser.GameObjects.Text[] = [];
   private geometry!: RenderGeometry;
@@ -134,7 +134,19 @@ class Tve4Scene extends Phaser.Scene {
     this.entities = this.add.graphics().setDepth(10);
     this.effects = this.add.graphics().setDepth(32);
     this.overlays = this.add.graphics().setDepth(36);
-    this.fog = this.add.graphics().setDepth(38).setScrollFactor(0);
+    const fogTexture = this.textures.createCanvas("tve4-fog", 512, 512);
+    if (!fogTexture) throw new Error("无法创建迷雾渐变纹理");
+    const fogContext = fogTexture.getContext();
+    const gradient = fogContext.createRadialGradient(256, 256, 0, 256, 256, 256);
+    gradient.addColorStop(0, "rgba(2,6,10,0)");
+    gradient.addColorStop(0.28, "rgba(2,6,10,0)");
+    gradient.addColorStop(0.52, "rgba(2,6,10,0.58)");
+    gradient.addColorStop(0.76, "rgba(2,6,10,0.72)");
+    gradient.addColorStop(1, "rgba(2,6,10,0.82)");
+    fogContext.fillStyle = gradient;
+    fogContext.fillRect(0, 0, 512, 512);
+    fogTexture.refresh();
+    this.fog = this.add.image(0, 0, "tve4-fog").setOrigin(0.5).setScrollFactor(0).setDepth(38);
     this.bars = this.add.graphics().setDepth(42);
 
     this.drawTerrain();
@@ -269,7 +281,7 @@ class Tve4Scene extends Phaser.Scene {
     canvas.style.width = `${size}px`;
     canvas.style.height = `${size}px`;
     canvas.style.left = `${screenX - size / 2}px`;
-    canvas.style.top = `${screenY - size / 2}px`;
+    canvas.style.top = `${screenY - size * 0.3}px`;
     const action = modelActionFor(entry, {
       alive: player.alive,
       moving: player.vx !== 0 || player.vy !== 0,
@@ -385,7 +397,6 @@ class Tve4Scene extends Phaser.Scene {
     this.entities.clear();
     this.effects.clear();
     this.overlays.clear();
-    this.fog.clear();
     this.bars.clear();
 
     for (const building of state.buildings) {
@@ -540,35 +551,28 @@ class Tve4Scene extends Phaser.Scene {
       this.overlays.strokeRect(this.interaction.gx * TILE, this.interaction.gy * TILE, definition.size * TILE, definition.size * TILE);
     }
 
-    this.drawFog(player);
+    this.syncFog(player);
   }
 
-  private drawFog(player: GameState["heroes"][number] | undefined): void {
-    this.fog.clear();
-    if (this.fullMap) return;
-    const camera = this.cameras.main;
-    const width = camera.width;
-    const height = camera.height;
-    const fogColor = 0x02060a;
-    if (!player) {
-      this.fog.fillStyle(fogColor, 0.72);
-      this.fog.fillRect(0, 0, width, height);
+  private syncFog(player: GameState["heroes"][number] | undefined): void {
+    if (this.fullMap) {
+      this.fog.setVisible(false);
       return;
     }
-    const viewLeft = this.camX - width / (2 * this.zoom);
-    const viewTop = this.camY - height / (2 * this.zoom);
+    this.fog.setVisible(true);
+    const camera = this.cameras.main;
+    if (!player) {
+      this.fog.setPosition(camera.width / 2, camera.height / 2);
+      this.fog.setDisplaySize(Math.max(camera.width, camera.height) * 2.2, Math.max(camera.width, camera.height) * 2.2);
+      return;
+    }
+    const viewLeft = this.camX - camera.width / (2 * this.zoom);
+    const viewTop = this.camY - camera.height / (2 * this.zoom);
     const screenX = (player.x - viewLeft) * this.zoom;
     const screenY = (player.y - viewTop) * this.zoom;
-    const radius = Math.max(120, Math.min(width, height) * 0.34);
-    const left = Math.max(0, screenX - radius);
-    const right = Math.min(width, screenX + radius);
-    const top = Math.max(0, screenY - radius);
-    const bottom = Math.min(height, screenY + radius);
-    this.fog.fillStyle(fogColor, 0.58);
-    this.fog.fillRect(0, 0, width, top);
-    this.fog.fillRect(0, bottom, width, height - bottom);
-    this.fog.fillRect(0, top, left, bottom - top);
-    this.fog.fillRect(right, top, width - right, bottom - top);
+    const size = Math.max(camera.width, camera.height) * 2.2;
+    this.fog.setPosition(screenX, screenY);
+    this.fog.setDisplaySize(size, size);
   }
 
   private drawBar(x: number, y: number, width: number, ratio: number, color: number): void {
