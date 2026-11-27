@@ -33,6 +33,7 @@ export class HeroModelViewer {
   private cameraTheta = 0.24;
   private cameraDistance = 360;
   private yaw = 0;
+  private drawCount = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -152,7 +153,6 @@ export class HeroModelViewer {
     );
     mat4.lookAt(view, eye, this.center, [0, 0, 1]);
     mat4.translate(view, view, [-this.center[0], -this.center[1], -this.center[2]]);
-    mat4.rotateZ(view, view, this.yaw);
     mat4.scale(view, view, [this.modelScale, this.modelScale, this.modelScale]);
     const ground = projectPoint(this.center[0], this.center[1], this.visibleMin[2], view, projection, width, height);
     const top = projectPoint(this.center[0], this.center[1], this.visibleMax[2], view, projection, width, height);
@@ -240,12 +240,13 @@ export class HeroModelViewer {
     );
     mat4.lookAt(view, eye, this.center, [0, 0, 1]);
     mat4.translate(view, view, [-this.center[0], -this.center[1], -this.center[2]]);
-    mat4.rotateZ(view, view, this.yaw);
     mat4.scale(view, view, [this.modelScale, this.modelScale, this.modelScale]);
     this.renderer.setCamera(eye, this.cameraQuaternion(eye, this.center));
     this.renderer.setLightPosition([this.center[0] + 220, this.center[1] - 160, this.center[2] + 320]);
     this.renderer.setLightColor([1, 1, 1]);
     this.renderer.render(view, projection, { wireframe: false, env: false, useEnvironmentMap: false });
+    this.canvas.dataset.modelDrawCount = String(++this.drawCount);
+    this.canvas.dataset.modelFrame = String(this.frame);
   }
 
   private cameraQuaternion(position: vec3, target: vec3): quat {

@@ -59,9 +59,15 @@ test("hero model catalog filters by faction and keeps only textured non-m020 elv
     model("m020", 20, "elf"),
     model("m005", 5, "elf"),
     model("m030", 30, "troll"),
+    model("m001", 1, "troll"),
+    model("m004", 4, "troll"),
+    model("m005", 5, "troll"),
+    model("m015", 15, "troll"),
+    model("m016", 16, "troll"),
+    model("m017", 17, "troll"),
   ];
   assert.deepEqual(heroModelsForFaction(models, "elf").map((entry) => entry.id), ["m001", "m002", "m005"]);
-  assert.deepEqual(heroModelsForFaction(models, "troll").map((entry) => entry.id), ["m030"]);
+  assert.deepEqual(heroModelsForFaction(models, "troll").map((entry) => entry.id), ["m004", "m005", "m015", "m016", "m017"]);
   assert.deepEqual(heroModelsForFaction(models, "elf").map((entry) => entry.number), [1, 2, 5]);
 });
 
@@ -73,7 +79,8 @@ test("default hero model prefers complete actions and original textures", () => 
   assert.equal(hasAvailableTexture(completeGray), false);
   assert.equal(defaultHeroModel([incompleteTextured, completeGray, completeTextured], "elf")?.id, "m003");
   assert.equal(defaultHeroModel([completeGray], "elf"), null);
-  assert.equal(defaultHeroModel([model("m030", 30, "troll", ["stand", "walk", "attack", "death"], false)], "troll")?.id, "m030");
+  assert.equal(defaultHeroModel([model("m030", 30, "troll", ["stand", "walk", "attack", "death"], false)], "troll"), null);
+  assert.equal(defaultHeroModel([model("m004", 4, "troll", ["stand", "walk", "attack", "death"], false)], "troll")?.id, "m004");
   assert.equal(defaultHeroModel([], "elf"), null);
 });
 
@@ -103,6 +110,11 @@ test("model floor geosets are removed per model before anchor calibration", () =
   assert.deepEqual(filtered.Geosets[0], source.Geosets[1]);
   assert.deepEqual(visibleModelBounds(filtered), { min: [-10, -10, 20], max: [10, 10, 100] });
   assert.deepEqual(filterHeroModelGeosets(source, "m022").Geosets, source.Geosets);
+  assert.deepEqual(filterHeroModelGeosets(source, "m015").Geosets, source.Geosets.slice(1));
+  assert.deepEqual(filterHeroModelGeosets(source, "m016").Geosets, source.Geosets.slice(1));
+  const manyGeosets = { Geosets: Array.from({ length: 14 }, (_, index) => ({ MinimumExtent: [0, 0, index], MaximumExtent: [1, 1, index + 1] })) };
+  assert.equal(filterHeroModelGeosets(manyGeosets, "m017").Geosets.length, 13);
+  assert.equal(filterHeroModelGeosets(manyGeosets, "m017").Geosets.at(-1)?.MinimumExtent[2], 12);
 });
 
 test("hero appearance is render-only and does not change deterministic state hash", () => {

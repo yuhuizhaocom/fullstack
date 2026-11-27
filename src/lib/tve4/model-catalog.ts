@@ -4,6 +4,7 @@ import type { ActionKey } from "../tve4-model-demo/sequences";
 import type { Faction } from "./types";
 
 const COMPLETE_ACTIONS: ActionKey[] = ["stand", "walk", "attack", "death"];
+const TROLL_MODEL_IDS = new Set(["m004", "m005", "m015", "m016", "m017"]);
 
 export async function loadHeroModelManifest(): Promise<ModelDemoEntry[]> {
   const response = await fetch("/tve4-model-demo/manifest.json");
@@ -16,7 +17,9 @@ export async function loadHeroModelManifest(): Promise<ModelDemoEntry[]> {
 export function heroModelsForFaction(models: ModelDemoEntry[], faction: Faction): ModelDemoEntry[] {
   return models
     .filter((entry) => entry.group === (faction as ModelGroup))
-    .filter((entry) => faction === "troll" || (entry.id !== "m020" && hasAvailableTexture(entry)))
+    .filter((entry) => faction === "troll"
+      ? TROLL_MODEL_IDS.has(entry.id)
+      : entry.id !== "m020" && hasAvailableTexture(entry))
     .sort((a, b) => a.number - b.number);
 }
 
