@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { HERO_STATS, SKILLS, TILE } from "../../src/lib/tve4/config";
-import { buyEquipment, castSkill, createGame, stepGame } from "../../src/lib/tve4/engine";
+import { buyEquipment, castSkill, createGame, sellEquipment, stepGame } from "../../src/lib/tve4/engine";
 import { itemIcon, SKILL_ICONS } from "../../src/lib/tve4/render/icons";
 import { EQUIPMENT_RULE, MVP_RULES } from "../../src/lib/tve4/rules";
 import type { Building, Faction, GameState } from "../../src/lib/tve4/types";
@@ -238,6 +238,33 @@ test("all-stats, strength, agility, damage, armor and speed effects are applied"
   assert.ok(troll.maxHp > before.maxHp);
   assert.ok(troll.damage > before.damage);
   assert.ok(troll.speed > before.speed);
+});
+
+test("duplicate equipment auto-merges and selling refunds the full original price", () => {
+  const state = fresh("troll");
+  const troll = trollOf(state);
+  const spawn = state.session.spawns.troll!;
+  troll.x = (spawn.gx + 0.5) * TILE;
+  troll.y = (spawn.gy + 0.5) * TILE;
+  troll.gold = 1_000_000;
+  troll.wood = 1_000_000;
+  const item = EQUIPMENT_RULE.items.find((entry) => entry.key === "I0A9")!;
+  const before = { gold: troll.gold, wood: troll.wood, maxHp: troll.maxHp };
+  const hpPerCopy = (item.strength ?? 0) * 10 + (item.allStats ?? 0) * 10;
+
+  assert.equal(buyEquipment(state, item.key), true);
+  assert.equal(buyEquipment(state, item.key), true);
+  assert.deepEqual(troll.items, [item.key]);
+  assert.equal(troll.itemLevels[item.key], 2);
+  assert.equal(troll.gold, before.gold - item.gold * 2);
+  assert.equal(troll.maxHp, before.maxHp + hpPerCopy * 2);
+
+  assert.equal(sellEquipment(state, item.key), true);
+  assert.deepEqual(troll.items, []);
+  assert.equal(troll.itemLevels[item.key], undefined);
+  assert.equal(troll.gold, before.gold);
+  assert.equal(troll.wood, before.wood);
+  assert.equal(troll.maxHp, before.maxHp);
 });
 
 test("temporary icons are deterministic and never reference original assets", () => {

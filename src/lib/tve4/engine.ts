@@ -25,6 +25,7 @@ import {
   RULES,
   SCENARIO_RULE,
   VISION_RULE,
+  type EquipmentItem,
 } from "./rules";
 import { createSession, requireSpawn } from "./sim/session";
 import { createRng, randomRange } from "./sim/rng";
@@ -188,7 +189,7 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
     speed: s.speed, radius: s.radius,
     cd: 0, channelTime: 0, deathTimer: 0,
     gold: (MODE_START_GOLD[state.mode] ?? START_GOLD)[faction], wood: START_WOOD,
-    items: [], bonusIncome: 0, bonusLifesteal: 0,
+    items: [], itemLevels: {}, bonusIncome: 0, bonusLifesteal: 0,
     cooldowns: emptyCooldowns(), buffs: emptyBuffs(),
   };
 }
@@ -1237,7 +1238,7 @@ export function stateHash(state: GameState): string {
       maxHp: h.maxHp, mana: h.mana, maxMana: h.maxMana, manaRegen: h.manaRegen,
       damage: h.damage, interval: h.interval, range: h.range,
       speed: h.speed, radius: h.radius, cd: h.cd, channelTime: h.channelTime,
-      deathTimer: h.deathTimer, gold: h.gold, wood: h.wood, items: h.items,
+      deathTimer: h.deathTimer, gold: h.gold, wood: h.wood, items: h.items, itemLevels: h.itemLevels,
       bonusIncome: h.bonusIncome, bonusLifesteal: h.bonusLifesteal,
       cooldowns: h.cooldowns, buffs: h.buffs,
     })),
@@ -1341,10 +1342,19 @@ export function tradeWood(state: GameState, buy: boolean): boolean {
   return true;
 }
 
+function applyEquipmentStats(hero: Hero, item: EquipmentItem, multiplier: number): void {
+  hero.damage = Math.max(0, hero.damage + ((item.damage ?? 0) + (item.heroDamage ?? 0)) * multiplier);
+  const hpBonus = ((item.strength ?? 0) + (item.allStats ?? 0)) * 10 + (item.armor ?? 0) * 5;
+  hero.maxHp = Math.max(1, hero.maxHp + hpBonus * multiplier);
+  hero.hp = Math.min(hero.hp, hero.maxHp);
+  hero.speed = Math.max(1, hero.speed + ((item.agility ?? 0) + (item.speed ?? 0)) * multiplier);
+  if (multiplier > 0 && item.magicImmune) hero.invuln = Math.max(hero.invuln, 5);
+}
+
 export function canBuyEquipment(state: GameState, key: string): boolean {
   const troll = state.heroes.find((h) => h.faction === "troll" && h.alive);
   const item = EQUIPMENT_RULE.items.find((i) => i.key === key);
-  if (!troll || !item || troll.items.includes(key)) return false;
+  if (!troll || !item) return false;
   if (!nearShop(state, troll)) return false;
   return troll.gold >= item.gold && troll.wood >= (item.wood ?? 0);
 }
@@ -1355,17 +1365,34 @@ export function buyEquipment(state: GameState, key: string): boolean {
   const troll = state.heroes.find((h) => h.faction === "troll" && h.alive)!;
   troll.gold -= item.gold;
   troll.wood -= item.wood ?? 0;
-  troll.items.push(key);
-  if (item.damage) troll.damage += item.damage;
-  if (item.allStats || item.strength) troll.maxHp += (item.strength ?? 0) * 10 + (item.allStats ?? 0) * 10;
-  if (item.agility) troll.speed += item.agility;
-  if (item.heroDamage) troll.damage += item.heroDamage;
-  if (item.armor) troll.maxHp += item.armor * 5;
-  if (item.speed) troll.speed += item.speed;
-  if (item.magicImmune) troll.invuln = Math.max(troll.invuln, 5);
+  const level = (troll.itemLevels[key] ?? 0) + 1;
+  if (level === 1) troll.items.push(key);
+  troll.itemLevels[key] = level;
+  applyEquipmentStats(troll, item, 1);
   addEffect(state, troll.x, troll.y, 48, "#ffd86b");
-  addFloat(state, troll.x, troll.y - 30, item.label, "#ffd86b", 13);
-  setHint(state, `巨魔购买 ${item.label}`);
+  addFloat(state, troll.x, troll.y - 30, `${item.label} Lv${level}`, "#ffd86b", 13);
+  setHint(state, `巨魔购买 ${item.label} Lv${level}`);
+  return true;
+}
+
+export function canSellEquipment(state: GameState, key: string): boolean {
+  const troll = state.heroes.find((h) => h.faction === "troll" && h.alive);
+  const item = EQUIPMENT_RULE.items.find((i) => i.key === key);
+  return Boolean(troll && item && (troll.itemLevels[key] ?? 0) > 0 && nearShop(state, troll));
+}
+
+export function sellEquipment(state: GameState, key: string): boolean {
+  if (!canSellEquipment(state, key)) return false;
+  const item = EQUIPMENT_RULE.items.find((i) => i.key === key)!;
+  const troll = state.heroes.find((h) => h.faction === "troll" && h.alive)!;
+  const level = troll.itemLevels[key];
+  troll.gold += item.gold * level;
+  troll.wood += (item.wood ?? 0) * level;
+  applyEquipmentStats(troll, item, -level);
+  troll.items = troll.items.filter((itemKey) => itemKey !== key);
+  delete troll.itemLevels[key];
+  addFloat(state, troll.x, troll.y - 30, `出售 ${item.label} Lv${level}`, "#bfe9ff", 13);
+  setHint(state, `巨魔出售 ${item.label} Lv${level}`);
   return true;
 }
 

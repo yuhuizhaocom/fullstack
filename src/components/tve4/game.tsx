@@ -37,6 +37,7 @@ import {
   isTrollVisibleToPlayer,
   needsWallForTentUpgrade,
   repairWall,
+  sellEquipment,
   stepGame,
   upgradeKind,
   tradeWood,
@@ -108,6 +109,7 @@ interface Snapshot {
   pendingSkill: SkillKey | null;
   demolish: { ok: boolean; reason: string } | null;
   trollItems: string[];
+  trollItemLevels: Record<string, number>;
   stats: { kills: number; destroyed: number };
 }
 
@@ -281,6 +283,7 @@ export function Tve4Game() {
       pendingSkill: pendingSkillRef.current,
       demolish: b ? canDemolish(s, b.id) : null,
       trollItems: s.heroes.find((h) => h.faction === "troll")?.items ?? [],
+      trollItemLevels: s.heroes.find((h) => h.faction === "troll")?.itemLevels ?? {},
       stats: { kills: s.stats.kills, destroyed: s.stats.destroyed },
     });
   }, []);
@@ -864,33 +867,52 @@ export function Tve4Game() {
                     <div key={group} className="mb-3">
                       <div className="mb-1 text-[11px] font-semibold text-amber-200/80">{group}</div>
                       <div className="flex flex-wrap gap-2">
-                        {EQUIPMENT_RULE.items.filter((i) => (i.shop ?? "其他") === group).map((item) => (
-                          <button
-                            key={item.key}
-                            className="min-w-[92px] max-w-[150px] rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-left text-xs"
-                            disabled={snapshot.trollItems.includes(item.key)}
-                            title={item.note}
-                            onClick={() => {
-                              const s = stateRef.current;
-                              if (s) {
-                                const ok = buyEquipment(s, item.key);
-                                playTve4Sfx(ok ? "pickup" : "error");
-                                if (!ok) setHintLocal("需回到巨魔商店附近且资源足够");
-                                sync();
-                              }
-                            }}
-                          >
-                            <span
-                              className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-sm text-[10px] leading-none"
-                              style={{ background: itemIcon(item.key).background, color: itemIcon(item.key).color }}
-                            >
-                              {itemIcon(item.key).glyph}
-                            </span>
-                            <span className="font-semibold">{item.label}</span>
-                            <div className="text-white/60">{item.gold} 金{item.wood ? ` · ${item.wood} 木` : ""}</div>
-                            {item.note ? <div className="mt-1 text-[9px] text-amber-200/60">原版效果未实现</div> : null}
-                          </button>
-                        ))}
+                        {EQUIPMENT_RULE.items.filter((i) => (i.shop ?? "其他") === group).map((item) => {
+                          const level = snapshot.trollItemLevels[item.key] ?? 0;
+                          return (
+                            <div key={item.key} className="min-w-[92px] max-w-[150px] rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-xs">
+                              <button
+                                className="w-full text-left"
+                                title={`${item.note ?? item.label}；重复购买自动融合`}
+                                onClick={() => {
+                                  const s = stateRef.current;
+                                  if (s) {
+                                    const ok = buyEquipment(s, item.key);
+                                    playTve4Sfx(ok ? "pickup" : "error");
+                                    if (!ok) setHintLocal("需回到巨魔商店附近且资源足够");
+                                    sync();
+                                  }
+                                }}
+                              >
+                                <span
+                                  className="mr-1 inline-flex h-4 w-4 items-center justify-center rounded-sm text-[10px] leading-none"
+                                  style={{ background: itemIcon(item.key).background, color: itemIcon(item.key).color }}
+                                >
+                                  {itemIcon(item.key).glyph}
+                                </span>
+                                <span className="font-semibold">{item.label}{level ? ` Lv${level}` : ""}</span>
+                                <div className="text-white/60">{item.gold} 金{item.wood ? ` · ${item.wood} 木` : ""}</div>
+                                {item.note ? <div className="mt-1 text-[9px] text-amber-200/60">原版效果未实现</div> : null}
+                              </button>
+                              {level ? (
+                                <button
+                                  className="mt-1 w-full rounded bg-rose-900/70 px-1 py-1 text-[10px] text-white"
+                                  onClick={() => {
+                                    const s = stateRef.current;
+                                    if (s) {
+                                      const ok = sellEquipment(s, item.key);
+                                      playTve4Sfx(ok ? "pickup" : "error");
+                                      if (!ok) setHintLocal("需回到巨魔商店附近");
+                                      sync();
+                                    }
+                                  }}
+                                >
+                                  出售 · {item.gold * level} 金
+                                </button>
+                              ) : null}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}

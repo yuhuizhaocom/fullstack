@@ -89,6 +89,7 @@ export interface Hero {
   gold: number;
   wood: number;
   items: string[];
+  itemLevels: Record<string, number>;
   bonusIncome: number;
   bonusLifesteal: number;
   cooldowns: Record<SkillKey, number>;
