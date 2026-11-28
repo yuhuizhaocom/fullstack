@@ -15,9 +15,9 @@ const HEROES = ["elf", "troll"];
 const BUILDING_KEYS = ["wall", "tower", "mine", "tent", "market", "reveal", "lumberCamp", "trollHouse"];
 const SKILL_IDS: Record<string, string> = {
   blink: "A066", haste: "A067", entangle: "A068", silence: "A069",
-  windwalk: "A061", berserk: "A06T", teleport: "A06W", farSight: "A062",
+  windwalk: "A061", berserk: "A06T", teleport: "A06W", farSight: "A062", wallInvuln: "A06B",
 };
-const SKILL_KEYS = ["blink", "haste", "entangle", "silence", "windwalk", "berserk", "teleport", "farSight"];
+const SKILL_KEYS = ["blink", "haste", "entangle", "silence", "windwalk", "berserk", "teleport", "farSight", "wallInvuln"];
 // Literal whitelist: adding/removing shop entries is a deliberate catalog change.
 const ITEM_KEYS = "I0A9 I0AA I02N I02O I02A I02B I02C I02D I03K I03L I03M I01P I02P I02Q I02R I02S I02E I02F I02G I02H I01Q I01R I01S I01T I02T I02U I02V I02W I02I I02J I02K I02L I02X I02M I0A8 I040 I039 I03A I03B I03C I02Y I02Z I030 I031 I03P I03Q I03R I01V I03D I03E I03F I03G I032 I033 I034 I035 I03S I03T I03U I03V I03H I03I I03J I01W I036 I037 I038 I03N I0AB I0AC I0AD I0AE I0AF I0AG I023 I0AH I0AI I0AJ I0BU I027 I0AK".split(" ");
 const SLK_NAMES = "AbilityBuffData AbilityData ItemData UnitAbilities UnitBalance UnitData UnitUI UnitWeapons UpgradeData".split(" ").map((name) => `${name}.slk`);
@@ -35,7 +35,7 @@ function unknownPrefix(record: { id: string }) {
   return record.id;
 }
 
-test("catalog contains exactly the current 2 heroes, 8 buildings, 8 skills and 81 items", () => {
+test("catalog contains exactly the current 2 heroes, 8 buildings, 9 skills and 81 items", () => {
   assert.deepEqual(rules.heroes.map((r) => r.id), HEROES);
   assert.deepEqual(rules.buildings.map((r) => r.id).sort(), [...BUILDING_KEYS].sort());
   assert.deepEqual(rules.skills.map((r) => r.id), SKILL_KEYS);
@@ -85,9 +85,9 @@ test("skill IDs and source-default cooldowns are corrected without changing web 
   for (const [key, id] of Object.entries(SKILL_IDS)) {
     const record = rules.skills.find((r) => r.id === key)!;
     assert.equal(record.values.id, id);
-    assert.equal(record.values.cooldown, key === "entangle" || key === "farSight" ? (key === "entangle" ? 3 : 25) : ({ blink: 25, haste: 30, silence: 60, windwalk: 30, berserk: 120, teleport: 45 } as Record<string, number>)[key]);
+    assert.equal(record.values.cooldown, ({ blink: 25, haste: 30, entangle: 45, silence: 60, windwalk: 30, berserk: 120, teleport: 45, farSight: 25, wallInvuln: 180 } as Record<string, number>)[key]);
   }
-  const originalCooldowns = { blink: 25, haste: 30, entangle: 45, silence: 60, windwalk: 30, berserk: 120, teleport: 45, farSight: 40 };
+  const originalCooldowns = { blink: 25, haste: 30, entangle: 45, silence: 60, windwalk: 30, berserk: 120, teleport: 45, farSight: 40, wallInvuln: 180 };
   for (const [key, cooldown] of Object.entries(originalCooldowns)) {
     const record = rules.skills.find((r) => r.id === key)!;
     assert.equal(record.values.originalCooldown, cooldown);
@@ -183,16 +183,15 @@ test("every non-VERIFIED numeric or boolean field has a matching unknown", () =>
   }
 });
 
-test("unknowns expose exactly the four blocking fields", () => {
+test("unknowns expose exactly the three blocking fields", () => {
   assert.deepEqual(
     rules.unknowns.filter((item) => item.blocking).map((item) => item.id).sort(),
-    ["skill.entangle.cooldown", "skill.farSight.cooldown", "skill.farSight.duration", "skill.haste.duration"],
+    ["skill.farSight.cooldown", "skill.farSight.duration", "skill.haste.duration"],
   );
 });
 
 test("unknowns explicitly expose unsupported original effects and unproven conversions", () => {
   assert.ok(rules.unknowns.some((u) => u.id === "skill.farSight.cooldown"));
-  assert.ok(rules.unknowns.some((u) => u.id === "skill.entangle.cooldown"));
   assert.ok(rules.unknowns.some((u) => u.id === "hero.elf.range"));
   assert.ok(rules.unknowns.some((u) => u.id === "item.I0A9.allStats"));
   assert.ok(rules.unknowns.some((u) => u.id === "building.tower.damage.7"));
@@ -203,15 +202,21 @@ test("unknowns explicitly expose unsupported original effects and unproven conve
 test("runtime rules preserve current hero, building, skill and shop values through MVP adapters", () => {
   assert.deepEqual(HERO_STATS, rawLegacy.heroes ? {
     elf: { hp: 10, damage: 7, interval: 2.2, range: 32, speed: 125, radius: 14, mana: 200, manaRegen: 2 },
-    troll: { hp: 750, damage: 7, interval: 1.5, range: 34, speed: 175, radius: 22, mana: 200, manaRegen: 1 },
+    troll: { hp: 750, damage: 7, interval: 1.5, range: 10, speed: 175, radius: 22, mana: 200, manaRegen: 1 },
   } : {});
-  assert.deepEqual(RULES.heroes, rawLegacy.heroes);
+  assert.deepEqual(RULES.heroes, {
+    elf: { ...rawLegacy.heroes.elf, range: 32 },
+    troll: { ...rawLegacy.heroes.troll, range: 10 },
+  });
   for (const [key, value] of Object.entries(rawLegacy.buildings)) {
-    assert.deepEqual(BUILDING_RULES[key as keyof typeof BUILDING_RULES], value, `MVP must preserve ${key}`);
+    const { repairTime: _repairTime, sight: _sight, ...core } = BUILDING_RULES[key as keyof typeof BUILDING_RULES];
+    assert.deepEqual(core, value, `MVP must preserve ${key}`);
   }
-  assert.deepEqual(BUILDING_RULES.market, { gold: [64, 256, 1024], wood: [], hp: [50, 100, 200] });
+  assert.equal(BUILDING_RULES.wall.repairTime, 50);
+  assert.deepEqual(BUILDING_RULES.tower.sight, [800, 1600, 1600, 1600, 1600, 1600, 1600, 1600]);
+  assert.deepEqual(BUILDING_RULES.market, { gold: [64, 256, 1024], wood: [], hp: [50, 100, 200], repairTime: 50 });
   assert.deepEqual(EQUIPMENT_RULE.items, rawLegacy.equipmentShop.items);
-  assert.deepEqual(SKILLS.elf.map((s) => s.cd), [25, 30, 3, 60]);
+  assert.deepEqual(SKILLS.elf.map((s) => s.cd), [25, 30, 45, 60]);
   assert.deepEqual(SKILLS.troll.map((s) => s.cd), [30, 120, 45, 25]);
   assert.equal(RULES.skills.berserk.id, "A06T");
   assert.equal(RULES.skills.teleport.id, "A06W");

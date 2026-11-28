@@ -34,6 +34,7 @@ import {
   canSummonMage,
   cancelRepair,
   castSkill,
+  castWallInvuln,
   createGame,
   demolishBuilding,
   findRepairTarget,
@@ -1076,6 +1077,9 @@ export function Tve4Game() {
                         if (!s) return;
                         if (pendingSkillRef.current === spec.key) {
                           pendingSkillRef.current = null;
+                        } else if (spec.key === "entangle") {
+                          pendingSkillRef.current = spec.key;
+                          setHintLocal("选择纠缠目标地点");
                         } else {
                           const ok = castSkill(s, spec.key, hoverRef.current);
                           playTve4Sfx(ok ? "skill" : "error");
@@ -1141,8 +1145,13 @@ export function Tve4Game() {
                 onClick={() => clickWithoutLongPress(() => {
                   const s = stateRef.current;
                   if (s) {
-                    const ok = castSkill(s, spec.key, hoverRef.current);
-                    playTve4Sfx(ok ? "skill" : "error");
+                    if (spec.key === "entangle") {
+                      pendingSkillRef.current = spec.key;
+                      setHintLocal("选择纠缠目标地点");
+                    } else {
+                      const ok = castSkill(s, spec.key, hoverRef.current);
+                      playTve4Sfx(ok ? "skill" : "error");
+                    }
                     sync();
                   }
                 })}
@@ -1185,6 +1194,21 @@ export function Tve4Game() {
                   })}
                 >
                   维修{autoRepair ? <span className="ml-1 text-[9px] text-cyan-100">自动</span> : null}
+                </button>
+                <button
+                  className={`pointer-events-auto rounded-lg bg-sky-800 px-2 py-3 text-[11px] text-white ${(snapshot.cooldowns.wallInvuln ?? 0) > 0 || snapshot.mana < 10 ? "opacity-40" : ""}`}
+                  aria-disabled={(snapshot.cooldowns.wallInvuln ?? 0) > 0 || snapshot.mana < 10}
+                  title="消耗 10 法力，使当前己方墙无敌 10 秒"
+                  onClick={() => {
+                    const s = stateRef.current;
+                    if (!s) return;
+                    const ok = castWallInvuln(s);
+                    playTve4Sfx(ok ? "skill" : "error");
+                    if (!ok) setHintLocal((snapshot.cooldowns.wallInvuln ?? 0) > 0 ? "墙无敌冷却中" : snapshot.mana < 10 ? "法力不足" : "没有可保护的墙");
+                    sync();
+                  }}
+                >
+                  墙无敌{(snapshot.cooldowns.wallInvuln ?? 0) > 0 ? ` ${Math.ceil(snapshot.cooldowns.wallInvuln)}s` : ""}
                 </button>
                 <button
                   className="pointer-events-auto rounded-lg bg-rose-800 px-2 py-3 text-[11px] text-white disabled:opacity-40"

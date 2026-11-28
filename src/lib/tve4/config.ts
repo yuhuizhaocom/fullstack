@@ -56,12 +56,19 @@ export interface BuildingDef {
   size: number;
   texture: string;
   buildTime: number;
+  repairTime?: number;
+  sight?: number[];
   levels: BuildingLevel[];
 }
 
 function arr(value: number | number[] | undefined): number[] {
   if (value === undefined) return [];
   return Array.isArray(value) ? value : [value];
+}
+
+function optionalRuleNumber(id: string, field: string): number | undefined {
+  const value = ruleRecord(id).values[field];
+  return typeof value === "number" ? value : undefined;
 }
 
 function levels(key: string, ranges?: number[]): BuildingLevel[] {
@@ -86,32 +93,33 @@ function levels(key: string, ranges?: number[]): BuildingLevel[] {
 export const BUILDINGS: Record<string, BuildingDef> = {
   wall: {
     label: "石墙", desc: "u01F 石墙链，可升级 10 级", texture: "b_wall",
-    size: ruleNumber("wall", "size"), buildTime: ruleNumber("wall", "buildTime"),
+    size: ruleNumber("wall", "size"), buildTime: ruleNumber("wall", "buildTime"), repairTime: optionalRuleNumber("wall", "repairTime"),
     levels: levels("wall"),
   },
   tower: {
     label: "基础箭塔", desc: "h000 箭塔链 7 级 + h096 终极塔", texture: "b_tower",
-    size: ruleNumber("tower", "size"), buildTime: ruleNumber("tower", "buildTime"),
+    size: ruleNumber("tower", "size"), buildTime: ruleNumber("tower", "buildTime"), repairTime: optionalRuleNumber("tower", "repairTime"),
+    sight: ruleNumbers("tower", "sight"),
     levels: levels("tower", ruleNumbers("tower", "range")),
   },
   mine: {
     label: "闹鬼金矿", desc: "e00H 金矿链，每秒金币", texture: "b_mine",
-    size: ruleNumber("mine", "size"), buildTime: ruleNumber("mine", "buildTime"),
+    size: ruleNumber("mine", "size"), buildTime: ruleNumber("mine", "buildTime"), repairTime: optionalRuleNumber("mine", "repairTime"),
     levels: levels("mine"),
   },
   tent: {
     label: "作坊", desc: "u00Y 帐篷起，10 级链，死亡返还全部升级花费", texture: "b_tent",
-    size: ruleNumber("tent", "size"), buildTime: ruleNumber("tent", "buildTime"),
+    size: ruleNumber("tent", "size"), buildTime: ruleNumber("tent", "buildTime"), repairTime: optionalRuleNumber("tent", "repairTime"),
     levels: levels("tent"),
   },
   market: {
     label: "城镇/市场", desc: "u018 城镇，交易并解锁高级建筑", texture: "b_tent",
-    size: ruleNumber("market", "size"), buildTime: ruleNumber("market", "buildTime"),
+    size: ruleNumber("market", "size"), buildTime: ruleNumber("market", "buildTime"), repairTime: optionalRuleNumber("market", "repairTime"),
     levels: levels("market").map(({ cost, hp }) => ({ cost, hp })),
   },
   reveal: {
     label: "真视之塔", desc: "u01E 反隐塔", texture: "b_tower",
-    size: ruleNumber("reveal", "size"), buildTime: ruleNumber("reveal", "buildTime"),
+    size: ruleNumber("reveal", "size"), buildTime: ruleNumber("reveal", "buildTime"), repairTime: optionalRuleNumber("reveal", "repairTime"),
     levels: [{
       cost: arr(BUILDING_RULES.reveal.gold)[0] ?? 0,
       hp: arr(BUILDING_RULES.reveal.hp)[0] ?? 10,
@@ -121,12 +129,12 @@ export const BUILDINGS: Record<string, BuildingDef> = {
   },
   lumberCamp: {
     label: "精灵采木场", desc: "2000 金起，每级累计 2000/3600/18000 金，产量 1/2/10 木每秒", texture: "b_tent",
-    size: ruleNumber("lumberCamp", "size"), buildTime: ruleNumber("lumberCamp", "buildTime"),
+    size: ruleNumber("lumberCamp", "size"), buildTime: ruleNumber("lumberCamp", "buildTime"), repairTime: optionalRuleNumber("lumberCamp", "repairTime"),
     levels: levels("lumberCamp").map(({ cost, hp, woodIncome }) => ({ cost, hp, woodIncome })),
   },
   trollHouse: {
     label: "巨魔房屋", desc: "u03D 系统建筑，玩家只能升级", texture: "b_tent",
-    size: ruleNumber("trollHouse", "size"), buildTime: ruleNumber("trollHouse", "buildTime"),
+    size: ruleNumber("trollHouse", "size"), buildTime: ruleNumber("trollHouse", "buildTime"), repairTime: optionalRuleNumber("trollHouse", "repairTime"),
     levels: levels("trollHouse"),
   },
 };
@@ -202,5 +210,5 @@ export const SKILLS: Record<"elf" | "troll", SkillKeyInfo[]> = {
 };
 
 export const ALL_SKILL_KEYS: SkillKey[] = [
-  "blink", "haste", "entangle", "silence", "windwalk", "berserk", "teleport", "farSight",
+  "blink", "haste", "entangle", "silence", "windwalk", "berserk", "teleport", "farSight", "wallInvuln",
 ];

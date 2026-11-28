@@ -18,8 +18,9 @@ interface VisionSource {
 }
 
 function buildingSight(building: Building): number {
-  const spec = BUILDINGS[building.kind]?.levels[building.level - 1];
-  return buildingVisionRadius(spec?.range ?? 0);
+  const def = BUILDINGS[building.kind];
+  const spec = def?.levels[building.level - 1];
+  return buildingVisionRadius(spec?.range ?? 0, def?.sight?.[building.level - 1] ?? 0);
 }
 
 function visionSources(state: GameState, faction: Faction): VisionSource[] {
@@ -52,12 +53,22 @@ function heroVisible(state: GameState, faction: Faction, hero: Hero, sources: Vi
   return canSourceSee(sources, hero.x, hero.y);
 }
 
-export function createPerception(state: GameState, faction: Faction): Perception {
+export function visibleEnemiesForFaction(state: GameState, faction: Faction): Hero[] {
   const sources = visionSources(state, faction);
-  const enemies = state.heroes.filter((hero) => heroVisible(state, faction, hero, sources));
-  const buildings = state.buildings.filter(
+  return state.heroes.filter((hero) => heroVisible(state, faction, hero, sources));
+}
+
+export function visibleBuildingsForFaction(state: GameState, faction: Faction): Building[] {
+  const sources = visionSources(state, faction);
+  return state.buildings.filter(
     (building) => building.alive && building.faction !== faction && canSourceSee(sources, building.x, building.y),
   );
+}
+
+export function createPerception(state: GameState, faction: Faction): Perception {
+  const sources = visionSources(state, faction);
+  const enemies = visibleEnemiesForFaction(state, faction);
+  const buildings = visibleBuildingsForFaction(state, faction);
 
   const isAiFaction = faction !== state.playerFaction;
   if (isAiFaction && enemies.length) {

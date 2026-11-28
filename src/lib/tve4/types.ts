@@ -47,7 +47,8 @@ export type SkillKey =
   | "windwalk"
   | "berserk"
   | "teleport"
-  | "farSight";
+  | "farSight"
+  | "wallInvuln";
 
 export interface Buffs {
   haste: number;
@@ -113,6 +114,7 @@ export interface Building {
   buildTimer: number;
   demolishTimer: number;
   eyeMarked: number;
+  invuln: number;
   repairing: boolean;
   flash: number;
   cd: number;
@@ -121,6 +123,8 @@ export interface Building {
 
 export interface Projectile {
   id: number;
+  sourceId: number;
+  targetId: number;
   faction: Faction;
   x: number;
   y: number;

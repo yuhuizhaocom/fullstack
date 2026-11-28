@@ -31,7 +31,8 @@ import { createSession, requireSpawn } from "./sim/session";
 import { createRng, randomRange } from "./sim/rng";
 import { findGridPath, hasWorldLineOfSight, isWorldPositionFree, isWorldSegmentClear, type PathingGrid } from "./sim/pathing";
 import { createRuntimePathing } from "./map";
-import { createPerception } from "./ai/perception";
+import { createPerception, visibleBuildingsForFaction, visibleEnemiesForFaction } from "./ai/perception";
+import { buildingVisionRadius } from "./vision";
 import type {
   Buffs,
   BuildKind,
@@ -43,12 +44,13 @@ import type {
   Hero,
   InputState,
   Mode,
+  Projectile,
   Rule,
   SkillKey,
 } from "./types";
 
 const SCALE = RULES.scale;
-export const REPAIR_RANGE = 60 * SCALE;
+export const REPAIR_RANGE = REPAIR_RULE.castRange * SCALE;
 const PATHING_VIEWS = new WeakMap<GameState, PathingGrid>();
 const AI_PATROL_OFFSETS = [
   [0, 0], [-480, 0], [0, -480], [480, 0], [0, 480],
@@ -236,7 +238,7 @@ function makeBuilding(state: GameState, kind: BuildKind, faction: Faction, gx: n
     x: (gx + def.size / 2) * TILE, y: (gy + def.size / 2) * TILE,
     gx0: gx, gy0: gy, size: def.size, level: 1,
     hp: def.levels[0].hp, maxHp: def.levels[0].hp,
-    alive: true, buildTimer, demolishTimer: 0, eyeMarked: 0, repairing: false, flash: 0, cd: 0,
+    alive: true, buildTimer, demolishTimer: 0, eyeMarked: 0, invuln: 0, repairing: false, flash: 0, cd: 0,
     system,
   };
 }
@@ -487,7 +489,8 @@ function refundTent(state: GameState, b: Building): void {
 }
 
 function buildingRepairRate(b: Building): number {
-  return b.maxHp / (BUILDINGS[b.kind].buildTime * REPAIR_RULE.timeRatios[0]);
+  const repairTime = BUILDINGS[b.kind].repairTime;
+  return repairTime ? b.maxHp / (repairTime * REPAIR_RULE.timeRatios[0]) : 0;
 }
 
 export function distanceToFootprint(hero: Hero, target: { x: number; y: number; size: number }): number {
@@ -513,6 +516,7 @@ export function canRepairBuilding(state: GameState, buildingId: number): { ok: b
   if (building.buildTimer > 0) return { ok: false, reason: "建筑尚未完工" };
   if (building.hp >= building.maxHp) return { ok: false, reason: "建筑无需维修" };
   if (building.repairing) return { ok: false, reason: "建筑正在维修" };
+  if (!BUILDINGS[building.kind].repairTime) return { ok: false, reason: "缺少原版维修时间" };
   if (hero.repairTargetId !== null && hero.repairTargetId !== buildingId) return { ok: false, reason: "已在维修其他建筑" };
   if (distanceToFootprint(hero, building) > REPAIR_RANGE) return { ok: false, reason: "需要靠近目标" };
   return { ok: true, reason: "" };
@@ -689,7 +693,8 @@ function heroTarget(state: GameState, h: Hero, maxRange: number): DamageTarget |
     if (!other.alive || other.faction === h.faction || other.invuln > 0) continue;
     if (other.buffs.windwalk > 0 && other.buffs.revealed <= 0) continue;
     if (!hasLineOfSight(state, h.x, h.y, other.x, other.y, undefined, h.faction)) continue;
-    const d = Math.hypot(other.x - h.x, other.y - h.y) - other.radius;
+    const centerDistance = Math.hypot(other.x - h.x, other.y - h.y);
+    const d = h.faction === "troll" ? centerDistance : centerDistance - other.radius;
     if (d <= maxRange && d < bestD) {
       bestD = d;
       best = { x: other.x, y: other.y, radius: other.radius, hp: other.hp, kind: "hero", ref: other };
@@ -701,7 +706,8 @@ function heroTarget(state: GameState, h: Hero, maxRange: number): DamageTarget |
       if (!b.alive || b.buildTimer > 0 || b.faction === h.faction) continue;
       if (!hasLineOfSight(state, h.x, h.y, b.x, b.y, b.id, h.faction)) continue;
       const r = (b.size * TILE) / 2;
-      const d = Math.hypot(b.x - h.x, b.y - h.y) - r;
+      const centerDistance = Math.hypot(b.x - h.x, b.y - h.y);
+      const d = h.faction === "troll" ? distanceToFootprint(h, b) : centerDistance - r;
       if (d <= maxRange && d < bestD) {
         bestD = d;
         best = { x: b.x, y: b.y, radius: r, hp: b.hp, kind: "building", ref: b };
@@ -713,6 +719,7 @@ function heroTarget(state: GameState, h: Hero, maxRange: number): DamageTarget |
 
 function dealDamage(state: GameState, attacker: Hero, target: DamageTarget, raw: number): void {
   if (target.hp <= 0) return;
+  if (target.kind === "building" && (target.ref as Building).invuln > 0) return;
   if (target.kind === "hero" && (target.ref as Hero).invuln > 0) return;
   // 原版 Wind Walk：攻击即破隐，无自创飘字
   if (attacker.buffs.windwalk > 0) attacker.buffs.windwalk = 0;
@@ -759,7 +766,7 @@ function bountyMin(state: GameState): number {
   return value * BOUNTY_RULE.minMultiplier;
 }
 
-function killHero(state: GameState, h: Hero, attacker: Hero): void {
+function killHero(state: GameState, h: Hero, attacker?: Hero): void {
   h.alive = false;
   h.hp = 0;
   if (h.repairTargetId !== null) {
@@ -773,13 +780,15 @@ function killHero(state: GameState, h: Hero, attacker: Hero): void {
   addEffect(state, h.x, h.y, h.faction === "troll" ? 120 : 70, "#ff6b6b");
   addFloat(state, h.x, h.y - 24, "倒下", "#ff8a8a", 16);
   // VERIFIED：floor(gold*0.5) + wood*8 → MIDDLE 折半 → 偷金下限 → 上限
-  let bounty = Math.floor(h.gold * BOUNTY_RULE.goldRatio) + h.wood * BOUNTY_RULE.woodMultiplier;
-  if (state.mode === "MIDDLE") bounty = Math.floor(bounty * BOUNTY_RULE.middleRatio);
-  bounty = Math.max(bounty, bountyMin(state));
-  bounty = Math.min(bounty, BOUNTY_RULE.max);
-  attacker.gold += bounty;
-  state.stats.goldEarned += bounty;
-  addFloat(state, h.x, h.y - 42, `+ ${bounty}`, "#ffd86b", 14);
+  if (attacker) {
+    let bounty = Math.floor(h.gold * BOUNTY_RULE.goldRatio) + h.wood * BOUNTY_RULE.woodMultiplier;
+    if (state.mode === "MIDDLE") bounty = Math.floor(bounty * BOUNTY_RULE.middleRatio);
+    bounty = Math.max(bounty, bountyMin(state));
+    bounty = Math.min(bounty, BOUNTY_RULE.max);
+    attacker.gold += bounty;
+    state.stats.goldEarned += bounty;
+    addFloat(state, h.x, h.y - 42, `+ ${bounty}`, "#ffd86b", 14);
+  }
   // DOUBLE：巨魔死亡转狼（原版是角色切换，不用属性倍率/加命）
   if (h.faction === "troll" && state.rule === "DOUBLE" && !h.isWolf) {
     h.isWolf = true;
@@ -831,6 +840,7 @@ function updateTimers(state: GameState, dt: number): void {
   }
   for (const b of state.buildings) {
     b.flash = Math.max(0, b.flash - dt);
+    b.invuln = Math.max(0, b.invuln - dt);
     if (b.repairing) {
       const owner = state.heroes.find((h) => h.repairTargetId === b.id);
       if (!owner?.alive || distanceToFootprint(owner, b) > REPAIR_RANGE) {
@@ -931,7 +941,7 @@ function updateHeroes(state: GameState, dt: number, input: InputState): void {
       moveWithCollision(state, h, h.vx * dt, h.vy * dt);
       h.facing = Math.atan2(h.vy, h.vx);
     }
-    if (h.cd <= 0) {
+    if (h.buffs.root <= 0 && h.cd <= 0) {
       const target = heroTarget(state, h, h.range);
       if (target) {
         dealDamage(state, h, target, h.damage);
@@ -958,19 +968,21 @@ function updateBuildings(state: GameState, dt: number): void {
     if (b.kind !== "tower" || b.buildTimer > 0 || b.cd > 0) continue;
     const spec = BUILDINGS[b.kind].levels[b.level - 1];
     const r = spec.range ?? 100;
+    const vision = buildingVisionRadius(0, BUILDINGS[b.kind].sight?.[b.level - 1] ?? 0);
+    const visibleEnemies = visibleEnemiesForFaction(state, b.faction);
     let target: Hero | null = null;
     let best = Infinity;
-    for (const h of state.heroes) {
-      if (!h.alive || h.faction === b.faction || h.invuln > 0) continue;
+    for (const h of visibleEnemies) {
+      if (!h.alive || h.invuln > 0) continue;
       const d = Math.hypot(h.x - b.x, h.y - b.y);
-      if (d <= r && d < best) {
-        best = d;
-        target = h;
-      }
+      if (d > r || d > vision || d >= best) continue;
+      if (!hasLineOfSight(state, b.x, b.y, h.x, h.y, b.id, b.faction)) continue;
+      best = d;
+      target = h;
     }
     if (target) {
       state.projectiles.push({
-        id: state.nextId++, faction: b.faction,
+        id: state.nextId++, sourceId: b.id, targetId: target.id, faction: b.faction,
         x: b.x, y: b.y - b.size * TILE * 0.4,
         tx: target.x, ty: target.y, speed: 420,
         damage: spec.damage ?? 4, t: 0,
@@ -980,23 +992,30 @@ function updateBuildings(state: GameState, dt: number): void {
   }
 }
 
+function dealProjectileDamage(state: GameState, projectile: Projectile, target: Hero): void {
+  const amount = Math.floor(projectile.damage);
+  target.hp -= amount;
+  target.flash = 0.16;
+  state.stats.damage += amount;
+  if (target.hp <= 0) killHero(state, target);
+}
+
 function updateProjectiles(state: GameState, dt: number): void {
   const keep: typeof state.projectiles = [];
   for (const p of state.projectiles) {
+    const target = state.heroes.find((h) => h.id === p.targetId);
+    if (target) {
+      p.tx = target.x;
+      p.ty = target.y;
+    }
     const dx = p.tx - p.x;
     const dy = p.ty - p.y;
     const dist = Math.hypot(dx, dy);
     const step = p.speed * dt;
     if (dist <= step || dist < 6) {
-      const attacker = state.heroes.find((h) => h.faction === p.faction && h.alive);
-      for (const h of state.heroes) {
-        if (!h.alive || h.faction === p.faction || h.invuln > 0) continue;
-        if (Math.hypot(h.x - p.tx, h.y - p.ty) < h.radius + 14) {
-          if (attacker) dealDamage(state, attacker, { x: h.x, y: h.y, radius: h.radius, hp: h.hp, kind: "hero", ref: h }, p.damage);
-          else h.hp -= p.damage;
-          break;
-        }
-      }
+      const visible = target && visibleEnemiesForFaction(state, p.faction).includes(target);
+      const clear = target && hasLineOfSight(state, p.x, p.y, target.x, target.y, p.sourceId, p.faction);
+      if (target?.alive && target.invuln <= 0 && visible && clear) dealProjectileDamage(state, p, target);
       addEffect(state, p.tx, p.ty, 20, "#ffe08a");
     } else {
       p.x += (dx / dist) * step;
@@ -1120,7 +1139,10 @@ function updateTrollAI(state: GameState, dt: number, troll: Hero): void {
   const dx = tx - troll.x;
   const dy = ty - troll.y;
   const dist = Math.hypot(dx, dy);
-  if (dist > troll.range + 6) {
+  const targetIsElf = Boolean(elf && tx === elf.x && ty === elf.y);
+  const targetBuilding = targetIsElf ? null : state.buildings.find((b) => b.alive && b.x === tx && b.y === ty);
+  const attackDistance = targetBuilding ? distanceToFootprint(troll, targetBuilding) : dist;
+  if (attackDistance > troll.range) {
     // BFS 寻路：绕开墙体与精灵建筑，沿路点前进
     state.pathTimer -= dt;
     if (Math.hypot(troll.x - state.stuckX, troll.y - state.stuckY) < 6) {
@@ -1299,11 +1321,11 @@ export function stateHash(state: GameState): string {
       id: b.id, kind: b.kind, faction: b.faction, x: b.x, y: b.y,
       gx0: b.gx0, gy0: b.gy0, size: b.size, level: b.level, hp: b.hp,
       maxHp: b.maxHp, alive: b.alive, buildTimer: b.buildTimer,
-      demolishTimer: b.demolishTimer, eyeMarked: b.eyeMarked,
+      demolishTimer: b.demolishTimer, eyeMarked: b.eyeMarked, invuln: b.invuln,
       repairing: b.repairing, cd: b.cd, system: b.system ?? false,
     })),
     projectiles: state.projectiles.map((p) => ({
-      id: p.id, faction: p.faction, x: p.x, y: p.y, tx: p.tx, ty: p.ty,
+      id: p.id, sourceId: p.sourceId, targetId: p.targetId, faction: p.faction, x: p.x, y: p.y, tx: p.tx, ty: p.ty,
       speed: p.speed, damage: p.damage, t: p.t,
     })),
   };
@@ -1596,7 +1618,20 @@ function castSkillFor(state: GameState, hero: Hero, key: SkillKey, aim?: { x: nu
     addEffect(state, target.x, target.y, 40, "#ff9c7a");
     addFloat(state, target.x, target.y - 26, "巨魔之眼", "#ff9c7a", 12);
   }
-  if (key === "entangle" || key === "silence") {
+  if (key === "entangle") {
+    if (!aim) return false;
+    const range = skillNumber(key, "originalCastRange", 400) * SCALE;
+    if (Math.hypot(aim.x - hero.x, aim.y - hero.y) > range) return false;
+    const radius = skillNumber(key, "targetRadius", 340) * SCALE;
+    const targets = visibleEnemiesForFaction(state, hero.faction)
+      .filter((h) => h.faction === "troll" && h.alive && Math.hypot(h.x - aim.x, h.y - aim.y) <= radius);
+    if (!targets.length) return false;
+    for (const troll of targets) {
+      troll.buffs.root = spec.duration;
+      addEffect(state, troll.x, troll.y, 34, "#9be7ff");
+    }
+  }
+  if (key === "silence") {
     const troll = state.heroes.find((h) => h.faction === "troll" && h.alive);
     const range = skillNumber(key, "originalCastRange", 0) * SCALE;
     if (
@@ -1606,13 +1641,31 @@ function castSkillFor(state: GameState, hero: Hero, key: SkillKey, aim?: { x: nu
     ) {
       return false;
     }
-    if (key === "entangle") troll.buffs.root = spec.duration;
-    else troll.buffs.silence = spec.duration;
+    troll.buffs.silence = spec.duration;
     addEffect(state, troll.x, troll.y, 34, "#9be7ff");
   }
   hero.mana -= spec.manaCost;
   hero.cooldowns[key] = skillNumber(key, "cooldown", spec.cd);
   addFloat(state, hero.x, hero.y - 26, spec.label, "#bfe9ff", 12);
+  return true;
+}
+
+export function castWallInvuln(state: GameState): boolean {
+  const hero = getPlayer(state);
+  if (!hero?.alive || hero.faction !== "elf" || hero.cooldowns.wallInvuln > 0) return false;
+  const manaCost = skillNumber("wallInvuln", "manaCost", 10);
+  if (hero.mana < manaCost) return false;
+  const walls = state.buildings.filter((b) => b.alive && b.faction === "elf" && b.kind === "wall");
+  if (!walls.length) return false;
+  const duration = skillNumber("wallInvuln", "duration", 10);
+  for (const wall of walls) {
+    wall.invuln = duration;
+    addEffect(state, wall.x, wall.y, wall.size * TILE, "#bfe9ff");
+  }
+  hero.mana -= manaCost;
+  hero.cooldowns.wallInvuln = skillNumber("wallInvuln", "cooldown", 180);
+  addFloat(state, hero.x, hero.y - 26, "墙无敌", "#bfe9ff", 12);
+  setHint(state, `墙无敌 ${duration} 秒`);
   return true;
 }
 

@@ -54,10 +54,10 @@ function elfWallNearTroll(state: GameState): Building {
   return wall;
 }
 
-test("all eight skills are mapped to the corrected MVP object IDs", () => {
+test("all nine skills are mapped to the corrected MVP object IDs", () => {
   const expected: Record<string, string> = {
     blink: "A066", haste: "A067", entangle: "A068", silence: "A069",
-    windwalk: "A061", berserk: "A06T", teleport: "A06W", farSight: "A062",
+    windwalk: "A061", berserk: "A06T", teleport: "A06W", farSight: "A062", wallInvuln: "A06B",
   };
   for (const record of MVP_RULES.skills) assert.equal(record.values.id, expected[record.id]);
   assert.deepEqual(SKILLS.elf.map((s) => s.key), ["blink", "haste", "entangle", "silence"]);
@@ -66,7 +66,7 @@ test("all eight skills are mapped to the corrected MVP object IDs", () => {
     assert.ok(spec.manaCost > 0, `${spec.key}: mana cost`);
     assert.ok(spec.duration > 0, `${spec.key}: duration`);
   }
-  assert.equal(Object.keys(SKILL_ICONS).length, 8);
+  assert.equal(Object.keys(SKILL_ICONS).length, 9);
 });
 
 test("each skill consumes its MVP mana cost and starts its cooldown", () => {

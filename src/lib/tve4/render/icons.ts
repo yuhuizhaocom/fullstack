@@ -17,6 +17,7 @@ export const SKILL_ICONS: Record<SkillKey, PlaceholderIcon> = {
   berserk: { glyph: "⚔", color: "#fecaca", background: "#7f1d1d" },
   teleport: { glyph: "◎", color: "#bae6fd", background: "#1e3a8a" },
   farSight: { glyph: "◉", color: "#fed7aa", background: "#7c2d12" },
+  wallInvuln: { glyph: "▣", color: "#bfe9ff", background: "#0c4a6e" },
 };
 
 const ITEM_COLORS = ["#7f1d1d", "#14532d", "#1e3a8a", "#4c1d95", "#713f12", "#334155"];

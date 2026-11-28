@@ -1,5 +1,5 @@
 {
-  "catalogVersion": "6740fa1e81371b2dd3596561adfd2c5baa08b650ea1a1150d893527ec24c6fe3",
+  "catalogVersion": "7f0a1546ef7a5f104d518322d5726e87c1cc765a6d4c66c8519b2f2a86c5fdf8",
   "primarySource": "data/tve4/mvp/source.json",
   "modeSingle": [
     {
@@ -220,7 +220,7 @@
         "hp": 750,
         "damage": 7,
         "interval": 1.5,
-        "range": 34,
+        "range": 10.0,
         "worldRange": 90,
         "speed": 175,
         "radius": 22,
@@ -268,20 +268,15 @@
           "value": 1.5,
           "confidence": "VERIFIED"
         },
-        "range": [
-          {
-            "file": "src/lib/tve4/config.ts",
-            "objectId": "troll",
-            "field": "range",
-            "confidence": "INFERRED"
-          },
-          {
-            "file": "data/game/game-rules.json",
-            "objectId": "troll",
-            "field": "range",
-            "confidence": "INFERRED"
-          }
-        ],
+        "range": {
+          "file": "Units/UnitWeapons.slk",
+          "objectId": "H020",
+          "field": "rangeN1",
+          "value": 10.0,
+          "confidence": "VERIFIED",
+          "sourceValue": 80,
+          "conversion": "sourceRange / scale"
+        },
         "worldRange": {
           "file": "data/game/game-rules.json",
           "objectId": "troll",
@@ -415,6 +410,7 @@
         "income.7": 128,
         "income.8": 256,
         "income.9": 512,
+        "repairTime": 50,
         "requirement.2.needKind": "wall",
         "requirement.2.needLevel": 1,
         "requirement.3.needKind": "wall",
@@ -1007,6 +1003,13 @@
             "confidence": "INFERRED"
           }
         ],
+        "repairTime": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "u00Y",
+          "field": "reptm",
+          "value": 50,
+          "confidence": "VERIFIED"
+        },
         "requirement.2.needLevel": {
           "file": "src/lib/tve4/config.ts",
           "objectId": "tent",
@@ -1098,7 +1101,8 @@
         "hp.6": 1000,
         "hp.7": 2000,
         "hp.8": 4000,
-        "hp.9": 8000
+        "hp.9": 8000,
+        "repairTime": 50
       },
       "source": {
         "file": "Units/UnitBalance.slk",
@@ -1525,7 +1529,14 @@
             "field": "hp.9",
             "confidence": "INFERRED"
           }
-        ]
+        ],
+        "repairTime": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "u01F",
+          "field": "reptm",
+          "value": 50,
+          "confidence": "VERIFIED"
+        }
       }
     },
     {
@@ -1566,6 +1577,7 @@
         "damage.5": 26,
         "damage.6": 38,
         "damage.7": 38,
+        "repairTime": 50,
         "requirement.3.needKind": "market",
         "requirement.3.needLevel": 1,
         "requirement.4.needKind": "market",
@@ -1584,7 +1596,15 @@
         "range.5": 176,
         "range.6": 192,
         "range.7": 208,
-        "interval": 1.5,
+        "sight.0": 800,
+        "sight.1": 1600,
+        "sight.2": 1600,
+        "sight.3": 1600,
+        "sight.4": 1600,
+        "sight.5": 1600,
+        "sight.6": 1600,
+        "sight.7": 1600,
+        "interval": 0.8,
         "ultimateObjectId": "h096"
       },
       "source": {
@@ -2041,6 +2061,13 @@
             "confidence": "INFERRED"
           }
         ],
+        "repairTime": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "h000",
+          "field": "reptm",
+          "value": 50,
+          "confidence": "VERIFIED"
+        },
         "requirement.3.needLevel": {
           "file": "src/lib/tve4/config.ts",
           "objectId": "tower",
@@ -2119,11 +2146,68 @@
           "field": "range.7",
           "confidence": "INFERRED"
         },
+        "sight.0": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "h000",
+          "field": "sight",
+          "value": 800,
+          "confidence": "VERIFIED"
+        },
+        "sight.1": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "h001",
+          "field": "sight",
+          "value": 1600,
+          "confidence": "VERIFIED"
+        },
+        "sight.2": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "h001",
+          "field": "sight",
+          "value": 1600,
+          "confidence": "VERIFIED"
+        },
+        "sight.3": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "h001",
+          "field": "sight",
+          "value": 1600,
+          "confidence": "VERIFIED"
+        },
+        "sight.4": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "h001",
+          "field": "sight",
+          "value": 1600,
+          "confidence": "VERIFIED"
+        },
+        "sight.5": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "h001",
+          "field": "sight",
+          "value": 1600,
+          "confidence": "VERIFIED"
+        },
+        "sight.6": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "h001",
+          "field": "sight",
+          "value": 1600,
+          "confidence": "VERIFIED"
+        },
+        "sight.7": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "h001",
+          "field": "sight",
+          "value": 1600,
+          "confidence": "VERIFIED"
+        },
         "interval": {
-          "file": "data/game/game-rules.json",
-          "objectId": "tower",
-          "field": "interval",
-          "confidence": "INFERRED"
+          "file": "Units/UnitWeapons.slk",
+          "objectId": "h000",
+          "field": "cool1",
+          "value": 0.8,
+          "confidence": "VERIFIED"
         }
       }
     },
@@ -2152,7 +2236,8 @@
         "income.1": 2,
         "income.2": 8,
         "income.3": 32,
-        "income.4": 128
+        "income.4": 128,
+        "repairTime": 60
       },
       "source": {
         "file": "Units/UnitBalance.slk",
@@ -2439,7 +2524,14 @@
             "field": "income.4",
             "confidence": "INFERRED"
           }
-        ]
+        ],
+        "repairTime": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "e00H",
+          "field": "reptm",
+          "value": 60,
+          "confidence": "VERIFIED"
+        }
       }
     },
     {
@@ -2451,6 +2543,7 @@
         "gold": 0,
         "wood": 256,
         "hp": 10,
+        "repairTime": 50,
         "requirement.1.needKind": "market",
         "requirement.1.needLevel": 2,
         "revealRange": 900
@@ -2503,6 +2596,13 @@
           "value": 10,
           "confidence": "VERIFIED"
         },
+        "repairTime": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "u01E",
+          "field": "reptm",
+          "value": 50,
+          "confidence": "VERIFIED"
+        },
         "requirement.1.needLevel": {
           "file": "src/lib/tve4/config.ts",
           "objectId": "reveal",
@@ -2551,6 +2651,7 @@
         "income.2": 9,
         "income.3": 17,
         "income.4": 1250,
+        "repairTime": 50,
         "heal": 0.06,
         "auraRange": 500
       },
@@ -2840,6 +2941,13 @@
             "confidence": "INFERRED"
           }
         ],
+        "repairTime": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "u03D",
+          "field": "reptm",
+          "value": 50,
+          "confidence": "VERIFIED"
+        },
         "heal": {
           "file": "data/game/game-rules.json",
           "objectId": "trollHouse",
@@ -2862,6 +2970,7 @@
         "buildTime": 2,
         "gold": 64,
         "hp": 50,
+        "repairTime": 50,
         "gold.1": 256,
         "hp.1": 100,
         "gold.2": 1024,
@@ -2898,6 +3007,13 @@
           "file": "Units/UnitBalance.slk",
           "objectId": "u018",
           "field": "HP",
+          "value": 50,
+          "confidence": "VERIFIED"
+        },
+        "repairTime": {
+          "file": "Units/UnitBalance.slk",
+          "objectId": "u018",
+          "field": "reptm",
           "value": 50,
           "confidence": "VERIFIED"
         },
@@ -3808,13 +3924,16 @@
       "id": "entangle",
       "values": {
         "id": "A068",
-        "cooldown": 3,
+        "cooldown": 45,
         "originalCooldown": 45,
         "duration": 3,
         "runtimeDuration": 3,
         "manaCost": 40,
         "defaultDuration": 3,
-        "originalCastRange": 400
+        "originalCastRange": 400,
+        "targetRadius": 340,
+        "requiresVisible": true,
+        "dummyAbilityId": "A06M"
       },
       "source": {
         "file": "Units/AbilityData.slk",
@@ -3826,23 +3945,15 @@
         "priority": 10
       },
       "evidence": {
-        "cooldown": [
-          {
-            "file": "Units/AbilityData.slk",
-            "objectId": "A068",
-            "field": "Cool1",
-            "level": 1,
-            "value": 45,
-            "confidence": "INFERRED",
-            "priority": 10
-          },
-          {
-            "file": "data/game/game-rules.json",
-            "objectId": "entangle",
-            "field": "cooldown",
-            "confidence": "INFERRED"
-          }
-        ],
+        "cooldown": {
+          "file": "Units/AbilityData.slk",
+          "objectId": "A068",
+          "field": "Cool1",
+          "level": 1,
+          "value": 45,
+          "confidence": "VERIFIED",
+          "priority": 10
+        },
         "originalCooldown": {
           "file": "Units/AbilityData.slk",
           "objectId": "A068",
@@ -3887,6 +3998,20 @@
           "objectId": "A068",
           "field": "Rng1",
           "value": 400,
+          "confidence": "VERIFIED"
+        },
+        "targetRadius": {
+          "file": "war3map.j",
+          "field": "s__A068SkillHandler_executeSkill/GroupEnumUnitsInRangeOfLoc",
+          "jassLine": 74156,
+          "value": 340,
+          "confidence": "VERIFIED"
+        },
+        "requiresVisible": {
+          "file": "war3map.j",
+          "field": "cA068SkillHandler__isFilterUnitPlayerEnermyAndVisibleCB/IsUnitVisible",
+          "jassLine": 74102,
+          "value": true,
           "confidence": "VERIFIED"
         }
       }
@@ -4306,6 +4431,987 @@
           "confidence": "VERIFIED",
           "priority": 10
         }
+      }
+    },
+    {
+      "id": "wallInvuln",
+      "values": {
+        "id": "A06B",
+        "cooldown": 180,
+        "originalCooldown": 180,
+        "duration": 10,
+        "runtimeDuration": 10,
+        "manaCost": 10,
+        "defaultDuration": 3
+      },
+      "source": {
+        "file": "Units/AbilityData.slk",
+        "objectId": "A06B",
+        "field": "Cool1",
+        "level": 1,
+        "value": 180,
+        "confidence": "VERIFIED",
+        "priority": 10
+      },
+      "evidence": {
+        "cooldown": [
+          {
+            "file": "Units/AbilityData.slk",
+            "objectId": "A06B",
+            "field": "Cool1",
+            "level": 1,
+            "value": 180,
+            "confidence": "VERIFIED",
+            "priority": 10
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 4,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 5,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 6,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 7,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 8,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 9,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 10,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 11,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 12,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 13,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 14,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 15,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 16,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 17,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 18,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 19,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 20,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 21,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 22,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 23,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 24,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 25,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 26,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 27,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 28,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          }
+        ],
+        "originalCooldown": [
+          {
+            "file": "Units/AbilityData.slk",
+            "objectId": "A06B",
+            "field": "Cool1",
+            "level": 1,
+            "value": 180,
+            "confidence": "VERIFIED",
+            "priority": 10
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 4,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 5,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 6,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 7,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 8,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 9,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 10,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 11,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 12,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 13,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 14,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 15,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 16,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 17,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 18,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 19,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 20,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 21,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 22,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 23,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 24,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 25,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 26,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 27,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "acdn",
+            "level": 28,
+            "value": 180,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          }
+        ],
+        "duration": {
+          "file": "war3map.j",
+          "field": "s__A06BSkillHandler_executeSkill/local real duration=10.00",
+          "jassLine": 74250,
+          "value": 10,
+          "confidence": "VERIFIED"
+        },
+        "runtimeDuration": {
+          "file": "war3map.j",
+          "field": "s__A06BSkillHandler_executeSkill/local real duration=10.00",
+          "jassLine": 74250,
+          "value": 10,
+          "confidence": "VERIFIED"
+        },
+        "manaCost": [
+          {
+            "file": "Units/AbilityData.slk",
+            "objectId": "A06B",
+            "field": "Cost1",
+            "level": 1,
+            "value": 10,
+            "confidence": "VERIFIED",
+            "priority": 10
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 4,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 5,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 6,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 7,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 8,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 9,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 10,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 11,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 12,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 13,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 14,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 15,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 16,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 17,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 18,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 19,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 20,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 21,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 22,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 23,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 24,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 25,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 26,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 27,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "amcs",
+            "level": 28,
+            "value": 10,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          }
+        ],
+        "defaultDuration": [
+          {
+            "file": "Units/AbilityData.slk",
+            "objectId": "A06B",
+            "field": "HeroDur1",
+            "level": 1,
+            "value": 3,
+            "confidence": "VERIFIED",
+            "priority": 10
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 4,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 5,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 6,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 7,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 8,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 9,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 10,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 11,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 12,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 13,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 14,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 15,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 16,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 17,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 18,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 19,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 20,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 21,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 22,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 23,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 24,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 25,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 26,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 27,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          },
+          {
+            "file": "war3map.w3a",
+            "objectId": "A06B",
+            "field": "ahdu",
+            "level": 28,
+            "value": 3,
+            "priority": 20,
+            "confidence": "VERIFIED"
+          }
+        ]
       }
     }
   ],
@@ -7536,11 +8642,6 @@
       "blocking": false
     },
     {
-      "id": "hero.troll.range",
-      "reason": "保留当前网页换算值；SLK 到网页像素/碰撞半径的语义尚未完整证明。",
-      "blocking": false
-    },
-    {
       "id": "hero.troll.radius",
       "reason": "保留当前网页换算值；SLK 到网页像素/碰撞半径的语义尚未完整证明。",
       "blocking": false
@@ -7638,11 +8739,6 @@
     {
       "id": "skill.haste.duration",
       "reason": "网页持续时间与原版默认/JASS 覆盖不同；为保持运行行为标记 INFERRED。",
-      "blocking": true
-    },
-    {
-      "id": "skill.entangle.cooldown",
-      "reason": "网页冷却 3 秒与原版默认 45 秒不同；为保持运行行为标记 INFERRED。",
       "blocking": true
     },
     {
@@ -9072,11 +10168,6 @@
     },
     {
       "id": "building.tower.range.7",
-      "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
-      "blocking": false
-    },
-    {
-      "id": "building.tower.interval",
       "reason": "该数值/布尔字段缺少完整的原版来源证明；保留当前运行值并标记 INFERRED。",
       "blocking": false
     },

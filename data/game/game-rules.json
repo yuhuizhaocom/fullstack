@@ -1036,16 +1036,15 @@
     ]
   },
   "repair": {
-    "source": "Units/AbilityData.slk A02R DataB1 + CampaignAbilityStrings.txt:14971; classic.battle.net/war3/basics/buildings.shtml Repair",
-    "note": "VERIFIED：基础修理工 A02R 修理时间比率 4，修理不消耗资源；INFERRED：网页按钮抽象为基础修理工，按 maxHP/(buildTime*4) 持续恢复。",
+    "source": "Units/AbilityData.slk A06A DataA1/Dur1/Rng1",
+    "note": "VERIFIED：精灵英雄使用 A06A 修理，默认时间比率 1，施法距离 60 源单位；建筑修理时间取 UnitBalance.slk reptm。",
     "timeRatios": [
-      4,
-      2.5,
-      1.5,
       1,
-      0.5,
-      0.25
-    ]
+      1,
+      0.8,
+      0.8
+    ],
+    "castRange": 60
   },
   "scenarios": {
     "note": "PROPOSED：按用户描述的两条核心玩法线",

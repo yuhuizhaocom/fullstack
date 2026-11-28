@@ -43,6 +43,8 @@ export interface RuleFile {
     hp: number | number[];
     income?: number | number[];
     woodIncome?: number | number[];
+    repairTime?: number;
+    sight?: number | number[];
     damage?: number | number[];
     revealRange?: number;
     heal?: number;
@@ -90,6 +92,7 @@ export interface RuleFile {
   };
   repair: {
     timeRatios: number[];
+    castRange: number;
   };
   scenarios: {
     elf: {
@@ -131,6 +134,8 @@ function mvpBuildings(): RuleFile["buildings"] {
     const hp = indexedValues(record.id, "hp", old?.hp ?? []);
     const income = indexedValues(record.id, "income", old?.income ?? 0);
     const woodIncome = indexedValues(record.id, "woodIncome", old?.woodIncome ?? 0);
+    const repairTime = indexedValues(record.id, "repairTime", []);
+    const sight = indexedValues(record.id, "sight", []);
     const damage = indexedValues(record.id, "damage", old?.damage ?? 0);
     const value = (field: string) => record.values[field];
     return [record.id, {
@@ -140,6 +145,8 @@ function mvpBuildings(): RuleFile["buildings"] {
       hp: hp.length === 1 ? hp[0] : hp,
       ...(Object.keys(record.values).some((key) => key.startsWith("income")) ? { income: income.length === 1 ? income[0] : income } : {}),
       ...(Object.keys(record.values).some((key) => key.startsWith("woodIncome")) ? { woodIncome: woodIncome.length === 1 ? woodIncome[0] : woodIncome } : {}),
+      ...(repairTime.length ? { repairTime: repairTime[0] } : {}),
+      ...(sight.length ? { sight: sight.length === 1 ? sight[0] : sight } : {}),
       ...(Object.keys(record.values).some((key) => key.startsWith("damage")) ? { damage: damage.length === 1 ? damage[0] : damage } : {}),
       ...(typeof value("revealRange") === "number" ? { revealRange: Number(value("revealRange")) } : {}),
       ...(typeof value("heal") === "number" ? { heal: Number(value("heal")) } : {}),
@@ -156,7 +163,7 @@ function mvpHeroes(): RuleFile["heroes"] {
       hp: ruleNumber(record.id, "hp"),
       speed: ruleNumber(record.id, "speed"),
       attack: ruleNumber(record.id, "damage"),
-      range: typeof record.values.worldRange === "number" ? Number(record.values.worldRange) : old.range,
+      range: ruleNumber(record.id, "range"),
       interval: ruleNumber(record.id, "interval"),
       radius: ruleNumber(record.id, "radius"),
     }];

@@ -190,13 +190,14 @@ test("repair starts a continuous source-rate process instead of instant healing"
   hero.y = wall.y;
   const before = wall.hp;
   const ratio = REPAIR_RULE.timeRatios[0];
-  const rate = wall.maxHp / (BUILDINGS.wall.buildTime * ratio);
+  const rate = wall.maxHp / (BUILDINGS.wall.repairTime! * ratio);
+  state.time = -60;
 
   assert.equal(repairWall(state, "wall"), true);
   assert.equal(wall.hp, before, "issuing repair must not instantly restore HP");
   run(state, 1);
   assert.ok(Math.abs(wall.hp - (before + rate)) < 1e-6, `repair rate should be ${rate} HP/s`);
-  run(state, BUILDINGS.wall.buildTime * ratio);
+  run(state, BUILDINGS.wall.repairTime! * ratio);
   assert.equal(wall.hp, wall.maxHp);
 });
 

@@ -11,8 +11,8 @@ export function heroVisionRadius(hero: Hero): number {
   return ruleNumber(hero.faction, "originalSight") * RULES.scale * HERO_VISION_SCALE;
 }
 
-export function buildingVisionRadius(range = 0): number {
-  return Math.max(BUILDING_VISION_TILES * TILE, range);
+export function buildingVisionRadius(range = 0, sight = 0): number {
+  return Math.max(BUILDING_VISION_TILES * TILE, range, sight * RULES.scale);
 }
 
 export function fogDisplaySize(

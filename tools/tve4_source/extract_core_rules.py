@@ -43,6 +43,7 @@ SKILLS = {
     "entangle": ("A068", 45, 3), "silence": ("A069", 60, 5),
     "windwalk": ("A061", 30, 20), "berserk": ("A06T", 120, 10),
     "teleport": ("A06W", 45, 2), "farSight": ("A062", 40, 15),
+    "wallInvuln": ("A06B", 180, 10),
 }
 SHOPS = ["u03I", "u03J", "u03K", "u03L", "u03M", "u03N", "o003"]
 REQUIREMENTS = {
@@ -229,7 +230,7 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
     for record in w3a_records:
         require(record["id"] not in w3a, f"Duplicate W3A object: {record['id']}")
         w3a[record["id"]] = record
-    require([aid for aid in w3a if aid in {v[0] for v in SKILLS.values()}] == ["A067"], "A067 must be the only core skill with W3A overrides")
+    require({aid for aid in w3a if aid in {v[0] for v in SKILLS.values()}} == {"A067", "A06B"}, "Core skill W3A overrides must be A067 and A06B")
     unknowns: list[dict] = []
 
     mode_sources = {
@@ -245,16 +246,18 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
     hero_records = []
     for key, object_id in HEROES.items():
         old = legacy["heroes"][key]
-        runtime_ranges = {"elf": 32, "troll": 34}
+        runtime_ranges = {"elf": 32}
         parsed_hp = number(balance[object_id]["HP"])
         parsed_interval = number(weapons[object_id]["cool1"])
+        original_range = number(weapons[object_id]["rangeN1"])
+        runtime_range = original_range * number(legacy["scale"]) if key == "troll" else runtime_ranges[key]
         hp_sources = [slk_evidence("UnitBalance.slk", object_id, "HP", value=parsed_hp)]
         interval_sources = [slk_evidence("UnitWeapons.slk", object_id, "cool1", value=parsed_interval)]
         if parsed_hp != old["hp"]:
             hp_sources = [slk_evidence("UnitBalance.slk", object_id, "HP", "INFERRED"), legacy_evidence(key, "hp")]
         if parsed_interval != old["interval"]:
             interval_sources = [slk_evidence("UnitWeapons.slk", object_id, "cool1", "INFERRED"), legacy_evidence(key, "interval")]
-        values = {"objectId": object_id, "hp": old["hp"], "damage": old["attack"], "interval": old["interval"], "range": runtime_ranges[key], "worldRange": old["range"], "speed": old["speed"], "radius": old["radius"], "mana": number(balance[object_id]["manaN"]), "manaRegen": number(balance[object_id]["regenMana"]), "originalSight": number(balance[object_id]["sight"]), "originalNightSight": number(balance[object_id]["nsight"]), "originalHp": parsed_hp, "originalSpeed": number(balance[object_id]["spd"]), "originalRange": number(weapons[object_id]["rangeN1"])}
+        values = {"objectId": object_id, "hp": old["hp"], "damage": old["attack"], "interval": old["interval"], "range": runtime_range, "worldRange": old["range"], "speed": old["speed"], "radius": old["radius"], "mana": number(balance[object_id]["manaN"]), "manaRegen": number(balance[object_id]["regenMana"]), "originalSight": number(balance[object_id]["sight"]), "originalNightSight": number(balance[object_id]["nsight"]), "originalHp": parsed_hp, "originalSpeed": number(balance[object_id]["spd"]), "originalRange": original_range}
         sources = {
             "hp": hp_sources,
             "interval": interval_sources,
@@ -264,15 +267,20 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
             "originalNightSight": [slk_evidence("UnitBalance.slk", object_id, "nsight", value=number(balance[object_id]["nsight"]))],
             "originalHp": [slk_evidence("UnitBalance.slk", object_id, "HP", value=parsed_hp)],
             "originalSpeed": [slk_evidence("UnitBalance.slk", object_id, "spd", value=number(balance[object_id]["spd"]))],
-            "originalRange": [slk_evidence("UnitWeapons.slk", object_id, "rangeN1", value=number(weapons[object_id]["rangeN1"]))],
+            "originalRange": [slk_evidence("UnitWeapons.slk", object_id, "rangeN1", value=original_range)],
             "speed": [slk_evidence("UnitBalance.slk", object_id, "spd", "INFERRED"), legacy_evidence(key, "speed")],
-            "range": [evidence("src/lib/tve4/config.ts", "INFERRED", objectId=key, field="range"), legacy_evidence(key, "range")],
+            "range": [slk_evidence("UnitWeapons.slk", object_id, "rangeN1", value=runtime_range)] if key == "troll" else [evidence("src/lib/tve4/config.ts", "INFERRED", objectId=key, field="range"), legacy_evidence(key, "range")],
             "worldRange": [legacy_evidence(key, "range")],
             "damage": [slk_evidence("UnitWeapons.slk", object_id, "dmgplus1/dmgpt1", "INFERRED"), legacy_evidence(key, "attack")],
             "radius": [slk_evidence("UnitData.slk", object_id, "collision", "INFERRED"), legacy_evidence(key, "radius")],
         }
+        if key == "troll":
+            sources["range"][0]["sourceValue"] = original_range
+            sources["range"][0]["conversion"] = "sourceRange / scale"
         hero_records.append(make_record(key, values, sources))
         for field in ["damage", "speed", "range", "radius"]:
+            if key == "troll" and field == "range":
+                continue
             add_unknown(unknowns, f"hero.{key}", field, "保留当前网页换算值；SLK 到网页像素/碰撞半径的语义尚未完整证明。")
 
     building_records = []
@@ -309,6 +317,10 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
                             add_unknown(unknowns, f"building.{key}", out_field, "SLK 空费用按当前运行契约视为 0；空值到零的转换标记 INFERRED。")
                 else:
                     sources[out_field] = [slk_evidence("UnitBalance.slk", object_id, field, "INFERRED"), legacy_evidence(key, out_field)]
+        repair_time = balance[object_id].get("reptm")
+        if repair_time is not None:
+            values["repairTime"] = number(repair_time)
+            sources["repairTime"] = [slk_evidence("UnitBalance.slk", object_id, "reptm", value=number(repair_time))]
         if key == "market":
             # These two upgrades have no UnitBalance row and remain the current
             # runtime contract; they are not promoted to VERIFIED.
@@ -327,8 +339,12 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
             for i, value in enumerate(ranges):
                 values[f"range.{i}"] = value
                 sources[f"range.{i}"] = [config_evidence(key, f"range.{i}")]
-            values["interval"] = 1.5
-            sources["interval"] = [legacy_evidence(key, "interval")]
+            tower_sights = [number(balance["h000"]["sight"])] + [number(balance["h001"]["sight"])] * 7
+            for i, value in enumerate(tower_sights):
+                values[f"sight.{i}"] = value
+                sources[f"sight.{i}"] = [slk_evidence("UnitBalance.slk", "h000" if i == 0 else "h001", "sight", value=value)]
+            values["interval"] = number(weapons["h000"]["cool1"])
+            sources["interval"] = [slk_evidence("UnitWeapons.slk", "h000", "cool1", value=number(weapons["h000"]["cool1"]))]
             values["ultimateObjectId"] = "h096"
         if key == "reveal":
             values["revealRange"] = old["revealRange"]
@@ -374,9 +390,9 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
     add_unknown(unknowns, "building.lumberCamp", "web-adaptation", "精灵采木场是用户指定的网页单机适配建筑；三档累计价格为 2000/3600/18000 金，产量为 1/2/10 木每秒，HP 以 ewsp 的 120 为基础扩展。")
 
     skill_records = []
-    runtime_cd = {"blink": 25, "haste": 30, "entangle": 3, "silence": 60, "windwalk": 30, "berserk": 120, "teleport": 45, "farSight": 25}
+    runtime_cd = {"blink": 25, "haste": 30, "entangle": 45, "silence": 60, "windwalk": 30, "berserk": 120, "teleport": 45, "farSight": 25, "wallInvuln": 180}
     for key, (object_id, original_cd, duration) in SKILLS.items():
-        hero_id = "H010" if key in ["blink", "haste", "entangle", "silence"] else "H020"
+        hero_id = "H010" if key in ["blink", "haste", "entangle", "silence", "wallInvuln"] else "H020"
         require(object_id in abilities[hero_id]["abilList"].split(","), f"{object_id} is not an ability of {hero_id}")
         row = ability_data[object_id]
         duration_field = "HeroDur1" if row.get("HeroDur1") is not None else "Dur1" if row.get("Dur1") is not None else None
@@ -405,6 +421,18 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
             cast_range = number(row["Rng1"])
             values["originalCastRange"] = cast_range
             sources["originalCastRange"] = [slk_evidence("AbilityData.slk", object_id, "Rng1", value=cast_range)]
+        if key == "entangle":
+            values["targetRadius"] = 340
+            sources["targetRadius"] = [jass_function_evidence(jass_lines, "s__A068SkillHandler_executeSkill", "GroupEnumUnitsInRangeOfLoc", "s__A068SkillHandler_executeSkill/GroupEnumUnitsInRangeOfLoc", 340)]
+            values["requiresVisible"] = True
+            sources["requiresVisible"] = [jass_function_evidence(jass_lines, "cA068SkillHandler__isFilterUnitPlayerEnermyAndVisibleCB", "IsUnitVisible", "cA068SkillHandler__isFilterUnitPlayerEnermyAndVisibleCB/IsUnitVisible", True)]
+            values["dummyAbilityId"] = "A06M"
+        if key == "wallInvuln":
+            jass_duration = jass_function_evidence(jass_lines, "s__A06BSkillHandler_executeSkill", "local real duration=10.00", "s__A06BSkillHandler_executeSkill/local real duration=10.00", 10)
+            values["duration"] = 10
+            values["runtimeDuration"] = 10
+            sources["duration"] = [jass_duration]
+            sources["runtimeDuration"] = [jass_duration]
         if key == "blink":
             blink_distance = number(row["DataA1"])
             values["originalBlinkDistance"] = blink_distance
@@ -423,7 +451,7 @@ def extract(jass_lines: list[str], extracted: Path) -> dict:
             original_duration_layers.append(jass_duration)
             values["originalDuration"] = resolve_layer(original_duration_layers)
             sources["originalDuration"] = original_duration_layers
-        if key in ["entangle", "farSight"]:
+        if key == "farSight":
             add_unknown(unknowns, f"skill.{key}", "cooldown", f"网页冷却 {runtime_cd[key]} 秒与原版默认 {original_cd} 秒不同；为保持运行行为标记 INFERRED。", True)
         if key in ["haste", "farSight"]:
             add_unknown(unknowns, f"skill.{key}", "duration", "网页持续时间与原版默认/JASS 覆盖不同；为保持运行行为标记 INFERRED。", True)
