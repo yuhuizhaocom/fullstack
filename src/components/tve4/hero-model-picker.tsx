@@ -16,7 +16,7 @@ import type { Faction } from "@/lib/tve4/types";
 interface HeroModelPickerProps {
   faction: Faction;
   selectedModelId: string | null;
-  onConfirm: (modelId: string | null) => void;
+  onConfirm: (modelId: string) => void;
   onBack: () => void;
 }
 
@@ -45,7 +45,7 @@ export function HeroModelPicker({ faction, selectedModelId, onConfirm, onBack }:
         if (cancelled) return;
         setModels(entries);
         setSelectedId((current) => {
-          if (current && entries.some((entry) => entry.id === current && entry.group === faction)) return current;
+          if (current && heroModelsForFaction(entries, faction).some((entry) => entry.id === current)) return current;
           return defaultHeroModel(entries, faction)?.id ?? null;
         });
       })
@@ -97,7 +97,7 @@ export function HeroModelPicker({ faction, selectedModelId, onConfirm, onBack }:
           <div className="relative h-52 shrink-0 border-b border-white/10 bg-[radial-gradient(circle_at_50%_40%,#26323a_0%,#11181d_55%,#070b0e_100%)]">
             <canvas ref={canvasRef} data-preview-ready={previewReady ? "true" : "false"} className="h-full w-full touch-none" />
             {!selectedEntry ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-[#11181d] text-xs text-white/45">使用游戏内默认几何英雄</div>
+              <div className="absolute inset-0 flex items-center justify-center bg-[#11181d] text-xs text-white/45">正在加载可选模型…</div>
             ) : !previewReady ? (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-white/45">正在加载模型…</div>
             ) : null}
@@ -111,13 +111,6 @@ export function HeroModelPicker({ faction, selectedModelId, onConfirm, onBack }:
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {loading ? <div className="py-8 text-center text-xs text-white/50">正在加载模型清单…</div> : null}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              <button
-                className={`rounded-lg border px-3 py-2 text-left text-xs ${selectedId === null ? "border-emerald-400 bg-emerald-900/40" : "border-white/10 bg-white/5"}`}
-                onClick={() => setSelectedId(null)}
-              >
-                <div className="font-semibold">默认几何</div>
-                <div className="mt-1 text-[10px] text-white/45">轻量占位外观</div>
-              </button>
               {candidates.map((entry) => (
                 <button
                   key={entry.id}
@@ -141,8 +134,10 @@ export function HeroModelPicker({ faction, selectedModelId, onConfirm, onBack }:
           <div className="border-t border-white/10 p-3">
             <button
               className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold disabled:opacity-40"
-              disabled={loading || Boolean(error)}
-              onClick={() => onConfirm(selectedId)}
+              disabled={loading || Boolean(error) || !selectedEntry}
+              onClick={() => {
+                if (selectedEntry) onConfirm(selectedEntry.id);
+              }}
             >
               使用此外观进入地图
             </button>

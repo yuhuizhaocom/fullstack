@@ -9,10 +9,11 @@ import {
   hasCompleteActions,
   heroModelsForFaction,
   modelActionFor,
+  pickHeroModel,
 } from "../../src/lib/tve4/model-catalog";
 import { createHeroModelView, type HeroModelCamera } from "../../src/lib/tve4/render/hero-model-viewer";
 import { calibrateHeroModelAnchor, filterHeroModelGeosets, visibleModelBounds } from "../../src/lib/tve4/render/hero-model-geosets";
-import { createGame, stateHash } from "../../src/lib/tve4/engine";
+import { createGame, stateHash, stepGame } from "../../src/lib/tve4/engine";
 import type { ModelDemoEntry } from "../../src/lib/tve4-model-demo/manifest";
 import type { ActionKey } from "../../src/lib/tve4-model-demo/sequences";
 import type { ModelGroup } from "../../src/lib/tve4-model-demo/catalog";
@@ -104,6 +105,34 @@ test("default hero model prefers complete actions and original textures", () => 
   assert.equal(defaultHeroModel([model("m030", 30, "troll", ["stand", "walk", "attack", "death"], false)], "troll"), null);
   assert.equal(defaultHeroModel([model("m004", 4, "troll", ["stand", "walk", "attack", "death"], false)], "troll")?.id, "m004");
   assert.equal(defaultHeroModel([], "elf"), null);
+});
+
+test("AI skin picker uses only the faction whitelist and clamps random boundaries", () => {
+  const models = [
+    model("m001", 1, "elf"),
+    model("m004", 4, "troll"),
+    model("m005", 5, "troll"),
+    model("m015", 15, "troll"),
+    model("m030", 30, "troll"),
+  ];
+  assert.equal(pickHeroModel(models, "troll", () => 0)?.id, "m004");
+  assert.equal(pickHeroModel(models, "troll", () => 0.999)?.id, "m015");
+  assert.equal(pickHeroModel(models, "troll", () => 1)?.id, "m015");
+  assert.equal(pickHeroModel(models, "elf", () => 0), null);
+  assert.equal(pickHeroModel([], "troll", () => 0), null);
+});
+
+test("AI appearance does not consume simulation RNG or change the state hash", () => {
+  const first = createGame({ mapId: 0, seed: 77, testMode: true, playerFaction: "elf", aiHeroModelId: "m004" });
+  const second = createGame({ mapId: 0, seed: 77, testMode: true, playerFaction: "elf", aiHeroModelId: "m015" });
+  assert.equal(first.appearance.aiHeroModelId, "m004");
+  assert.equal(second.appearance.aiHeroModelId, "m015");
+  for (let i = 0; i < 30 * 10; i++) {
+    stepGame(first, 1 / 30, { mx: 0, my: 0 });
+    stepGame(second, 1 / 30, { mx: 0, my: 0 });
+  }
+  assert.equal(first.rng.state, second.rng.state);
+  assert.equal(stateHash(first), stateHash(second));
 });
 
 test("model action selection falls back when an animation is missing", () => {

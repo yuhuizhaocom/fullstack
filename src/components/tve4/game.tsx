@@ -722,7 +722,7 @@ export function Tve4Game() {
       playerFaction: stateRef.current?.playerFaction ?? startFaction ?? "elf",
       heroModelId: stateRef.current?.appearance.heroModelId ?? selectedModelId,
     });
-    stageRef.current?.updateSession(next.session);
+    stageRef.current?.updateSession(next.session, next.appearance);
     stateRef.current = next;
     selectedRef.current = null;
     moveTargetRef.current = null;

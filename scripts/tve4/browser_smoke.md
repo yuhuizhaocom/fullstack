@@ -82,21 +82,21 @@
 
 ## 英雄模型接入与地图净化（Chrome DevTools）
 
-- [x] 开局流程变为“阵营 → 英雄模型 → 地图”：精灵仅显示 6 个原始贴图模型（m022/m024/m025/m027/m028/m029，已移除 m020），巨魔仅显示 m004/m005/m015/m016/m017；保留“默认几何”选项。
+- [x] 开局流程变为“阵营 → 英雄模型 → 地图”：初始精灵 6 个模型、巨魔 5 个模型；当前白名单已扩展为精灵 17 个、巨魔 7 个，并移除“默认几何”选项（见文末 AI 皮肤回归）。
 - [x] 模型预览：精灵默认选 `m020 Kael`，`data-preview-ready=true`；原始贴图/灰模、动作完整状态可见。
 - [x] 玩家英雄模型：选择 `m022 Oldelf` 进入地图后 Phaser canvas 记录 `data-hero-model-id=m022`、`data-hero-model-ready=true`，额外透明 MDX canvas 随玩家移动；摇杆移动时动作 `stand → walk → stand`。
 - [x] 巨魔模型：选择 `m004 Mr.War3_ZhangfeiZ` 可正常进入地图，`data-hero-model-ready=true`，无模型错误。
-- [x] 默认几何：选择“默认几何”进入地图后只有 Phaser canvas，无 `data-hero-model-ready`，保持轻量占位。
+- [x] 默认几何：历史版本曾提供该入口；当前版本已删除，玩家必须选择真实白名单模型，AI 也必须使用真实模型。
 - [x] 地图净化：`data-map-style=flat`、`data-doodads-visible=false`；统一底色，不再绘制地形条纹、树木/岩石、网格或阻挡色块；只保留 WPM 阻挡区与可通行区的交界线（地图 1 为 18,248 段），不填色，墙体/悬崖边界清晰可见。
 - [x] 底色与墙体对比：背景改为柔和灰绿 `#36413c`，墙体填充改为浅石色 `#eadbb8`，加深色外框、亮色内框和低透明度暖色外晕；实际建造石墙后截图中墙体清晰可辨，不刺眼。
 - [x] 迷雾改为径向渐变：玩家周围柔和过渡，不再出现硬边方形黑框；全图模式仍关闭迷雾。
 - [x] 英雄模型缩放锚点：改用 Phaser 相机视图矩阵 `getViewMatrix(true).transformPoint` 定位；缩放 1.150 与 1.785 时，模型中心与玩家屏幕坐标偏差均小于 0.02px，缩放不再偏移。
-- [x] 英雄模型选择：点击阵营后进入独立选择页；精灵 6 个原始贴图稳定编号模型（不含 m020），巨魔 5 个指定模型（m004/m005/m015/m016/m017），显示原始贴图/灰模与动作完整性，默认优先“动作完整 + 原始贴图”。
-- [x] 模型预览：选择页使用 `/tve4-model-demo` 的 MDX 查看器实时播放；默认几何选项不创建模型 canvas。
+- [x] 英雄模型选择：点击阵营后进入独立选择页；初始精灵 6 个、巨魔 5 个，当前为精灵 17 个、巨魔 7 个，显示原始贴图/灰模与动作完整性，默认优先“动作完整 + 原始贴图”。
+- [x] 模型预览：选择页使用 `/tve4-model-demo` 的 MDX 查看器实时播放；当前版本没有默认几何选项。
 - [x] 剩余精灵模型逐模实测：m022/m024/m025/m027/m028/m029 均 `groundError=0`、血条距模型顶部 `10px`；m029 缩放 1.150→1.881 后仍保持 `groundError=0`、`barGap=10`。
 - [x] 模型地板清理：m025 隐藏 geoset 0、m028 隐藏 geoset 12、m029 隐藏 geoset 0、m015 隐藏 geoset 0、m016 隐藏 geoset 0、m017 隐藏 geoset 13；锚点改为按可见 geoset 重新计算，截图确认 6 个模型的地板均已消失。
 - [x] 巨魔逐模实测：m004/m005/m015/m016/m017 均 `groundError=0`、血条距模型顶部 `10px`；m015/m016/m017 地板消失后锚点仍准确。
-- [x] 模型外观不影响模拟：`heroModelId` 不进入 `stateHash`；单测验证同种子下默认几何与 MDX 外观状态哈希一致。
+- [x] 模型外观不影响模拟：`heroModelId/aiHeroModelId` 不进入 `stateHash`；单测验证同种子下不同玩家/AI 外观的 RNG 与状态哈希一致。
 - [x] 竖屏/横屏：模型覆盖层在 `390x844` 与 `844x390` 均保持在 viewport 内；Console error/warn 为 0。
 - [x] 自动化补充：`scripts/tve4/ai_vision.test.ts` 5 项通过，包括“视野外不可见”“已探索建筑记忆”“隐身/显影/暴露规则”“真实地图 3 AI 到达并结束对局”。
 
@@ -145,3 +145,19 @@
 - [x] WebGL alpha 边界复核：初始可见像素范围 `x=31..61, y=19..60`，放大后 `x=58..97, y=30..94`；血条与落地均按真实像素边界校准，不再使用包含长杆的几何顶部。
 - [x] MDX 几何审计：m022 共 5 个可见 geoset，bounds `[-201.1,-110.4,-51.7] .. [105.4,119.7,456.3]`，地板候选为空；无需新增 `HIDDEN_GEOSETS` 规则。
 - [x] 自动化回归：`hero-model.test.ts` 新增 m022 像素锚点用例，先确认失败后通过；其他模型保持原锚点计算不变。
+
+## AI 随机皮肤与双模型覆盖层（Chrome DevTools）
+
+- [x] `390×844` 真实移动端页面：精灵选择页 17 个白名单模型、巨魔选择页 7 个白名单模型；两页均无“默认几何”，未选模型时确认按钮禁用。
+- [x] 精灵玩家对局：AI 从巨魔白名单抽取 `m015`；Phaser canvas 记录 `data-ai-hero-model-id/ready/visible`，独立透明 canvas 在视野内显示、离开视野后 `display:none` 且清空位置，`pointer-events=none`。
+- [x] 巨魔玩家对局：AI 从精灵白名单抽取 `m022`；强制随机边界重抽得到中立模型 `m056`，玩家/AI 队伍色分别为 `#e07a4f/#62c77b`，证明按英雄阵营而非 manifest 分组染色。
+- [x] 复活复用：同一局玩家动作 `stand → death → stand`，AI 模型 ID 始终为 `m004`，未重新抽取。
+- [x] 重开重抽：测试中固定视觉随机源，AI ID 从 `m015` 变为 `m004`；旧 canvas 已断开，页面始终保持 1 个 Phaser canvas + 2 个模型 canvas。
+- [x] 实现检查：AI 隐藏时暂停动画且不显示迷雾外位置；狼和大法师不使用 AI 基础英雄覆盖层；血条读取各自模型锚点。
+- [x] 自动化：`hero-model.test.ts` 9 项通过，覆盖白名单、随机边界、AI/玩家外观不消耗模拟 RNG、不改变状态哈希；TypeScript 与 `git diff --check` 通过。
+- [x] `844×390` 横屏复核：玩家模型 `138×138` 且完整位于 viewport 内，隐藏 AI 为 `0×0/display:none`；两覆盖层均不拦截指针，canvas 总数保持 3。
+- [x] 渲染暂停复核：AI 可见时 `raf≠0/playing=true`，玩家死亡导致 AI 离开视野后 `raf=0/playing=false/display=none`，隐藏期间不再执行 WebGL 渲染循环。
+- [x] 构造失败清理复核：测试中强制 AI canvas 的 WebGL 构造抛错，错误写入 `data-ai-hero-model-error`；失败 canvas 被移除，页面仅保留 Phaser canvas 与正常玩家模型 canvas，无孤立 canvas。
+- [x] 加载期间动作状态复核：延迟 MDX 请求 1.2 秒并重开，修复前 `ready=null` 时已缓存 `action=attack`；增加 ready 闸门后 `ready=null/action=null`，模型就绪后按当前英雄状态首次设置动作，不再停留 stand。
+- [x] 贴图加载竞态复核：延迟 BLP/PNG 1.2 秒并重开，修复前 `datasetReady=null` 但 `viewerReady=true/action=attack`；改为完整加载后才置 ready 后，加载期间 `viewerReady=false/action=null/raf=0`，加载完成后恢复就绪。
+- [x] 浏览器 Console error/warn 为 0。

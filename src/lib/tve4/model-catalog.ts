@@ -42,6 +42,13 @@ export function defaultHeroModel(models: ModelDemoEntry[], faction: Faction): Mo
     ?? null;
 }
 
+export function pickHeroModel(models: ModelDemoEntry[], faction: Faction, randomUnit: () => number): ModelDemoEntry | null {
+  const candidates = heroModelsForFaction(models, faction);
+  if (!candidates.length) return null;
+  const index = Math.max(0, Math.min(candidates.length - 1, Math.floor(randomUnit() * candidates.length)));
+  return candidates[index];
+}
+
 export function actionSequenceIndex(entry: ModelDemoEntry, action: ActionKey): number | null {
   return entry.actions[action]?.index ?? null;
 }

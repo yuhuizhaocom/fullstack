@@ -25,13 +25,13 @@ import {
 import { HeroModelViewer } from "@/lib/tve4/render/hero-model-viewer";
 import { heroModelOrientation } from "@/lib/tve4/render/hero-model-facing";
 import { buildPathingBoundarySegments } from "@/lib/tve4/render/pathing-boundary";
-import { actionSequenceIndex, loadHeroModelManifest, modelActionFor } from "@/lib/tve4/model-catalog";
+import { actionSequenceIndex, heroModelsForFaction, loadHeroModelManifest, modelActionFor, pickHeroModel } from "@/lib/tve4/model-catalog";
 import type { ModelDemoEntry } from "@/lib/tve4-model-demo/manifest";
 import type { ActionKey } from "@/lib/tve4-model-demo/sequences";
-import type { GameState, Interaction } from "@/lib/tve4/types";
+import type { Faction, GameState, Interaction } from "@/lib/tve4/types";
 
 export interface Stage4 {
-  updateSession(session: GameState["session"]): void;
+  updateSession(session: GameState["session"], appearance?: GameState["appearance"]): void;
   render(state: GameState): void;
   setInteraction(info: Interaction): void;
   zoomBy(factor: number): void;
@@ -43,6 +43,29 @@ export interface Stage4 {
   resize(width: number, height: number): void;
   screenToWorld(clientX: number, clientY: number): { x: number; y: number } | null;
   destroy(): void;
+}
+
+interface HeroModelOverlay {
+  viewer: HeroModelViewer;
+  canvas: HTMLCanvasElement;
+  entry: ModelDemoEntry;
+  action: ActionKey | null;
+}
+
+function visualRandomUnit(): number {
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    try {
+      return crypto.getRandomValues(new Uint32Array(1))[0] / 0x100000000;
+    } catch {
+      return Math.random();
+    }
+  }
+  return Math.random();
+}
+
+function teamColor(faction: Faction): [number, number, number] {
+  const hex = faction === "elf" ? 0x62c77b : 0xe07a4f;
+  return [(hex >> 16) / 255, ((hex >> 8) & 0xff) / 255, (hex & 0xff) / 255];
 }
 
 class Tve4Scene extends Phaser.Scene {
@@ -73,12 +96,12 @@ class Tve4Scene extends Phaser.Scene {
   private readonly runtimeBounds: RenderBounds;
   private readonly cameraRect: { x: number; y: number; width: number; height: number };
   private readonly pathing32: Uint8Array;
-  private readonly heroModelId: string | null;
-  private heroModelViewer: HeroModelViewer | null = null;
-  private heroModelCanvas: HTMLCanvasElement | null = null;
-  private heroModelEntry: ModelDemoEntry | null = null;
-  private heroModelAction: ActionKey | null = null;
+  private readonly playerFaction: Faction;
+  private appearance: GameState["appearance"];
+  private playerModel: HeroModelOverlay | null = null;
+  private aiModel: HeroModelOverlay | null = null;
   private modelDisposed = false;
+  private modelGeneration = 0;
   private audioEventState: Tve4AudioEventState | null = null;
 
   private camX: number;
@@ -102,7 +125,8 @@ class Tve4Scene extends Phaser.Scene {
     this.runtimeBounds = [...initialState.session.grid.bounds];
     this.cameraRect = cameraBoundsToWeb(this.map.cameraBounds, this.runtimeBounds);
     this.pathing32 = initialState.session.pathing32;
-    this.heroModelId = initialState.appearance.heroModelId;
+    this.playerFaction = initialState.playerFaction;
+    this.appearance = initialState.appearance;
     this.camX = this.cameraRect.x + this.cameraRect.width / 2;
     this.camY = this.cameraRect.y + this.cameraRect.height / 2;
     this.readyPromise = new Promise<void>((resolve, reject) => {
@@ -213,8 +237,8 @@ class Tve4Scene extends Phaser.Scene {
     canvas.dataset.doodadsVisible = "false";
     canvas.dataset.mapStyle = "flat";
     canvas.dataset.fogEnabled = "true";
+    await this.initializeHeroModels();
     this.readyResolve();
-    void this.initializeHeroModel();
   }
 
   private drawTerrain(): void {
@@ -243,93 +267,163 @@ class Tve4Scene extends Phaser.Scene {
     this.game.canvas.dataset.pathingBoundaries = String(segments.length);
   }
 
-  private async initializeHeroModel(): Promise<void> {
-    if (!this.heroModelId || this.modelDisposed) return;
+  private async initializeHeroModels(): Promise<void> {
+    const generation = this.modelGeneration;
+    const appearance = this.appearance;
+    const models = await loadHeroModelManifest();
+    if (this.modelDisposed || generation !== this.modelGeneration || appearance !== this.appearance) return;
+    const playerEntry = appearance.heroModelId
+      ? heroModelsForFaction(models, this.playerFaction).find((entry) => entry.id === appearance.heroModelId)
+      : null;
+    if (appearance.heroModelId && !playerEntry) throw new Error("玩家英雄模型不在阵营白名单内");
+    const aiFaction: Faction = this.playerFaction === "elf" ? "troll" : "elf";
+    const aiCandidates = heroModelsForFaction(models, aiFaction);
+    const aiEntry = appearance.aiHeroModelId
+      ? aiCandidates.find((entry) => entry.id === appearance.aiHeroModelId)
+      : pickHeroModel(models, aiFaction, visualRandomUnit);
+    if (!aiEntry) throw new Error("AI 英雄没有可用模型");
+    appearance.aiHeroModelId = aiEntry.id;
+    await Promise.all([
+      playerEntry ? this.loadHeroModelOverlay("player", playerEntry, this.playerFaction) : Promise.resolve(),
+      this.loadHeroModelOverlay("ai", aiEntry, aiFaction),
+    ]);
+  }
+
+  private async loadHeroModelOverlay(
+    role: "player" | "ai",
+    entry: ModelDemoEntry,
+    faction: Faction,
+  ): Promise<void> {
+    const generation = this.modelGeneration;
+    const canvas = document.createElement("canvas");
+    canvas.dataset[role === "player" ? "heroModelId" : "aiHeroModelId"] = entry.id;
+    canvas.setAttribute("aria-hidden", "true");
+    canvas.style.position = "absolute";
+    canvas.style.pointerEvents = "none";
+    canvas.style.zIndex = "5";
+    canvas.style.width = "96px";
+    canvas.style.height = "96px";
+    canvas.style.display = "none";
+    this.game.canvas.parentElement?.appendChild(canvas);
+    let viewer: HeroModelViewer | null = null;
     try {
-      const models = await loadHeroModelManifest();
-      const entry = models.find((candidate) => candidate.id === this.heroModelId);
-      if (!entry || this.modelDisposed) return;
-      const canvas = document.createElement("canvas");
-      canvas.style.position = "absolute";
-      canvas.style.pointerEvents = "none";
-      canvas.style.zIndex = "5";
-      canvas.style.width = "96px";
-      canvas.style.height = "96px";
-      canvas.style.display = "none";
-      canvas.dataset.heroModelId = entry.id;
-      this.game.canvas.parentElement?.appendChild(canvas);
-      const viewer = new HeroModelViewer(canvas);
-      this.heroModelCanvas = canvas;
-      this.heroModelViewer = viewer;
+      viewer = new HeroModelViewer(canvas);
+      const overlay: HeroModelOverlay = { viewer, canvas, entry, action: null };
+      if (role === "player") this.playerModel = overlay;
+      else this.aiModel = overlay;
       await viewer.load(entry);
-      if (this.modelDisposed) return;
-      const color = entry.group === "elf" ? [0.384, 0.780, 0.482] : [0.878, 0.478, 0.310];
-      viewer.setTeamColor(color as [number, number, number]);
-      this.heroModelEntry = entry;
-      canvas.dataset.heroModelReady = "true";
-      this.game.canvas.dataset.heroModelId = entry.id;
-      this.game.canvas.dataset.heroModelReady = "true";
+      if (this.modelDisposed || generation !== this.modelGeneration) return;
+      viewer.setTeamColor(teamColor(faction));
+      viewer.setPlaying(false);
+      const prefix = role === "player" ? "heroModel" : "aiHeroModel";
+      canvas.dataset[`${prefix}Ready`] = "true";
+      canvas.dataset[`${prefix}TeamColor`] = faction === "elf" ? "#62c77b" : "#e07a4f";
+      this.game.canvas.dataset[`${prefix}Id`] = entry.id;
+      this.game.canvas.dataset[`${prefix}Ready`] = "true";
+      this.game.canvas.dataset[`${prefix}TeamColor`] = canvas.dataset[`${prefix}TeamColor`];
     } catch (error) {
-      this.disposeHeroModel();
-      this.game.canvas.dataset.heroModelError = error instanceof Error ? error.message : String(error);
+      viewer?.destroy();
+      canvas.remove();
+      if (this.modelDisposed || generation !== this.modelGeneration) return;
+      if (role === "player") this.playerModel = null;
+      else this.aiModel = null;
+      throw error;
     }
   }
 
-  private syncHeroModel(player: GameState["heroes"][number] | undefined): void {
-    const canvas = this.heroModelCanvas;
-    const viewer = this.heroModelViewer;
-    const entry = this.heroModelEntry;
-    if (!canvas || !viewer || !entry || !player) {
-      if (canvas) canvas.style.display = "none";
+  private syncHeroModel(
+    overlay: HeroModelOverlay | null,
+    hero: GameState["heroes"][number] | undefined,
+    visible: boolean,
+    role: "player" | "ai",
+  ): void {
+    const prefix = role === "player" ? "heroModel" : "aiHeroModel";
+    const canvas = overlay?.canvas;
+    const viewer = overlay?.viewer;
+    const entry = overlay?.entry;
+    this.game.canvas.dataset[`${prefix}Visible`] = String(Boolean(visible && overlay?.viewer.ready));
+    if (!canvas || !viewer || !entry || !viewer.ready || !hero || !visible) {
+      if (canvas) {
+        canvas.style.display = "none";
+        canvas.style.left = "0px";
+        canvas.style.top = "0px";
+        delete canvas.dataset.modelGroundY;
+        delete canvas.dataset.modelTopY;
+        delete canvas.dataset.modelGroundScreenY;
+        delete canvas.dataset.modelTopScreenY;
+      }
+      viewer?.setPlaying(false);
       return;
     }
     const camera = this.cameras.main;
-    const screenPoint = camera.getViewMatrix(true).transformPoint(player.x, player.y);
+    const screenPoint = camera.getViewMatrix(true).transformPoint(hero.x, hero.y);
     const metrics = viewer.getAnchorMetrics();
-    const baseSize = player.faction === "troll" ? 120 : 96;
+    const baseSize = hero.faction === "troll" ? 120 : 96;
     const size = Phaser.Math.Clamp(baseSize * this.zoom, 72, 180);
     canvas.style.display = "block";
     canvas.style.width = `${size}px`;
     canvas.style.height = `${size}px`;
     canvas.style.left = `${screenPoint.x - size / 2}px`;
     canvas.style.top = `${screenPoint.y - metrics.groundY * size - size / 2}px`;
-    const orientation = heroModelOrientation(player.facing);
+    const orientation = heroModelOrientation(hero.facing);
     viewer.setYaw(orientation.yaw);
     canvas.style.transform = orientation.flipX ? "scaleX(-1)" : "scaleX(1)";
-    canvas.dataset.heroModelFlipX = String(orientation.flipX);
-    canvas.dataset.heroModelYaw = orientation.yaw.toFixed(4);
+    canvas.dataset[`${prefix}FlipX`] = String(orientation.flipX);
+    canvas.dataset[`${prefix}Yaw`] = orientation.yaw.toFixed(4);
     canvas.dataset.modelGroundY = metrics.groundY.toFixed(4);
     canvas.dataset.modelTopY = metrics.topY.toFixed(4);
     canvas.dataset.modelGroundScreenY = screenPoint.y.toFixed(2);
     canvas.dataset.modelTopScreenY = (screenPoint.y + (metrics.topY - metrics.groundY) * size).toFixed(2);
     const action = modelActionFor(entry, {
-      alive: player.alive,
-      moving: player.vx !== 0 || player.vy !== 0,
-      attacking: this.forceAttack || player.cd > player.interval * 0.45,
+      alive: hero.alive,
+      moving: hero.vx !== 0 || hero.vy !== 0,
+      attacking: this.forceAttack || hero.cd > hero.interval * 0.45,
     });
-    if (action !== this.heroModelAction) {
+    if (action !== overlay.action) {
       const index = actionSequenceIndex(entry, action);
       if (index !== null) {
         viewer.setSequence(index);
         viewer.setPlaying(true);
-        this.heroModelAction = action;
-        this.game.canvas.dataset.heroModelAction = action;
+        overlay.action = action;
+        this.game.canvas.dataset[`${prefix}Action`] = action;
       }
+    } else if (hero.alive) {
+      viewer.setPlaying(true);
     }
   }
 
-  disposeHeroModel(): void {
-    this.modelDisposed = true;
-    this.heroModelViewer?.destroy();
-    this.heroModelViewer = null;
-    this.heroModelCanvas?.remove();
-    this.heroModelCanvas = null;
-    this.heroModelEntry = null;
-    this.heroModelAction = null;
-    delete this.game.canvas.dataset.heroModelId;
-    delete this.game.canvas.dataset.heroModelReady;
-    delete this.game.canvas.dataset.heroModelAction;
+  private resetHeroModels(appearance: GameState["appearance"]): void {
+    this.disposeHeroModels();
+    this.appearance = appearance;
+    this.modelDisposed = false;
     delete this.game.canvas.dataset.heroModelError;
+    delete this.game.canvas.dataset.aiHeroModelError;
+    void this.initializeHeroModels().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      this.game.canvas.dataset.aiHeroModelError = message;
+    });
+  }
+
+  disposeHeroModels(): void {
+    this.modelDisposed = true;
+    this.modelGeneration += 1;
+    for (const [role, overlay] of [["player", this.playerModel], ["ai", this.aiModel]] as const) {
+      overlay?.viewer.destroy();
+      overlay?.canvas.remove();
+      const prefix = role === "player" ? "heroModel" : "aiHeroModel";
+      delete this.game.canvas.dataset[`${prefix}Id`];
+      delete this.game.canvas.dataset[`${prefix}Ready`];
+      delete this.game.canvas.dataset[`${prefix}TeamColor`];
+      delete this.game.canvas.dataset[`${prefix}Action`];
+      delete this.game.canvas.dataset[`${prefix}Visible`];
+      delete this.game.canvas.dataset[`${prefix}FlipX`];
+      delete this.game.canvas.dataset[`${prefix}Yaw`];
+      delete this.game.canvas.dataset[`${prefix}Error`];
+    }
+    this.playerModel = null;
+    this.aiModel = null;
+    delete this.game.canvas.dataset.heroModelError;
+    delete this.game.canvas.dataset.aiHeroModelError;
   }
 
   private drawSpawnMarkers(): void {
@@ -359,12 +453,13 @@ class Tve4Scene extends Phaser.Scene {
     this.game.canvas.dataset.spawnMarkers = String(this.spawnLabels.length);
   }
 
-  updateSession(session: GameState["session"]): void {
+  updateSession(session: GameState["session"], appearance?: GameState["appearance"]): void {
     if (session.map !== this.map || session.mapId !== this.map.id || session.catalogVersion !== this.catalogVersion) {
       throw new Error("Stage4 会话更新仅允许相同地图与 catalogVersion");
     }
     assertRuntimeBoundsMatch(this.runtimeBounds, session.grid.bounds);
     this.spawns = session.spawns;
+    if (appearance) this.resetHeroModels(appearance);
     this.audioEventState = null;
     this.followPlayer = true;
     this.lastPlayer = null;
@@ -437,6 +532,9 @@ class Tve4Scene extends Phaser.Scene {
 
     const camera = this.cameras.main;
     const player = state.heroes.find((hero) => hero.isPlayer && hero.alive);
+    const playerHero = state.heroes.find((hero) => hero.isPlayer);
+    const aiHero = state.heroes.find((hero) =>
+      !hero.isPlayer && !hero.isAlly && !hero.isWolf && hero.alive && visibleEnemyHeroIds.has(hero.id));
     this.lastPlayer = player ? { x: player.x, y: player.y } : null;
     const visibleTroll = state.heroes.find((hero) => hero.faction === "troll" && hero.alive && visibleEnemyHeroIds.has(hero.id));
     this.lastVisibleTroll = visibleTroll ? { x: visibleTroll.x, y: visibleTroll.y } : null;
@@ -475,7 +573,8 @@ class Tve4Scene extends Phaser.Scene {
       delete this.game.canvas.dataset.trollScreenX;
       delete this.game.canvas.dataset.trollScreenY;
     }
-    this.syncHeroModel(player);
+    this.syncHeroModel(this.playerModel, playerHero, Boolean(playerHero && (playerHero.alive || playerHero.deathTimer > 0)), "player");
+    this.syncHeroModel(this.aiModel, aiHero, Boolean(aiHero), "ai");
 
     this.shadows.clear();
     this.entities.clear();
@@ -577,8 +676,12 @@ class Tve4Scene extends Phaser.Scene {
       const shadowWidth = hero.faction === "troll" ? 50 : 32;
       this.shadows.fillStyle(0x04100d, 0.26);
       this.shadows.fillEllipse(hero.x + 2, hero.y + 5, shadowWidth, shadowWidth * 0.32);
-      const playerModelActive = hero.isPlayer && Boolean(this.heroModelViewer?.ready && this.heroModelEntry);
-      if (!playerModelActive) {
+      const modelOverlay = hero.isPlayer
+        ? this.playerModel
+        : !hero.isAlly && !hero.isWolf ? this.aiModel : null;
+      const modelActive = Boolean(modelOverlay?.viewer.ready && modelOverlay.entry
+        && (hero.isPlayer || visibleEnemyHeroIds.has(hero.id)));
+      if (!modelActive) {
         drawPhaserPlaceholderUnit(this.entities, hero.x, hero.y, kind, hero.faction, heroState, {
           alpha,
           flipX: Math.cos(hero.facing) < -0.08,
@@ -664,12 +767,15 @@ class Tve4Scene extends Phaser.Scene {
 
   private heroBarY(hero: GameState["heroes"][number], height: number): number {
     const fallback = hero.y - height - 14;
-    if (!hero.isPlayer || !this.heroModelViewer || !this.heroModelEntry) return fallback;
+    const overlay = hero.isPlayer
+      ? this.playerModel
+      : !hero.isAlly && !hero.isWolf ? this.aiModel : null;
+    if (!overlay?.viewer.ready || !overlay.entry) return fallback;
     const camera = this.cameras.main;
     const screenPoint = camera.getViewMatrix(true).transformPoint(hero.x, hero.y);
     const baseSize = hero.faction === "troll" ? 120 : 96;
     const size = Phaser.Math.Clamp(baseSize * this.zoom, 72, 180);
-    const metrics = this.heroModelViewer.getAnchorMetrics();
+    const metrics = overlay.viewer.getAnchorMetrics();
     const modelTopScreenY = screenPoint.y + (metrics.topY - metrics.groundY) * size;
     const desiredBarScreenY = modelTopScreenY - 10;
     return hero.y - (screenPoint.y - desiredBarScreenY) / this.zoom;
@@ -711,13 +817,14 @@ export async function createStage4(canvas: HTMLCanvasElement, width: number, hei
     ]);
   } catch (error) {
     delete canvas.dataset.tve4Ready;
+    scene.disposeHeroModels();
     game.destroy(false);
     throw error;
   } finally {
     if (timeoutId !== undefined) window.clearTimeout(timeoutId);
   }
   return {
-    updateSession: (session) => scene.updateSession(session),
+    updateSession: (session, appearance) => scene.updateSession(session, appearance),
     render: (state) => scene.apply(state),
     setInteraction: (info) => scene.setInteractionInfo(info),
     zoomBy: (factor) => scene.setZoomBy(factor),
@@ -739,7 +846,7 @@ export async function createStage4(canvas: HTMLCanvasElement, width: number, hei
       return { x: point.x, y: point.y };
     },
     destroy: () => {
-      scene.disposeHeroModel();
+      scene.disposeHeroModels();
       delete canvas.dataset.tve4Ready;
       game.destroy(false);
     },

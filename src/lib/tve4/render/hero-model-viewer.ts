@@ -35,7 +35,7 @@ export function createHeroModelView(camera: HeroModelCamera): mat4 {
   return view;
 }
 
-/** Small transparent MDX renderer used only for the player's hero overlay. */
+/** Small transparent MDX renderer used only for hero overlays. */
 export class HeroModelViewer {
   private readonly canvas: HTMLCanvasElement;
   private readonly gl: WebGLRenderingContext | WebGL2RenderingContext;
@@ -43,6 +43,7 @@ export class HeroModelViewer {
   private readonly textureCache = new Map<string, ImageData[]>();
   private renderer: ModelRenderer | null = null;
   private model: model.Model | null = null;
+  private loaded = false;
   private entry: ModelDemoEntry | null = null;
   private raf = 0;
   private loadToken = 0;
@@ -78,7 +79,7 @@ export class HeroModelViewer {
   }
 
   get ready(): boolean {
-    return Boolean(this.renderer && this.model);
+    return this.loaded && Boolean(this.renderer && this.model);
   }
 
   getAnchorMetrics(): { groundY: number; topY: number } {
@@ -91,6 +92,7 @@ export class HeroModelViewer {
     disposeRenderer(this.renderer);
     this.renderer = null;
     this.model = null;
+    this.loaded = false;
     this.entry = entry;
     this.textureCache.clear();
     try {
@@ -110,12 +112,14 @@ export class HeroModelViewer {
       if (token !== this.loadToken) return;
       this.applyTextures();
       this.setSequence(entry.actions.stand?.index ?? 0);
+      this.loaded = true;
       this.startLoop();
     } catch (error) {
       if (token !== this.loadToken) return;
       disposeRenderer(this.renderer);
       this.renderer = null;
       this.model = null;
+      this.loaded = false;
       throw error;
     }
   }
@@ -133,6 +137,8 @@ export class HeroModelViewer {
 
   setPlaying(playing: boolean): void {
     this.playing = playing;
+    if (playing && this.ready && !this.raf) this.startLoop();
+    else if (!playing) this.stopLoop();
   }
 
   setTeamColor(color: readonly [number, number, number]): void {
@@ -150,6 +156,7 @@ export class HeroModelViewer {
     disposeRenderer(this.renderer);
     this.renderer = null;
     this.model = null;
+    this.loaded = false;
     this.entry = null;
     this.textureCache.clear();
   }
@@ -245,13 +252,16 @@ export class HeroModelViewer {
       if (this.playing) {
         const next = advanceFrame(this.frame, delta, this.speed, sequence);
         this.frame = next.frame;
-        if (next.ended) this.playing = false;
+        if (next.ended) {
+          this.playing = false;
+          this.stopLoop();
+        }
       }
       this.renderer.setFrame(this.frame);
       this.renderer.update(0);
       this.draw();
     }
-    this.raf = requestAnimationFrame(this.tick);
+    if (this.playing) this.raf = requestAnimationFrame(this.tick);
   };
 
   private draw(): void {
