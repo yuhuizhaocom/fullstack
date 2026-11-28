@@ -90,6 +90,7 @@ export interface Hero {
   wood: number;
   items: string[];
   itemLevels: Record<string, number>;
+  repairTargetId: number | null;
   bonusIncome: number;
   bonusLifesteal: number;
   cooldowns: Record<SkillKey, number>;

@@ -22,21 +22,25 @@ import {
 } from "@/lib/tve4/config";
 import { DEFAULT_MAP_ID, MAP_DEFINITIONS, MAP_ORDER } from "@/lib/tve4/maps.generated";
 import { runAutoActions } from "@/lib/tve4/auto-actions";
+import { createPlayerActionController, type PlayerActionController } from "@/lib/tve4/player-actions";
 import {
   buyEquipment,
   buyStrengthBook,
   buildingUpgradeCost,
   canBuild,
+  canRepairBuilding,
   canUpgradeKind,
   canDemolish,
   canSummonMage,
+  cancelRepair,
   castSkill,
   createGame,
   demolishBuilding,
+  findRepairTarget,
   getPlayer,
   isTrollVisibleToPlayer,
   needsWallForTentUpgrade,
-  repairWall,
+  repairBuilding,
   sellEquipment,
   stepGame,
   upgradeKind,
@@ -126,6 +130,17 @@ export function Tve4Game() {
   const hoverRef = useRef<{ x: number; y: number } | null>(null);
   const placingRef = useRef<BuildKind | null>(null);
   const moveTargetRef = useRef<{ x: number; y: number } | null>(null);
+  const playerActionsRef = useRef<PlayerActionController | null>(null);
+  const buildPendingRef = useRef(false);
+  const autoRepairJobRef = useRef(false);
+  if (!playerActionsRef.current) {
+    playerActionsRef.current = createPlayerActionController({
+      canBuild,
+      build: tryBuild,
+      canRepair: canRepairBuilding,
+      repair: repairBuilding,
+    });
+  }
   const pendingSkillRef = useRef<SkillKey | null>(null);
   const dragRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
@@ -159,6 +174,20 @@ export function Tve4Game() {
 
   useEffect(() => {
     setAudioSettingsState(getTve4AudioSettings());
+  }, []);
+
+  useEffect(() => {
+    const root = boxRef.current;
+    if (!root) return;
+    const preventSelection = (event: Event) => event.preventDefault();
+    root.addEventListener("contextmenu", preventSelection, true);
+    root.addEventListener("selectstart", preventSelection, true);
+    root.addEventListener("dragstart", preventSelection, true);
+    return () => {
+      root.removeEventListener("contextmenu", preventSelection, true);
+      root.removeEventListener("selectstart", preventSelection, true);
+      root.removeEventListener("dragstart", preventSelection, true);
+    };
   }, []);
 
   const updateAudioSettings = useCallback((next: Tve4AudioSettings) => {
@@ -215,6 +244,20 @@ export function Tve4Game() {
 
   const toggleAutoUpgrade = useCallback((kind: "tent" | "wall") => {
     setAutoUpgrades((current) => ({ ...current, [kind]: !current[kind] }));
+  }, []);
+
+  const toggleAutoRepair = useCallback(() => {
+    const actions = playerActionsRef.current;
+    setAutoRepair((current) => {
+      const next = !current;
+      if (!next && autoRepairJobRef.current) {
+        actions?.cancelAuto();
+        const state = stateRef.current;
+        if (state) cancelRepair(state);
+        autoRepairJobRef.current = false;
+      }
+      return next;
+    });
   }, []);
 
   const longPressProps = useCallback((toggle: () => void) => ({
@@ -372,19 +415,34 @@ export function Tve4Game() {
       if (mag > 0) {
         mx /= mag;
         my /= mag;
+        if (playerActionsRef.current?.snapshot().intent) {
+          playerActionsRef.current.cancel();
+          cancelRepair(state);
+          placingRef.current = null;
+          sheetRef.current = null;
+          buildPendingRef.current = false;
+          autoRepairJobRef.current = false;
+          setSheet(null);
+        }
         moveTargetRef.current = null;
       } else {
-        const target = moveTargetRef.current;
-        const player = getPlayer(state);
-        if (target && player) {
-          const dx = target.x - player.x;
-          const dy = target.y - player.y;
-          const d = Math.hypot(dx, dy);
-          if (d > 10) {
-            mx = dx / d;
-            my = dy / d;
-          } else {
-            moveTargetRef.current = null;
+        const actionDirection = playerActionsRef.current?.direction(state) ?? { mx: 0, my: 0 };
+        if (actionDirection.mx || actionDirection.my) {
+          mx = actionDirection.mx;
+          my = actionDirection.my;
+        } else {
+          const target = moveTargetRef.current;
+          const player = getPlayer(state);
+          if (target && player) {
+            const dx = target.x - player.x;
+            const dy = target.y - player.y;
+            const d = Math.hypot(dx, dy);
+            if (d > 10) {
+              mx = dx / d;
+              my = dy / d;
+            } else {
+              moveTargetRef.current = null;
+            }
           }
         }
       }
@@ -399,30 +457,62 @@ export function Tve4Game() {
                 upgradeTent: () => canUpgradeKind(state, "tent").ok && upgradeKind(state, "tent"),
                 tentNeedsWall: () => needsWallForTentUpgrade(state),
                 upgradeWall: () => canUpgradeKind(state, "wall").ok && upgradeKind(state, "wall"),
-                repair: () => repairWall(state, "wall"),
+                repair: () => {
+                  const actions = playerActionsRef.current!;
+                  const current = actions.snapshot();
+                  if (current.intent?.source === "manual") return "unavailable";
+                  if (current.intent?.source === "auto") return "queued";
+                  const target = findRepairTarget(state, "wall");
+                  if (!target) return "unavailable";
+                  const queued = actions.enqueue(state, { type: "repair", kind: "wall", buildingId: target.id, source: "auto" });
+                  if (queued.phase !== "blocked") autoRepairJobRef.current = true;
+                  return queued.phase === "blocked" ? "unavailable" : "queued";
+                },
                 castSkill: (key) => castSkill(state, key, hoverRef.current, true),
               },
             );
             if (auto.upgrades.length > 0) playTve4Sfx("upgrade");
-            if (auto.repaired) playTve4Sfx("heal");
             if (auto.skills.length > 0) playTve4Sfx("skill");
           }
           stepGame(state, FIXED, { mx, my, aim: hoverRef.current });
+          const actionResult = playerActionsRef.current!.afterStep(state);
+          const player = getPlayer(state);
+          if (autoRepairJobRef.current && player?.repairTargetId === null && actionResult.intent?.source !== "auto") {
+            autoRepairJobRef.current = false;
+          }
+          if (actionResult.lastResult === "started") {
+            if (buildPendingRef.current) {
+              playTve4Sfx("build");
+              placingRef.current = null;
+              sheetRef.current = null;
+              buildPendingRef.current = false;
+              setSheet(null);
+            } else {
+              playTve4Sfx("heal");
+            }
+          } else if (actionResult.phase === "blocked" && actionResult.lastResult === "unavailable") {
+            setHintLocal(actionResult.reason ?? "无法执行操作");
+          }
           acc -= FIXED;
           guard += 1;
         }
       }
-      const placing = placingRef.current;
+      const actionIntent = playerActionsRef.current?.snapshot().intent;
+      const placing = actionIntent?.type === "build" ? actionIntent.kind : placingRef.current;
       const hover = hoverRef.current;
       const interaction: Interaction = { placing, selectedId: selectedRef.current, hover, gx: 0, gy: 0, valid: false };
-      if (placing && hover) {
+      if (placing) {
         const size = BUILDINGS[placing].size;
         const { grid } = state.session;
-        const gx = Math.max(0, Math.min(grid.width - size, Math.floor(hover.x / TILE - (size - 1) / 2)));
-        const gy = Math.max(0, Math.min(grid.height - size, Math.floor(hover.y / TILE - (size - 1) / 2)));
-        interaction.gx = gx;
-        interaction.gy = gy;
-        interaction.valid = canBuild(state, placing, gx, gy).ok;
+        const gx = actionIntent?.type === "build"
+          ? actionIntent.gx
+          : hover ? Math.floor(hover.x / TILE - (size - 1) / 2) : 0;
+        const gy = actionIntent?.type === "build"
+          ? actionIntent.gy
+          : hover ? Math.floor(hover.y / TILE - (size - 1) / 2) : 0;
+        interaction.gx = Math.max(0, Math.min(grid.width - size, gx));
+        interaction.gy = Math.max(0, Math.min(grid.height - size, gy));
+        interaction.valid = canBuild(state, placing, interaction.gx, interaction.gy).ok;
       }
       stage.setInteraction(interaction);
       stage.render(state);
@@ -440,7 +530,10 @@ export function Tve4Game() {
         else keysRef.current.delete(k);
       }
       if (down && e.key === "Escape") {
+        playerActionsRef.current?.cancel();
+        if (stateRef.current) cancelRepair(stateRef.current);
         placingRef.current = null;
+        buildPendingRef.current = false;
         pendingSkillRef.current = null;
         sheetRef.current = null;
         setSheet(null);
@@ -561,16 +654,20 @@ export function Tve4Game() {
         return;
       }
       if (placingRef.current) {
-        const size = BUILDINGS[placingRef.current].size;
+        const kind = placingRef.current;
+        const size = BUILDINGS[kind].size;
         const gx = Math.floor(world.x / TILE - (size - 1) / 2);
         const gy = Math.floor(world.y / TILE - (size - 1) / 2);
-        if (tryBuild(state, placingRef.current, gx, gy)) {
-          playTve4Sfx("build");
-          placingRef.current = null;
+        const queued = playerActionsRef.current!.enqueue(state, { type: "build", kind, gx, gy, source: "manual" });
+        if (queued.phase === "blocked") {
+          playTve4Sfx("error");
+          setHintLocal(queued.reason ?? "无法建造");
+        } else {
+          placingRef.current = kind;
+          buildPendingRef.current = true;
           sheetRef.current = null;
           setSheet(null);
-        } else {
-          playTve4Sfx("error");
+          if (queued.phase === "moving") setHintLocal("正在前往建造位置");
         }
         sync();
         return;
@@ -635,17 +732,22 @@ export function Tve4Game() {
     setAutoSkills(new Set());
     setAutoUpgrades({ tent: false, wall: false });
     setAutoRepair(false);
+    playerActionsRef.current?.cancel();
+    buildPendingRef.current = false;
+    autoRepairJobRef.current = false;
     sync();
   }, [preMap, startFaction, selectedModelId, sync]);
 
   return (
     <div
       ref={boxRef}
-      className="relative h-dvh w-full overflow-hidden bg-[#07100b]"
+      className="tve4-game relative h-dvh w-full select-none overflow-hidden bg-[#07100b]"
       onPointerDown={unlockTve4Audio}
       onKeyDown={unlockTve4Audio}
       onClickCapture={captureUiSound}
       onChangeCapture={() => playTve4Sfx("ui")}
+      onContextMenuCapture={(event) => event.preventDefault()}
+      onDragStartCapture={(event) => event.preventDefault()}
       data-audio-music={audioSettings.music ? "on" : "off"}
       data-audio-sfx={audioSettings.sfx ? "on" : "off"}
     >
@@ -788,7 +890,7 @@ export function Tve4Game() {
             </span>
           </div>
           {showMore ? (
-            <div className="pointer-events-none absolute right-3 top-[max(11rem,calc(env(safe-area-inset-top)+10rem))] z-30 flex w-56 flex-col gap-2 rounded-xl border border-white/10 bg-neutral-900/95 p-2 text-xs text-white landscape:right-[18rem] landscape:top-[max(0.75rem,env(safe-area-inset-top))]">
+            <div className="pointer-events-none absolute right-3 top-[max(11rem,calc(env(safe-area-inset-top)+10rem))] z-30 flex max-h-[70vh] w-56 flex-col gap-2 overflow-y-auto rounded-xl border border-white/10 bg-neutral-900/95 p-2 text-xs text-white landscape:right-[18rem] landscape:top-[max(0.75rem,env(safe-area-inset-top))]">
               <button className="pointer-events-auto rounded-lg bg-white/10 px-2 py-2" onClick={() => restart(!snapshot.testMode)}>
                 {snapshot.testMode ? "测试模式" : "常规模式"}
               </button>
@@ -814,6 +916,34 @@ export function Tve4Game() {
                   音效 {audioSettings.sfx ? "开" : "关"}
                 </button>
               </div>
+              {snapshot.faction === "elf" ? (
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    {...longPressProps(() => toggleAutoUpgrade("wall"))}
+                    className={`pointer-events-auto rounded-lg px-2 py-2 ${autoUpgrades.wall ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-white/10"}`}
+                    aria-pressed={autoUpgrades.wall}
+                    onClick={() => clickWithoutLongPress(() => toggleAutoUpgrade("wall"))}
+                  >
+                    自动升墙 {autoUpgrades.wall ? "开" : "关"}
+                  </button>
+                  <button
+                    {...longPressProps(() => toggleAutoUpgrade("tent"))}
+                    className={`pointer-events-auto rounded-lg px-2 py-2 ${autoUpgrades.tent ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-white/10"}`}
+                    aria-pressed={autoUpgrades.tent}
+                    onClick={() => clickWithoutLongPress(() => toggleAutoUpgrade("tent"))}
+                  >
+                    自动升房 {autoUpgrades.tent ? "开" : "关"}
+                  </button>
+                  <button
+                    {...longPressProps(() => toggleAutoRepair)}
+                    className={`pointer-events-auto rounded-lg px-2 py-2 ${autoRepair ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-white/10"}`}
+                    aria-pressed={autoRepair}
+                    onClick={() => clickWithoutLongPress(() => toggleAutoRepair)}
+                  >
+                    自动维修 {autoRepair ? "开" : "关"}
+                  </button>
+                </div>
+              ) : null}
               <div className="grid grid-cols-2 gap-2">
                 <button className="pointer-events-auto rounded-lg bg-white/10 px-2 py-2" onClick={() => stageRef.current?.focusPlayer()}>
                   聚焦精灵
@@ -1031,43 +1161,28 @@ export function Tve4Game() {
             {snapshot.faction === "elf" ? (
               <>
                 <button
-                  {...longPressProps(() => toggleAutoUpgrade("wall"))}
-                  className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${
-                    autoUpgrades.wall ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-amber-800"
-                  } ${!snapshot.wallUpgrade.ok ? "opacity-40" : ""}`}
-                  aria-pressed={autoUpgrades.wall}
-                  aria-disabled={!snapshot.wallUpgrade.ok}
-                  title={`${snapshot.wallUpgrade.ok
-                    ? `升墙 Lv${snapshot.wallUpgrade.level + 1}：${snapshot.wallUpgrade.cost} 金${snapshot.wallUpgrade.wood ? ` · ${snapshot.wallUpgrade.wood} 木` : ""}`
-                    : snapshot.wallUpgrade.reason}${snapshot.wallUpgrade.requirements.length ? `；前置 ${requirementText(snapshot.wallUpgrade)}` : ""}${autoUpgrades.wall ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
-                  onClick={() => clickWithoutLongPress(() => { const s = stateRef.current; if (s) { playTve4Sfx(upgradeKind(s, "wall") ? "upgrade" : "error"); sync(); } })}
-                >
-                  升墙{snapshot.wallUpgrade.cost > 0 || snapshot.wallUpgrade.wood > 0 ? ` ${resourceProgress(snapshot.gold, snapshot.wood, snapshot.wallUpgrade.cost, snapshot.wallUpgrade.wood)}` : ""}
-                  {autoUpgrades.wall ? <span className="ml-1 text-[9px] text-cyan-100">自动</span> : null}
-                  {snapshot.wallUpgrade.requirements.length ? <span className="mt-1 block text-[9px] font-normal text-white/65">前置 {requirementText(snapshot.wallUpgrade)}</span> : null}
-                </button>
-                <button
-                  {...longPressProps(() => toggleAutoUpgrade("tent"))}
-                  className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${
-                    autoUpgrades.tent ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-amber-800"
-                  } ${!snapshot.houseUpgrade.ok ? "opacity-40" : ""}`}
-                  aria-pressed={autoUpgrades.tent}
-                  aria-disabled={!snapshot.houseUpgrade.ok}
-                  title={`${snapshot.houseUpgrade.ok
-                    ? `升房 Lv${snapshot.houseUpgrade.level + 1}：${snapshot.houseUpgrade.cost} 金${snapshot.houseUpgrade.wood ? ` · ${snapshot.houseUpgrade.wood} 木` : ""}`
-                    : snapshot.houseUpgrade.reason}${snapshot.houseUpgrade.requirements.length ? `；前置 ${requirementText(snapshot.houseUpgrade)}` : ""}${autoUpgrades.tent ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
-                  onClick={() => clickWithoutLongPress(() => { const s = stateRef.current; if (s) { playTve4Sfx(upgradeKind(s, "tent") ? "upgrade" : "error"); sync(); } })}
-                >
-                  升房{snapshot.houseUpgrade.cost > 0 || snapshot.houseUpgrade.wood > 0 ? ` ${resourceProgress(snapshot.gold, snapshot.wood, snapshot.houseUpgrade.cost, snapshot.houseUpgrade.wood)}` : ""}
-                  {autoUpgrades.tent ? <span className="ml-1 text-[9px] text-cyan-100">自动</span> : null}
-                  {snapshot.houseUpgrade.requirements.length ? <span className="mt-1 block text-[9px] font-normal text-white/65">前置 {requirementText(snapshot.houseUpgrade)}</span> : null}
-                </button>
-                <button
-                  {...longPressProps(() => setAutoRepair((current) => !current))}
+                  {...longPressProps(() => toggleAutoRepair)}
                   className={`pointer-events-auto rounded-lg px-2 py-3 text-[11px] text-white ${autoRepair ? "bg-cyan-800 ring-2 ring-cyan-300" : "bg-emerald-800"}`}
                   aria-pressed={autoRepair}
                   title={`免费维修墙/建筑（原版修理不消耗资源）${autoRepair ? "；自动已开启，长按关闭" : "；长按开启自动"}`}
-                  onClick={() => clickWithoutLongPress(() => { const s = stateRef.current; if (s) { playTve4Sfx(repairWall(s, "wall") ? "heal" : "error"); sync(); } })}
+                  onClick={() => clickWithoutLongPress(() => {
+                    const s = stateRef.current;
+                    if (!s) return;
+                    const target = findRepairTarget(s, "wall");
+                    if (!target) {
+                      playTve4Sfx("error");
+                      setHintLocal("没有需要维修的墙");
+                      return;
+                    }
+                    const queued = playerActionsRef.current!.enqueue(s, { type: "repair", kind: "wall", buildingId: target.id, source: "manual" });
+                    if (queued.phase === "blocked") {
+                      playTve4Sfx("error");
+                      setHintLocal(queued.reason ?? "无法维修");
+                    } else if (queued.phase === "moving") {
+                      setHintLocal("正在前往维修目标");
+                    }
+                    sync();
+                  })}
                 >
                   维修{autoRepair ? <span className="ml-1 text-[9px] text-cyan-100">自动</span> : null}
                 </button>

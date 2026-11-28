@@ -30,7 +30,7 @@ test("keeps auto flags independent and does not run disabled actions", () => {
       upgradeTent: () => { calls.push("tent"); return true; },
       tentNeedsWall: () => true,
       upgradeWall: () => { calls.push("wall"); return true; },
-      repair: () => false,
+      repair: () => "unavailable",
       castSkill: () => { calls.push("skill"); return true; },
     },
   );
@@ -45,7 +45,7 @@ test("continues to later actions after an earlier action is unavailable", () => 
       upgradeTent: () => { calls.push("tent"); return false; },
       tentNeedsWall: () => true,
       upgradeWall: () => { calls.push("wall"); return true; },
-      repair: () => false,
+      repair: () => "unavailable",
       castSkill: (key) => { calls.push(key); return true; },
     },
   );
@@ -63,7 +63,7 @@ test("skips auto wall immediately after a house upgrade removes the wall depende
       upgradeTent: () => { calls.push("tent"); tentNeedsWall = false; return true; },
       tentNeedsWall: () => tentNeedsWall,
       upgradeWall: () => { calls.push("wall"); return true; },
-      repair: () => false,
+      repair: () => "unavailable",
       castSkill: () => true,
     },
   );
@@ -79,7 +79,7 @@ test("checks house wall dependency even when only auto wall is enabled", () => {
       upgradeTent: () => { calls.push("tent"); return true; },
       tentNeedsWall: () => false,
       upgradeWall: () => { calls.push("wall"); return true; },
-      repair: () => false,
+      repair: () => "unavailable",
       castSkill: () => true,
     },
   );
@@ -95,10 +95,26 @@ test("runs auto repair after upgrades and before auto skills", () => {
       upgradeTent: () => false,
       tentNeedsWall: () => false,
       upgradeWall: () => false,
-      repair: () => { calls.push("repair"); return true; },
+      repair: () => "started",
       castSkill: (key) => { calls.push(key); return true; },
     },
   );
-  assert.deepEqual(calls, ["repair", "haste"]);
+  assert.deepEqual(calls, ["haste"]);
   assert.equal(result.repaired, true);
+  assert.equal(result.repairStatus, "started");
+});
+
+test("distinguishes queued auto repair from a started repair", () => {
+  const result = runAutoActions(
+    { upgradeTent: false, upgradeWall: false, repair: true, skills: [] },
+    {
+      upgradeTent: () => false,
+      tentNeedsWall: () => false,
+      upgradeWall: () => false,
+      repair: () => "queued",
+      castSkill: () => false,
+    },
+  );
+  assert.equal(result.repaired, false);
+  assert.equal(result.repairStatus, "queued");
 });

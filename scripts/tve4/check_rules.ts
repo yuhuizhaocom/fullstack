@@ -751,6 +751,8 @@ check("维修：下达指令后按原作比率持续免费回血", () => {
   const wall = s.buildings.find((b) => b.kind === "wall")!;
   wall.buildTimer = 0;
   wall.hp = 20;
+  p.x = wall.x + TILE;
+  p.y = wall.y;
   const before = wall.hp;
   const rate = wall.maxHp / (BUILDINGS.wall.buildTime * REPAIR_RULE.timeRatios[0]);
   assert.equal(repairWall(s, "wall"), true);

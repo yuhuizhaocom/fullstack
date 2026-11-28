@@ -185,6 +185,9 @@ test("repair starts a continuous source-rate process instead of instant healing"
   openMap(state);
   const wall = makeDamagedWall(state);
   wall.level = 6;
+  const hero = state.heroes.find((h) => h.isPlayer)!;
+  hero.x = wall.x + TILE;
+  hero.y = wall.y;
   const before = wall.hp;
   const ratio = REPAIR_RULE.timeRatios[0];
   const rate = wall.maxHp / (BUILDINGS.wall.buildTime * ratio);
@@ -208,18 +211,21 @@ test("damaged buildings do not repair without a repair order", () => {
   assert.equal(wall.hp, before, "original repair requires a worker order");
 });
 
-test("repair orders skip buildings already under repair", () => {
+test("one elf cannot repair two buildings at the same time", () => {
   const state = createGame({ mapId: 0, seed: 33, playerFaction: "elf" });
+  const hero = state.heroes.find((h) => h.isPlayer)!;
   const first = addUpgradeFixture(state, "wall", 1, 2);
   const second = addUpgradeFixture(state, "wall", 1, 5);
   first.hp = first.maxHp * 0.2;
   second.hp = second.maxHp * 0.5;
+  hero.x = first.x + TILE;
+  hero.y = first.y;
 
   assert.equal(repairWall(state, "wall"), true);
   assert.equal(first.repairing, true);
-  assert.equal(repairWall(state, "wall"), true);
-  assert.equal(second.repairing, true);
+  assert.equal(hero.repairTargetId, first.id);
   assert.equal(repairWall(state, "wall"), false);
+  assert.equal(second.repairing, false);
 });
 
 test("combat uses LOS, damage, and bounty on an isolated fixture", () => {

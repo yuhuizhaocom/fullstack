@@ -7,17 +7,20 @@ export interface AutoActionOptions {
   skills: readonly SkillKey[];
 }
 
+export type AutoRepairStatus = "unavailable" | "queued" | "started";
+
 export interface AutoActionCallbacks {
   upgradeTent: () => boolean;
   tentNeedsWall: () => boolean;
   upgradeWall: () => boolean;
-  repair: () => boolean;
+  repair: () => AutoRepairStatus;
   castSkill: (key: SkillKey) => boolean;
 }
 
 export interface AutoActionResult {
   upgrades: ("tent" | "wall")[];
   repaired: boolean;
+  repairStatus: AutoRepairStatus;
   skills: SkillKey[];
 }
 
@@ -26,9 +29,9 @@ export function runAutoActions(options: AutoActionOptions, callbacks: AutoAction
   const skills: SkillKey[] = [];
   if (options.upgradeTent && callbacks.upgradeTent()) upgrades.push("tent");
   if (options.upgradeWall && callbacks.tentNeedsWall() && callbacks.upgradeWall()) upgrades.push("wall");
-  const repaired = options.repair && callbacks.repair();
+  const repairStatus = options.repair ? callbacks.repair() : "unavailable";
   for (const key of options.skills) {
     if (callbacks.castSkill(key)) skills.push(key);
   }
-  return { upgrades, repaired, skills };
+  return { upgrades, repaired: repairStatus === "started", repairStatus, skills };
 }

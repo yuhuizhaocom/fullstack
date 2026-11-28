@@ -48,6 +48,7 @@ import type {
 } from "./types";
 
 const SCALE = RULES.scale;
+export const REPAIR_RANGE = 60 * SCALE;
 const PATHING_VIEWS = new WeakMap<GameState, PathingGrid>();
 const AI_PATROL_OFFSETS = [
   [0, 0], [-480, 0], [0, -480], [480, 0], [0, 480],
@@ -189,7 +190,7 @@ function makeHero(state: GameState, faction: Faction, isPlayer: boolean, x: numb
     speed: s.speed, radius: s.radius,
     cd: 0, channelTime: 0, deathTimer: 0,
     gold: (MODE_START_GOLD[state.mode] ?? START_GOLD)[faction], wood: START_WOOD,
-    items: [], itemLevels: {}, bonusIncome: 0, bonusLifesteal: 0,
+    items: [], itemLevels: {}, repairTargetId: null, bonusIncome: 0, bonusLifesteal: 0,
     cooldowns: emptyCooldowns(), buffs: emptyBuffs(),
   };
 }
@@ -489,20 +490,61 @@ function buildingRepairRate(b: Building): number {
   return b.maxHp / (BUILDINGS[b.kind].buildTime * REPAIR_RULE.timeRatios[0]);
 }
 
-/** 免费维修墙/建筑（原版修理不消耗资源）。 */
-export function repairWall(state: GameState, kind: BuildKind = "wall"): boolean {
-  const list = state.buildings.filter(
-    (b) => b.alive && b.faction === "elf" && b.kind === kind && b.buildTimer <= 0 && !b.repairing && b.hp < b.maxHp,
-  );
-  if (!list.length) {
-    setHint(state, `没有需要维修的${BUILDINGS[kind].label}`);
+export function distanceToFootprint(hero: Hero, target: { x: number; y: number; size: number }): number {
+  const half = target.size * TILE / 2;
+  const dx = Math.max(0, Math.abs(hero.x - target.x) - half);
+  const dy = Math.max(0, Math.abs(hero.y - target.y) - half);
+  return Math.max(0, Math.hypot(dx, dy) - hero.radius);
+}
+
+export function findRepairTarget(state: GameState, kind: BuildKind = "wall"): Building | null {
+  const hero = getPlayer(state);
+  if (!hero?.alive || hero.repairTargetId !== null) return null;
+  return state.buildings
+    .filter((b) => b.alive && b.faction === hero.faction && b.kind === kind && b.buildTimer <= 0 && !b.repairing && b.hp < b.maxHp)
+    .sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp || distanceToFootprint(hero, a) - distanceToFootprint(hero, b))[0] ?? null;
+}
+
+export function canRepairBuilding(state: GameState, buildingId: number): { ok: boolean; reason: string } {
+  const hero = getPlayer(state);
+  const building = state.buildings.find((b) => b.id === buildingId && b.alive);
+  if (!hero?.alive) return { ok: false, reason: "英雄不可行动" };
+  if (!building || building.faction !== hero.faction) return { ok: false, reason: "目标不存在" };
+  if (building.buildTimer > 0) return { ok: false, reason: "建筑尚未完工" };
+  if (building.hp >= building.maxHp) return { ok: false, reason: "建筑无需维修" };
+  if (building.repairing) return { ok: false, reason: "建筑正在维修" };
+  if (hero.repairTargetId !== null && hero.repairTargetId !== buildingId) return { ok: false, reason: "已在维修其他建筑" };
+  if (distanceToFootprint(hero, building) > REPAIR_RANGE) return { ok: false, reason: "需要靠近目标" };
+  return { ok: true, reason: "" };
+}
+
+export function repairBuilding(state: GameState, buildingId: number): boolean {
+  const check = canRepairBuilding(state, buildingId);
+  if (!check.ok) {
+    setHint(state, check.reason);
     return false;
   }
-  const b = list.sort((a, c) => a.hp / a.maxHp - c.hp / c.maxHp)[0];
-  b.repairing = true;
-  addEffect(state, b.x, b.y, b.size * TILE, "#7ee08a");
-  addFloat(state, b.x, b.y - 18, "维修中", "#7ee08a", 12);
+  const hero = getPlayer(state)!;
+  const building = state.buildings.find((b) => b.id === buildingId)!;
+  building.repairing = true;
+  hero.repairTargetId = buildingId;
+  addEffect(state, building.x, building.y, building.size * TILE, "#7ee08a");
+  addFloat(state, building.x, building.y - 18, "维修中", "#7ee08a", 12);
   return true;
+}
+
+export function cancelRepair(state: GameState): void {
+  const hero = getPlayer(state);
+  if (!hero || hero.repairTargetId === null) return;
+  const building = state.buildings.find((b) => b.id === hero.repairTargetId);
+  if (building) building.repairing = false;
+  hero.repairTargetId = null;
+}
+
+/** 免费维修墙/建筑（原版修理不消耗资源）。 */
+export function repairWall(state: GameState, kind: BuildKind = "wall"): boolean {
+  const target = findRepairTarget(state, kind);
+  return target ? repairBuilding(state, target.id) : false;
 }
 
 export function buildingUpgradeCost(kind: BuildKind, currentLevel: number): number {
@@ -720,6 +762,11 @@ function bountyMin(state: GameState): number {
 function killHero(state: GameState, h: Hero, attacker: Hero): void {
   h.alive = false;
   h.hp = 0;
+  if (h.repairTargetId !== null) {
+    const building = state.buildings.find((b) => b.id === h.repairTargetId);
+    if (building) building.repairing = false;
+    h.repairTargetId = null;
+  }
   h.deathTimer = RESPAWN_RULE.elfCleanup;
   h.lives -= 1;
   state.stats.kills += 1;
@@ -785,10 +832,15 @@ function updateTimers(state: GameState, dt: number): void {
   for (const b of state.buildings) {
     b.flash = Math.max(0, b.flash - dt);
     if (b.repairing) {
-      if (b.alive && b.buildTimer <= 0 && b.hp < b.maxHp) {
+      const owner = state.heroes.find((h) => h.repairTargetId === b.id);
+      if (!owner?.alive || distanceToFootprint(owner, b) > REPAIR_RANGE) {
+        b.repairing = false;
+        if (owner) owner.repairTargetId = null;
+      } else if (b.alive && b.buildTimer <= 0 && b.hp < b.maxHp) {
         b.hp = Math.min(b.maxHp, b.hp + buildingRepairRate(b) * dt);
       } else if (!b.alive || b.hp >= b.maxHp) {
         b.repairing = false;
+        if (owner) owner.repairTargetId = null;
       }
     }
     if (b.alive && b.buildTimer > 0) b.buildTimer = Math.max(0, b.buildTimer - dt);
@@ -1239,6 +1291,7 @@ export function stateHash(state: GameState): string {
       damage: h.damage, interval: h.interval, range: h.range,
       speed: h.speed, radius: h.radius, cd: h.cd, channelTime: h.channelTime,
       deathTimer: h.deathTimer, gold: h.gold, wood: h.wood, items: h.items, itemLevels: h.itemLevels,
+      repairTargetId: h.repairTargetId,
       bonusIncome: h.bonusIncome, bonusLifesteal: h.bonusLifesteal,
       cooldowns: h.cooldowns, buffs: h.buffs,
     })),
